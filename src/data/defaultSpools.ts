@@ -2099,5 +2099,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.142',
+    label: '1.142 (Leser schneller)',
+    releaseDate: '01.11.2026',
+    description: 'Die 5 NFC-Leser im AMS fragen 4x schneller nach Tags und funken langsamer, aber stabiler über die Kabel.',
+    features: [
+      '⚡ Leser fragen alle 250 ms statt 1 s nach einem Tag (Spule wird viel schneller erkannt)',
+      '📡 SPI-Takt von 4 MHz auf 1 MHz: weniger Aussetzer bei langen oder wackeligen Kabeln',
+      '📝 Hinweis in der Firmware: Tags mit 4-Byte-UID (MIFARE Classic/Bambu) werden absichtlich ignoriert, mit own_uid_min "11" gehen auch die',
+      '🌡️ Sensoren: Firmware fragt alle 10 s, die „5 Minuten“ im Verlauf sind nur die Zusammenfassung von Home Assistant'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

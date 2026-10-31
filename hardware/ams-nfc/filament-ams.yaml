@@ -71,11 +71,14 @@ spi:
   miso_pin: GPIO19
 
 # Je Leser eine eigene CS-Leitung (SDA am RC522). RST aller Leser an GPIO22.
+# v1.142: Abfrage alle 250 ms (vorher 1 s) = Tag wird 4x schneller erkannt; SPI 1 MHz (statt 4 MHz) = stabiler bei langen Kabeln.
+# Hinweis: nur 7-Byte-UID-Tags (NTAG) werden angenommen (own_uid_min). 4-Byte-Tags (MIFARE Classic/Bambu) werden absichtlich ignoriert -> own_uid_min "11" setzen, falls Tags 'gar nicht' gehen.
 rc522_spi:
   - id: reader_1
     cs_pin: GPIO5
     reset_pin: GPIO22
-    update_interval: 1s
+    update_interval: 250ms
+    data_rate: 1MHz
     on_tag:
       then:
         - if:
@@ -97,7 +100,8 @@ rc522_spi:
               - script.execute: clear_1
   - id: reader_2
     cs_pin: GPIO17
-    update_interval: 1s
+    update_interval: 250ms
+    data_rate: 1MHz
     on_tag:
       then:
         - if:
@@ -119,7 +123,8 @@ rc522_spi:
               - script.execute: clear_2
   - id: reader_3
     cs_pin: GPIO16
-    update_interval: 1s
+    update_interval: 250ms
+    data_rate: 1MHz
     on_tag:
       then:
         - if:
@@ -141,7 +146,8 @@ rc522_spi:
               - script.execute: clear_3
   - id: reader_4
     cs_pin: GPIO4
-    update_interval: 1s
+    update_interval: 250ms
+    data_rate: 1MHz
     on_tag:
       then:
         - if:
@@ -163,7 +169,8 @@ rc522_spi:
               - script.execute: clear_4
   - id: reader_5
     cs_pin: GPIO13
-    update_interval: 1s
+    update_interval: 250ms
+    data_rate: 1MHz
     on_tag:
       then:
         - if:
