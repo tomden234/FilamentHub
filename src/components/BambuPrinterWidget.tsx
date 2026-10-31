@@ -305,7 +305,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   };
   const { setHaCameraBlobUrl, haCreds, haSwitchState, handleToggleSwitch: rawToggleSwitch, haSwitchLoading, handleFetchSwitchStatus, haCameraBlobUrl } = useHaSwitch({ setActionToast });
 
-  // „Nach dem Druck ausschalten“ (Steckdose über Home Assistant, wenn fertig und Düse abgekühlt)
+  // „Nach dem Druck ausschalten“ (Steckdose über Home Assistant, 3 Minuten nach Druckende)
   const printActive = Boolean(liveState.connected && liveState.receivingData !== false && ACTIVE_STATES.has(liveState.data.gcode_state));
   const dryLeftNow = liveState.connected ? Number(liveState.data.ams?.ams?.[0]?.dry_time) || 0 : 0;
 
@@ -370,7 +370,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     if (dropDry) disarmDryPlan(); // Aus nach Druck ist stärker als Trocknen nach Druck
     armAutoOff(liveState.data.subtask_name || '');
     setActionToast({
-      text: dropDry ? 'Drucker geht nach dem Druck aus. Trocknen nach Druck ist abgewählt.' : 'Drucker wird nach dem Druck ausgeschaltet (sobald die Düse abgekühlt ist).',
+      text: dropDry ? 'Drucker geht nach dem Druck aus. Trocknen nach Druck ist abgewählt.' : 'Drucker wird nach dem Druck ausgeschaltet (3 Minuten nach Druckende).',
       ok: true
     });
     addSystemLog('steckdose', 'Auto-Aus nach Druck gewählt', liveState.data.subtask_name || '', 'info');
@@ -1015,7 +1015,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
           {!isExpanded && printActive && !autoOff.armed && haSwitchState.configured && (
             <button
               onClick={handleToggleAutoOff}
-              title="Steckdose ausschalten, wenn der Druck fertig und die Düse abgekühlt ist"
+              title="Steckdose ausschalten, 3 Minuten nach Druckende"
               className="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', color: 'var(--app-text-muted)' }}
             >

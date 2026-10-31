@@ -2019,5 +2019,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.137',
+    label: '1.137 (Aus nach Druck: 3 Minuten)',
+    releaseDate: '31.10.2026',
+    description: 'Aus nach Druck wartet nicht mehr auf die Düsentemperatur, sondern schaltet 3 Minuten nach Druckende ab.',
+    features: [
+      '⏱️ Aus nach Druck: Steckdose geht 3 Minuten nach „Druck fertig“ aus, egal wie heiß die Düse ist',
+      '🏠 Auch die Home-Assistant-Automation (App zu) nutzt jetzt feste 3 Minuten und wird beim nächsten Mal automatisch erneuert',
+      '🔢 Aktualisierte Zahlen-FunFacts: 116 Commits und 137 Revisionsstufen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -229,7 +229,7 @@ export const PrinterExpandedPanel: React.FC<PrinterExpandedPanelProps> = ({
               {(printActive || autoOffArmed) && onToggleAutoOff && (
                 <button
                   onClick={onToggleAutoOff}
-                  title={autoOffArmed ? 'Abwählen: Drucker bleibt nach dem Druck an' : 'Steckdose ausschalten, wenn der Druck fertig und die Düse abgekühlt ist'}
+                  title={autoOffArmed ? 'Abwählen: Drucker bleibt nach dem Druck an' : 'Steckdose ausschalten, 3 Minuten nach Druckende'}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
                     autoOffArmed ? 'border-sky-500/60 bg-sky-500/20 text-sky-300' : 'border-[var(--app-border)] text-[var(--app-text-muted)] hover:bg-sky-500/10'
                   }`}

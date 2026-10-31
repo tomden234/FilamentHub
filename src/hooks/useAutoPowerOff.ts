@@ -6,10 +6,9 @@ import { disarmAutoOff, useAutoOff } from '../utils/autoPowerOff';
 import { ACTIVE_STATES } from '../utils/printSession';
 import { jobKey } from '../utils/printUsage';
 
-// „Nach dem Druck ausschalten“: Wenn der Drucker „fertig“ meldet, wartet die App, bis die Düse abgekühlt ist
-// (sonst steht der Hotend-Lüfter still, solange die Düse heiß ist), und schaltet dann die Steckdose über Home Assistant aus.
-//  - Fertig muss mind. 1 Minute anliegen (keine Fehlauslösung durch kurze Datenfehler)
-//  - Düse unter 60 °C, spätestens nach 20 Minuten wird trotzdem ausgeschaltet
+// „Nach dem Druck ausschalten“: Wenn der Drucker „fertig“ meldet, schaltet die App nach 3 Minuten die Steckdose über Home Assistant aus.
+// Die Düsentemperatur zählt nicht mehr (fester Zeitwert).
+//  - Fertig muss 3 Minuten anliegen (keine Fehlauslösung durch kurze Datenfehler), dann aus
 //  - Druck fehlgeschlagen/abgebrochen: nicht ausschalten (du willst evtl. nachsehen), nur Meldung
 //  - Aus ist stärker als Trocknen: läuft noch eine Trocknung, wird sie beendet, die App wartet das Auslaufen/Schließen
 //    des AMS ab (3 Minuten ohne Trocknung) und schaltet dann aus. Auch wenn der Feuchte-Sensor Trocknen will.
@@ -29,9 +28,7 @@ interface Params {
   stopDrying?: () => Promise<boolean>;
 }
 
-const COOL_C = 60;
-const MIN_FINISH_MS = 60_000;
-const MAX_WAIT_MS = 20 * 60_000;
+const MIN_FINISH_MS = 3 * 60_000; // so lange „fertig“, dann aus
 const TICK_MS = 10_000;
 const DRY_SETTLE_MS = 3 * 60_000; // nach dem Ende der Trocknung warten (AMS-Ventile/Lüfter schließen)
 const DRY_STOP_RETRY_MS = 60_000;
@@ -81,7 +78,7 @@ export function useAutoPowerOff(p: Params) {
     void raiseAlert({ kind: 'info', key: `auto-off-${auto.armedAt}`, title: 'Drucker ausgeschaltet', text, toast: `🔌 ${text}` }, t => latest.current.notify({ text: t, ok: true }));
   }, [auto.armed, p.switchState]);
 
-  // Regelmäßig prüfen, ob abgekühlt
+  // Regelmäßig prüfen, ob die 3 Minuten um sind
   useEffect(() => {
     if (!auto.armed) {
       fails.current = 0;
@@ -136,9 +133,6 @@ export function useAutoPowerOff(p: Params) {
         return; // AMS läuft aus, Ventile schließen noch
       }
       if (waited < MIN_FINISH_MS) return;
-      const temps = latest.current.nozzleTemps.filter(t => Number.isFinite(t) && t > 0);
-      const hot = temps.length ? Math.max(...temps) : 0;
-      if (hot >= COOL_C && waited < MAX_WAIT_MS) return;
 
       busy.current = true;
       try {
@@ -146,7 +140,7 @@ export function useAutoPowerOff(p: Params) {
         if (res.success) {
           disarmAutoOff();
           finishSince.current = null;
-          const text = `Nach „${auto.jobName || 'Druck'}“ automatisch ausgeschaltet${hot ? ` (Düse ${Math.round(hot)} °C)` : ''}.`;
+          const text = `Nach „${auto.jobName || 'Druck'}“ automatisch ausgeschaltet (3 Minuten nach Druckende).`;
           addSystemLog('steckdose', 'Drucker nach Druck ausgeschaltet', text, 'success');
           void raiseAlert({ kind: 'info', key: `auto-off-${auto.armedAt}`, title: 'Drucker ausgeschaltet', text, toast: `🔌 ${text}` }, t => latest.current.notify({ text: t, ok: true }));
           setTimeout(() => latest.current.refreshSwitch(), 800);

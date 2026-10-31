@@ -37,11 +37,11 @@ interface FunFactsModalProps {
 //  SCHÄTZUNG = ungefähr, genauer geht es nicht
 type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
-// Von Claude beim Update auf v1.136 gezählt
+// Von Claude beim Update auf v1.137 gezählt
 const CHATS = 9; // Chats im Projekt „filament webseite“
-const MESSAGES = 247; // deine Nachrichten in diesen Chats (ca.)
-const WORDS = 23160; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 114; // Commits auf GitHub (main)
+const MESSAGES = 248; // deine Nachrichten in diesen Chats (ca.)
+const WORDS = 23300; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
+const COMMITS = 116; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
 
 const fmt = (n: number, digits = 0) => n.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits });

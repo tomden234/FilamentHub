@@ -1,6 +1,6 @@
 // „Nach Druck aus“ auch ohne offene App: Die App legt in Home Assistant eine Automation an (einmalig, automatisch)
 // und schaltet sie nur ein, solange „Nach Druck aus“ gewählt ist. Home Assistant schaltet dann die Steckdose aus,
-// wenn der Druck fertig ist und die Düse kalt ist. Braucht in Home Assistant die Bambu-Lab-Integration (HACS: ha-bambulab),
+// 3 Minuten nach Druckende (feste Zeit, ohne Düsentemperatur). Braucht in Home Assistant die Bambu-Lab-Integration (HACS: ha-bambulab),
 // denn nur so kennt Home Assistant den Druckstatus.
 import { callHaService, getHaCredentials } from './haClient';
 import { safeStorage } from './safeStorage';
@@ -8,6 +8,8 @@ import { safeStorage } from './safeStorage';
 const AUTOMATION_ID = 'filamenthub_auto_off';
 const ENTITY_KEY = 'filamenthub_ha_autooff_entity';
 const INFO_KEY = 'filamenthub_ha_autooff_info';
+const VER_KEY = 'filamenthub_ha_autooff_ver';
+const VER = '2'; // 2 = feste 3 Minuten statt Düsentemperatur
 
 export interface HaAutoOffInfo {
   ok: boolean;
@@ -69,16 +71,13 @@ export async function installHaAutoOff(): Promise<HaAutoOffInfo> {
       });
     }
     const st = found.status;
-    const cool = found.nozzle
-      ? [{ wait_template: `{{ states('${found.nozzle}') | float(999) < 60 }}`, timeout: '00:20:00', continue_on_timeout: true }]
-      : [{ delay: '00:10:00' }];
     const config = {
       id: AUTOMATION_ID,
       alias: 'FilamentHub: Drucker nach Druck aus',
-      description: 'Von der FilamentHub-App angelegt. Die App schaltet diese Automation ein, wenn du „Nach Druck aus“ wählst. Ist der Druck fertig und die Düse kalt, geht die Steckdose aus.',
+      description: 'Von der FilamentHub-App angelegt. Die App schaltet diese Automation ein, wenn du „Nach Druck aus“ wählst. 3 Minuten nach Druckende geht die Steckdose aus.',
       mode: 'single',
       trigger: [
-        { platform: 'state', entity_id: st, to: 'finish', for: { minutes: 1 } },
+        { platform: 'state', entity_id: st, to: 'finish', for: { minutes: 3 } },
         { platform: 'state', entity_id: st, to: 'failed' }
       ],
       condition: [],
@@ -91,7 +90,6 @@ export async function installHaAutoOff(): Promise<HaAutoOffInfo> {
             }
           ]
         },
-        ...cool,
         { condition: 'state', entity_id: st, state: 'finish' },
         { service: 'switch.turn_off', target: { entity_id: switchEntity } },
         { service: 'automation.turn_off', target: { entity_id: '{{ this.entity_id }}' } }
@@ -115,10 +113,11 @@ export async function installHaAutoOff(): Promise<HaAutoOffInfo> {
     }
     if (!entity) return setInfo({ ok: false, text: 'Automation angelegt, aber Home Assistant zeigt sie noch nicht. Gleich nochmal tippen.', statusEntity: st, nozzleEntity: found.nozzle, at: Date.now() });
     safeStorage.setItem(ENTITY_KEY, entity);
+    safeStorage.setItem(VER_KEY, VER);
     await callHaService('automation', 'turn_off', { entity_id: entity });
     return setInfo({
       ok: true,
-      text: `Eingerichtet. Home Assistant nutzt ${st}${found.nozzle ? ` und ${found.nozzle}` : ' (ohne Düsentemperatur: 10 Minuten warten)'}.`,
+      text: `Eingerichtet. Home Assistant nutzt ${st} und schaltet 3 Minuten nach Druckende aus.`,
       statusEntity: st,
       nozzleEntity: found.nozzle,
       automationEntity: entity,
@@ -138,6 +137,11 @@ export async function setHaAutoOff(on: boolean): Promise<boolean> {
     if (info && !info.ok && Date.now() - info.at < 6 * 3600_000) return false;
     const r = await installHaAutoOff();
     entity = r.automationEntity || '';
+  }
+  // Alte Automation (mit Düsentemperatur) einmal durch die neue ersetzen
+  if (entity && on && safeStorage.getItem(VER_KEY) !== VER) {
+    const r2 = await installHaAutoOff();
+    entity = r2.automationEntity || entity;
   }
   if (!entity) return false;
   const r = await callHaService('automation', on ? 'turn_on' : 'turn_off', { entity_id: entity });
