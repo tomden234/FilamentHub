@@ -25,6 +25,7 @@ const COMMON_COLORS = [
   { name: 'Rot', hex: '#ef4444' },
   { name: 'Blau', hex: '#3b82f6' },
   { name: 'Grün', hex: '#10b981' },
+  { name: 'Dunkelgrün', hex: '#166534' },
   { name: 'Gelb', hex: '#eab308' },
   { name: 'Orange', hex: '#f97316' },
   { name: 'Lila', hex: '#8b5cf6' },

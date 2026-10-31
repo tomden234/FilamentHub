@@ -2033,5 +2033,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.138',
+    label: '1.138 (Standardfarbe Dunkelgrün)',
+    releaseDate: '31.10.2026',
+    description: 'Dunkelgrün ist jetzt bei den Standardfarben dabei (Spule anlegen und AMS-Slot bearbeiten).',
+    features: [
+      '🟢 Neue Standardfarbe Dunkelgrün in der Spulen-Eingabe',
+      '🟢 Dunkelgrün auch in den Bambu-Farben beim AMS-Slot',
+      '🔢 Aktualisierte Zahlen-FunFacts: 117 Commits und 138 Revisionsstufen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -5,6 +5,7 @@ import { useEscapeClose } from '../../hooks/useEscapeClose';
 const BAMBU_PRESET_COLORS = [
   { name: 'Grau', hex: '898989' },
   { name: 'Grün', hex: '057748' },
+  { name: 'Dunkelgrün', hex: '166534' },
   { name: 'Lila / Flieder', hex: 'D4B1DD' },
   { name: 'Schwarz', hex: '111111' },
   { name: 'Weiß', hex: 'FFFFFF' },
