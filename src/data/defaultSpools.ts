@@ -2002,7 +2002,6 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
-  }
   },
   {
     id: 'v1.136',
