@@ -2069,5 +2069,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.140',
+    label: '1.140 (Pin-Namen D16/D17)',
+    releaseDate: '31.10.2026',
+    description: 'Auf deinem ESP32 gibt es kein „TX2/RX2“: GPIO17 steht als D17 und GPIO16 als D16 auf der Platine. Pläne und Anleitung zeigen jetzt diese Namen.',
+    features: [
+      '🔌 Verdrahtungsplan, Lötplan und Aufbau-Anleitung: „TX2“ wurde zu D17 (Leser 2) und „RX2“ zu D16 (Leser 3)',
+      '📄 Aufbau-PDF und alle Bilder neu erzeugt, Hinweis: bei anderen Boards heißen D17/D16 TX2/RX2, es ist derselbe Pin',
+      '🔢 Aktualisierte Zahlen-FunFacts: 119 Commits und 140 Revisionsstufen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

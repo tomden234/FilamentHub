@@ -97,7 +97,7 @@ note("Vor dem Druck messen: Das ESP32-Gehäuse passt für ein 38-Pin-DevKit mit 
 h2("5. Verkabelung")
 p("Die Diagramme zeigen die **Reihenfolge der Leitungen**, nicht die Lage der Pins auf dem Board. "
   "Such jeden Pin auf deinem ESP32 nach der aufgedruckten Beschriftung (zum Beispiel D18, D23, 3V3). "
-  "GPIO17 heißt auf vielen Boards TX2, GPIO16 heißt RX2.")
+  "Auf deinem Board steht GPIO17 als D17 und GPIO16 als D16 (bei anderen Boards TX2 und RX2, das ist derselbe Pin).")
 h2("RC522 an ESP32")
 table(["RC522-Pin", "ESP32-Pin", "gilt für"], [
     ["3.3V", "3V3", "alle 5 Leser gemeinsam"],
@@ -108,8 +108,8 @@ table(["RC522-Pin", "ESP32-Pin", "gilt für"], [
     ["RST", "GPIO22", "alle 5 Leser gemeinsam"],
     ["IRQ", "frei lassen", "–"],
     ["SDA (= CS) Leser 1 / Slot 1", "GPIO5", "einzeln"],
-    ["SDA (= CS) Leser 2 / Slot 2", "GPIO17 (TX2)", "einzeln"],
-    ["SDA (= CS) Leser 3 / Slot 3", "GPIO16 (RX2)", "einzeln"],
+    ["SDA (= CS) Leser 2 / Slot 2", "GPIO17 (D17)", "einzeln"],
+    ["SDA (= CS) Leser 3 / Slot 3", "GPIO16 (D16)", "einzeln"],
     ["SDA (= CS) Leser 4 / Slot 4", "GPIO4", "einzeln"],
     ["SDA (= CS) Leser 5 / Extern", "GPIO13", "einzeln"],
 ], [70, 50, 50])

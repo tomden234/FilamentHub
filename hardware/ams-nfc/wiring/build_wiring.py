@@ -148,7 +148,7 @@ def fig_all():
             ha="center", va="center", zorder=5, linespacing=1.3)
     px = ex + ew
     esp_rows = [("3V3", "3V3", None), ("GND", "GND", None), ("SCK", "GPIO18", "D18"), ("MOSI", "GPIO23", "D23"), ("MISO", "GPIO19", "D19"),
-                ("RST", "GPIO22", "D22"), ("CS1", "GPIO5", "D5"), ("CS2", "GPIO17", "TX2"), ("CS3", "GPIO16", "RX2"),
+                ("RST", "GPIO22", "D22"), ("CS1", "GPIO5", "D5"), ("CS2", "GPIO17", "D17"), ("CS3", "GPIO16", "D16"),
                 ("CS4", "GPIO4", "D4"), ("CS5", "GPIO13", "D13")]
     mtops = [140 + i * 190 for i in range(5)]
     # ESP-Pins liegen in den Lücken zwischen den Lesern, damit keine Leitung auf einer Leser-Zeile liegt (sonst überdecken sich Farben).

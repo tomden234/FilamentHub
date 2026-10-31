@@ -20,8 +20,8 @@ IRQ bleibt bei allen Lesern frei.
 | Leser / Slot | RC522 SDA | ESP32 | Kabel |
 |---|---|---|---|
 | 1 | SDA | GPIO5 (D5) | lila |
-| 2 | SDA | GPIO17 (TX2) | eigene Farbe |
-| 3 | SDA | GPIO16 (RX2) | eigene Farbe |
+| 2 | SDA | GPIO17 (D17) | eigene Farbe |
+| 3 | SDA | GPIO16 (D16) | eigene Farbe |
 | 4 | SDA | GPIO4 (D4) | eigene Farbe |
 | 5 (Extern) | SDA | GPIO13 (D13) | eigene Farbe |
 

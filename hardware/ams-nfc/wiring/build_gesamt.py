@@ -19,8 +19,8 @@ def fig_gesamt():
             ha="center", va="center", zorder=5, linespacing=1.3)
     px = ex + ew
     esp_rows = {"3V3": ("3V3", None, 160), "GND": ("GND", None, 190), "SCK": ("GPIO18", "D18", 315), "MOSI": ("GPIO23", "D23", 343),
-                "MISO": ("GPIO19", "D19", 371), "RST": ("GPIO22", "D22", 515), "CS1": ("GPIO5", "D5", 543), "CS2": ("GPIO17", "TX2", 571),
-                "CS3": ("GPIO16", "RX2", 705), "CS4": ("GPIO4", "D4", 733), "CS5": ("GPIO13", "D13", 761),
+                "MISO": ("GPIO19", "D19", 371), "RST": ("GPIO22", "D22", 515), "CS1": ("GPIO5", "D5", 543), "CS2": ("GPIO17", "D17", 571),
+                "CS3": ("GPIO16", "D16", 705), "CS4": ("GPIO4", "D4", 733), "CS5": ("GPIO13", "D13", 761),
                 "BOXSCL": ("GPIO32", "SCL Box", 1165), "BOXSDA": ("GPIO21", "SDA Box", 1200),
                 "TROCKSCL": ("GPIO25", "SCL Trockner", 1340), "TROCKSDA": ("GPIO33", "SDA Trockner", 1368)}
     rails = ["3V3", "GND", "SCK", "MOSI", "MISO", "RST"]
