@@ -18,5 +18,7 @@ jobs:
       # Typprüfung: seit v1.73 fehlerfrei, darum jetzt blockierend (neue Fehler fallen sofort auf)
       - name: Typprüfung
         run: npm run lint
+      - name: Tests
+        run: npm test
       - name: Build
         run: npm run build

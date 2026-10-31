@@ -67,7 +67,7 @@ router.get('/api/homeassistant/bambu-telemetry', async (_req, res) => {
       { entity_id: 'number.x2d_lead_screw_sound_level', name: 'X2D Spindel-Geräuschpegel', state: '1', unit: '', category: 'diagnostic' },
       { entity_id: 'sensor.x2d_nozzle_heat_rate', name: 'X2D Aufheizrate Hotend', state: '2.4', unit: '°C/s', category: 'diagnostic' },
       { entity_id: 'sensor.x2d_bed_heat_rate', name: 'X2D Aufheizrate Bett', state: '0.8', unit: '°C/s', category: 'diagnostic' },
-      { entity_id: 'sensor.x2d_ip_address', name: 'X2D IP-Adresse LAN', state: '192.168.68.53', unit: '', category: 'diagnostic' },
+      { entity_id: 'sensor.x2d_ip_address', name: 'X2D IP-Adresse LAN', state: '192.168.1.50', unit: '', category: 'diagnostic' },
       { entity_id: 'sensor.x2d_mqtt_connection', name: 'X2D MQTT Verbindung (TLS)', state: 'connected', unit: '', category: 'diagnostic' },
       { entity_id: 'sensor.x2d_spool_weight_remaining', name: 'X2D Verbleibendes Filamentgewicht', state: '750', unit: 'g', category: 'sensor' }
     ];

@@ -1,41 +1,31 @@
 import type { Spool } from '../types/filament';
 
-// Deine Spulenliste, von Claude nach deinem Diktat gepflegt.
+// Optionale eigene Startliste (nur für dich, nicht Teil des Projekts).
 //
-// So funktioniert es:
-//  - stamp = 0  → nichts passiert, die App nutzt den Bestand, den sie schon hat.
-//  - stamp = Zeitpunkt (Millisekunden), spools = deine Liste → beim nächsten Start ersetzt jedes Gerät seinen Bestand einmal
-//    durch diese Liste (die alte Liste bleibt als Notfall-Kopie im Gerät). Eine leere Liste bedeutet „alles raus“.
-//  - Der Zeitstempel zählt wie eine Änderung zu dieser Zeit: Hat ein anderes Gerät später etwas geändert (z. B. Gramm abgezogen),
-//    gewinnt dessen Stand. So überschreibt die Liste nie neuere Änderungen.
+// So geht es:
+//  1. Lege die Datei src/data/mySpools.local.ts an (sie steht in der .gitignore und wird nie hochgeladen).
+//  2. Inhalt:
+//       import type { Spool } from '../types/filament';
+//       export const MY_SPOOLS: Spool[] = [ /* deine Spulen, Felder siehe src/types/filament.ts */ ];
+//       export const MY_SPOOLS_STAMP = 0; // 0 = nichts ersetzen
+//  3. MY_SPOOLS_STAMP = Zeitpunkt in Millisekunden (z. B. Date.now() im Browser) → beim nächsten Start ersetzt jedes Gerät
+//     seinen Bestand genau einmal durch diese Liste (die alte Liste bleibt als Notfall-Kopie im Gerät).
+//     Der Zeitstempel zählt wie eine Änderung zu dieser Zeit: Hat ein anderes Gerät später etwas geändert,
+//     gewinnt dessen Stand. Eine leere Liste mit Zeitstempel bedeutet „alles raus“.
 //
-// Felder je Spule siehe src/types/filament.ts (onSpool, sealed, inEibos, needsDrying, location, …).
-//
-// Stand 30.10.2026 (1.132): Neue Liste nach Diktat. Gewichte sind Netto = gewogen − Leerspule − Eibos-Beutel (35 g) − Silica (57 g).
-// Nur „Prusa PETG Galaxy Black“ blieb unverändert.
-export const MY_SPOOLS: Spool[] = [
-  { id: 'my-01', brand: 'Bambu Lab', name: 'PLA Basic Weiß (Refill 1)', material: 'PLA', colorName: 'Weiß', colorHex: '#f8fafc', pricePerKg: 16.99, initialWeight: 1000, remainingWeight: 1000, emptySpoolWeight: 0, storageNote: 'Original verpackt, ohne Spule', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: false, sealed: true, inEibos: false, silicaBag: false },
-  { id: 'my-02', brand: 'Bambu Lab', name: 'PLA Basic Weiß (Refill 2)', material: 'PLA', colorName: 'Weiß', colorHex: '#f8fafc', pricePerKg: 16.99, initialWeight: 1000, remainingWeight: 1000, emptySpoolWeight: 0, storageNote: 'Original verpackt, ohne Spule', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: false, sealed: true, inEibos: false, silicaBag: false },
-  { id: 'my-03', brand: 'Bambu Lab', name: 'PLA Basic Weiß (mit Spule)', material: 'PLA', colorName: 'Weiß', colorHex: '#f8fafc', pricePerKg: 19.99, initialWeight: 1000, remainingWeight: 1000, emptySpoolWeight: 250, storageNote: 'Original verpackt, mit Spule', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: true, inEibos: false, silicaBag: false },
-  { id: 'my-04', brand: 'Bambu Lab', name: 'PLA Basic Schwarz', material: 'PLA', colorName: 'Schwarz', colorHex: '#18181b', pricePerKg: 19.99, initialWeight: 1000, remainingWeight: 458, emptySpoolWeight: 250, storageNote: 'Mit Spule, Eibos-Beutel, Silica (800 g gewogen)', lastDried: '2026-10-04T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: true, silicaBag: true },
-  { id: 'my-05', brand: 'Geeetech', name: 'Color Wood PLA', material: 'PLA', colorName: 'Holz / Braun', colorHex: '#a16207', pricePerKg: 16.99, initialWeight: 1000, remainingWeight: 505, emptySpoolWeight: 195, storageNote: 'Mit Spule, ohne Beutel (700 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-06', brand: 'Bambu Lab', name: 'PLA Basic Dunkelgrün', material: 'PLA', colorName: 'Dunkelgrün', colorHex: '#166534', pricePerKg: 19.99, initialWeight: 1000, remainingWeight: 134, emptySpoolWeight: 250, storageNote: 'Mit Spule, Beutel, Silica (476 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: true, silicaBag: true },
-  { id: 'my-07', brand: 'Eono', name: 'Silk PLA Rot-Gold-Blau', material: 'PLA', colorName: 'Rot / Gold / Blau', colorHex: '#eab308', pricePerKg: 17.99, initialWeight: 1000, remainingWeight: 849, emptySpoolWeight: 150, storageNote: 'Mit Spule, Beutel (1034 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: true, silicaBag: false },
-  { id: 'my-08', brand: 'Bambu Lab', name: 'PLA Basic Hellgrün (eigene 100 g Spule)', material: 'PLA', colorName: 'Hellgrün', colorHex: '#4ade80', pricePerKg: 19.99, initialWeight: 1000, remainingWeight: 960, emptySpoolWeight: 100, storageNote: 'Eigene gedruckte 100 g Spule, Eibos-Beutel 35 g, Silica 57 g (auf 960 g gesetzt, wenig gedruckt)', lastDried: '2026-10-04T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: true, silicaBag: true },
-  { id: 'my-09', brand: 'YXPOLYER', name: 'PA6-CF Schwarz', material: 'PET-CF / PA-CF', colorName: 'Schwarz', colorHex: '#27272a', pricePerKg: 39.99, initialWeight: 1000, remainingWeight: 894, emptySpoolWeight: 220, storageNote: 'Mit Spule, Beutel, Silica (1206 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 10, dryTemp: 80, dryHours: 8, onSpool: true, sealed: false, inEibos: true, silicaBag: true },
-  { id: 'my-10', brand: 'Eryone', name: 'PLA Glow in the Dark Blau', material: 'PLA', colorName: 'Glow Blau', colorHex: '#38bdf8', pricePerKg: 21.99, initialWeight: 1000, remainingWeight: 956, emptySpoolWeight: 151, storageNote: 'Mit Spule, ohne Beutel (1107 g gewogen)', lastDried: '2026-09-01T00:00:00.000Z', dryIntervalDays: 7, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-11', brand: 'Eryone', name: 'PLA Durchsichtig', material: 'PLA', colorName: 'Durchsichtig', colorHex: '#cbd5e1', pricePerKg: 18.99, initialWeight: 1000, remainingWeight: 818, emptySpoolWeight: 151, storageNote: 'Mit Spule, ohne Beutel (969 g gewogen)', lastDried: '2026-09-01T00:00:00.000Z', dryIntervalDays: 14, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-12', brand: 'ELEGOO', name: 'Color Marble PLA', material: 'PLA', colorName: 'Marmor', colorHex: '#e2e8f0', pricePerKg: 16.99, initialWeight: 1000, remainingWeight: 150, emptySpoolWeight: 160, storageNote: 'Pappspule (310 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-13', brand: 'eSUN', name: 'PLA Grün', material: 'PLA', colorName: 'Grün', colorHex: '#22c55e', pricePerKg: 18.99, initialWeight: 1000, remainingWeight: 731, emptySpoolWeight: 210, storageNote: 'Mit Spule (941 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-14', brand: 'Overture', name: 'TPU Schwarz', material: 'TPU', colorName: 'Schwarz', colorHex: '#18181b', pricePerKg: 21.99, initialWeight: 1000, remainingWeight: 949, emptySpoolWeight: 147, storageNote: 'Mit Spule (1096 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 14, dryTemp: 55, dryHours: 6, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-15', brand: 'ELEGOO', name: 'PLA Weiß', material: 'PLA', colorName: 'Weiß', colorHex: '#f8fafc', pricePerKg: 14.99, initialWeight: 1000, remainingWeight: 330, emptySpoolWeight: 160, storageNote: 'Mit Spule (490 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-16', brand: 'Bambu Lab', name: 'PETG Basic Weiß', material: 'PETG', colorName: 'Weiß', colorHex: '#f8fafc', pricePerKg: 19.99, initialWeight: 1000, remainingWeight: 788, emptySpoolWeight: 250, storageNote: 'Mit Spule (1038 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 21, dryTemp: 65, dryHours: 6, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'my-17', brand: 'Prusament', name: 'PLA Galaxy Black', material: 'PLA', colorName: 'Galaxy Black', colorHex: '#18181b', pricePerKg: 29.99, initialWeight: 1000, remainingWeight: 327, emptySpoolWeight: 200, storageNote: 'Mit Prusa Spule, Eibos-Beutel, Silica (619 g gewogen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: true, silicaBag: true },
-  { id: 'my-19', brand: 'Isan', name: 'PLA Plus Dunkelgrün', material: 'PLA+', colorName: 'Dunkelgrün', colorHex: '#166534', pricePerKg: 17.99, initialWeight: 1000, remainingWeight: 740, emptySpoolWeight: 210, storageNote: 'Mit Spule, ohne Beutel (alter Stand: 950 g Brutto − 210 g Spule, bitte neu wiegen)', lastDried: '2026-10-19T00:00:00.000Z', dryIntervalDays: 30, dryTemp: 50, dryHours: 5, onSpool: true, sealed: false, inEibos: false, silicaBag: false },
-  { id: 'sp-9', brand: 'Prusament', name: 'PETG Galaxy Black', material: 'PETG', colorName: 'Galaxy Black', colorHex: '#18181b', initialWeight: 1000, remainingWeight: 1000, emptySpoolWeight: 200, pricePerKg: 29.99, storageNote: 'Im Eibos Beutel mit Prusa Spule', lastDried: '2026-10-04T00:00:00.000Z', dryIntervalDays: 15, dryTemp: 65, dryHours: 6 }
-];
+// Ohne diese Datei startet die App leer, und du legst Spulen in der App an oder importierst ein Backup.
+
+interface LocalSeed {
+  MY_SPOOLS?: Spool[];
+  MY_SPOOLS_STAMP?: number;
+}
+
+const local = import.meta.glob('./mySpools.local.ts', { eager: true }) as Record<string, LocalSeed>;
+const mod: LocalSeed | undefined = Object.values(local)[0];
+
+export const MY_SPOOLS: Spool[] = mod?.MY_SPOOLS ?? [];
 
 export const MY_SPOOLS_SEED: { stamp: number; spools: Spool[] } = {
-  stamp: 1793398520181,
+  stamp: mod?.MY_SPOOLS_STAMP ?? 0,
   spools: MY_SPOOLS
 };

@@ -14,6 +14,9 @@ data/git-credentials.json
 .ha-config.json
 data/.ha-config.json
 app/applet/.bambu-config.json
+
+# Eigene Startliste (siehe src/data/mySpools.ts)
+src/data/mySpools.local.ts
 uploads/
 data/
 !src/data/

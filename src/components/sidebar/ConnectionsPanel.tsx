@@ -152,7 +152,7 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
     printerStatus = `Eingerichtet · ${way}`;
     printerLevel = 'ok';
   }
-  const syncStatus = gist ? `Privater Gist${syncPass ? ' · Geräte-Sync an' : ''}` : 'npoint.io (alt, öffentlich)';
+  const syncStatus = gist ? `Privater Gist${syncPass ? ' · Geräte-Sync an' : ''}` : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet (nur auf diesem Gerät)';
 
   return (
     <div className="space-y-2.5">

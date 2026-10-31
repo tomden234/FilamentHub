@@ -20,7 +20,7 @@ function loadGitConfig(): { repoUrl: string; token: string; branch: string } {
       const data = JSON.parse(fs.readFileSync(gitDataConfigPath, 'utf8'));
       if (data && (data.token || data.repoUrl)) {
         return {
-          repoUrl: data.repoUrl || 'https://github.com/tomden234/filament-website-google-ai.git',
+          repoUrl: data.repoUrl || '',
           token: data.token || '',
           branch: data.branch || 'main'
         };
@@ -30,7 +30,7 @@ function loadGitConfig(): { repoUrl: string; token: string; branch: string } {
       const data = JSON.parse(fs.readFileSync(gitConfigPath, 'utf8'));
       if (data && (data.token || data.repoUrl)) {
         return {
-          repoUrl: data.repoUrl || 'https://github.com/tomden234/filament-website-google-ai.git',
+          repoUrl: data.repoUrl || '',
           token: data.token || '',
           branch: data.branch || 'main'
         };
@@ -38,7 +38,7 @@ function loadGitConfig(): { repoUrl: string; token: string; branch: string } {
     }
   } catch {}
   return {
-    repoUrl: process.env.GIT_REPO_URL || 'https://github.com/tomden234/filament-website-google-ai.git',
+    repoUrl: process.env.GIT_REPO_URL || '',
     token: process.env.GIT_TOKEN || process.env.GITHUB_TOKEN || '',
     branch: process.env.GIT_BRANCH || 'main'
   };

@@ -165,7 +165,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   const [inlineBedTemp, setInlineBedTemp] = useState<string>('55');
 
   // Lokale IP & Kamera
-  const [printerLocalIp] = useState<string>(() => safeStorage.getItem('bambu_local_ip') || '192.168.68.53');
+  const [printerLocalIp] = useState<string>(() => safeStorage.getItem('bambu_local_ip') || '');
 
 
   // Dynamischer QR-Code
@@ -282,6 +282,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   // Fehler des Druckers (HMS) als Klartext aufs Handy
   useHmsAlerts({
     connected: Boolean(liveState.connected && liveState.receivingData !== false),
+    gcodeState: liveState.data.gcode_state,
     hms: liveState.data.hms,
     printError: liveState.data.print_error,
     jobName: liveState.data.subtask_name,

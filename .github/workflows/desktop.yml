@@ -25,10 +25,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Update-Quelle auf dieses Repository stellen
+        run: sed -i "s#github.com/[^/]*/[^/]*/releases/download/desktop-latest/#github.com/${GITHUB_REPOSITORY}/releases/download/desktop-latest/#" electron-builder.yml
       - name: Oberfläche und Server bauen
         run: |
           npm run build
           npm run build:server
+        env:
+          VITE_REPO: ${{ github.repository }}
       - name: Electron und Builder dazuladen (nur für diesen Build)
         run: npm install --no-save --no-package-lock electron@33.4.11 electron-builder@25.1.8 electron-updater@6.3.9
       - name: Hauptprogramm bündeln (mit Auto-Update)

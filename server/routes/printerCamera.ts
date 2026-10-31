@@ -5,9 +5,10 @@ const router = Router();
 
 const BAMBU_ACCESS_CODE = process.env.BAMBU_ACCESS_CODE || '';
 
-// Drucker-IP nur aus privaten IPv4-Bereichen akzeptieren (verhindert SSRF und Einschleusen in SVG/M3U)
+// Drucker-IP nur aus privaten IPv4-Bereichen akzeptieren (verhindert SSRF und Einschleusen in SVG/M3U).
+// Ungültig oder leer: '' (die Routen antworten dann mit 400).
 function safePrinterIp(raw: unknown): string {
-  const fallback = '192.168.68.53';
+  const fallback = '';
   if (typeof raw !== 'string') return fallback;
   const m = raw.trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (!m) return fallback;
@@ -20,6 +21,7 @@ function safePrinterIp(raw: unknown): string {
 // Echte Kamera Snapshot Proxy-Funktion für Bambu Lab X2D (port 80/8080/322)
 router.get('/api/printer/camera-snapshot', async (req, res) => {
   const printerIp = safePrinterIp(req.query.ip);
+  if (!printerIp) return res.status(400).json({ error: 'Drucker-IP fehlt oder ist keine Heimnetz-Adresse.' });
 
   // 1. Versuch: Echten JPEG-Snapshot direkt von der IP des Druckers im LAN abrufen
   try {
@@ -93,6 +95,7 @@ router.get('/api/printer/stream.m3u', (req, res) => {
   const ip = safePrinterIp(req.query.ip);
   const customUrl = typeof req.query.url === 'string' && /^rtsps?:\/\/\S+$/.test(req.query.url) ? req.query.url : '';
   const credentials = BAMBU_ACCESS_CODE ? `bblp:${BAMBU_ACCESS_CODE}@` : '';
+  if (!customUrl && !ip) return res.status(400).json({ error: 'Drucker-IP fehlt oder ist keine Heimnetz-Adresse.' });
   const streamTarget = customUrl || `rtsps://${credentials}${ip}:322/streaming/live/1`;
 
   const m3uContent = `#EXTM3U\n#EXTINF:-1,Bambu Lab X2D Live Camera\n${streamTarget}\n`;

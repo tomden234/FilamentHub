@@ -1,7 +1,7 @@
 {
   "name": "filamenthub",
   "private": true,
-  "version": "2.0.138",
+  "version": "2.0.139",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "test": "vitest run",
     "build:server": "esbuild server.ts --bundle --platform=node --format=esm --outfile=server-dist/server.mjs --external:vite --external:sharp --banner:js=\"import {createRequire as __cr} from 'module';const require=__cr(import.meta.url);\"",
     "build:electron": "esbuild electron/main.src.cjs --bundle --platform=node --external:electron --outfile=electron/main.cjs"
   },
@@ -41,9 +42,31 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
-    "vite-plugin-pwa": "^2.0.0"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5"
   },
   "main": "electron/main.cjs",
   "description": "FilamentHub: Filament-Verwaltung und Bambu-Drucker-Steuerung",
-  "author": "tomden234"
+  "author": "tomden234",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomden234/filament-website-google-ai.git"
+  },
+  "homepage": "https://github.com/tomden234/filament-website-google-ai#readme",
+  "bugs": {
+    "url": "https://github.com/tomden234/filament-website-google-ai/issues"
+  },
+  "keywords": [
+    "filament",
+    "3d-printing",
+    "bambu-lab",
+    "ams",
+    "home-assistant",
+    "nfc",
+    "inventory",
+    "react",
+    "capacitor",
+    "electron"
+  ]
 }

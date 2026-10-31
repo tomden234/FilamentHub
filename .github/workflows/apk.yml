@@ -38,6 +38,7 @@ jobs:
           VITE_BASE: /
           VITE_STATIC: 'true'
           VITE_NATIVE: 'true'
+          VITE_REPO: ${{ github.repository }}
 
       - name: Live-Update-Paket (Oberfläche ohne neue APK)
         run: |
@@ -134,8 +135,11 @@ jobs:
           xml = open(path, encoding="utf-8").read()
           links = (
               '        <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="filamenthub" android:host="spool" /></intent-filter>\n'
-              '        <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="https" android:host="tomden234.github.io" android:pathPrefix="/filament-website-google-ai" /></intent-filter>\n'
+              '        <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="https" android:host="%s.github.io" android:pathPrefix="/%s" /></intent-filter>\n'
           )
+          import os
+          owner, name = os.environ["GITHUB_REPOSITORY"].split("/")
+          links = links % (owner.lower(), name)
           if 'android:scheme="filamenthub"' in xml:
               print("Spulen-Links schon vorhanden")
           else:
@@ -165,9 +169,27 @@ jobs:
       - name: Signierte Release-APK bauen
         working-directory: android
         env:
-          KS_FILE: ${{ github.workspace }}/android-signing/filamenthub.keystore
-          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'filamenthub' }}
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_SECRET_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          # Signierschlüssel: 1) eigener Schlüssel aus dem Secret ANDROID_KEYSTORE_BASE64 (empfohlen),
+          # 2) alter Schlüssel im Repo (android-signing/, nur für bestehende Installationen),
+          # 3) sonst wird für diesen Build ein neuer Schlüssel erzeugt (Updates über die alte App gehen dann nicht).
+          KS_FILE="$RUNNER_TEMP/filamenthub.keystore"
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$KS_FILE"
+            KS_PASS="$KS_SECRET_PASS"
+            echo "Signierschlüssel: aus Secret"
+          elif [ -f "$GITHUB_WORKSPACE/android-signing/filamenthub.keystore" ]; then
+            cp "$GITHUB_WORKSPACE/android-signing/filamenthub.keystore" "$KS_FILE"
+            KS_PASS="${KS_SECRET_PASS:-filamenthub}"
+            echo "Signierschlüssel: Datei im Repo (alt)"
+          else
+            KS_PASS="$(openssl rand -hex 16)"
+            keytool -genkeypair -v -keystore "$KS_FILE" -alias filamenthub -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KS_PASS" -keypass "$KS_PASS" -dname "CN=FilamentHub"
+            echo "Signierschlüssel: neu erzeugt (nur für diesen Build)"
+          fi
           VERSION=$(node -p "require('../package.json').version")
           sed -i "s/versionName \".*\"/versionName \"$VERSION\"/; s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" app/build.gradle
           chmod +x gradlew

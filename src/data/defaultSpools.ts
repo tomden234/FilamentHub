@@ -2047,5 +2047,27 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.139',
+    label: '1.139 (Weniger Push, Open Source)',
+    releaseDate: '31.10.2026',
+    description: 'Aufs Handy kommt nur noch das Wichtige. Dialoge des Druckers (Düse wechseln, Filament einlegen, „fortsetzen?“) melden wir nicht mehr. Dazu ist das Projekt bereit für Open Source (Lizenz, Anleitung, ohne persönliche Daten).',
+    features: [
+      '🔕 Push aufs Handy nur noch für: Druck fertig, Druck fehlgeschlagen, schwere Druckerfehler, Trocknung fertig. Alles andere landet nur im Postfach',
+      '⚙️ Neuer Schalter „Auch weniger wichtige als Benachrichtigung“ (Standard aus) und „Auch Hinweise und Dialoge melden“ (Standard aus)',
+      '🛠️ Druckerfehler: nur schwere Meldungen während eines Drucks und erst, wenn sie 1 Minute anstehen. Keine Dialoge mehr bei Düsenwechsel oder Filament einlegen',
+      '🧾 Gleicher Fehler höchstens alle 6 Stunden',
+      '🌍 Open Source: MIT-Lizenz, neue README mit Schnellstart für Forks, CONTRIBUTING und SECURITY',
+      '🔒 Keine persönlichen Daten mehr im Projekt: eigene Spulenliste nur noch lokal (mySpools.local.ts), keine feste Drucker-IP, keine feste Cloud- und Git-Adresse',
+      '☁️ Neue Geräte starten ohne Cloud (nur lokal). Cloud-Sync richtet man selbst mit einem privaten Gist ein',
+      '🤖 Workflows passen sich dem eigenen Repository an (Seite, APK, Windows-App, Update-Quelle)',
+      '🔑 APK-Signierung über eigenes Secret möglich, sonst wird ein Schlüssel für den Build erzeugt',
+      '🧪 Tests (vitest) für die neue Push- und Fehler-Logik, laufen in der CI mit',
+      '🔢 Aktualisierte Zahlen-FunFacts: 118 Commits und 139 Revisionsstufen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

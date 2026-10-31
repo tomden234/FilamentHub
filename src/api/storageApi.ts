@@ -25,11 +25,13 @@ export interface CloudPayload {
  */
 export const cloudSync = {
   async load(url: string): Promise<{ ok: boolean; data: CloudPayload | null }> {
+    if (!url) return { ok: false, data: null }; // keine Cloud eingerichtet: rein lokal
     const res = await cloudFetch(url, { cache: 'no-store' });
     if (!res.ok) return { ok: false, data: null };
     return { ok: true, data: (await res.json()) as CloudPayload };
   },
   async save(url: string, payload: CloudPayload): Promise<boolean> {
+    if (!url) return false; // keine Cloud eingerichtet: rein lokal
     // Bestehende Felder (z. B. verschlüsselter Geräte-Sync „secure“) erhalten, nur Spulen/Verlauf ersetzen
     let existing: Record<string, unknown> = {};
     try {

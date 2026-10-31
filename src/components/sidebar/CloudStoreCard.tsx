@@ -14,7 +14,7 @@ import {
   testGist,
   validGistId
 } from '../../utils/gistStore';
-import { LEGACY_NPOINT_URL, STORAGE_KEY_HISTORY, STORAGE_KEY_SPOOLS, STORAGE_KEY_SPOOLS_AT } from '../../utils/storageKeys';
+import { STORAGE_KEY_HISTORY, STORAGE_KEY_SPOOLS, STORAGE_KEY_SPOOLS_AT } from '../../utils/storageKeys';
 
 // Cloud-Speicher: privater GitHub-Gist statt npoint.io (das manche Schul- und Firmennetze sperren).
 // Einmal anlegen, auf dem zweiten Gerät per QR-Code oder ID + Token verbinden.
@@ -104,6 +104,12 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
   };
 
   const clearLegacy = async () => {
+    const legacyUrl = (prompt('Adresse des alten npoint-Speichers (https://api.npoint.io/…):') || '').trim();
+    if (!legacyUrl) return;
+    if (!/^https:\/\/api\.npoint\.io\/[A-Za-z0-9_-]+$/.test(legacyUrl)) {
+      say('Das ist keine npoint-Adresse.', false);
+      return;
+    }
     if (
       !confirm(
         'Alten öffentlichen npoint-Speicher leeren?\n\nNur machen, wenn ALLE deine Geräte schon auf den privaten Gist umgestellt sind. Geräte, die noch npoint nutzen, laden sonst ihre Daten wieder dort hoch.'
@@ -112,7 +118,7 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
       return;
     setBusy(true);
     try {
-      const r = await cloudFetch(LEGACY_NPOINT_URL, {
+      const r = await cloudFetch(legacyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ info: 'Nicht mehr genutzt. FilamentHub speichert jetzt in einem privaten GitHub-Gist.' })
@@ -142,14 +148,16 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
           }`}
         >
           {active && <CheckCircle2 className="w-3 h-3" />}
-          {active ? 'Privater GitHub-Gist' : 'npoint.io (alt, öffentlich)'}
+          {active ? 'Privater GitHub-Gist' : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet'}
         </span>
       </header>
 
       <p className="text-[11px] leading-relaxed" style={{ color: 'var(--app-text-muted)' }}>
         {active
           ? `Deine Daten liegen in einem privaten GitHub-Gist (ID ${gistIdOf(cloudDbUrl)}). Der Zugang zu Drucker und Home Assistant bleibt zusätzlich mit deinem Sync-Passwort verschlüsselt.`
-          : 'Der alte Speicher npoint.io ist öffentlich lesbar und wird in manchen Schul- und Firmennetzen gesperrt. Ein privater GitHub-Gist ist geschützt und läuft über github.com.'}
+          : cloudDbUrl
+            ? 'Der alte Speicher npoint.io ist öffentlich lesbar und wird in manchen Schul- und Firmennetzen gesperrt. Ein privater GitHub-Gist ist geschützt und läuft über github.com.'
+            : 'Ohne Cloud bleiben deine Daten nur auf diesem Gerät. Mit einem privaten GitHub-Gist (eigener Zugang, kostenlos) kannst du mehrere Geräte abgleichen.'}
       </p>
 
       <div className="space-y-1.5">

@@ -13,8 +13,12 @@ export interface WorkshopSettings {
   alertPrintStart: boolean;
   /** Beim Druckstart prüfen: reicht das Filament, passt das Material */
   alertPrintCheck: boolean;
-  /** Fehler und Hinweise des Druckers (HMS) */
+  /** Schwere Fehler des Druckers (HMS), nur während eines Drucks und erst nach 1 Minute */
   alertErrors: boolean;
+  /** Auch Hinweise und Dialoge des Druckers melden (Düse wechseln, Filament einlegen, „fortsetzen?“ …) */
+  alertErrorsAll: boolean;
+  /** Auch weniger wichtige Meldungen als Push aufs Gerät (sonst nur Druck fertig/fehlgeschlagen, schwere Fehler, Trocknung fertig) */
+  pushAll: boolean;
   /** Luftfeuchte über der Grenze (AMS oder externer Sensor) */
   alertHumidity: boolean;
   /** Grenze Luftfeuchte in % */
@@ -56,6 +60,8 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   alertPrintStart: true,
   alertPrintCheck: true,
   alertErrors: true,
+  alertErrorsAll: false,
+  pushAll: false,
   alertHumidity: true,
   humidityMax: 25,
   humidityEntity: 'sensor.filament_ams_box_feuchte',

@@ -4,6 +4,7 @@ import { addInbox, type InboxItem, type InboxKind } from './inbox';
 import { localNotify } from './notify';
 import { addSystemLog } from './logService';
 import { getWorkshopSettings, type WorkshopSettings } from './workshopSettings';
+import { shouldPush } from './pushPolicy';
 
 const KIND_SETTING: Record<InboxKind, keyof WorkshopSettings | null> = {
   'print-start': 'alertPrintStart',
@@ -41,7 +42,7 @@ export async function raiseAlert(input: AlertInput, showToast?: (text: string) =
 
   showToast?.(input.toast || input.text);
   addSystemLog('system', input.title, input.text, input.kind === 'print-fail' || input.kind === 'dry-due' || input.kind === 'dry-stop' || input.kind === 'low' ? 'warn' : 'success');
-  if (settings.systemPush) {
+  if (shouldPush(input.kind, settings)) {
     void localNotify(input.title, input.text, { tag: input.key || input.kind, inboxId: id });
   }
   return id;

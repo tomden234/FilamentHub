@@ -48,7 +48,8 @@ export const NoticesTab: React.FC = () => {
         <div className="space-y-3">
           <Toggle on={s.alertPrintStart} onChange={v => update({ alertPrintStart: v })} label="Druck gestartet" hint="Auch wenn du über Bambu Studio, Handy oder Display startest." />
           <Toggle on={s.alertPrintCheck} onChange={v => update({ alertPrintCheck: v })} label="Spulen-Check beim Start" hint="Warnt, wenn das Filament nicht reicht, das Material fehlt oder nicht zur Spule passt." />
-          <Toggle on={s.alertErrors} onChange={v => update({ alertErrors: v })} label="Druckerfehler" hint="Alle Fehler und Hinweise des Druckers als Klartext (Düse verstopft, Spaghetti, AMS …)." />
+          <Toggle on={s.alertErrors} onChange={v => update({ alertErrors: v })} label="Druckerfehler" hint="Nur schwere Fehler während eines Drucks, und erst wenn sie 1 Minute anstehen (Düse verstopft, Spaghetti, AMS …). Keine Dialoge wie Düse wechseln oder Filament einlegen." />
+          {s.alertErrors && <Toggle on={s.alertErrorsAll} onChange={v => update({ alertErrorsAll: v })} label="Auch Hinweise und Dialoge melden" hint="Alles, was der Drucker anzeigt: Hinweise, „fortsetzen?“, Düse wechseln, Filament einlegen. Meist zu viel." />}
           <Toggle on={s.alertPrintDone} onChange={v => update({ alertPrintDone: v })} label="Druck fertig" hint="Sobald der Drucker das Ende meldet. War die App zu, kommt die Meldung beim nächsten Öffnen." />
           <Toggle on={s.alertPrintFail} onChange={v => update({ alertPrintFail: v })} label="Druck fehlgeschlagen oder abgebrochen" />
           <Toggle on={s.alertDryDone} onChange={v => update({ alertDryDone: v })} label="Trocknung fertig" hint="Mit Dauer, Temperatur und den getrockneten Spulen." />
@@ -202,8 +203,16 @@ export const NoticesTab: React.FC = () => {
           on={s.systemPush}
           onChange={v => update({ systemPush: v })}
           label="Zusätzlich als Benachrichtigung anzeigen"
-          hint="Ein Tipp darauf öffnet die App direkt bei der Mitteilung."
+          hint="Nur die wichtigen: Druck fertig, Druck fehlgeschlagen, schwere Druckerfehler, Trocknung fertig. Ein Tipp darauf öffnet die App direkt bei der Mitteilung."
         />
+        {s.systemPush && (
+          <Toggle
+            on={s.pushAll}
+            onChange={v => update({ pushAll: v })}
+            label="Auch weniger wichtige als Benachrichtigung"
+            hint="Druck gestartet, Spulen-Check, Trocknen fällig, Feuchte, fast leer, Trocknung gestoppt, Info. Die landen sonst nur im Postfach."
+          />
+        )}
         {IS_NATIVE && (
           <Toggle
             on={s.keepAlive}
