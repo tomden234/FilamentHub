@@ -427,7 +427,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                     on={dryOff.armed}
                     onChange={toggleDryOff}
                     label="Danach Drucker ausschalten"
-                    hint="Steckdose aus, 3 Minuten nach dem Ende der Trocknung. Nur ohne Druck, App muss offen sein."
+                    hint="Steckdose aus, 3 Minuten nach dem Ende der Trocknung. Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus."
                   />
                   <Toggle
                     on={workshop.dryLightOff}

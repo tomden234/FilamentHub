@@ -59,6 +59,7 @@ import { useDryAfterPrint } from '../hooks/useDryAfterPrint';
 import { DrySuggestSheet } from './bambu/DrySuggestSheet';
 import { armDryPlan, disarmDryPlan, dryPlanFor, needsDryingNow } from '../utils/dryAfterPrint';
 import { setHaAutoOff } from '../utils/haAutoOff';
+import { setHaDryOff } from '../utils/haDryOff';
 import { usePrintPlanRunner } from '../hooks/usePrintPlan';
 import { clearPrintPlan, setPrintPlan, clockText } from '../utils/printPlan';
 import { PrintPlanSheet } from './bambu/PrintPlanSheet';
@@ -356,7 +357,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     notify: setActionToast
   });
   // „Nach Trocknen ausschalten“: Steckdose aus, wenn die AMS-Trocknung fertig ist und kein Druck läuft
-  useDryAutoOff({
+  const dryOffState = useDryAutoOff({
     connected: Boolean(liveState.connected && liveState.receivingData !== false),
     gcodeState: liveState.data.gcode_state,
     drying: dryLeftNow > 0,
@@ -395,6 +396,12 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     if (!haSwitchState.configured) return;
     void setHaAutoOff(haAutoOffWanted);
   }, [haAutoOffWanted, haSwitchState.configured]);
+  // „Nach Trocknen aus“ ebenso ohne offene App: Home-Assistant-Automation an, solange gewählt
+  const haDryOffWanted = dryOffState.armed;
+  useEffect(() => {
+    if (!haSwitchState.configured) return;
+    void setHaDryOff(haDryOffWanted);
+  }, [haDryOffWanted, haSwitchState.configured]);
 
   // Druck-Planer: danach trocknen / ausschalten / Druck verzögern (Fenster bei neuem Druck)
   const armDryAfterNow = (temp: number, hours: number, ids: string[]) => {

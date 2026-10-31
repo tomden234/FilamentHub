@@ -2114,5 +2114,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.143',
+    label: '1.143 (Aus ohne App)',
+    releaseDate: '01.11.2026',
+    description: '„Nach Trocknen ausschalten“ klappt jetzt auch bei geschlossener App: Home Assistant schaltet die Steckdose selbst aus.',
+    features: [
+      '🔌 Die App legt dafür einmal automatisch eine Home-Assistant-Automation an (wie bei „Nach Druck aus“)',
+      '⏱️ 3 Minuten nach Trocknungsende geht die Steckdose aus, nur wenn nicht gedruckt wird',
+      '🛑 Startet vorher ein Druck, schaltet sich die Automation selbst ab, der Drucker bleibt an',
+      '📝 Braucht in Home Assistant die Bambu-Lab-Integration mit „Rest-Trockenzeit“ des AMS, sonst schaltet die App selbst aus, solange sie läuft'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

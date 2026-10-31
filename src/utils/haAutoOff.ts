@@ -33,7 +33,7 @@ function setInfo(i: HaAutoOffInfo): HaAutoOffInfo {
   return i;
 }
 
-async function haFetch(path: string, init?: RequestInit): Promise<Response> {
+export async function haFetch(path: string, init?: RequestInit): Promise<Response> {
   const { url, token } = getHaCredentials();
   return fetch(`${url}${path}`, {
     ...init,
@@ -43,7 +43,7 @@ async function haFetch(path: string, init?: RequestInit): Promise<Response> {
 }
 
 /** Bambu-Sensoren in Home Assistant suchen (Druckstatus und Düsentemperatur) */
-async function findEntities(): Promise<{ status?: string; nozzle?: string; automation?: string }> {
+export async function findEntities(): Promise<{ status?: string; nozzle?: string; automation?: string }> {
   const res = await haFetch('/api/states');
   if (!res.ok) throw new Error(`Home Assistant antwortet mit ${res.status}`);
   const states: any[] = await res.json();
