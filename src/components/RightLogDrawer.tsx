@@ -177,7 +177,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
         <button
           onClick={handleToggle}
           title="Live-Logs ausklappen (Steckdose, Druckerstatus, Licht, Temperaturen, Spulen)"
-          className="group relative flex flex-col items-center justify-between w-[22px] sm:w-8 min-h-[92px] sm:min-h-[140px] py-2 sm:py-3 px-0.5 sm:px-1.5 rounded-l-2xl border-l-2 border-t border-b shadow-2xl backdrop-blur-xl cursor-pointer transition-all opacity-80 hover:opacity-100 sm:opacity-100 hover:scale-105 active:scale-95"
+          className="group relative flex flex-col items-center justify-between w-7 sm:w-8 min-h-[64px] sm:min-h-[140px] py-2 sm:py-3 px-0.5 sm:px-1.5 rounded-l-2xl border-l-2 border-t border-b shadow-2xl backdrop-blur-xl cursor-pointer transition-all opacity-80 hover:opacity-100 sm:opacity-100 hover:scale-105 active:scale-95"
           style={{
             backgroundColor: 'var(--app-card)',
             borderColor: hasNewEntry ? 'var(--app-accent)' : 'var(--app-border)',
@@ -202,7 +202,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
           {/* Vertikaler Text "LOGS" */}
           <div className="flex flex-col items-center justify-center gap-1 my-1">
             <span
-              className="text-[10px] font-black tracking-widest uppercase [writing-mode:vertical-lr] rotate-180 group-hover:opacity-100 transition-opacity"
+              className="hidden sm:block text-[10px] font-black tracking-widest uppercase [writing-mode:vertical-lr] rotate-180 group-hover:opacity-100 transition-opacity"
               style={{ color: 'var(--app-text)' }}
             >
               LOGS
@@ -219,9 +219,9 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
             </span>
           </div>
 
-          {/* Icon unten (am Handy weggelassen: der Streifen soll möglichst wenig verdecken) */}
-          <div className="hidden sm:block" style={{ color: 'var(--app-text-muted)' }}>
-            <ScrollText className="w-4 h-4" />
+          {/* Icon unten (am Handy statt dem senkrechten Text) */}
+          <div style={{ color: 'var(--app-text-muted)' }}>
+            <ScrollText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
         </button>
       </div>

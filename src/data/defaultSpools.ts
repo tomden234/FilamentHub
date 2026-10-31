@@ -2083,5 +2083,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.141',
+    label: '1.141 (Trocknen: Aus & Licht)',
+    releaseDate: '01.11.2026',
+    description: 'Beim Trocknen kann der Drucker danach von selbst ausgehen, das Bauraum-Licht geht aus, wenn nichts gedruckt wird, und die externe Trockenbox hat ihren Sensor in der Trocknen-Ansicht.',
+    features: [
+      '🔌 Neuer Schalter „Danach Drucker ausschalten“ beim Trocknen (Steckdose geht aus, wenn die Trocknung fertig ist und nicht gedruckt wird)',
+      '💡 Neuer Schalter „Licht beim Trocknen aus“: Bauraum-Licht geht aus, solange getrocknet und nicht gedruckt wird (Standard an)',
+      '🌡️ Trockenbox-Sensor (extern) heißt jetzt überall „Trockenbox“ und steht in der Trocknen-Ansicht',
+      '📱 LOGS-Streifen am Handy kleiner, ohne senkrechten Text',
+      '🧪 15 neue Tests für die Abschalt-Regeln'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -82,7 +82,7 @@ export const NoticesTab: React.FC = () => {
             {hum.external?.error && <div className="text-amber-400 leading-snug">{hum.external.error}</div>}
           </div>
           <div className="rounded-lg border p-2" style={{ borderColor: 'var(--app-border)' }}>
-            <div style={{ color: 'var(--app-text-muted)' }}>Ext. Trockner</div>
+            <div style={{ color: 'var(--app-text-muted)' }}>Trockenbox</div>
             <div className="text-sm font-extrabold font-mono-num">{hum.room?.value != null ? `${Math.round(hum.room.value)} %` : '–'}</div>
             {hum.room?.temp != null && <div style={{ color: 'var(--app-text-muted)' }}>{Math.round(hum.room.temp)} °C</div>}
             {hum.room?.error && <div className="text-amber-400 leading-snug">{hum.room.error}</div>}
@@ -143,7 +143,7 @@ export const NoticesTab: React.FC = () => {
           </span>
         </label>
         <label className="block text-xs font-bold space-y-1">
-          <span>Sensor im externen Spulentrockner (optional)</span>
+          <span>Sensor in der externen Trockenbox (optional)</span>
           <input
             type="text"
             value={s.humidityRoomEntity}
@@ -153,7 +153,7 @@ export const NoticesTab: React.FC = () => {
             style={inputStyle}
           />
           <span className="block text-[11px] font-normal leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Zweiter SHT31 im externen Spulentrockner (5. Spule). Die App zeigt Temperatur und Feuchte unter dem AMS (kein Alarm).
+            Zweiter SHT31 in der externen Trockenbox (5. Spule). Die App zeigt Temperatur und Feuchte neben AMS und Box-Sensor, auch im Trocknen-Bereich (kein Alarm).
           </span>
         </label>
       </Card>

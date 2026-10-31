@@ -7,6 +7,10 @@ import { readTrays, readExternal, activeSlotFromPrinter, syncSlots, mismatch, EX
 import { SpoolPicker } from '../SpoolPicker';
 import { SlotTagSheet } from './SlotTagSheet';
 import { useHumidity, amsHumidityPercent } from '../../utils/humidity';
+import { armDryOff, disarmDryOff, useDryOff } from '../../utils/dryAutoOff';
+import { getHaCredentials } from '../../utils/haClient';
+import { updateWorkshopSettings, useWorkshopSettings } from '../../utils/workshopSettings';
+import { Toggle } from '../workshop/ui';
 
 export interface AmsSectionProps {
   compact?: boolean;
@@ -91,8 +95,8 @@ const BoxClimate: React.FC<{ unit: any }> = ({ unit }) => {
       {dryer && (
         <div className="col-span-2 sm:col-span-1">
           <ClimateCard
-            title="Ext. Trockner"
-            hint="5. Spule"
+            title="Trockenbox"
+            hint="extern"
             temp={fmt(dryer.temp ?? null)}
             hum={fmt(dryer.value ?? null, 0)}
             humPct={dryer.value ?? null}
@@ -124,6 +128,22 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
   dryLoading,
   nfcInfo
 }) => {
+  const dryOff = useDryOff();
+  const [workshop] = useWorkshopSettings();
+  const toggleDryOff = (on: boolean) => {
+    if (!on) {
+      disarmDryOff();
+      setActionToast({ text: 'Drucker bleibt nach dem Trocknen an.', ok: true });
+      return;
+    }
+    const ha = getHaCredentials();
+    if (!ha.url || !ha.token) {
+      setActionToast({ text: 'Dafür braucht die App Home Assistant mit Steckdose (Verbindungen).', ok: false });
+      return;
+    }
+    armDryOff();
+    setActionToast({ text: 'Nach dem Trocknen schaltet die App den Drucker aus (3 Minuten nach dem Ende, nur ohne Druck).', ok: true });
+  };
   const connected = Boolean(liveState.connected);
   const [pickSlot, setPickSlot] = useState<number | null>(null);
   const [tagSlot, setTagSlot] = useState<number | null>(null);
@@ -391,13 +411,30 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                   </button>
 
                   <button
-                    onClick={() => handleToggleAmsDrying(false)}
+                    onClick={() => {
+                      disarmDryOff(); // von Hand gestoppt: der Drucker bleibt an
+                      void handleToggleAmsDrying(false);
+                    }}
                     disabled={dryLoading}
                     className="px-3 py-1.5 rounded-xl border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
                   >
                     <Square className="w-3.5 h-3.5" />
                     <span>Stoppen</span>
                   </button>
+                </div>
+                <div className="w-full space-y-2.5 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
+                  <Toggle
+                    on={dryOff.armed}
+                    onChange={toggleDryOff}
+                    label="Danach Drucker ausschalten"
+                    hint="Steckdose aus, 3 Minuten nach dem Ende der Trocknung. Nur ohne Druck, App muss offen sein."
+                  />
+                  <Toggle
+                    on={workshop.dryLightOff}
+                    onChange={v => updateWorkshopSettings({ dryLightOff: v })}
+                    label="Licht beim Trocknen aus"
+                    hint="Läuft die Trocknung ohne Druck, geht das Bauraum-Licht von selbst aus."
+                  />
                 </div>
               </div>
             </div>

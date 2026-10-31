@@ -50,6 +50,8 @@ export interface WorkshopSettings {
   amsNfcOn: boolean;
   /** Bei erkannter Spule Material/Farbe an den Drucker senden */
   amsNfcToPrinter: boolean;
+  /** Läuft die AMS-Trocknung ohne Druck, das Bauraum-Licht automatisch ausschalten */
+  dryLightOff: boolean;
 }
 
 export const WORKSHOP_SETTINGS_KEY = 'filamenthub_workshop_settings';
@@ -79,7 +81,8 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   systemPush: true,
   keepAlive: true,
   amsNfcOn: true,
-  amsNfcToPrinter: true
+  amsNfcToPrinter: true,
+  dryLightOff: true
 };
 
 let cache: WorkshopSettings | null = null;

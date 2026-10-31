@@ -45,6 +45,9 @@ import { setPrinterLive, type PrinterLevel } from '../utils/printerLive';
 import { useLanDeduct } from '../hooks/useLanDeduct';
 import { usePrintWatch } from '../hooks/usePrintWatch';
 import { useAutoPowerOff } from '../hooks/useAutoPowerOff';
+import { useDryAutoOff } from '../hooks/useDryAutoOff';
+import { useDryLightOff } from '../hooks/useDryLightOff';
+import { useWorkshopSettings } from '../utils/workshopSettings';
 import { armAutoOff, disarmAutoOff } from '../utils/autoPowerOff';
 import { alertPrintEnd, alertPrintStart } from '../utils/printAlerts';
 import { ACTIVE_STATES } from '../utils/printSession';
@@ -348,6 +351,15 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     gcodeState: liveState.data.gcode_state,
     jobName: liveState.data.subtask_name,
     nozzleTemps: [Number(liveState.data.nozzle_temper), Number(liveState.data.nozzle2_temper)],
+    switchState: haSwitchState.state,
+    refreshSwitch: () => void handleFetchSwitchStatus(),
+    notify: setActionToast
+  });
+  // „Nach Trocknen ausschalten“: Steckdose aus, wenn die AMS-Trocknung fertig ist und kein Druck läuft
+  useDryAutoOff({
+    connected: Boolean(liveState.connected && liveState.receivingData !== false),
+    gcodeState: liveState.data.gcode_state,
+    drying: dryLeftNow > 0,
     switchState: haSwitchState.state,
     refreshSwitch: () => void handleFetchSwitchStatus(),
     notify: setActionToast
@@ -749,6 +761,23 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
 
   // 5. Bauraum-Licht umschalten
   const isLightOn = Boolean(liveState.data.lights_report?.some(l => l.node === 'chamber_light' && l.mode === 'on'));
+  // Licht beim Trocknen (ohne Druck) von selbst aus, leise ohne Einblendung
+  const [workshop] = useWorkshopSettings();
+  useDryLightOff({
+    enabled: workshop.dryLightOff,
+    connected: Boolean(liveState.connected && liveState.receivingData !== false),
+    drying: dryLeftNow > 0,
+    gcodeState: liveState.data.gcode_state,
+    lightOn: isLightOn,
+    turnLightOff: async () => {
+      try {
+        const res = await printerApi.light('off');
+        return Boolean(res.ok && res.data?.success);
+      } catch {
+        return false;
+      }
+    }
+  });
   const handleToggleLight = async () => {
     const nextMode = isLightOn ? 'off' : 'on';
     setActionLoading('light');
