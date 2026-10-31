@@ -13,7 +13,7 @@ export interface HumidityLive {
   ams: HumidityReading | null;
   /** Sensor in der Lagerbox */
   external: HumidityReading | null;
-  /** Optionaler zweiter Sensor im Raum (Vergleich: hält die Box dicht?) */
+  /** Optionaler zweiter Sensor im externen Spulentrockner (5. Spule) */
   room: HumidityReading | null;
 }
 

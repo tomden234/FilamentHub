@@ -1986,5 +1986,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.135',
+    label: '1.135 (Ext. Trockner-Sensor)',
+    releaseDate: '31.10.2026',
+    description: 'Zweiter Sensor sitzt im externen Spulentrockner (5. Spule) statt im Raum: umbenannt und unter dem AMS angezeigt.',
+    features: [
+      '🧺 Zweiter SHT31-D heißt jetzt „Trockner“ (ESP32: Trockner Temperatur / Trockner Feuchte, Home Assistant: …_trockner_feuchte und …_trockner_temperatur)',
+      '🌡️ Unter dem AMS neue Karte „Ext. Trockner (5. Spule)“ mit Temperatur in °C und Feuchte, neben Box-Sensor und AMS',
+      '⚙️ Einstellungen: „Sensor im externen Spulentrockner“, der alte Raum-Name wird automatisch umgestellt; Vergleich „Box dicht?“ entfernt',
+      '🔌 Neuer Verdrahtungsplan (Gesamtbild + Lötplan + Aufbau-PDF) mit Trockner-Sensor',
+      '🔢 Aktualisierte Zahlen-FunFacts: 113 Commits und 135 Revisionsstufen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

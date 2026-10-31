@@ -67,11 +67,12 @@ const ClimateCard: React.FC<{ title: string; hint: string; temp: string; hum: st
 const BoxClimate: React.FC<{ unit: any }> = ({ unit }) => {
   const hum = useHumidity();
   const box = hum.external;
+  const dryer = hum.room; // zweiter Sensor: externer Spulentrockner (5. Spule)
   const amsTemp = Number(unit?.temp);
   const amsHum = amsHumidityPercent(unit);
   const fmt = (n: number | null | undefined, d = 1) => (n === null || n === undefined || !Number.isFinite(n) ? '–' : n.toLocaleString('de-DE', { maximumFractionDigits: d }));
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className={`grid gap-2 ${dryer ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'}`}>
       <ClimateCard
         title="Box-Sensor"
         hint="gemessen"
@@ -87,6 +88,18 @@ const BoxClimate: React.FC<{ unit: any }> = ({ unit }) => {
         hum={fmt(amsHum, 0)}
         humPct={amsHum}
       />
+      {dryer && (
+        <div className="col-span-2 sm:col-span-1">
+          <ClimateCard
+            title="Ext. Trockner"
+            hint="5. Spule"
+            temp={fmt(dryer.temp ?? null)}
+            hum={fmt(dryer.value ?? null, 0)}
+            humPct={dryer.value ?? null}
+            error={dryer.error && dryer.value === null ? dryer.error : undefined}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -23,7 +23,7 @@ Aufbau-Anleitung · Stand 1.115 · 30.10.2026
 |---|---|---|
 | ESP32 (WROOM-32, USB-C, CH340) | 1 | Zweiter ist Ersatz. Windows braucht evtl. den CH340-Treiber. |
 | RC522 Leser (Binghe) | 5 | NUR 3,3 V. Stiftleiste nicht einlöten, Litzen direkt anlöten. |
-| SHT31-D Sensor (ARCELI) | 1 bis 2 | Pins: VIN, GND, SCL, SDA. Zweiter ist für den Raum (optional). |
+| SHT31-D Sensor (ARCELI) | 1 bis 2 | Pins: VIN, GND, SCL, SDA. Zweiter ist für den externen Spulentrockner (5. Spule). |
 | Silikonlitze 26 AWG | mehrere Farben | Farben nur Vorschlag. Notier dir, welche Farbe wohin geht. |
 | Jumper-Kabel (ELEGOO) | einige | Für den Testaufbau auf dem Tisch. |
 | Lötkolben, Lötzinn, Schrumpfschlauch | – | Jede Lötstelle mit Schrumpfschlauch sichern. |
@@ -79,14 +79,14 @@ Die Diagramme zeigen die **Reihenfolge der Leitungen**, nicht die Lage der Pins 
 
 ## SHT31-D an ESP32
 
-| Sensor-Pin | Sensor Box | Sensor Raum (optional) |
+| Sensor-Pin | Sensor Box | Sensor Trockner |
 |---|---|---|
 | VIN | 3V3 | 3V3 |
 | GND | GND | GND |
 | SDA | GPIO21 | GPIO33 |
 | SCL | GPIO32 | GPIO25 |
 
-GPIO22 ist schon RST der Leser, darum liegt SCL der Box auf GPIO32. Der Raum-Sensor hat einen eigenen Bus, weil beide Sensoren die Adresse 0x44 haben.
+GPIO22 ist schon RST der Leser, darum liegt SCL der Box auf GPIO32. Der Trockner-Sensor hat einen eigenen Bus, weil beide Sensoren die Adresse 0x44 haben.
 
 - **Nur 3,3 V** an die RC522. Nie an 5 V oder VIN.
 - Sensor nicht direkt neben den ESP32 kleben, der wird warm und der Sensor misst dann zu wenig Feuchte.
@@ -134,7 +134,7 @@ Danach geht jedes Update drahtlos („Wirelessly“). Zum Testen kannst du `remo
 ## 7. Testen
 
 1. Home Assistant, **Entwicklerwerkzeuge, Zustände**, Filter `filament_ams`.
-2. Du siehst: `sensor.filament_ams_slot_1_tag` bis `_slot_5_tag`, `_box_feuchte`, `_box_temperatur`, `_raum_feuchte`, `_raum_temperatur`, `_ip`, `_wlan_signal`, `_esp32_temperatur`.
+2. Du siehst: `sensor.filament_ams_slot_1_tag` bis `_slot_5_tag`, `_box_feuchte`, `_box_temperatur`, `_trockner_feuchte`, `_trockner_temperatur`, `_ip`, `_wlan_signal`, `_esp32_temperatur`.
 3. NTAG-Aufkleber 2 bis 3 cm vor Leser 1 halten. `slot_1_tag` zeigt die Nummer, zum Beispiel `04-A1-B2-C3-D4-E5-F6`.
 4. Warm die Hand über den Sensor halten: Temperatur und Feuchte steigen.
 5. Ist alles gut, den nächsten Leser anlöten. Immer nur einen Schritt auf einmal.

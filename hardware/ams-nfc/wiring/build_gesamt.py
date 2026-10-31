@@ -22,7 +22,7 @@ def fig_gesamt():
                 "MISO": ("GPIO19", "D19", 371), "RST": ("GPIO22", "D22", 515), "CS1": ("GPIO5", "D5", 543), "CS2": ("GPIO17", "TX2", 571),
                 "CS3": ("GPIO16", "RX2", 705), "CS4": ("GPIO4", "D4", 733), "CS5": ("GPIO13", "D13", 761),
                 "BOXSCL": ("GPIO32", "SCL Box", 1165), "BOXSDA": ("GPIO21", "SDA Box", 1200),
-                "RAUMSCL": ("GPIO25", "SCL Raum", 1340), "RAUMSDA": ("GPIO33", "SDA Raum", 1368)}
+                "TROCKSCL": ("GPIO25", "SCL Trockner", 1340), "TROCKSDA": ("GPIO33", "SDA Trockner", 1368)}
     rails = ["3V3", "GND", "SCK", "MOSI", "MISO", "RST"]
     xr = {k: 800 - i * 46 for i, k in enumerate(rails)}
     r_top, r_bot = 140, 1440
@@ -65,8 +65,8 @@ def fig_gesamt():
         ax.text(1000, ytop - 11, f"{k}: {lab} → SDA von {names[i]}", fontsize=9.3, color=SOFT, ha="center", va="center", zorder=5)
 
     # --- Sensoren (unter den Lesern) ---
-    sens = [("SHT31-D Box", 1130, "BOXSCL", "BOXSDA", "Home Assistant: …_box_feuchte / _box_temperatur", 500, 516),
-            ("SHT31-D Raum (optional)", 1290, "RAUMSCL", "RAUMSDA", "Home Assistant: …_raum_feuchte / _raum_temperatur", 532, 548)]
+    sens = [("SHT31-D Box", 1130, "BOXSCL", "BOXSDA", "HA: …_box_feuchte / _temperatur", 500, 516),
+            ("SHT31-D Trockner (extern, 5. Spule)", 1290, "TROCKSCL", "TROCKSDA", "HA: …_trockner_feuchte / _temperatur", 532, 548)]
     for title, top, kscl, ksda, ha, lscl, lsda in sens:
         bw.rbox(ax, mx, top, mw, 135, "#2d5f8b", "#16324f", lw=2.5)
         ax.text(mx + mw - 18, top + 22, title, fontsize=12.5, fontweight="bold", color="white", ha="right", va="center", zorder=5)
@@ -97,7 +97,7 @@ def fig_gesamt():
              "Wichtig\n"
              "•  Alles NUR an 3,3 V (nie an 5 V oder VIN des ESP32). IRQ bleibt bei allen Lesern frei.\n"
              "•  Sammelschienen = Litzen innen verlöten, Lötstellen mit Schrumpfschlauch sichern. Beide Sensoren holen 3V3 und GND von den Schienen.\n"
-             "•  Reihenfolge: Leser 1 + Box-Sensor testen, dann Leser 2 bis 5, zuletzt Raum-Sensor. Zwischen GND und 3V3 darf kein Durchgang sein.",
+             "•  Reihenfolge: Leser 1 + Box-Sensor testen, dann Leser 2 bis 5, zuletzt Trockner-Sensor. Zwischen GND und 3V3 darf kein Durchgang sein.",
              fs=10.2)
     save(fig, "6_gesamt_ein_esp")
 

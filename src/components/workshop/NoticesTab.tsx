@@ -81,19 +81,12 @@ export const NoticesTab: React.FC = () => {
             {hum.external?.error && <div className="text-amber-400 leading-snug">{hum.external.error}</div>}
           </div>
           <div className="rounded-lg border p-2" style={{ borderColor: 'var(--app-border)' }}>
-            <div style={{ color: 'var(--app-text-muted)' }}>Raum</div>
+            <div style={{ color: 'var(--app-text-muted)' }}>Ext. Trockner</div>
             <div className="text-sm font-extrabold font-mono-num">{hum.room?.value != null ? `${Math.round(hum.room.value)} %` : '–'}</div>
             {hum.room?.temp != null && <div style={{ color: 'var(--app-text-muted)' }}>{Math.round(hum.room.temp)} °C</div>}
             {hum.room?.error && <div className="text-amber-400 leading-snug">{hum.room.error}</div>}
           </div>
         </div>
-        {hum.external?.value != null && hum.room?.value != null && (
-          <p className={`text-[11px] font-bold leading-snug ${hum.room.value - hum.external.value >= 15 ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {hum.room.value - hum.external.value >= 15
-              ? `Box ist ${Math.round(hum.room.value - hum.external.value)} % trockener als der Raum. Dichtung und Trockenmittel arbeiten.`
-              : `Box nur ${Math.max(0, Math.round(hum.room.value - hum.external.value))} % trockener als der Raum. Dichtung prüfen oder Trockenmittel tauschen.`}
-          </p>
-        )}
         <label className="flex items-center justify-between gap-2 text-xs font-bold">
           <span>Melden ab</span>
           <span className="flex items-center gap-1">
@@ -149,17 +142,17 @@ export const NoticesTab: React.FC = () => {
           </span>
         </label>
         <label className="block text-xs font-bold space-y-1">
-          <span>Raum-Sensor zum Vergleich (optional)</span>
+          <span>Sensor im externen Spulentrockner (optional)</span>
           <input
             type="text"
             value={s.humidityRoomEntity}
             onChange={e => update({ humidityRoomEntity: e.target.value })}
-            placeholder="sensor.filament_ams_raum_feuchte"
+            placeholder="sensor.filament_ams_trockner_feuchte"
             className="w-full px-2 py-1.5 rounded-lg border text-xs font-mono outline-none"
             style={inputStyle}
           />
           <span className="block text-[11px] font-normal leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Zweiter SHT31 außerhalb der Box. Die App zeigt, ob die Box dicht ist (kein Alarm für den Raum).
+            Zweiter SHT31 im externen Spulentrockner (5. Spule). Die App zeigt Temperatur und Feuchte unter dem AMS (kein Alarm).
           </span>
         </label>
       </Card>

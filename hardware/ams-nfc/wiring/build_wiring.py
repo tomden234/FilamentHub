@@ -222,14 +222,14 @@ def fig_all():
 def fig_sensor():
     W, H = 1400, 820
     fig, ax = fig_ax(W, H, "Feuchte-Sensor SHT31-D (I2C)",
-                     "Sensor 1 steckt in der Filament-Lagerbox / AMS. Sensor 2 (Raum) ist optional und hängt an einem eigenen Bus.")
+                     "Sensor 1 steckt in der Filament-Lagerbox / AMS. Sensor 2 steckt im externen Spulentrockner (5. Spule) und hängt an einem eigenen Bus.")
     ex, ey, ew, eh = 50, 120, 330, 640
     esp_block(ax, ex, ey, ew, eh)
     px = ex + ew
     # ESP-Pins in der Reihenfolge der Sensor-Pins (VIN, GND, SCL, SDA)
     mx, mw = 930, 360
     s1, s2 = 120, 450
-    for top, title, sub in [(s1, "SHT31-D  Box", "SDA GPIO21 · SCL GPIO32"), (s2, "SHT31-D  Raum (optional)", "SDA GPIO33 · SCL GPIO25")]:
+    for top, title, sub in [(s1, "SHT31-D  Box", "SDA GPIO21 · SCL GPIO32"), (s2, "SHT31-D  Trockner (extern)", "SDA GPIO33 · SCL GPIO25")]:
         module_block(ax, mx, top, mw, 250, title, color="#2d5f8a", dark="#173a57")
         ax.text(mx + mw - 18, top + 48, sub, fontsize=9.5, color="#d2e4f3", ha="right", va="center", zorder=5)
     pins = ["VIN", "GND", "SCL", "SDA"]
@@ -242,7 +242,7 @@ def fig_sensor():
     # ESP-Pins (Reihenfolge im Bild: auf Sensor 1 ausgerichtet)
     ey_ = {"3V3": y1["VIN"], "GND": y1["GND"], "GPIO32": y1["SCL"], "GPIO21": y1["SDA"], "GPIO25": y2["SCL"], "GPIO33": y2["SDA"]}
     col = {"3V3": C["3V3"], "GND": C["GND"], "GPIO32": C["SCL"], "GPIO21": C["SDA"], "GPIO25": C["SCL"], "GPIO33": C["SDA"]}
-    sub = {"GPIO32": "SCL Box", "GPIO21": "SDA Box", "GPIO25": "SCL Raum", "GPIO33": "SDA Raum"}
+    sub = {"GPIO32": "SCL Box", "GPIO21": "SDA Box", "GPIO25": "SCL Trockner", "GPIO33": "SDA Trockner"}
     for k, y in ey_.items():
         esp_pin(ax, px, y, k, sub.get(k))
     # Sensor 1: direkte Leitungen
@@ -269,7 +269,7 @@ def fig_sensor():
              "Kabel: bis ca. 1 m problemlos, bis ca. 2 m meist auch. SDA und SCL jeweils mit GND verdrillen. Sensor nicht neben den ESP32 kleben (der wird warm).",
              fs=10.2)
     ax.text(1290, 384, "Home Assistant: sensor.filament_ams_box_feuchte / _box_temperatur", fontsize=9, color=SOFT, ha="right", va="center")
-    ax.text(1290, 714, "Home Assistant: sensor.filament_ams_raum_feuchte / _raum_temperatur", fontsize=9, color=SOFT, ha="right", va="center")
+    ax.text(1290, 714, "Home Assistant: sensor.filament_ams_trockner_feuchte / _trockner_temperatur", fontsize=9, color=SOFT, ha="right", va="center")
     save(fig, "3_sensor")
 
 

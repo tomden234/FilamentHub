@@ -46,7 +46,7 @@ Ein kleiner I2C-Sensor misst Luftfeuchte und Temperatur, z. B. in der Filament-L
 - GPIO22 (Standard-SCL) ist schon RST der Leser, darum SCL auf GPIO32.
 - Kabel bis ca. 1 m sind kein Problem. Sensor nicht direkt neben den ESP32 kleben (der wird warm).
 - In Home Assistant heißen die Werte `sensor.filament_ams_box_feuchte` und `sensor.filament_ams_box_temperatur`. Die App kennt den Namen schon.
-- **Zweiter Sensor im Raum (optional):** eigener Bus, SDA GPIO33, SCL GPIO25 (gleiche Adresse geht nicht auf einem Bus) → `sensor.filament_ams_raum_feuchte`. Die App vergleicht Box und Raum.
+- **Zweiter Sensor im externen Spulentrockner (5. Spule):** eigener Bus, SDA GPIO33, SCL GPIO25 (gleiche Adresse geht nicht auf einem Bus) → `sensor.filament_ams_trockner_feuchte` und `_trockner_temperatur`. Die App zeigt ihn unter dem AMS als „Ext. Trockner“.
 - **Kabel:** bis ca. 1 m problemlos, bis 2 m meist auch (Bus mit 50 kHz). SDA/SCL mit GND verdrillen.
 - **Gehäuse für den Sensor:** `sensor-box/` (ca. 16 × 19 × 8 mm).
 

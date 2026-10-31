@@ -45,7 +45,7 @@ interface AlarmState {
 const KEY = 'filamenthub_humidity_alarm_v1';
 const HOLD_MS = 5 * 60_000;
 const REPEAT_MS = 12 * 3600_000;
-const POLL_MS = 10_000; // Box-/Raum-Sensor alle 10 Sekunden
+const POLL_MS = 10_000; // Box-/Trockner-Sensor alle 10 Sekunden
 
 function readState(): Record<Source, AlarmState> {
   const empty = (): AlarmState => ({ highSince: null, alertedAt: 0, armed: true });
@@ -181,7 +181,7 @@ export function useHumidityAlarm(p: Params) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.autoDryOn, settings.autoDryAt]);
 
-  // Externe Sensoren über Home Assistant (alle 2 Minuten): Box (mit Alarm) und optional Raum (nur Anzeige + Vergleich)
+  // Externe Sensoren über Home Assistant (alle 2 Minuten): Box (mit Alarm) und optional externer Trockner (nur Anzeige)
   useEffect(() => {
     const boxEntity = settings.humidityEntity;
     const roomEntity = settings.humidityRoomEntity;

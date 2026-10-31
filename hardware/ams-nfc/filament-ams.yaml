@@ -5,7 +5,7 @@
 #
 # Optional: Feuchte-/Temperatur-Sensor SHT31-D (oder SHT40 / AHT20), I2C, 3,3 V, z. B. in der Filament-Lagerbox:
 #   Box:  SDA → GPIO21, SCL → GPIO32, VCC → 3V3, GND → GND → sensor.filament_ams_box_feuchte (Feuchte-Alarm)
-#   Raum: SDA → GPIO33, SCL → GPIO25, VCC → 3V3, GND → GND → sensor.filament_ams_raum_feuchte (Vergleich, optional)
+#   Trockner: SDA → GPIO33, SCL → GPIO25, VCC → 3V3, GND → GND → sensor.filament_ams_trockner_feuchte (externer Spulentrockner mit der 5. Spule)
 #   Ohne angeschlossenen Sensor läuft alles andere normal weiter (im Log steht dann nur eine Warnung).
 #
 # Pins funktionieren auf ESP32-Boards mit 30 UND 38 Pins (DevKitC / NodeMCU, WROOM-32).
@@ -50,7 +50,7 @@ wifi:
 captive_portal:
 
 # I2C für die optionalen Feuchte-Sensoren (GPIO22 ist schon RST der Leser, deshalb SCL auf GPIO32).
-# Zwei getrennte Busse, weil der SHT31-D eine feste Adresse (0x44) hat: Box an Bus 1, Raum an Bus 2.
+# Zwei getrennte Busse, weil der SHT31-D eine feste Adresse (0x44) hat: Box an Bus 1, externer Spulentrockner an Bus 2.
 # 50 kHz statt 100 kHz: stabiler bei längeren Kabeln (bis ca. 1–2 m).
 i2c:
   - id: bus_box
@@ -58,7 +58,7 @@ i2c:
     scl: GPIO32
     frequency: 50kHz
     scan: true
-  - id: bus_room
+  - id: bus_trockner
     sda: GPIO33
     scl: GPIO25
     frequency: 50kHz
@@ -253,16 +253,16 @@ sensor:
       name: "Box Temperatur"
     humidity:
       name: "Box Feuchte"
-  # Optional: zweiter SHT31-D im Raum (außerhalb der Box) → sensor.filament_ams_raum_feuchte
+  # Optional: zweiter SHT31-D im externen Spulentrockner (5. Spule) → sensor.filament_ams_trockner_feuchte
   # Die App vergleicht beide: hält die Box dicht, arbeitet das Trockenmittel?
   - platform: sht3xd
-    i2c_id: bus_room
+    i2c_id: bus_trockner
     address: 0x44
     update_interval: 10s
     temperature:
-      name: "Raum Temperatur"
+      name: "Trockner Temperatur"
     humidity:
-      name: "Raum Feuchte"
+      name: "Trockner Feuchte"
   # Anderer Sensor? Block oben löschen und den passenden nehmen (# vorne entfernen):
   # SHT40 / SHT41 / SHT45:
   # - platform: sht4x

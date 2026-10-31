@@ -21,7 +21,7 @@ export interface WorkshopSettings {
   humidityMax: number;
   /** Externer Feuchte-Sensor in Home Assistant (leer = keiner) */
   humidityEntity: string;
-  /** Zweiter Sensor im Raum zum Vergleich (leer = keiner) */
+  /** Zweiter Sensor im externen Spulentrockner (5. Spule), nur Anzeige (leer = keiner). Name aus Altgründen „Room“. */
   humidityRoomEntity: string;
   /** Beim Einlegen einer Spule, die trocknen sollte, fragen */
   drySuggest: boolean;
@@ -59,7 +59,7 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   alertHumidity: true,
   humidityMax: 25,
   humidityEntity: 'sensor.filament_ams_box_feuchte',
-  humidityRoomEntity: 'sensor.filament_ams_raum_feuchte',
+  humidityRoomEntity: 'sensor.filament_ams_trockner_feuchte',
   drySuggest: true,
   autoDryOn: true,
   autoDryAt: 30,
@@ -108,6 +108,8 @@ function sanitize(raw: (Partial<WorkshopSettings> & Record<string, unknown>) | n
   s.humidityMax = Number.isFinite(h) ? Math.max(10, Math.min(90, Math.round(h))) : DEFAULT_WORKSHOP_SETTINGS.humidityMax;
   s.humidityEntity = String(s.humidityEntity || '').trim();
   s.humidityRoomEntity = String(s.humidityRoomEntity || '').trim();
+  // Früher war der zweite Sensor der Raum-Sensor: alten Standardnamen auf den Trockner umstellen
+  if (s.humidityRoomEntity === 'sensor.filament_ams_raum_feuchte') s.humidityRoomEntity = DEFAULT_WORKSHOP_SETTINGS.humidityRoomEntity;
   const ad = Number(s.autoDryAt);
   s.autoDryAt = Number.isFinite(ad) ? Math.max(10, Math.min(90, Math.round(ad))) : DEFAULT_WORKSHOP_SETTINGS.autoDryAt;
   return s;
