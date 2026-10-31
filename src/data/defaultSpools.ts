@@ -2003,4 +2003,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     historySnapshot: [],
     viewMode: 'simple'
   }
+  },
+  {
+    id: 'v1.136',
+    label: '1.136 (Trocknung bleibt an, Spulen bleiben)',
+    releaseDate: '31.10.2026',
+    description: 'Die App stoppt die Trocknung nicht mehr dauernd und überschreibt deine Spulen-Änderungen nicht mehr mit einem alten Stand.',
+    features: [
+      '🔥 Trocknung stoppen: „Aus nach Druck“ und „Druck verzögern“ stoppen sie nur noch einmal, nicht mehr jede Minute',
+      '🙋 Startest du die Trocknung danach selbst neu, wird „Aus nach Druck“ abgewählt und der Drucker bleibt an',
+      '🧹 Vergessener „Aus nach Druck“-Schalter (über 36 Stunden alt) wird verworfen',
+      '📝 Im Log steht jetzt, wer die Trocknung gestoppt hat (Quelle)',
+      '💾 Spulen-Änderungen: Der Cloud-Abgleich schrieb manchmal einen alten Stand zurück, wenn du gerade bearbeitet hast. Behoben',
+      '🔢 Aktualisierte Zahlen-FunFacts: 114 Commits und 136 Revisionsstufen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
+  }
 ];

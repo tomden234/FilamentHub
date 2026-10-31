@@ -36,6 +36,8 @@ const TICK_MS = 10_000;
 const DRY_SETTLE_MS = 3 * 60_000; // nach dem Ende der Trocknung warten (AMS-Ventile/Lüfter schließen)
 const DRY_STOP_RETRY_MS = 60_000;
 const DRY_MAX_WAIT_MS = 30 * 60_000; // spätestens dann trotzdem aus
+const DRY_STOP_TRIES = 3; // so oft versuchen, die Trocknung zu beenden (wenn der Drucker es nicht annimmt)
+const STALE_ARM_MS = 36 * 3600_000; // „Aus nach Druck“ älter als das: vergessen, nicht mehr beachten
 
 export function useAutoPowerOff(p: Params) {
   const auto = useAutoOff();
@@ -46,6 +48,9 @@ export function useAutoPowerOff(p: Params) {
   const fails = useRef(0);
   const lastDrying = useRef(0);
   const lastStopTry = useRef(0);
+  const stopTries = useRef(0);
+  const stoppedOnce = useRef(false);
+  const stoppedAt = useRef(0);
 
   // Zustand des Druckers auswerten
   useEffect(() => {
@@ -82,20 +87,48 @@ export function useAutoPowerOff(p: Params) {
       fails.current = 0;
       lastDrying.current = 0;
       lastStopTry.current = 0;
+      stopTries.current = 0;
+      stoppedOnce.current = false;
+      stoppedAt.current = 0;
       return;
     }
     const tick = async () => {
       const since = finishSince.current;
       if (since === null || busy.current) return;
       const waited = Date.now() - since;
+      // Vergessener Schalter von einem alten Druck: nicht mehr beachten (sonst würde er später deine Trocknung stoppen)
+      if (Date.now() - auto.armedAt > STALE_ARM_MS) {
+        disarmAutoOff();
+        addSystemLog('steckdose', 'Aus nach Druck verworfen', 'Der Schalter war über 36 Stunden alt', 'info');
+        return;
+      }
       if (latest.current.drying) {
         lastDrying.current = Date.now();
-        // Trocknung beenden, solange nicht länger als 30 Minuten gewartet wurde
-        if (waited < DRY_MAX_WAIT_MS) {
+        // Läuft die Trocknung nach unserem Stopp schon wieder, hast du sie absichtlich neu gestartet: dann nicht noch einmal stoppen
+        if (stoppedOnce.current && Date.now() - stoppedAt.current < 60_000) return; // Anzeige hinkt kurz hinterher
+        if (stoppedOnce.current) {
+          disarmAutoOff();
+          finishSince.current = null;
+          const text = 'Du hast die Trocknung neu gestartet. „Aus nach Druck“ ist abgewählt, der Drucker bleibt an.';
+          addSystemLog('steckdose', 'Aus nach Druck abgewählt (Trocknung neu gestartet)', text, 'info');
+          void raiseAlert({ kind: 'info', key: `auto-off-dry-${auto.armedAt}`, title: 'Drucker bleibt an', text, toast: `🔥 ${text}` }, t => latest.current.notify({ text: t, ok: true }));
+          return;
+        }
+        // Trocknung beenden: höchstens 3 Versuche und nicht länger als 30 Minuten
+        if (waited < DRY_MAX_WAIT_MS && stopTries.current < DRY_STOP_TRIES) {
           if (Date.now() - lastStopTry.current >= DRY_STOP_RETRY_MS && latest.current.stopDrying) {
             lastStopTry.current = Date.now();
-            addSystemLog('steckdose', 'Trocknung beendet für Aus nach Druck', 'Aus nach Druck ist stärker als Trocknen', 'info');
-            void latest.current.stopDrying();
+            stopTries.current += 1;
+            addSystemLog('steckdose', 'Trocknung beendet für Aus nach Druck', 'Aus nach Druck ist stärker als Trocknen (Quelle: Aus nach Druck)', 'info');
+            busy.current = true;
+            try {
+              if (await latest.current.stopDrying()) {
+                stoppedOnce.current = true;
+                stoppedAt.current = Date.now();
+              }
+            } finally {
+              busy.current = false;
+            }
           }
           return;
         }

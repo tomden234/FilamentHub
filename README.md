@@ -2,7 +2,7 @@
 
 Filament-Verwaltung für den Bambu Lab X2D mit AMS 2 Pro: Spulenbestand, Waage, Trocknen, Druckverlauf, Home Assistant, NFC-Tags und Cloud-Sync. Läuft als Webseite, Android-App und Windows-App. Frontend mit React und Vite, Server mit Express.
 
-Aktuelle Version: **1.135 (Ext. Trockner-Sensor)**. Die Zählung läuft ab 1.100 einfach weiter, die 2 bleibt für ein großes Update frei (intern heißt 1.135 im Paket 2.0.135, damit Updates sicher aufwärts zählen). Alle Versionen stehen im Revisionsmenü der App und lassen sich dort auswählen.
+Aktuelle Version: **1.136 (Trocknung bleibt an, Spulen bleiben)**. Die Zählung läuft ab 1.100 einfach weiter, die 2 bleibt für ein großes Update frei (intern heißt 1.136 im Paket 2.0.136, damit Updates sicher aufwärts zählen). Alle Versionen stehen im Revisionsmenü der App und lassen sich dort auswählen.
 
 ## Was die App kann (Kurzüberblick)
 
@@ -53,7 +53,7 @@ Aktuelle Version: **1.135 (Ext. Trockner-Sensor)**. Die Zählung läuft ab 1.100
 
 🟢 fertig · 🟡 vorbereitet · ⚪ offen
 
-## Neu am 29./30.10.2026 (1.105 bis 1.135)
+## Neu am 29./30.10.2026 (1.105 bis 1.136)
 
 Alles, was an diesem Tag dazukam, steht hier zusammen.
 
@@ -90,6 +90,7 @@ Alles, was an diesem Tag dazukam, steht hier zusammen.
 | 1.133 | Druck verzögern repariert: Plan bleibt beim Pausieren erhalten, Trocknung blockiert das Fortsetzen nicht mehr, Sicherheitsnetz im Drucker-Kern setzt auch bei geschlossener App fort |
 | 1.134 | Kamera aufgeräumt (keine Überlappung), flüssiger, Vollbild-Knopf; AMS-Temperatur und Feuchte als saubere Karten |
 | 1.135 | Ext. Trockner-Sensor: zweiter SHT31-D sitzt im externen Spulentrockner (5. Spule), Karte unter dem AMS, neuer Verdrahtungsplan |
+| 1.136 | Trocknung wird nicht mehr dauernd gestoppt (nur einmal, Quelle im Log), Cloud-Abgleich überschreibt Spulen-Änderungen nicht mehr mit altem Stand |
 
 ### Druck-Wächter (1.105)
 

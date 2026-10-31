@@ -125,7 +125,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.135';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.136';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -390,9 +390,14 @@ export default function App() {
     setRedoStack([]);
   }, [spools, printHistory]);
 
+  // Neuester Stand (auch direkt nach einer Änderung, bevor React neu gezeichnet hat): der Cloud-Abgleich darf nie einen alten Stand zurückschreiben
+  const latestData = useRef<{ spools: Spool[]; history: HistoryEntry[] }>({ spools, history: printHistory });
+  latestData.current = { spools, history: printHistory };
+
   // Speichern in LocalStorage und Cloud
   const persistState = useCallback(
     async (newSpools: Spool[], newHistory: HistoryEntry[]) => {
+      latestData.current = { spools: newSpools, history: newHistory };
       try {
         safeStorage.setItem(STORAGE_KEY_SPOOLS, JSON.stringify(newSpools));
         safeStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(newHistory));
@@ -447,7 +452,7 @@ export default function App() {
             setSyncStatus({ label: 'Cloud synchron', ok: true });
             if (notify) showToast('Schon synchron.');
           } else {
-            await persistState(spools, printHistory);
+            await persistState(latestData.current.spools, latestData.current.history);
           }
         }
       } catch {

@@ -46,6 +46,7 @@ export function usePrintPlanRunner(p: Params) {
   const dueSince = useRef(0);
   const resumeFails = useRef(0);
   const idleSince = useRef(0);
+  const dryStopped = useRef(false);
 
   // --- Neuer Druck / Druck vorbei ---
   useEffect(() => {
@@ -114,6 +115,7 @@ export function usePrintPlanRunner(p: Params) {
       const due = now >= cur.resumeAt;
       if (!due) {
         dueSince.current = 0;
+        dryStopped.current = false;
         resumeFails.current = 0;
         // Pause erzwingen, sobald der Druck läuft
         if (st === 'RUNNING' && now - lastCmd.current >= CMD_RETRY_MS) {
@@ -132,19 +134,22 @@ export function usePrintPlanRunner(p: Params) {
       }
       // Zeit ist da: Trocknung beenden, dann fortsetzen. Hängt die Trocknung, nach 90 s trotzdem fortsetzen.
       if (!dueSince.current) dueSince.current = now;
-      if (q.dryMinutesLeft > 0 && now - dueSince.current < DRY_STOP_MAX_MS) {
+      // Trocknung nur beenden, solange der Druck wirklich pausiert ist, und nur einmal erfolgreich
+      // (läuft sie danach wieder, hast du sie neu gestartet: nicht noch einmal stoppen)
+      if (q.dryMinutesLeft > 0 && !dryStopped.current && st === 'PAUSE' && now - dueSince.current < DRY_STOP_MAX_MS) {
         if (now - lastCmd.current >= CMD_RETRY_MS) {
           lastCmd.current = now;
           busy.current = true;
           try {
-            await q.stopDrying();
+            addSystemLog('drucker', 'Trocknung beendet für verzögerten Druck', 'Quelle: Druck verzögern', 'info');
+            if (await q.stopDrying()) dryStopped.current = true;
           } finally {
             busy.current = false;
           }
         }
         return; // erst fortsetzen, wenn die Trocknung aus ist (oder 90 s um sind)
       }
-      if (q.dryMinutesLeft > 0) addSystemLog('drucker', 'Trocknung ließ sich nicht beenden', 'Druck wird trotzdem fortgesetzt (der Drucker beendet die Trocknung beim Start)', 'info');
+      if (q.dryMinutesLeft > 0 && !dryStopped.current && st === 'PAUSE') addSystemLog('drucker', 'Trocknung ließ sich nicht beenden', 'Druck wird trotzdem fortgesetzt (der Drucker beendet die Trocknung beim Start)', 'info');
       if (st === 'PAUSE') {
         if (now - lastCmd.current < CMD_RETRY_MS) return;
         lastCmd.current = now;
@@ -172,6 +177,7 @@ export function usePrintPlanRunner(p: Params) {
     };
     const finishResume = () => {
       dueSince.current = 0;
+      dryStopped.current = false;
       resumeFails.current = 0;
       const cur = getPrintPlan();
       const q = latest.current;
