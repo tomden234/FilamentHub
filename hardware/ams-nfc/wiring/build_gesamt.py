@@ -15,7 +15,7 @@ def fig_gesamt():
                      "Leser: Sammelschienen + je eine CS-Leitung. Sensoren: 3V3 und GND von den Sammelschienen, SDA/SCL je eigene Pins (eigener Bus).")
     ex, ey, ew, eh = 40, 120, 330, 1330
     esp_block(ax, ex, ey, ew, eh, note=False)
-    ax.text(ex + ew / 2 - 20, ey + eh - 92, "Pins nach der Beschriftung\nauf der Platine suchen", fontsize=8.5, color="#8fb3d6",
+    ax.text(ex + ew / 2 - 20, ey + 880, "Pins nach der Beschriftung\nauf der Platine suchen", fontsize=8.5, color="#8fb3d6",
             ha="center", va="center", zorder=5, linespacing=1.3)
     px = ex + ew
     esp_rows = {"3V3": ("3V3", None, 160), "GND": ("GND", None, 190), "SCK": ("GPIO18", "D18", 315), "MOSI": ("GPIO23", "D23", 343),

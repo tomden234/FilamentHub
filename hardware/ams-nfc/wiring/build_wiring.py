@@ -61,6 +61,13 @@ def esp_block(ax, x, y, w, h, note=True):
 
 
 def esp_pin(ax, x, y, label, sub=None):
+    # Auf dem Board steht „D18“, nicht „GPIO18“: D-Nummer groß, GPIO klein darunter
+    import re as _re
+    _m = _re.match(r"GPIO(\d+)$", label)
+    if _m:
+        n = _m.group(1)
+        extra = [e for e in [sub] if e and e != f"D{n}"]
+        label, sub = f"D{n}", " · ".join([f"GPIO{n}"] + extra)
     ax.add_patch(Rectangle((x - 9, y - 6), 18, 12, fc="#d9a441", ec="#8a6a1f", lw=1, zorder=4))
     ax.text(x - 16, y, label, fontsize=11.5, fontweight="bold", color="white", ha="right", va="center", zorder=5)
     if sub:

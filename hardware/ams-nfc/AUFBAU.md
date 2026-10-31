@@ -58,7 +58,7 @@ Aufbau-Anleitung · Stand 1.115 · 30.10.2026
 
 ## 5. Verkabelung
 
-Die Diagramme zeigen die **Reihenfolge der Leitungen**, nicht die Lage der Pins auf dem Board. Such jeden Pin auf deinem ESP32 nach der aufgedruckten Beschriftung (zum Beispiel D18, D23, 3V3). Auf deinem Board steht GPIO17 als D17 und GPIO16 als D16 (bei anderen Boards TX2 und RX2, das ist derselbe Pin).
+Die Diagramme zeigen die **Reihenfolge der Leitungen**, nicht die Lage der Pins auf dem Board. Such jeden Pin auf deinem ESP32 nach der aufgedruckten Beschriftung (zum Beispiel D18, D23, 3V3). Auf deinem Board steht D17 (GPIO17) als D17 und D16 (GPIO16) als D16 (bei anderen Boards TX2 und RX2, das ist derselbe Pin).
 
 ## RC522 an ESP32
 
@@ -66,16 +66,16 @@ Die Diagramme zeigen die **Reihenfolge der Leitungen**, nicht die Lage der Pins 
 |---|---|---|
 | 3.3V | 3V3 | alle 5 Leser gemeinsam |
 | GND | GND | alle 5 Leser gemeinsam |
-| SCK | GPIO18 | alle 5 Leser gemeinsam |
-| MOSI | GPIO23 | alle 5 Leser gemeinsam |
-| MISO | GPIO19 | alle 5 Leser gemeinsam |
-| RST | GPIO22 | alle 5 Leser gemeinsam |
+| SCK | D18 (GPIO18) | alle 5 Leser gemeinsam |
+| MOSI | D23 (GPIO23) | alle 5 Leser gemeinsam |
+| MISO | D19 (GPIO19) | alle 5 Leser gemeinsam |
+| RST | D22 (GPIO22) | alle 5 Leser gemeinsam |
 | IRQ | frei lassen | – |
-| SDA (= CS) Leser 1 / Slot 1 | GPIO5 | einzeln |
-| SDA (= CS) Leser 2 / Slot 2 | GPIO17 (D17) | einzeln |
-| SDA (= CS) Leser 3 / Slot 3 | GPIO16 (D16) | einzeln |
-| SDA (= CS) Leser 4 / Slot 4 | GPIO4 | einzeln |
-| SDA (= CS) Leser 5 / Extern | GPIO13 | einzeln |
+| SDA (= CS) Leser 1 / Slot 1 | D5 (GPIO5) | einzeln |
+| SDA (= CS) Leser 2 / Slot 2 | D17 (GPIO17) | einzeln |
+| SDA (= CS) Leser 3 / Slot 3 | D16 (GPIO16) | einzeln |
+| SDA (= CS) Leser 4 / Slot 4 | D4 (GPIO4) | einzeln |
+| SDA (= CS) Leser 5 / Extern | D13 (GPIO13) | einzeln |
 
 ## SHT31-D an ESP32
 
@@ -83,10 +83,10 @@ Die Diagramme zeigen die **Reihenfolge der Leitungen**, nicht die Lage der Pins 
 |---|---|---|
 | VIN | 3V3 | 3V3 |
 | GND | GND | GND |
-| SDA | GPIO21 | GPIO33 |
-| SCL | GPIO32 | GPIO25 |
+| SDA | D21 (GPIO21) | D33 (GPIO33) |
+| SCL | D32 (GPIO32) | D25 (GPIO25) |
 
-GPIO22 ist schon RST der Leser, darum liegt SCL der Box auf GPIO32. Der Trockner-Sensor hat einen eigenen Bus, weil beide Sensoren die Adresse 0x44 haben.
+D22 (GPIO22) ist schon RST der Leser, darum liegt SCL der Box auf D32 (GPIO32). Der Trockner-Sensor hat einen eigenen Bus, weil beide Sensoren die Adresse 0x44 haben.
 
 - **Nur 3,3 V** an die RC522. Nie an 5 V oder VIN.
 - Sensor nicht direkt neben den ESP32 kleben, der wird warm und der Sensor misst dann zu wenig Feuchte.

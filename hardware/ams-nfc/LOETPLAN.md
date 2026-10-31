@@ -6,10 +6,10 @@ Stand 30.10.2026, passt zu `filament-ams.yaml`. Alles mit **3,3 V**, nie 5 V an 
 
 | Leitung | RC522-Pin (jeder Leser) | ESP32 | Kabel bei Leser 1 |
 |---|---|---|---|
-| SCK | SCK | GPIO18 (D18) | gelb |
-| MOSI | MOSI | GPIO23 (D23) | blau |
-| MISO | MISO | GPIO19 (D19) | grün |
-| RST | RST | GPIO22 (D22) | grau |
+| SCK | SCK | D18 (GPIO18) | gelb |
+| MOSI | MOSI | D23 (GPIO23) | blau |
+| MISO | MISO | D19 (GPIO19) | grün |
+| RST | RST | D22 (GPIO22) | grau |
 | 3,3 V | 3.3V | 3V3 | weiß |
 | Masse | GND | GND | schwarz |
 
@@ -19,11 +19,11 @@ IRQ bleibt bei allen Lesern frei.
 
 | Leser / Slot | RC522 SDA | ESP32 | Kabel |
 |---|---|---|---|
-| 1 | SDA | GPIO5 (D5) | lila |
-| 2 | SDA | GPIO17 (D17) | eigene Farbe |
-| 3 | SDA | GPIO16 (D16) | eigene Farbe |
-| 4 | SDA | GPIO4 (D4) | eigene Farbe |
-| 5 (Extern) | SDA | GPIO13 (D13) | eigene Farbe |
+| 1 | SDA | D5 (GPIO5) | lila |
+| 2 | SDA | D17 (GPIO17) | eigene Farbe |
+| 3 | SDA | D16 (GPIO16) | eigene Farbe |
+| 4 | SDA | D4 (GPIO4) | eigene Farbe |
+| 5 (Extern) | SDA | D13 (GPIO13) | eigene Farbe |
 
 ## 3. Sensoren (SHT31-D, Pinreihenfolge auf dem Board: VIN, GND, SCL, SDA)
 
@@ -31,8 +31,8 @@ IRQ bleibt bei allen Lesern frei.
 |---|---|---|---|
 | VIN | rot | 3V3 | 3V3 |
 | GND | orange | GND | GND |
-| SCL | gelb | GPIO32 (D32) | GPIO25 (D25) |
-| SDA | grün | GPIO21 (D21) | GPIO33 (D33) |
+| SCL | gelb | D32 (GPIO32) | D25 (GPIO25) |
+| SDA | grün | D21 (GPIO21) | D33 (GPIO33) |
 
 Beide Sensoren haben Adresse 0x44, deshalb je ein eigener Bus. Beschriftung auf dem Sensor-Board geht vor, falls die Reihenfolge anders ist.
 
@@ -50,7 +50,7 @@ Leitungen zum ESP32 insgesamt: 15 (GND, 3V3, 4 Bus, 5 SDA, je 2 für Box- und Tr
 
 - Durchgang: GND und 3V3 dürfen **nicht** verbunden sein (Piepser = Kurzschluss).
 - Jede SDA-Leitung geht nur an einen Leser und nur an ihren GPIO.
-- Kein Pin doppelt belegt (GPIO22 nur RST, GPIO21/32 nur Box-Sensor).
+- Kein Pin doppelt belegt (D22 nur RST, D21 und D32 nur Box-Sensor).
 
 ## 6. Test
 
