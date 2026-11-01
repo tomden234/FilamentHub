@@ -2321,5 +2321,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.158',
+    label: '1.158 (Warteschlange & Widget)',
+    releaseDate: '01.11.2026',
+    description: 'Neu: Druck-Warteschlange in der Werkstatt (vormerken, Filament-Check, Mitteilung mit dem Nächsten nach jedem Druckende) und ein Homescreen-Widget für Android mit Druck-/Trocknungsstand und AMS-Feuchte.',
+    features: [
+      '📋 Werkstatt > Warteschlange: Aufträge mit Name, Material und Gramm vormerken, sortieren, löschen',
+      '✅ Filament-Check je Eintrag gegen die Spulen im AMS (reicht / zu wenig / Material fehlt)',
+      '🔔 Nach Druckende: Eintrag wird abgehakt, Mitteilung „Nächster Druck: … Platte frei machen“ (startet nichts von selbst)',
+      '📱 Android-Homescreen-Widget: Balken, Prozent, Restzeit, Uhrzeit des Endes und AMS-Feuchte, Tipp öffnet die App',
+      '📲 Neue Android-App (APK) nötig für das Widget'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

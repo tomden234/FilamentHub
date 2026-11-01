@@ -48,6 +48,7 @@ import { useAutoPowerOff } from '../hooks/useAutoPowerOff';
 import { useDryAutoOff } from '../hooks/useDryAutoOff';
 import { useDryLightOff } from '../hooks/useDryLightOff';
 import { useLiveStatus } from '../hooks/useLiveStatus';
+import { amsHumidityPercent } from '../utils/humidity';
 import { useWorkshopSettings } from '../utils/workshopSettings';
 import { armAutoOff, disarmAutoOff } from '../utils/autoPowerOff';
 import { alertPrintEnd, alertPrintStart } from '../utils/printAlerts';
@@ -379,7 +380,8 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     jobName: liveState.data.subtask_name || undefined,
     layer: Number(liveState.data.layer_num) || 0,
     totalLayers: Number(liveState.data.total_layer_num) || 0,
-    dryMinLeft: dryLeftNow
+    dryMinLeft: dryLeftNow,
+    amsHumidity: amsHumidityPercent(liveState.data.ams?.ams?.[0])
   });
   // Altzustand: beides gewählt → Aus nach Druck gewinnt, Trocknen nach Druck wird abgewählt
   useEffect(() => {

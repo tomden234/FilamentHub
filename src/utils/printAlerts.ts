@@ -4,6 +4,7 @@ import { raiseAlert } from './alerts';
 import { mainSlot, type PrintSession } from './printSession';
 import { safeStorage } from './safeStorage';
 import { EXTERNAL_SLOT } from './amsMatch';
+import { loadedSpools, onQueuePrintFinished } from './printQueue';
 
 const AMS_SLOTS_KEY = 'filamenthub_ams_slots_x2d';
 
@@ -81,6 +82,7 @@ export function alertPrintEnd(s: PrintSession, info: { state: 'FINISH' | 'FAILED
   if (info.state === 'FINISH') {
     const text = `${name} ist fertig.`;
     void raiseAlert({ kind: 'print-done', key: `print-end-${s.id}`, title: 'Druck fertig', text, toast: `✅ ${text}`, facts, items }, x.showToast);
+    onQueuePrintFinished(name, loadedSpools(x.spools), x.showToast);
   } else {
     const text = `${name} ist fehlgeschlagen oder wurde abgebrochen.`;
     void raiseAlert({ kind: 'print-fail', key: `print-end-${s.id}`, title: 'Druck fehlgeschlagen', text, toast: `⚠️ ${text}`, facts, items }, x.showToast);

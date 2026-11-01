@@ -45,7 +45,7 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           (cd dist && zip -qr ../live-bundle.zip .)
           # nativeApi muss zu NATIVE_API in android-native/FilamentLivePlugin.java passen
-          echo "{\"version\":\"$VERSION\",\"nativeApi\":8}" > live-version.json
+          echo "{\"version\":\"$VERSION\",\"nativeApi\":9}" > live-version.json
           cat live-version.json
 
       - name: Capacitor installieren (nur im Build, nicht im Projekt)
@@ -66,6 +66,8 @@ jobs:
           # Eigenes Mini-Plugin: Web-App färbt Status- und Navigationsleiste passend zum Theme
           JAVA_DIR=android/app/src/main/java/com/filamenthub/app
           cp android-native/*.java "$JAVA_DIR/"
+          # Homescreen-Widget (Layout, Hintergrund, Beschreibung)
+          cp -r android-native/res/* android/app/src/main/res/
           # Paho MQTT (Drucker ohne Server) und NFC-Berechtigung
           sed -i '/^dependencies {/a\    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5"' android/app/build.gradle
           MANIFEST=android/app/src/main/AndroidManifest.xml
@@ -77,6 +79,25 @@ jobs:
           grep -n "BLUETOOTH_SCAN" "$MANIFEST" || echo "Hinweis: Bluetooth-Eintrag fehlt"
           # Hintergrund-Dienst: hält die Verbindung zum Drucker offen, damit Meldungen auch bei geschlossener App kommen
           sed -i '/<uses-permission android:name="android.permission.INTERNET"/a\    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />' "$MANIFEST"
+          python3 - <<'PYWID'
+          path = "android/app/src/main/AndroidManifest.xml"
+          xml = open(path, encoding="utf-8").read()
+          rcv = (
+              '        <receiver android:name="com.filamenthub.app.FilamentWidgetProvider" android:exported="false">\n'
+              '            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>\n'
+              '            <meta-data android:name="android.appwidget.provider" android:resource="@xml/filament_widget_info" />\n'
+              '        </receiver>\n'
+          )
+          if "FilamentWidgetProvider" in xml:
+              print("Widget schon vorhanden")
+          else:
+              i = xml.find("</application>")
+              if i < 0:
+                  print("Hinweis: application im Manifest nicht gefunden, Widget fehlt")
+              else:
+                  open(path, "w", encoding="utf-8").write(xml[:i] + rcv + "    " + xml[i:])
+                  print("Widget eingetragen")
+          PYWID
           python3 - <<'PYSVC'
           path = "android/app/src/main/AndroidManifest.xml"
           xml = open(path, encoding="utf-8").read()

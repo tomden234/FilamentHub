@@ -228,3 +228,13 @@ export async function clearOngoingStatus(): Promise<void> {
     /* alte APK */
   }
 }
+
+/** Android-App: Stand fürs Homescreen-Widget speichern (braucht die APK ab 1.158) */
+export async function setWidgetStatus(w: { title: string; text: string; sub: string; progress: number }): Promise<void> {
+  if (!IS_NATIVE) return;
+  try {
+    await nativeCall('setWidget', { ...w, color: accentHex() });
+  } catch {
+    /* alte APK */
+  }
+}

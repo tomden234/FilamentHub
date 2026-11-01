@@ -268,6 +268,33 @@ public class FilamentNotifyPlugin extends Plugin {
         call.resolve();
     }
 
+
+    // Homescreen-Widget: Stand speichern und Widgets neu zeichnen
+    @PluginMethod
+    public void setWidget(PluginCall call) {
+        try {
+            Context ctx = getContext();
+            int color = 0xFF168A47;
+            try {
+                String c = call.getString("color", "");
+                if (c != null && c.startsWith("#") && c.length() == 7) color = 0xFF000000 | Integer.parseInt(c.substring(1), 16);
+            } catch (Exception ignored) {
+            }
+            ctx.getSharedPreferences(FilamentWidgetProvider.PREFS, Context.MODE_PRIVATE).edit()
+                .putString("title", call.getString("title", "FilamentHub"))
+                .putString("text", call.getString("text", ""))
+                .putString("sub", call.getString("sub", ""))
+                .putInt("progress", call.getInt("progress", -1))
+                .putInt("color", color)
+                .putLong("ts", System.currentTimeMillis())
+                .apply();
+            FilamentWidgetProvider.refresh(ctx);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject(String.valueOf(e.getMessage()));
+        }
+    }
+
     // Hintergrund-Dienst ein/aus: hält die App am Leben, damit Meldungen auch bei geschlossener App kommen
     @PluginMethod
     public void keepAlive(PluginCall call) {
