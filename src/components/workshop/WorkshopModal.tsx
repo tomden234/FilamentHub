@@ -52,7 +52,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
         className="w-full max-w-3xl rounded-t-2xl sm:rounded-2xl border shadow-2xl flex flex-col max-h-[92vh]"
         style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
       >
-        <div className="flex items-center justify-between gap-3 p-4 border-b" style={{ borderColor: 'var(--app-border)' }}>
+        <div className="flex items-center justify-between gap-3 p-4 border-b shrink-0" style={{ borderColor: 'var(--app-border)' }}>
           <div className="flex items-center gap-2.5">
             <div
               className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0"
@@ -78,7 +78,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
         </div>
 
         {(
-        <div className="flex gap-1.5 overflow-x-auto px-4 pt-3">
+        <div className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-1 shrink-0">
           {tabs.map(t => {
             const Icon = t.icon;
             const active = t.id === tab;
@@ -106,7 +106,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
         </div>
         )}
 
-        <div className="p-4 overflow-y-auto">{tab === 'inbox' && <InboxTab focusId={focusId || undefined} />}
+        <div className="p-4 overflow-y-auto min-h-0">{tab === 'inbox' && <InboxTab focusId={focusId || undefined} />}
           {tab === 'notices' && <NoticesTab />}
           {tab === 'labels' && <LabelsTab spools={spools} preselectId={labelSpoolId} />}
           {tab === 'prints' && <PrintsTab />}

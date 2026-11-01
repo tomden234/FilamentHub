@@ -2365,5 +2365,15 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.161',
+    label: '1.161 (Tab-Leiste repariert)',
+    releaseDate: '01.11.2026',
+    description: 'Die Tabs „Postfach“ und „Einstellungen“ waren oben abgeschnitten. Jetzt voll sichtbar.',
+    features: ['🔧 Tab-Leiste in Mitteilungen und Werkstatt wird nicht mehr zusammengedrückt'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
