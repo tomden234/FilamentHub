@@ -63,12 +63,19 @@ export async function findEntities(): Promise<{ status?: string; nozzle?: string
   const res = await haFetch('/api/states');
   if (!res.ok) throw new Error(`Home Assistant antwortet mit ${res.status}`);
   const states: any[] = await res.json();
-  const ids = states.map(s => String(s.entity_id));
-  const status = ids.find(id => /^sensor\..*_print_status$/.test(id)) || ids.find(id => /^sensor\..*(x2d|bambu).*_(stage|status)$/.test(id));
-  const prefix = status ? status.replace(/_print_status$/, '') : '';
+  const sensors = states.filter(s => String(s.entity_id).startsWith('sensor.'));
+  const id = (s: any) => String(s.entity_id);
+  const name = (s: any) => String(s.attributes?.friendly_name || '').toLowerCase();
+  // Ids können englisch (print_status) oder deutsch (druckstatus) heißen, je nach Sprache bei der Einrichtung
+  const isStatus = (s: any) => /(print_status|druckstatus)$/.test(id(s)) || /(^|\s)(print status|druckstatus)$/.test(name(s));
+  const status =
+    sensors.find(isStatus) && id(sensors.find(isStatus)) ||
+    sensors.map(id).find(i => /^sensor\..*(x2d|bambu).*_(stage|status)$/.test(i));
+  const prefix = status ? status.replace(/_(print_status|druckstatus)$/, '') : '';
+  const isNozzle = (s: any) => /_nozzle_temp(erature)?$/.test(id(s)) || /(temperatur der düse|düsentemperatur|nozzle temperature)$/.test(name(s));
   const nozzle =
-    ids.find(id => prefix && id.startsWith(prefix) && /_nozzle_temp(erature)?$/.test(id)) ||
-    ids.find(id => /^sensor\..*_nozzle_temp(erature)?$/.test(id));
+    sensors.map(id).find(i => prefix && i.startsWith(prefix) && /_nozzle_temp(erature)?$/.test(i)) ||
+    (sensors.find(isNozzle) ? id(sensors.find(isNozzle)) : undefined);
   const automation = states.find(s => String(s.entity_id).startsWith('automation.') && s.attributes?.id === AUTOMATION_ID)?.entity_id;
   return { status, nozzle, automation };
 }

@@ -2220,5 +2220,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.151',
+    label: '1.151 (Deutsche HA-Namen)',
+    releaseDate: '01.11.2026',
+    description: 'Home Assistant mit deutschen Sensornamen (Druckstatus, Verbleibende Trocknungszeit) wird erkannt. Dafür hat die App den Druckstatus-Sensor nicht gefunden.',
+    features: [
+      '🇩🇪 Druckstatus und Düsentemperatur werden auch mit deutschen Namen gefunden',
+      '🔧 Gilt für „Danach Drucker ausschalten“ und „Nach Druck aus“'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
