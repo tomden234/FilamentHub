@@ -68,6 +68,14 @@ async function createWindow() {
     webPreferences: { contextIsolation: true, nodeIntegration: false, preload: path.join(__dirname, 'preload.cjs') }
   });
   Menu.setApplicationMenu(null);
+  // Immer groß starten (Vollbild-Fenster mit Taskleiste). F11 schaltet echten Vollbild an/aus.
+  win.maximize();
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      win.setFullScreen(!win.isFullScreen());
+      event.preventDefault();
+    }
+  });
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (!url.startsWith(URL)) shell.openExternal(url);
     return { action: url.startsWith(URL) ? 'allow' : 'deny' };

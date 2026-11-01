@@ -2181,5 +2181,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.148',
+    label: '1.148 (Windows-App groß)',
+    releaseDate: '01.11.2026',
+    description: 'Die Windows-App startet immer maximiert. Mit F11 schaltest du echten Vollbild an und aus.',
+    features: [
+      '🖥️ Windows-App öffnet immer im großen Fenster',
+      '⌨️ F11: echter Vollbild an/aus'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
