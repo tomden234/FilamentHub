@@ -8,7 +8,9 @@ import { dryOffAction, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
 //  - gilt nur, wenn die Trocknung nach dem Wählen wirklich gelaufen ist
 //  - der Schalter bleibt an und gilt für jede weitere Trocknung, bis du ihn selbst ausmachst
 //  - startet ein Druck, bleibt der Drucker an (nur dieses Mal)
-//  - du stoppst die Trocknung von Hand: kein Ausschalten (nur dieses Mal, siehe AmsSection)
+//  - du stoppst die Trocknung von Hand: zählt wie das Ende, der 3-Minuten-Zähler startet
+//  - „Abbrechen“ im Zähler: nur dieses Mal kein Ausschalten
+//  - beginnt in den 3 Minuten ein Druck oder eine neue Trocknung, wird nichts ausgeschaltet
 //  - die 3 Minuten laufen als Zähler in der Trocknen-Ansicht
 // Läuft auf jedem Gerät, auf dem die App offen ist (Android: auch im Hintergrund mit Hintergrund-Dienst).
 

@@ -13,7 +13,7 @@ const INFO_KEY = 'filamenthub_ha_dryoff_info';
 const JSON_KEY = 'filamenthub_ha_dryoff_json';
 const VERSION_KEY = 'filamenthub_ha_dryoff_version';
 /** Hochzählen, wenn sich die Automation ändert: dann wird sie in Home Assistant neu geschrieben */
-const CONFIG_VERSION = '2';
+const CONFIG_VERSION = '3';
 
 /** Automation als Text zum Einfügen in Home Assistant (YAML-Editor), falls die App sie nicht selbst anlegen darf */
 export function getHaDryOffJson(): string {
@@ -78,7 +78,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
     const config = {
       id: AUTOMATION_ID,
       alias: 'FilamentHub: Drucker nach Trocknen aus',
-      description: 'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Nach Trocknen ausschalten“ gewählt ist. 3 Minuten nach Trocknungsende geht die Steckdose aus, außer es wird gedruckt oder die Trocknung läuft wieder.',
+      description: 'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Nach Trocknen ausschalten“ gewählt ist. 3 Minuten nach Trocknungsende geht die Steckdose aus, außer es beginnt ein Druck oder eine neue Trocknung.',
       mode: 'single',
       trigger: dry.map(e => ({ platform: 'state', entity_id: e, id: 'dryend' })),
       condition: [
@@ -88,7 +88,16 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
         }
       ],
       action: [
-        { delay: { minutes: 3 } },
+        // 3 Minuten warten. Beginnt in der Zeit ein Druck oder eine neue Trocknung, wird nichts ausgeschaltet.
+        {
+          wait_for_trigger: [
+            { platform: 'state', entity_id: status, to: ['running', 'prepare', 'pause'] },
+            ...dry.map(e => ({ platform: 'numeric_state', entity_id: e, above: 0 }))
+          ],
+          timeout: { minutes: 3 },
+          continue_on_timeout: true
+        },
+        { condition: 'template', value_template: '{{ wait.trigger is none }}' },
         ...dry.map(e => ({ condition: 'numeric_state', entity_id: e, below: 0.01 })),
         { condition: 'not', conditions: [{ condition: 'state', entity_id: status, state: ['running', 'prepare', 'pause'] }] },
         { service: 'switch.turn_off', target: { entity_id: switchEntity } }

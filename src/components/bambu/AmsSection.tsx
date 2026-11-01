@@ -437,8 +437,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
 
                   <button
                     onClick={() => {
-                      skipDryOffRun(); // von Hand gestoppt: diesmal bleibt der Drucker an, der Schalter bleibt aber an
-                      void cancelHaDryOffRun();
+                      // von Hand gestoppt zählt wie Ende der Trocknung: der 3-Minuten-Zähler startet (Abbrechen möglich)
                       void handleToggleAmsDrying(false);
                     }}
                     disabled={dryLoading}

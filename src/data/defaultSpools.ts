@@ -2248,5 +2248,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.153',
+    label: '1.153 (Stopp startet Timer)',
+    releaseDate: '01.11.2026',
+    description: 'Stoppst du die Trocknung von Hand, startet der 3-Minuten-Zähler und der Drucker geht danach aus (Abbrechen geht). Beginnt in den 3 Minuten ein Druck oder eine neue Trocknung, wird automatisch nichts ausgeschaltet.',
+    features: [
+      '⏹️ Trocknung von Hand stoppen = Ende: 3-Minuten-Zähler startet, danach geht der Drucker aus',
+      '🛑 „Abbrechen“ im Zähler gilt nur für dieses Mal',
+      '🤝 Neuer Druck oder neue Trocknung in den 3 Minuten bricht das Ausschalten selbst ab (auch in Home Assistant)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
