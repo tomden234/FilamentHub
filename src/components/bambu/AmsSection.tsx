@@ -9,7 +9,7 @@ import { SlotTagSheet } from './SlotTagSheet';
 import { useHumidity, amsHumidityPercent } from '../../utils/humidity';
 import { armDryOff, disarmDryOff, useDryOff } from '../../utils/dryAutoOff';
 import { getHaCredentials } from '../../utils/haClient';
-import { getHaDryOffInfo, installHaDryOff, setHaDryOff } from '../../utils/haDryOff';
+import { getHaDryOffInfo, getHaDryOffJson, installHaDryOff, setHaDryOff } from '../../utils/haDryOff';
 import { updateWorkshopSettings, useWorkshopSettings } from '../../utils/workshopSettings';
 import { Toggle } from '../workshop/ui';
 
@@ -452,6 +452,19 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                       >
                         {haBusy ? '…' : 'Prüfen'}
                       </button>
+                      {haInfo && !haInfo.ok && getHaDryOffJson() && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(getHaDryOffJson());
+                            setHaInfo({ ...haInfo, text: haInfo.text.replace(/^📋 Kopiert\. /, '') });
+                          }}
+                          className="shrink-0 px-2 py-1 rounded-lg border font-bold cursor-pointer"
+                          style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+                        >
+                          Automation kopieren
+                        </button>
+                      )}
                     </div>
                   )}
                   <Toggle

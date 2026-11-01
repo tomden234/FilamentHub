@@ -2154,5 +2154,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.146',
+    label: '1.146 (HA-Automation kopieren)',
+    releaseDate: '01.11.2026',
+    description: 'Home Assistant ist erreichbar, erlaubt der App aber nicht, Automationen anzulegen. Jetzt gibt es einen Knopf, der die Automation kopiert, du fügst sie einmal in Home Assistant ein.',
+    features: [
+      '📋 Knopf „Automation kopieren“ bei „Danach Drucker ausschalten“',
+      '🔎 „Prüfen“ erkennt eine von Hand eingefügte Automation und schaltet sie danach selbst an und aus',
+      '💬 Klare Meldung statt „nicht erreichbar“, wenn nur das Anlegen gesperrt ist'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

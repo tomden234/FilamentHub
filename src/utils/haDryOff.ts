@@ -10,6 +10,12 @@ import { safeStorage } from './safeStorage';
 const AUTOMATION_ID = 'filamenthub_dry_off';
 const ENTITY_KEY = 'filamenthub_ha_dryoff_entity';
 const INFO_KEY = 'filamenthub_ha_dryoff_info';
+const JSON_KEY = 'filamenthub_ha_dryoff_json';
+
+/** Automation als Text zum Einfügen in Home Assistant (YAML-Editor), falls die App sie nicht selbst anlegen darf */
+export function getHaDryOffJson(): string {
+  return safeStorage.getItem(JSON_KEY) || '';
+}
 
 export interface HaDryOffInfo {
   ok: boolean;
@@ -46,7 +52,12 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
   if (!token) return setInfo(false, 'Kein Home-Assistant-Token in der App.');
   try {
     const { status } = await findEntities();
-    const { dry } = await findDryEntities();
+    const { dry, automation: existing } = await findDryEntities();
+    if (existing) {
+      safeStorage.setItem(ENTITY_KEY, existing);
+      await callHaService('automation', 'turn_off', { entity_id: existing });
+      return setInfo(true, `Automation in Home Assistant gefunden (${existing}). Home Assistant schaltet 3 Minuten nach Trocknungsende aus.`);
+    }
     if (!status || !dry.length) {
       return setInfo(false, 'In Home Assistant fehlen Druckstatus oder AMS-Rest-Trockenzeit (Bambu-Lab-Integration, HACS). Bis dahin schaltet die App selbst aus, solange sie läuft.');
     }
@@ -76,7 +87,17 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
         { service: 'automation.turn_off', target: { entity_id: '{{ this.entity_id }}' } }
       ]
     };
-    const res = await haFetch(`/api/config/automation/config/${AUTOMATION_ID}`, { method: 'POST', body: JSON.stringify(config) });
+    safeStorage.setItem(JSON_KEY, JSON.stringify(config, null, 2));
+    let res: Response;
+    try {
+      res = await haFetch(`/api/config/automation/config/${AUTOMATION_ID}`, { method: 'POST', body: JSON.stringify(config) });
+    } catch {
+      // Home Assistant ist erreichbar (Status wurde gelesen), nimmt Automationen aber nicht von fremden Seiten an
+      return setInfo(
+        false,
+        'Home Assistant ist erreichbar, erlaubt der App aber nicht, Automationen anzulegen (Browser-Sperre). Einmal von Hand: „Automation kopieren“, in Home Assistant unter Einstellungen > Automationen > Neu > Menü (3 Punkte) > In YAML bearbeiten einfügen, speichern. Dann hier „Prüfen“.'
+      );
+    }
     if (!res.ok) return setInfo(false, res.status === 401 || res.status === 403 ? 'Der Home-Assistant-Token darf keine Automationen anlegen (Admin-Benutzer nötig).' : `Home Assistant hat die Automation abgelehnt (${res.status}).`);
     let entity = '';
     for (let i = 0; i < 6 && !entity; i++) {
