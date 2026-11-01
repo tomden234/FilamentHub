@@ -45,7 +45,7 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           (cd dist && zip -qr ../live-bundle.zip .)
           # nativeApi muss zu NATIVE_API in android-native/FilamentLivePlugin.java passen
-          echo "{\"version\":\"$VERSION\",\"nativeApi\":6}" > live-version.json
+          echo "{\"version\":\"$VERSION\",\"nativeApi\":7}" > live-version.json
           cat live-version.json
 
       - name: Capacitor installieren (nur im Build, nicht im Projekt)

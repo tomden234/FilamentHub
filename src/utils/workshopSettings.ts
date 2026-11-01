@@ -39,6 +39,8 @@ export interface WorkshopSettings {
   alertPrintFail: boolean;
   alertDryDue: boolean;
   alertDryDone: boolean;
+  /** Android: stehende Mitteilung mit Balken für Druck und Trocknung */
+  liveStatus: boolean;
   /** Trocknung wurde vor dem Ende gestoppt */
   alertDryStop: boolean;
   alertLow: boolean;
@@ -76,6 +78,7 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   alertPrintFail: true,
   alertDryDue: true,
   alertDryDone: true,
+  liveStatus: true,
   alertDryStop: true,
   alertLow: true,
   systemPush: true,

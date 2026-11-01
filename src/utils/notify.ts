@@ -184,3 +184,31 @@ export async function localNotify(title: string, body: string, opts: LocalNotify
     return false;
   }
 }
+
+export interface OngoingStatus {
+  title: string;
+  text: string;
+  sub: string;
+  progress: number;
+  etaMs: number;
+}
+
+/** Android-App: stehende Mitteilung mit Balken zeigen oder aktualisieren (braucht die APK ab 1.155) */
+export async function showOngoingStatus(s: OngoingStatus): Promise<boolean> {
+  if (!IS_NATIVE) return false;
+  try {
+    const r = await nativeCall<{ shown: boolean }>('showOngoing', { ...s });
+    return Boolean(r?.shown);
+  } catch {
+    return false; // alte APK ohne diese Funktion
+  }
+}
+
+export async function clearOngoingStatus(): Promise<void> {
+  if (!IS_NATIVE) return;
+  try {
+    await nativeCall('clearOngoing');
+  } catch {
+    /* alte APK */
+  }
+}

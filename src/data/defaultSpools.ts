@@ -2276,5 +2276,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.155',
+    label: '1.155 (Stehende Mitteilung)',
+    releaseDate: '01.11.2026',
+    description: 'Android: Solange gedruckt oder getrocknet wird, steht oben eine leise Mitteilung mit Balken, Prozent, Restzeit und der Uhrzeit, wann es fertig ist. Auch der 3-Minuten-Zähler vor dem Ausschalten steht dort.',
+    features: [
+      '📌 Stehende Mitteilung für Druck und Trocknung mit Fortschrittsbalken',
+      '🕒 Zeigt „Fertig 17:42 Uhr · noch 1 h 12 min“, die Zeit zählt die Mitteilung selbst herunter',
+      '⏱️ Auch der Aus-Zähler „Drucker geht aus in 2:41“ steht dort',
+      '⚙️ Schalter „Stehende Mitteilung (Android)“ bei den Benachrichtigungen (Standard an)',
+      '📲 Braucht die neue Android-App (APK), der Android-Teil wurde erweitert'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

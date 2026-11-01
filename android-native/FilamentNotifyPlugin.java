@@ -181,6 +181,77 @@ public class FilamentNotifyPlugin extends Plugin {
         }
     }
 
+
+    // Stehende Mitteilung mit Fortschrittsbalken (Druck / Trocknen): bleibt oben, wird laufend aktualisiert, leise
+    private static final String LIVE_CHANNEL = "filament_live_status";
+    private static final int LIVE_ID = 7001;
+
+    @PluginMethod
+    public void showOngoing(PluginCall call) {
+        try {
+            JSObject r = new JSObject();
+            if (!enabled()) {
+                r.put("shown", false);
+                call.resolve(r);
+                return;
+            }
+            Context ctx = getContext();
+            if (Build.VERSION.SDK_INT >= 26) {
+                NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null && nm.getNotificationChannel(LIVE_CHANNEL) == null) {
+                    NotificationChannel ch = new NotificationChannel(LIVE_CHANNEL, "Druck- und Trocknungsstand", NotificationManager.IMPORTANCE_LOW);
+                    ch.setShowBadge(false);
+                    nm.createNotificationChannel(ch);
+                }
+            }
+            String title = call.getString("title", "FilamentHub");
+            String text = call.getString("text", "");
+            String sub = call.getString("sub", "");
+            int progress = call.getInt("progress", -1);
+            Long eta = call.getLong("etaMs", 0L);
+            Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+            PendingIntent pi = null;
+            if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                pi = PendingIntent.getActivity(ctx, LIVE_ID, launch, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            }
+            NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, LIVE_CHANNEL)
+                .setSmallIcon(FilamentKeepAliveService.smallIcon(ctx))
+                .setColor(0xFF168A47)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_LOW);
+            if (!sub.isEmpty()) b.setSubText(sub);
+            if (progress >= 0) b.setProgress(100, Math.min(100, progress), false);
+            else b.setProgress(0, 0, true);
+            if (eta != null && eta > 0) {
+                b.setWhen(eta).setShowWhen(true).setUsesChronometer(true);
+                if (Build.VERSION.SDK_INT >= 24) b.setChronometerCountDown(true);
+            }
+            if (pi != null) b.setContentIntent(pi);
+            NotificationManagerCompat.from(ctx).notify(LIVE_ID, b.build());
+            r.put("shown", true);
+            call.resolve(r);
+        } catch (SecurityException e) {
+            JSObject r = new JSObject();
+            r.put("shown", false);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject(String.valueOf(e.getMessage()));
+        }
+    }
+
+    @PluginMethod
+    public void clearOngoing(PluginCall call) {
+        NotificationManagerCompat.from(getContext()).cancel(LIVE_ID);
+        call.resolve();
+    }
+
     // Hintergrund-Dienst ein/aus: hält die App am Leben, damit Meldungen auch bei geschlossener App kommen
     @PluginMethod
     public void keepAlive(PluginCall call) {

@@ -52,6 +52,7 @@ export const NoticesTab: React.FC = () => {
           {s.alertErrors && <Toggle on={s.alertErrorsAll} onChange={v => update({ alertErrorsAll: v })} label="Auch Hinweise und Dialoge melden" hint="Alles, was der Drucker anzeigt: Hinweise, „fortsetzen?“, Düse wechseln, Filament einlegen. Meist zu viel." />}
           <Toggle on={s.alertPrintDone} onChange={v => update({ alertPrintDone: v })} label="Druck fertig" hint="Sobald der Drucker das Ende meldet. War die App zu, kommt die Meldung beim nächsten Öffnen." />
           <Toggle on={s.alertPrintFail} onChange={v => update({ alertPrintFail: v })} label="Druck fehlgeschlagen oder abgebrochen" />
+          <Toggle on={s.liveStatus} onChange={v => update({ liveStatus: v })} label="Stehende Mitteilung (Android)" hint="Bleibt oben, solange gedruckt oder getrocknet wird: Balken, Prozent, Restzeit und Uhrzeit, wann es fertig ist. Leise, ohne Ton." />
           <Toggle on={s.alertDryDone} onChange={v => update({ alertDryDone: v })} label="Trocknung fertig" hint="Mit Dauer, Temperatur und den getrockneten Spulen." />
           <Toggle on={s.alertDryStop} onChange={v => update({ alertDryStop: v })} label="Trocknung gestoppt" hint="Wenn die Trocknung vor dem Ende angehalten wird." />
           <Toggle on={s.alertDryDue} onChange={v => update({ alertDryDue: v })} label="Trocknen fällig" hint="Einmal pro Tag und Spule, mit Temperatur und Zeit." />

@@ -47,6 +47,7 @@ import { usePrintWatch } from '../hooks/usePrintWatch';
 import { useAutoPowerOff } from '../hooks/useAutoPowerOff';
 import { useDryAutoOff } from '../hooks/useDryAutoOff';
 import { useDryLightOff } from '../hooks/useDryLightOff';
+import { useLiveStatus } from '../hooks/useLiveStatus';
 import { useWorkshopSettings } from '../utils/workshopSettings';
 import { armAutoOff, disarmAutoOff } from '../utils/autoPowerOff';
 import { alertPrintEnd, alertPrintStart } from '../utils/printAlerts';
@@ -365,6 +366,17 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     busy: (liveState.data.nozzle_target_temper || 0) > 0 || (liveState.data.nozzle2_target_temper || 0) > 0 || (liveState.data.bed_target_temper || 0) > 0,
     refreshSwitch: () => void handleFetchSwitchStatus(),
     notify: setActionToast
+  });
+  // Stehende Mitteilung (Android) mit Balken: Druck oder Trocknung
+  useLiveStatus({
+    connected: Boolean(liveState.connected && liveState.receivingData !== false),
+    gcodeState: liveState.data.gcode_state,
+    percent: Number(liveState.data.mc_percent) || 0,
+    remainingMin: Number(liveState.data.mc_remaining_time) || 0,
+    jobName: liveState.data.subtask_name || undefined,
+    layer: Number(liveState.data.layer_num) || 0,
+    totalLayers: Number(liveState.data.total_layer_num) || 0,
+    dryMinLeft: dryLeftNow
   });
   // Altzustand: beides gewählt → Aus nach Druck gewinnt, Trocknen nach Druck wird abgewählt
   useEffect(() => {
