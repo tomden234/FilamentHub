@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { toggleHaSwitch } from '../utils/haClient';
 import { raiseAlert } from '../utils/alerts';
 import { addSystemLog } from '../utils/logService';
-import { DRY_OFF_SETTLE_MS, dryOffAction, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
+import { dryOffAction, dryOffSettleMs, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
 import { getHaDryOffRun } from '../utils/haDryOff';
 
 // „Nach Trocknen ausschalten“: Ist die AMS-Trocknung zu Ende (und kein Druck), geht nach 3 Minuten die Steckdose über Home Assistant aus.
@@ -51,7 +51,7 @@ export function useDryAutoOff(p: Params) {
     /** Durchgang abgeschlossen: Schalter bleibt an, der nächste Durchgang beginnt neu */
     // App war zu und wird wieder geöffnet: Zähler läuft weiter, wo er war (nur wenn noch innerhalb der 3 Minuten + Puffer)
     if (state.endedAt > 0) {
-      if (Date.now() - state.endedAt < DRY_OFF_SETTLE_MS + 60_000 && state.endedAt > state.skipAt) lastDryingAt.current = state.endedAt;
+      if (Date.now() - state.endedAt < dryOffSettleMs() + 60_000 && state.endedAt > state.skipAt) lastDryingAt.current = state.endedAt;
       else setDryEndedAt(0);
     }
     const pollHa = async () => {
@@ -86,7 +86,8 @@ export function useDryAutoOff(p: Params) {
         lastDryingAt: lastDryingAt.current,
         dryingNow: cur.drying,
         gcodeState: cur.gcodeState,
-        switchState: cur.switchState
+        switchState: cur.switchState,
+        settleMs: dryOffSettleMs()
       });
       // Zähler für die Anzeige: läuft ab Trocknungsende, solange nicht gedruckt wird
       const localEnded = !cur.drying && lastDryingAt.current && action !== 'cancel-print' && action !== 'cancel-socket-off' ? lastDryingAt.current : 0;
@@ -105,7 +106,7 @@ export function useDryAutoOff(p: Params) {
           try {
             const res = await toggleHaSwitch('off');
             if (res.success) {
-              finish('Drucker ausgeschaltet', 'Trocknung fertig, Drucker automatisch ausgeschaltet (3 Minuten nach dem Ende).', true);
+              finish('Drucker ausgeschaltet', 'Trocknung fertig, Drucker automatisch ausgeschaltet (nach der eingestellten Wartezeit).', true);
               setTimeout(() => latest.current.refreshSwitch(), 800);
             } else if (++fails.current >= MAX_FAILS) {
               fails.current = 0;

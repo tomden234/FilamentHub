@@ -3,7 +3,7 @@ import { buildLiveStatus, type LiveStatusInput } from '../utils/liveStatus';
 import { clearOngoingStatus, showOngoingStatus } from '../utils/notify';
 import { safeStorage } from '../utils/safeStorage';
 import { useWorkshopSettings } from '../utils/workshopSettings';
-import { useDryOff } from '../utils/dryAutoOff';
+import { dryOffSettleMs, useDryOff } from '../utils/dryAutoOff';
 import { IS_NATIVE } from '../utils/env';
 
 // Stehende Mitteilung (Android): Druck- oder Trocknungsstand mit Balken, Restzeit und Uhrzeit des Endes.
@@ -62,7 +62,8 @@ export function useLiveStatus(p: Params) {
         dryMinLeft: cur.dryMinLeft,
         dryTotalMin: dryTotalFromStorage() || peak.current,
         dryOffEndedAt: endedAt,
-        now: Date.now()
+        now: Date.now(),
+        settleMs: dryOffSettleMs()
       };
       const s = buildLiveStatus(input);
       if (!s) {
@@ -78,7 +79,7 @@ export function useLiveStatus(p: Params) {
       if (key === lastKey.current) return;
       lastKey.current = key;
       shown.current = true;
-      void showOngoingStatus({ title: s.title, text: s.text, sub: s.sub, progress: s.progress, etaMs: s.etaMs });
+      void showOngoingStatus({ title: s.title, text: s.text, sub: s.sub, progress: s.progress, etaMs: s.etaMs, shortText: s.shortText });
     };
     tick();
     const id = setInterval(tick, 1000);

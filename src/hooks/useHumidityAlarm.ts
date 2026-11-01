@@ -5,7 +5,7 @@ import { getHaCredentials } from '../utils/haClient';
 import { amsHumidityPercent, setHumidity, type HumidityReading } from '../utils/humidity';
 import { spoolInSlot } from '../utils/printAlerts';
 import { safeStorage } from '../utils/safeStorage';
-import { useWorkshopSettings } from '../utils/workshopSettings';
+import { getWorkshopSettings, useWorkshopSettings } from '../utils/workshopSettings';
 import { armDryPlan, dryPlanFor, getDryPlan } from '../utils/dryAfterPrint';
 import { addSystemLog } from '../utils/logService';
 
@@ -32,8 +32,6 @@ interface Params {
 }
 
 const AUTO_DRY_KEY = 'filamenthub_auto_dry_last';
-const AUTO_DRY_HOLD_MS = 10 * 60_000;
-const AUTO_DRY_PAUSE_MS = 24 * 3600_000;
 
 type Source = 'ams' | 'external';
 interface AlarmState {
@@ -43,8 +41,6 @@ interface AlarmState {
 }
 
 const KEY = 'filamenthub_humidity_alarm_v1';
-const HOLD_MS = 5 * 60_000;
-const REPEAT_MS = 12 * 3600_000;
 const POLL_MS = 10_000; // Box-/Trockner-Sensor alle 10 Sekunden
 
 function readState(): Record<Source, AlarmState> {
@@ -77,8 +73,8 @@ export function useHumidityAlarm(p: Params) {
       st.highSince = null;
     } else if (value > max) {
       if (st.highSince === null) st.highSince = now;
-      const repeat = now - st.alertedAt > REPEAT_MS;
-      if (now - st.highSince >= HOLD_MS && (st.armed || repeat)) {
+      const repeat = now - st.alertedAt > getWorkshopSettings().humidityRepeatH * 3600_000;
+      if (now - st.highSince >= getWorkshopSettings().humidityHoldMin * 60_000 && (st.armed || repeat)) {
         st.armed = false;
         st.alertedAt = now;
         const where = source === 'ams' ? 'AMS' : 'Lager-Sensor';
@@ -150,9 +146,9 @@ export function useHumidityAlarm(p: Params) {
         return;
       }
       if (autoHighSince.current === null) autoHighSince.current = Date.now();
-      if (Date.now() - autoHighSince.current < AUTO_DRY_HOLD_MS || autoBusy.current) return;
+      if (Date.now() - autoHighSince.current < getWorkshopSettings().autoDryHoldMin * 60_000 || autoBusy.current) return;
       const last = Number(safeStorage.getItem(AUTO_DRY_KEY)) || 0;
-      if (Date.now() - last < AUTO_DRY_PAUSE_MS || !cur.amsSpools.length) return;
+      if (Date.now() - last < getWorkshopSettings().autoDryPauseH * 3600_000 || !cur.amsSpools.length) return;
       if (getDryPlan().armed) return; // schon geplant
       autoBusy.current = true;
       try {

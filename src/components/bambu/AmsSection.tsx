@@ -7,7 +7,7 @@ import { readTrays, readExternal, activeSlotFromPrinter, syncSlots, mismatch, EX
 import { SpoolPicker } from '../SpoolPicker';
 import { SlotTagSheet } from './SlotTagSheet';
 import { useHumidity, amsHumidityPercent } from '../../utils/humidity';
-import { armDryOff, disarmDryOff, skipDryOffRun, useDryOff, DRY_OFF_SETTLE_MS } from '../../utils/dryAutoOff';
+import { armDryOff, disarmDryOff, skipDryOffRun, useDryOff, dryOffSettleMs } from '../../utils/dryAutoOff';
 import { getHaCredentials } from '../../utils/haClient';
 import { cancelHaDryOffRun, getHaDryOffInfo, getHaDryOffJson, installHaDryOff, setHaDryOff } from '../../utils/haDryOff';
 import { updateWorkshopSettings, useWorkshopSettings } from '../../utils/workshopSettings';
@@ -116,7 +116,7 @@ const DryOffCountdown: React.FC<{ endedAt: number; onCancel: () => void }> = ({ 
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-  const left = Math.max(0, Math.ceil((endedAt + DRY_OFF_SETTLE_MS - now) / 1000));
+  const left = Math.max(0, Math.ceil((endedAt + dryOffSettleMs() - now) / 1000));
   const mm = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
   return (
     <div className="flex items-center gap-2 rounded-lg border p-2 text-xs" style={{ borderColor: 'var(--app-accent)', color: 'var(--app-text)' }}>
@@ -167,7 +167,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
       return;
     }
     armDryOff();
-    setActionToast({ text: 'An: Nach jeder Trocknung geht der Drucker 3 Minuten nach dem Ende aus (nur ohne Druck), bis du es ausmachst.', ok: true });
+    setActionToast({ text: 'An: Nach jeder Trocknung geht der Drucker nach der eingestellten Wartezeit aus (nur ohne Druck), bis du es ausmachst.', ok: true });
   };
   const connected = Boolean(liveState.connected);
   const [pickSlot, setPickSlot] = useState<number | null>(null);
@@ -452,7 +452,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                     on={dryOff.armed}
                     onChange={toggleDryOff}
                     label="Danach Drucker ausschalten"
-                    hint="Dauerhaft: Nach jeder Trocknung geht die Steckdose 3 Minuten nach dem Ende aus. Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus."
+                    hint={`Dauerhaft: Nach jeder Trocknung geht die Steckdose ${workshop.dryOffDelayMin} Minute${workshop.dryOffDelayMin === 1 ? '' : 'n'} nach dem Ende aus (Zeit in den Benachrichtigungen einstellbar). Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus.`}
                   />
                   {dryOff.armed && dryOff.endedAt > 0 && !isDryingActive && <DryOffCountdown endedAt={dryOff.endedAt} onCancel={() => { skipDryOffRun(); void cancelHaDryOffRun(); }} />}
                   {dryOff.armed && (

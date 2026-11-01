@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, BellRing, CheckCircle2, PackageMinus, Send, Waves } from 'lucide-react';
+import { Bell, BellRing, CheckCircle2, PackageMinus, Send, SlidersHorizontal, Waves } from 'lucide-react';
 import { useHumidity } from '../../utils/humidity';
 import { IS_NATIVE } from '../../utils/env';
 import { testAlert, TEST_KINDS } from '../../utils/alerts';
@@ -7,6 +7,7 @@ import type { InboxKind } from '../../utils/inbox';
 import { notifyPermission, localNotify, requestNotifyPermission, refreshNotifyPermission, openNotifySettings, notifyNeedsNewApk, type NotifyPermission } from '../../utils/notify';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { Card, Toggle, buttonStyle, inputStyle } from './ui';
+import { NumInput } from '../ui/NumInput';
 
 const PRESETS = [50, 100, 150, 200];
 
@@ -92,7 +93,7 @@ export const NoticesTab: React.FC = () => {
         <label className="flex items-center justify-between gap-2 text-xs font-bold">
           <span>Melden ab</span>
           <span className="flex items-center gap-1">
-            <input
+            <NumInput
               type="number"
               min={10}
               max={90}
@@ -115,7 +116,7 @@ export const NoticesTab: React.FC = () => {
           <label className="flex items-center justify-between gap-2 text-xs font-bold">
             <span>Trocknen ab</span>
             <span className="flex items-center gap-1">
-              <input
+              <NumInput
                 type="number"
                 min={10}
                 max={90}
@@ -161,6 +162,53 @@ export const NoticesTab: React.FC = () => {
 
       <Card>
         <div className="flex items-center gap-2 text-xs font-extrabold">
+          <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
+          <span>Zeiten und Grenzen</span>
+        </div>
+        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+          Alles, was die App sonst fest vorgibt. Tippe den Wert einfach ein.
+        </p>
+        {(
+          [
+            ['humidityHoldMin', 'Feuchte-Alarm: melden nach', 'min', 1, 120, 'So lange muss die Feuchte über der Grenze liegen, bevor gemeldet wird.'],
+            ['humidityRepeatH', 'Feuchte-Alarm: erneut nach', 'h', 1, 72, 'Frühestens nach dieser Zeit wird dieselbe Warnung wiederholt.'],
+            ['autoDryHoldMin', 'Automatisch trocknen: warten', 'min', 1, 240, 'So lange muss die AMS-Feuchte über der Grenze „Trocknen ab“ liegen.'],
+            ['autoDryPauseH', 'Automatisch trocknen: höchstens alle', 'h', 1, 168, 'Zwischen zwei automatischen Trocknungen liegt mindestens diese Zeit.'],
+            ['dryOffDelayMin', 'Drucker aus nach Trocknen: warten', 'min', 1, 30, 'So lange nach dem Ende der Trocknung, bevor die Steckdose ausgeht (Zähler in der Trocknen-Ansicht).'],
+            ['nearlyEmptyG', 'Spulen-Check: „fast leer“ unter', 'g', 0, 500, 'Beim Druckstart wird gewarnt, wenn eine Spule unter diesem Gewicht liegt.']
+          ] as const
+        ).map(([key, label, unit, min, max, hint]) => (
+          <label key={key} className="block text-xs font-bold space-y-0.5">
+            <span className="flex items-center justify-between gap-2">
+              <span>{label}</span>
+              <span className="flex items-center gap-1">
+                <NumInput
+                  type="number"
+                  min={min}
+                  max={max}
+                  value={s[key]}
+                  onChange={e => {
+                    const n = parseInt(e.target.value, 10);
+                    if (Number.isFinite(n)) update({ [key]: n });
+                  }}
+                  className="w-16 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none text-right"
+                  style={inputStyle}
+                  aria-label={label}
+                />
+                <span className="w-6 font-normal" style={{ color: 'var(--app-text-muted)' }}>
+                  {unit}
+                </span>
+              </span>
+            </span>
+            <span className="block text-[11px] font-normal leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+              {hint}
+            </span>
+          </label>
+        ))}
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-2 text-xs font-extrabold">
           <PackageMinus className="w-4 h-4 text-rose-400" />
           <span>Grenze für „fast leer“</span>
         </div>
@@ -181,7 +229,7 @@ export const NoticesTab: React.FC = () => {
                 {p} g
               </button>
             ))}
-            <input
+            <NumInput
               type="number"
               min={0}
               max={1000}

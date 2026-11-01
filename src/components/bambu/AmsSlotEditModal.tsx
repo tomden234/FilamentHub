@@ -1,6 +1,7 @@
 import React from 'react';
 import { Palette, X, RefreshCw, Check } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
+import { NumInput } from '../ui/NumInput';
 
 const BAMBU_PRESET_COLORS = [
   { name: 'Grau', hex: '898989' },
@@ -169,7 +170,7 @@ export const AmsSlotEditModal: React.FC<AmsSlotEditModalProps> = ({
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <label className="text-[10px] text-[var(--app-text-muted)] block">Min. Düsentemperatur:</label>
-                <input
+                <NumInput
                   type="number"
                   value={amsEditMinTemp}
                   onChange={e => setAmsEditMinTemp(Number(e.target.value))}
@@ -183,7 +184,7 @@ export const AmsSlotEditModal: React.FC<AmsSlotEditModalProps> = ({
               </div>
               <div>
                 <label className="text-[10px] text-[var(--app-text-muted)] block">Max. Düsentemperatur:</label>
-                <input
+                <NumInput
                   type="number"
                   value={amsEditMaxTemp}
                   onChange={e => setAmsEditMaxTemp(Number(e.target.value))}

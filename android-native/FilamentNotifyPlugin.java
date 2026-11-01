@@ -183,7 +183,7 @@ public class FilamentNotifyPlugin extends Plugin {
 
 
     // Stehende Mitteilung mit Fortschrittsbalken (Druck / Trocknen): bleibt oben, wird laufend aktualisiert, leise
-    private static final String LIVE_CHANNEL = "filament_live_status";
+    private static final String LIVE_CHANNEL = "filament_live_status_v2";
     private static final int LIVE_ID = 7001;
 
     @PluginMethod
@@ -199,14 +199,26 @@ public class FilamentNotifyPlugin extends Plugin {
             if (Build.VERSION.SDK_INT >= 26) {
                 NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
                 if (nm != null && nm.getNotificationChannel(LIVE_CHANNEL) == null) {
-                    NotificationChannel ch = new NotificationChannel(LIVE_CHANNEL, "Druck- und Trocknungsstand", NotificationManager.IMPORTANCE_LOW);
+                    // Standard-Wichtigkeit (steht weit oben in der Liste), aber ohne Ton und Vibration
+                    NotificationChannel ch = new NotificationChannel(LIVE_CHANNEL, "Druck- und Trocknungsstand", NotificationManager.IMPORTANCE_DEFAULT);
                     ch.setShowBadge(false);
+                    ch.setSound(null, null);
+                    ch.enableVibration(false);
+                    ch.enableLights(false);
                     nm.createNotificationChannel(ch);
+                    nm.deleteNotificationChannel("filament_live_status");
                 }
             }
             String title = call.getString("title", "FilamentHub");
             String text = call.getString("text", "");
             String sub = call.getString("sub", "");
+            String shortText = call.getString("shortText", "");
+            int color = 0xFF168A47;
+            try {
+                String c = call.getString("color", "");
+                if (c != null && c.startsWith("#") && (c.length() == 7)) color = 0xFF000000 | Integer.parseInt(c.substring(1), 16);
+            } catch (Exception ignored) {
+            }
             int progress = call.getInt("progress", -1);
             Long eta = call.getLong("etaMs", 0L);
             Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
@@ -217,15 +229,19 @@ public class FilamentNotifyPlugin extends Plugin {
             }
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, LIVE_CHANNEL)
                 .setSmallIcon(FilamentKeepAliveService.smallIcon(ctx))
-                .setColor(0xFF168A47)
+                .setColor(color)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
                 .setOngoing(true)
+                .setSortKey("0")
                 .setOnlyAlertOnce(true)
                 .setCategory(NotificationCompat.CATEGORY_PROGRESS)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setPriority(NotificationCompat.PRIORITY_LOW);
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+            // Android 16 „Live-Update“: wird ganz oben und als Chip in der Statusleiste gezeigt (ältere Android-Versionen ignorieren das)
+            b.getExtras().putBoolean("android.requestPromotedOngoing", true);
+            if (!shortText.isEmpty()) b.getExtras().putString("android.shortCriticalText", shortText);
             if (!sub.isEmpty()) b.setSubText(sub);
             if (progress >= 0) b.setProgress(100, Math.min(100, progress), false);
             else b.setProgress(0, 0, true);

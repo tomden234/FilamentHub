@@ -1,6 +1,7 @@
 import React from 'react';
 import { Flame, X, RefreshCw } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
+import { NumInput } from '../ui/NumInput';
 
 export interface TemperatureModalProps {
   setTempModalTarget: any;
@@ -110,7 +111,7 @@ export const TemperatureModal: React.FC<TemperatureModalProps> = ({
                 Genauer Wert (°C):
               </label>
               <div className="flex items-center gap-2">
-                <input
+                <NumInput
                   type="number"
                   min="0"
                   max={tempModalTarget === 'bed' ? 120 : 300}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CalendarClock, Droplets, Power, Timer } from 'lucide-react';
 import { clockText, nextClockTime } from '../../utils/printPlan';
+import { NumInput } from '../ui/NumInput';
 
 // Fenster bei einem neuen Druck: danach trocknen, danach ausschalten, Druck verzögern (pausieren, später fortsetzen).
 // Nichts gewählt / Schließen = der Druck läuft ganz normal weiter.
@@ -121,9 +122,9 @@ export const PrintPlanSheet: React.FC<Props> = ({ jobName, dryArmed, offArmed, d
           {delayMode === 'in' && (
             <div className="flex items-center gap-1.5 text-xs">
               <span>in</span>
-              <input type="number" min={0} max={48} value={inH} onChange={e => setInH(e.target.value)} className="w-14 px-2 py-1 rounded-lg border text-center bg-transparent" style={{ borderColor: 'var(--app-border)' }} />
+              <NumInput type="number" min={0} max={48} value={inH} onChange={e => setInH(e.target.value)} className="w-14 px-2 py-1 rounded-lg border text-center bg-transparent" style={{ borderColor: 'var(--app-border)' }} />
               <span>h</span>
-              <input type="number" min={0} max={59} value={inM} onChange={e => setInM(e.target.value)} className="w-14 px-2 py-1 rounded-lg border text-center bg-transparent" style={{ borderColor: 'var(--app-border)' }} />
+              <NumInput type="number" min={0} max={59} value={inM} onChange={e => setInM(e.target.value)} className="w-14 px-2 py-1 rounded-lg border text-center bg-transparent" style={{ borderColor: 'var(--app-border)' }} />
               <span>min</span>
             </div>
           )}

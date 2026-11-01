@@ -6,6 +6,7 @@
 import { callHaService, getHaCredentials } from './haClient';
 import { findEntities, haFetch } from './haAutoOff';
 import { safeStorage } from './safeStorage';
+import { getWorkshopSettings } from './workshopSettings';
 
 const AUTOMATION_ID = 'filamenthub_dry_off';
 const ENTITY_KEY = 'filamenthub_ha_dryoff_entity';
@@ -14,6 +15,8 @@ const JSON_KEY = 'filamenthub_ha_dryoff_json';
 const VERSION_KEY = 'filamenthub_ha_dryoff_version';
 /** Hochzählen, wenn sich die Automation ändert: dann wird sie in Home Assistant neu geschrieben */
 const CONFIG_VERSION = '4';
+/** Version samt eingestellter Wartezeit: ändert sich die Zeit, wird die Automation neu geschrieben */
+const currentVersion = () => `${CONFIG_VERSION}-${getWorkshopSettings().dryOffDelayMin}`;
 
 /** Automation als Text zum Einfügen in Home Assistant (YAML-Editor), falls die App sie nicht selbst anlegen darf */
 export function getHaDryOffJson(): string {
@@ -68,7 +71,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
   try {
     const { status } = await findEntities();
     const { dry, maybe, stage, targets, automation: existing } = await findDryEntities();
-    if (existing && safeStorage.getItem(VERSION_KEY) === CONFIG_VERSION) {
+    if (existing && safeStorage.getItem(VERSION_KEY) === currentVersion()) {
       safeStorage.setItem(ENTITY_KEY, existing);
       await callHaService('automation', 'turn_off', { entity_id: existing });
       return setInfo(true, `Automation in Home Assistant gefunden (${existing}). Home Assistant schaltet 3 Minuten nach Trocknungsende aus.`);
@@ -93,7 +96,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
         }
       ],
       action: [
-        // 3 Minuten warten. Beginnt in der Zeit ein Druck oder eine neue Trocknung, wird nichts ausgeschaltet.
+        // Eingestellte Wartezeit (Standard 3 Minuten) warten. Beginnt in der Zeit ein Druck oder eine neue Trocknung, wird nichts ausgeschaltet.
         {
           wait_for_trigger: [
             { platform: 'state', entity_id: status, to: ['running', 'prepare', 'pause'] },
@@ -102,7 +105,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
             ...(stage ? [{ platform: 'state', entity_id: stage, not_to: ['idle', 'unavailable', 'unknown'] }] : []),
             ...targets.map(e => ({ platform: 'numeric_state', entity_id: e, above: 0 }))
           ],
-          timeout: { minutes: 3 },
+          timeout: { minutes: getWorkshopSettings().dryOffDelayMin },
           continue_on_timeout: true
         },
         { condition: 'template', value_template: '{{ wait.trigger is none }}' },
@@ -132,9 +135,9 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
     }
     if (!entity) return setInfo(false, 'Automation angelegt, aber Home Assistant zeigt sie noch nicht. Gleich nochmal versuchen.');
     safeStorage.setItem(ENTITY_KEY, entity);
-    safeStorage.setItem(VERSION_KEY, CONFIG_VERSION);
+    safeStorage.setItem(VERSION_KEY, currentVersion());
     await callHaService('automation', 'turn_off', { entity_id: entity });
-    return setInfo(true, `Eingerichtet. Home Assistant schaltet 3 Minuten nach Trocknungsende aus (${dry.join(', ')}).`);
+    return setInfo(true, `Eingerichtet. Home Assistant schaltet ${getWorkshopSettings().dryOffDelayMin} Minuten nach Trocknungsende aus (${dry.join(', ')}).`);
   } catch (e: any) {
     {
     const raw = String(e?.message || e);
@@ -158,7 +161,8 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
 /** Automation an (wenn „Nach Trocknen aus“ gewählt) oder aus. Richtet sie beim ersten Mal selbst ein. */
 export async function setHaDryOff(on: boolean): Promise<boolean> {
   let entity = safeStorage.getItem(ENTITY_KEY) || '';
-  if (!entity && on) {
+  const outdated = on && Boolean(entity) && safeStorage.getItem(VERSION_KEY) !== currentVersion();
+  if ((!entity || outdated) && on) {
     const info = getHaDryOffInfo();
     if (info && !info.ok && Date.now() - info.at < 6 * 3600_000) return false;
     await installHaDryOff();

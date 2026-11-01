@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { ACTIVE_STATES } from './printSession';
+import { getWorkshopSettings } from './workshopSettings';
 
 export interface DryOffState {
   armed: boolean;
@@ -20,6 +21,11 @@ const OFF: DryOffState = { armed: false, armedAt: 0, endedAt: 0, skipAt: 0 };
 /** Nach dem Ende der Trocknung warten (Lüfter/Ventile des AMS laufen noch aus) */
 export const DRY_OFF_SETTLE_MS = 3 * 60_000;
 
+/** Eingestellte Wartezeit (Standard 3 Minuten) */
+export function dryOffSettleMs(): number {
+  return Math.max(1, getWorkshopSettings().dryOffDelayMin) * 60_000;
+}
+
 export type DryOffAction = 'wait' | 'switch-off' | 'cancel-print' | 'cancel-socket-off';
 
 export interface DryOffInput {
@@ -30,6 +36,8 @@ export interface DryOffInput {
   dryingNow: boolean;
   gcodeState?: string;
   switchState: 'on' | 'off' | 'unknown' | 'error';
+  /** Wartezeit nach dem Ende (ms), Standard 3 Minuten */
+  settleMs?: number;
 }
 
 /** Was soll jetzt passieren? */
@@ -40,7 +48,7 @@ export function dryOffAction(i: DryOffInput): DryOffAction {
   // Trocknung ist vorbei
   if (i.switchState === 'off') return 'cancel-socket-off'; // schon aus (z. B. von Hand): erledigt
   if (printing) return 'cancel-print'; // danach hat ein neuer Druck begonnen: Drucker bleibt an
-  if (i.now - i.lastDryingAt < DRY_OFF_SETTLE_MS) return 'wait';
+  if (i.now - i.lastDryingAt < (i.settleMs ?? DRY_OFF_SETTLE_MS)) return 'wait';
   return 'switch-off';
 }
 

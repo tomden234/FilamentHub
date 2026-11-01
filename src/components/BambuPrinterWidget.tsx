@@ -410,11 +410,12 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     void setHaAutoOff(haAutoOffWanted);
   }, [haAutoOffWanted, haSwitchState.configured]);
   // „Nach Trocknen aus“ ebenso ohne offene App: Home-Assistant-Automation an, solange gewählt
+  const [workshopSettings] = useWorkshopSettings();
   const haDryOffWanted = dryOffState.armed;
   useEffect(() => {
     if (!haSwitchState.configured) return;
     void setHaDryOff(haDryOffWanted);
-  }, [haDryOffWanted, haSwitchState.configured]);
+  }, [haDryOffWanted, haSwitchState.configured, workshopSettings.dryOffDelayMin]);
 
   // Druck-Planer: danach trocknen / ausschalten / Druck verzögern (Fenster bei neuem Druck)
   const armDryAfterNow = (temp: number, hours: number, ids: string[]) => {

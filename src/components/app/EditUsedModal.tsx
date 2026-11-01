@@ -1,6 +1,7 @@
 import React from 'react';
 import { Edit3 } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
+import { NumInput } from '../ui/NumInput';
 
 export interface EditUsedModalProps {
   setIsEditUsedModalOpen: any;
@@ -59,7 +60,7 @@ export const EditUsedModal: React.FC<EditUsedModalProps> = ({
                   Aktueller Zählerstand (Gramm):
                 </label>
                 <div className="flex items-center gap-2">
-                  <input
+                  <NumInput
                     type="number"
                     min="0"
                     step="1"

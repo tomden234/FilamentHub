@@ -2,6 +2,7 @@ import React from 'react';
 import { Tag, X, PenTool, Check, Minus, Plus, Trash2, RotateCcw, Pencil, Radio } from 'lucide-react';
 import type { NfcModalProps as ParentProps } from '../NfcModal';
 import { LabelPrintButton } from '../LabelPrintButton';
+import { NumInput } from '../ui/NumInput';
 
 export interface NfcReadTabProps {
   unwrittenTagDetected: any;
@@ -281,7 +282,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                             </button>
 
                             <div className="relative flex-1">
-                              <input
+                              <NumInput
                                 type="number"
                                 min="1"
                                 max="3000"

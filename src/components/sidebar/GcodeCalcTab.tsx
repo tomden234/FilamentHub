@@ -3,6 +3,7 @@ import React from 'react';
 import { FileCode2, RefreshCw, UploadCloud, Check, Calculator } from 'lucide-react';
 import type { SidebarProps as ParentProps } from '../Sidebar';
 import { SpoolFitList } from '../workshop/SpoolFitList';
+import { NumInput } from '../ui/NumInput';
 
 export interface GcodeCalcTabProps {
   handlePullGcodeFromPrinter: (...args: any[]) => any;
@@ -202,7 +203,7 @@ export const GcodeCalcTab: React.FC<GcodeCalcTabProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[10px] block mb-1" style={{ color: 'var(--app-text-muted)' }}>Verbrauch (g):</label>
-                      <input
+                      <NumInput
                         type="number"
                         value={calcGrams}
                         onChange={e => setCalcGrams(Number(e.target.value))}
@@ -216,7 +217,7 @@ export const GcodeCalcTab: React.FC<GcodeCalcTabProps> = ({
                     </div>
                     <div>
                       <label className="text-[10px] block mb-1" style={{ color: 'var(--app-text-muted)' }}>Filament (€/kg):</label>
-                      <input
+                      <NumInput
                         type="number"
                         step="0.1"
                         value={calcPricePerKg}
@@ -234,7 +235,7 @@ export const GcodeCalcTab: React.FC<GcodeCalcTabProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[10px] block mb-1" style={{ color: 'var(--app-text-muted)' }}>Druckdauer (h):</label>
-                      <input
+                      <NumInput
                         type="number"
                         step="0.1"
                         value={calcPrintHours}
@@ -249,7 +250,7 @@ export const GcodeCalcTab: React.FC<GcodeCalcTabProps> = ({
                     </div>
                     <div>
                       <label className="text-[10px] block mb-1" style={{ color: 'var(--app-text-muted)' }}>Leistung (W):</label>
-                      <input
+                      <NumInput
                         type="number"
                         value={calcPrinterWatts}
                         onChange={e => setCalcPrinterWatts(Number(e.target.value))}

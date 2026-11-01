@@ -191,13 +191,29 @@ export interface OngoingStatus {
   sub: string;
   progress: number;
   etaMs: number;
+  /** Kurztext für die Statusleiste (z. B. „45 %“) */
+  shortText?: string;
 }
 
 /** Android-App: stehende Mitteilung mit Balken zeigen oder aktualisieren (braucht die APK ab 1.155) */
+/** Farbe der App (gewähltes Akzent-Farbschema) als #RRGGBB für die Mitteilung */
+function accentHex(): string {
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--app-accent').trim();
+    if (/^#[0-9a-f]{6}$/i.test(raw)) return raw;
+    if (/^#[0-9a-f]{3}$/i.test(raw)) return '#' + raw.slice(1).split('').map(c => c + c).join('');
+    const m = raw.match(/rgba?\((\d+)[ ,]+(\d+)[ ,]+(\d+)/);
+    if (m) return '#' + [m[1], m[2], m[3]].map(n => Number(n).toString(16).padStart(2, '0')).join('');
+  } catch {
+    /* Standard */
+  }
+  return '#168a47';
+}
+
 export async function showOngoingStatus(s: OngoingStatus): Promise<boolean> {
   if (!IS_NATIVE) return false;
   try {
-    const r = await nativeCall<{ shown: boolean }>('showOngoing', { ...s });
+    const r = await nativeCall<{ shown: boolean }>('showOngoing', { ...s, color: accentHex() });
     return Boolean(r?.shown);
   } catch {
     return false; // alte APK ohne diese Funktion

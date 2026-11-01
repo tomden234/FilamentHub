@@ -7,6 +7,7 @@ import { triggerNfcHaptic } from '../../utils/nfcManager';
 import { useNfcTags } from '../../utils/nfcRead';
 import { sendToSlot } from '../../utils/slotAssign';
 import type { HwTray } from '../../utils/amsMatch';
+import { NumInput } from '../ui/NumInput';
 
 // Spule → AMS-Slot: Spule per NFC-Tag ans Handy halten ODER per Suche wählen, Slot antippen, übertragen.
 // Farbe, Material und Temperatur gehen per Befehl an den Drucker, die Zuweisung merkt sich die App.
@@ -65,7 +66,7 @@ const Stepper: React.FC<{ label: string; value: number; onChange: (v: number) =>
       >
         <Minus className="w-3.5 h-3.5" />
       </button>
-      <input
+      <NumInput
         type="number"
         inputMode="numeric"
         value={value}

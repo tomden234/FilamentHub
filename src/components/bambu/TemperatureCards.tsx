@@ -1,6 +1,7 @@
 import React from 'react';
 import { Flame, Edit3, Thermometer, Wind } from 'lucide-react';
 import type { PrinterExpandedPanelProps as ParentProps } from './PrinterExpandedPanel';
+import { NumInput } from '../ui/NumInput';
 
 export interface TemperatureCardsProps {
   isPrinterConnected: ParentProps['isPrinterConnected'];
@@ -96,7 +97,7 @@ export const TemperatureCards: React.FC<TemperatureCardsProps> = ({
                   style={{ borderColor: 'var(--app-border)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <input
+                  <NumInput
                     type="number"
                     min="0"
                     max="300"
@@ -176,7 +177,7 @@ export const TemperatureCards: React.FC<TemperatureCardsProps> = ({
                   style={{ borderColor: 'var(--app-border)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <input
+                  <NumInput
                     type="number"
                     min="0"
                     max="300"
@@ -252,7 +253,7 @@ export const TemperatureCards: React.FC<TemperatureCardsProps> = ({
                   style={{ borderColor: 'var(--app-border)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <input
+                  <NumInput
                     type="number"
                     min="0"
                     max="120"

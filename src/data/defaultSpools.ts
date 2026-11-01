@@ -2292,5 +2292,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.156',
+    label: '1.156 (Einstellungen & Live)',
+    releaseDate: '01.11.2026',
+    description: 'Die stehende Mitteilung steht weiter oben (Android-16-Live-Update) und nutzt die Farbe deiner App. Zahlenfelder lassen sich überall frei tippen. Alle festen Zeiten und Grenzen sind jetzt einstellbar.',
+    features: [
+      '📌 Live-Mitteilung höher und leise (Standard-Wichtigkeit ohne Ton), mit Kurztext in der Statusleiste (Android 16)',
+      '🎨 Mitteilung in der gewählten App-Farbe, mit Symbolen im Titel',
+      '⌨️ Zahlenfelder in der ganzen App: leeren und neu tippen geht, kein Zurückspringen auf Standardwerte mehr',
+      '⚙️ Neue Karte „Zeiten und Grenzen“: Feuchte-Alarm (Wartezeit, Wiederholung), Auto-Trocknen (Wartezeit, Pause), Aus-Wartezeit nach Trocknen, „fast leer“ beim Spulen-Check',
+      '📲 Neue Android-App (APK) nötig für die Live-Mitteilung'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

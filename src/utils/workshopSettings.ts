@@ -54,6 +54,18 @@ export interface WorkshopSettings {
   amsNfcToPrinter: boolean;
   /** Läuft die AMS-Trocknung ohne Druck, das Bauraum-Licht automatisch ausschalten */
   dryLightOff: boolean;
+  /** Feuchte-Alarm: so lange (Minuten) muss die Feuchte über der Grenze liegen */
+  humidityHoldMin: number;
+  /** Feuchte-Alarm: frühestens nach so vielen Stunden erneut melden */
+  humidityRepeatH: number;
+  /** Automatisch trocknen: so lange (Minuten) muss die Feuchte über der Grenze liegen */
+  autoDryHoldMin: number;
+  /** Automatisch trocknen: höchstens einmal in so vielen Stunden */
+  autoDryPauseH: number;
+  /** „Danach Drucker ausschalten“: so viele Minuten nach dem Ende der Trocknung */
+  dryOffDelayMin: number;
+  /** Spulen-Check beim Druckstart: unter so vielen Gramm gilt eine Spule als fast leer */
+  nearlyEmptyG: number;
 }
 
 export const WORKSHOP_SETTINGS_KEY = 'filamenthub_workshop_settings';
@@ -85,7 +97,13 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   keepAlive: true,
   amsNfcOn: true,
   amsNfcToPrinter: true,
-  dryLightOff: true
+  dryLightOff: true,
+  humidityHoldMin: 5,
+  humidityRepeatH: 12,
+  autoDryHoldMin: 10,
+  autoDryPauseH: 24,
+  dryOffDelayMin: 3,
+  nearlyEmptyG: 30
 };
 
 let cache: WorkshopSettings | null = null;
@@ -124,6 +142,16 @@ function sanitize(raw: (Partial<WorkshopSettings> & Record<string, unknown>) | n
   if (s.humidityRoomEntity === 'sensor.filament_ams_raum_feuchte') s.humidityRoomEntity = DEFAULT_WORKSHOP_SETTINGS.humidityRoomEntity;
   const ad = Number(s.autoDryAt);
   s.autoDryAt = Number.isFinite(ad) ? Math.max(10, Math.min(90, Math.round(ad))) : DEFAULT_WORKSHOP_SETTINGS.autoDryAt;
+  const clampNum = (k: 'humidityHoldMin' | 'humidityRepeatH' | 'autoDryHoldMin' | 'autoDryPauseH' | 'dryOffDelayMin' | 'nearlyEmptyG', lo: number, hi: number) => {
+    const n = Number(s[k]);
+    s[k] = Number.isFinite(n) ? Math.max(lo, Math.min(hi, Math.round(n))) : DEFAULT_WORKSHOP_SETTINGS[k];
+  };
+  clampNum('humidityHoldMin', 1, 120);
+  clampNum('humidityRepeatH', 1, 72);
+  clampNum('autoDryHoldMin', 1, 240);
+  clampNum('autoDryPauseH', 1, 168);
+  clampNum('dryOffDelayMin', 1, 30);
+  clampNum('nearlyEmptyG', 0, 500);
   return s;
 }
 

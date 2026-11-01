@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle2, Minus, Plus, Trash2, RotateCw } from 'lucide-react';
+import { NumInput } from '../ui/NumInput';
 
 export interface NfcInspectTabProps {
   activeTargetSpool: any;
@@ -173,7 +174,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
                     </button>
 
                     <div className="relative flex-1">
-                      <input
+                      <NumInput
                         type="number"
                         min="1"
                         max="3000"

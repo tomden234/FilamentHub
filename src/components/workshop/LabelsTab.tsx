@@ -15,6 +15,7 @@ import {
   usePrinter
 } from '../../utils/supvan/service';
 import { Card, Toggle, buttonStyle, inputStyle } from './ui';
+import { NumInput } from '../ui/NumInput';
 
 interface Props {
   spools: Spool[];
@@ -350,7 +351,7 @@ export const LabelsTab: React.FC<Props> = ({ spools, preselectId }) => {
               <label className="text-[11px] font-bold" style={{ color: 'var(--app-text-muted)' }}>
                 Verschiebung quer (Punkte)
               </label>
-              <input
+              <NumInput
                 type="number"
                 min={-16}
                 max={16}
@@ -364,7 +365,7 @@ export const LabelsTab: React.FC<Props> = ({ spools, preselectId }) => {
               <label className="text-[11px] font-bold" style={{ color: 'var(--app-text-muted)' }}>
                 Etikettenlänge (mm), falls nicht erkannt
               </label>
-              <input
+              <NumInput
                 type="number"
                 min={15}
                 max={100}

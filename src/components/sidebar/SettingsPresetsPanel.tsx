@@ -3,6 +3,7 @@ import { Flame, Check, RotateCcw, Scale, Package } from 'lucide-react';
 import { MaterialType } from '../../types/filament';
 import { MATERIAL_PRESETS, BRAND_DATABASE } from '../../data/defaultSpools';
 import type { SidebarProps as ParentProps } from '../Sidebar';
+import { NumInput } from '../ui/NumInput';
 
 const MATERIAL_OPTIONS: MaterialType[] = [
   'PLA',
@@ -123,7 +124,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                         <label className="text-[10px] block mb-1 font-semibold" style={{ color: 'var(--app-text-muted)' }}>
                           Intervall (Tage):
                         </label>
-                        <input
+                        <NumInput
                           type="number"
                           min="1"
                           max="365"
@@ -141,7 +142,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                         <label className="text-[10px] block mb-1 font-semibold" style={{ color: 'var(--app-text-muted)' }}>
                           Temp (°C):
                         </label>
-                        <input
+                        <NumInput
                           type="number"
                           min="30"
                           max="120"
@@ -159,7 +160,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                         <label className="text-[10px] block mb-1 font-semibold" style={{ color: 'var(--app-text-muted)' }}>
                           Dauer (Std.):
                         </label>
-                        <input
+                        <NumInput
                           type="number"
                           min="1"
                           max="48"
@@ -234,7 +235,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <input
+                      <NumInput
                         type="number"
                         min="0"
                         max="200"
@@ -294,7 +295,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                         <label className="text-[10px] block mb-1 font-semibold" style={{ color: 'var(--app-text-muted)' }}>
                           Leerspule Tara (g):
                         </label>
-                        <input
+                        <NumInput
                           type="number"
                           min="0"
                           max="500"
@@ -312,7 +313,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                         <label className="text-[10px] block mb-1 font-semibold" style={{ color: 'var(--app-text-muted)' }}>
                           Standardpreis (€/kg):
                         </label>
-                        <input
+                        <NumInput
                           type="number"
                           step="0.5"
                           min="5"

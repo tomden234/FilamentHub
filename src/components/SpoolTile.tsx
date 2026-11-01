@@ -7,6 +7,7 @@ import { SpoolBadges } from './workshop/SpoolBadges';
 import { isLowSpool } from '../utils/spoolAlerts';
 import { useWorkshopSettings } from '../utils/workshopSettings';
 import { LabelPrintButton } from './LabelPrintButton';
+import { NumInput } from './ui/NumInput';
 
 // Spulen-Kachel: Spulen-Symbol in der Filamentfarbe (Füllung zeigt den Rest), Name, großes Gewicht, durchgehender Füllstandsbalken.
 // Antippen klappt die Aktionen auf.
@@ -150,7 +151,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
             ))}
           </div>
           <div className="flex items-center gap-1.5">
-            <input
+            <NumInput
               type="number"
               inputMode="numeric"
               placeholder="Gramm"

@@ -18,6 +18,8 @@ export interface LiveStatusInput {
   /** „Danach Drucker ausschalten“: Ende der Trocknung (0 = kein Zähler) */
   dryOffEndedAt: number;
   now: number;
+  /** Wartezeit bis zum Ausschalten in ms (Standard 3 Minuten) */
+  settleMs?: number;
 }
 
 export interface LiveStatus {
@@ -29,6 +31,8 @@ export interface LiveStatus {
   progress: number;
   /** Zeitpunkt, an dem es fertig ist (ms), 0 = unbekannt */
   etaMs: number;
+  /** Kurztext für die Statusleiste */
+  shortText: string;
 }
 
 export function fmtDuration(min: number): string {
@@ -61,7 +65,7 @@ export function buildLiveStatus(i: LiveStatusInput): LiveStatus | null {
     const prepare = i.gcodeState === 'PREPARE';
     const pct = Math.max(0, Math.min(100, Math.round(i.percent || 0)));
     const eta = i.remainingMin > 0 ? i.now + i.remainingMin * 60_000 : 0;
-    const title = paused ? `Druck pausiert (${pct} %)` : prepare ? 'Druck wird vorbereitet' : `Druck ${pct} %`;
+    const title = paused ? `⏸️ Druck pausiert (${pct} %)` : prepare ? '🖨️ Druck wird vorbereitet' : `🖨️ Druck ${pct} %`;
     const main = eta ? `Fertig ${fmtClock(eta, i.now)} · noch ${fmtDuration(i.remainingMin)}` : 'Restzeit wird berechnet';
     const layers = i.totalLayers && i.totalLayers > 0 ? `Schicht ${i.layer || 0}/${i.totalLayers}` : '';
     return {
@@ -70,21 +74,24 @@ export function buildLiveStatus(i: LiveStatusInput): LiveStatus | null {
       text: [main, dryLine].filter(Boolean).join('\n'),
       sub: [i.jobName, layers].filter(Boolean).join(' · '),
       progress: prepare ? -1 : pct,
-      etaMs: paused ? 0 : eta
+      etaMs: paused ? 0 : eta,
+      shortText: paused ? 'Pause' : prepare ? '…' : `${pct} %`
     };
   }
 
   if (i.dryOffEndedAt > 0 && !drying) {
-    const left = Math.max(0, i.dryOffEndedAt + DRY_OFF_SETTLE_MS - i.now);
+    const settle = i.settleMs ?? DRY_OFF_SETTLE_MS;
+    const left = Math.max(0, i.dryOffEndedAt + settle - i.now);
     if (left > 0) {
       const sec = Math.ceil(left / 1000);
       return {
         kind: 'dryoff',
-        title: 'Trocknung fertig',
+        title: '✅ Trocknung fertig',
         text: `Drucker geht aus in ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`,
         sub: 'In der App „Abbrechen“ drücken, um ihn anzulassen',
-        progress: Math.round(((DRY_OFF_SETTLE_MS - left) / DRY_OFF_SETTLE_MS) * 100),
-        etaMs: i.dryOffEndedAt + DRY_OFF_SETTLE_MS
+        progress: Math.round(((settle - left) / settle) * 100),
+        etaMs: i.dryOffEndedAt + settle,
+        shortText: `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
       };
     }
   }
@@ -92,11 +99,12 @@ export function buildLiveStatus(i: LiveStatusInput): LiveStatus | null {
   if (drying) {
     return {
       kind: 'dry',
-      title: dryProgress >= 0 ? `Trocknung ${dryProgress} %` : 'Trocknung läuft',
+      title: dryProgress >= 0 ? `💧 Trocknung ${dryProgress} %` : '💧 Trocknung läuft',
       text: `Fertig ${fmtClock(dryEta, i.now)} · noch ${fmtDuration(i.dryMinLeft)}`,
       sub: 'AMS',
       progress: dryProgress,
-      etaMs: dryEta
+      etaMs: dryEta,
+      shortText: fmtDuration(i.dryMinLeft).replace(' min', 'm').replace(' h ', 'h ')
     };
   }
   return null;

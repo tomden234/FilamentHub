@@ -21,6 +21,7 @@ import { isInEibos, spoolTara } from '../utils/spoolState';
 import { getBambuProfile, formatBambuParametersText } from '../data/bambuParameters';
 import { SpoolBadges } from './workshop/SpoolBadges';
 import { SpoolTile } from './SpoolTile';
+import { NumInput } from './ui/NumInput';
 
 interface SpoolCardProps {
   spool: Spool;
@@ -565,7 +566,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <input
+          <NumInput
             type="number"
             min="0"
             placeholder="Gewicht auf Waage (g)"
@@ -636,7 +637,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
       {/* Schnellabzug & Hinzufügen */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
-          <input
+          <NumInput
             type="number"
             placeholder="Gramm..."
             value={deductInput}

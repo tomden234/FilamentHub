@@ -6,6 +6,7 @@ import { COMMON_LOCATIONS } from '../utils/spoolAlerts';
 import { getBambuProfile } from '../data/bambuParameters';
 import { generateAutoShopUrl, getBrandInfo, parseFilamentText } from '../utils/shopLinks';
 import { hasSpoolBody, isInEibos, isSealed } from '../utils/spoolState';
+import { NumInput } from './ui/NumInput';
 
 interface SpoolModalProps {
   isOpen: boolean;
@@ -543,7 +544,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                 {/* Optional mit Küchenwaage gewogen */}
                 <div className="flex items-center gap-2 pt-1 border-t border-[var(--app-border)]/80">
                   <span className="text-[11px] text-[var(--app-text-muted)]">Oder Brutto auf Waage:</span>
-                  <input
+                  <NumInput
                     type="number"
                     placeholder="z.B. 1250g"
                     value={scaleGross}
@@ -601,7 +602,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-[11px] text-[var(--app-text-muted)] mb-1">Preis (€/kg)</label>
-                  <input
+                  <NumInput
                     type="number"
                     step="0.01"
                     value={pricePerKg}
@@ -611,7 +612,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-[11px] text-[var(--app-text-muted)] mb-1">Leerspule (g)</label>
-                  <input
+                  <NumInput
                     type="number"
                     value={emptySpoolWeight}
                     onChange={e => {
@@ -624,7 +625,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-[11px] text-[var(--app-text-muted)] mb-1">Startgewicht (g)</label>
-                  <input
+                  <NumInput
                     type="number"
                     value={initialWeight}
                     onChange={e => setInitialWeight(parseInt(e.target.value) || 1000)}
@@ -655,7 +656,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="block text-[10px] text-[var(--app-text-muted)] mb-0.5">Intervall (Tage)</label>
-                    <input
+                    <NumInput
                       type="number"
                       value={dryIntervalDays}
                       onChange={e => setDryIntervalDays(parseInt(e.target.value) || 30)}
@@ -664,7 +665,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] text-[var(--app-text-muted)] mb-0.5">Temp (°C)</label>
-                    <input
+                    <NumInput
                       type="number"
                       value={dryTemp}
                       onChange={e => setDryTemp(parseInt(e.target.value) || 50)}
@@ -673,7 +674,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] text-[var(--app-text-muted)] mb-0.5">Dauer (Std.)</label>
-                    <input
+                    <NumInput
                       type="number"
                       value={dryHours}
                       onChange={e => setDryHours(parseInt(e.target.value) || 5)}
@@ -689,7 +690,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[10px] text-[var(--app-text-muted)] mb-0.5">Düse (°C)</label>
-                    <input
+                    <NumInput
                       type="number"
                       placeholder={String(getBambuProfile(isOtherBrand ? customBrand || 'Sonstige' : brand, material).nozzleTempOtherLayers)}
                       value={nozzleTemp}
@@ -699,7 +700,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] text-[var(--app-text-muted)] mb-0.5">Bett (°C)</label>
-                    <input
+                    <NumInput
                       type="number"
                       placeholder={String(getBambuProfile(isOtherBrand ? customBrand || 'Sonstige' : brand, material).bedTempTexturedPEI)}
                       value={bedTemp}

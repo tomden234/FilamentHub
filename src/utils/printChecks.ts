@@ -8,6 +8,7 @@ import { printerApi } from '../api/printerApi';
 import { activeSlotFromPrinter, baseMaterial, colorDistance, EXTERNAL_SLOT, readExternal, readTrays, type HwTray } from './amsMatch';
 import { jobKey, readJobGrams } from './printUsage';
 import { raiseAlert } from './alerts';
+import { getWorkshopSettings } from './workshopSettings';
 import type { PrintSession } from './printSession';
 
 interface Ctx {
@@ -26,7 +27,6 @@ interface Problem {
 }
 
 const slotName = (slot: number) => (slot === EXTERNAL_SLOT ? 'Extern' : `Slot ${slot}`);
-const NEARLY_EMPTY_G = 30;
 
 export async function checkPrintStart(s: PrintSession, ctx: Ctx): Promise<Problem[]> {
   const name = s.name || 'Druckauftrag';
@@ -75,7 +75,7 @@ export async function checkPrintStart(s: PrintSession, ctx: Ctx): Promise<Proble
       const need = known * left;
       if (sp && need > 0 && sp.remainingWeight < need * 1.05) {
         problems.push({ title: `${sp.brand} ${sp.name} reicht evtl. nicht`, sub: `${slotName(slot)} · braucht ca. ${Math.round(need)} g · da ${Math.round(sp.remainingWeight)} g`, color: sp.colorHex });
-      } else if (sp && sp.remainingWeight < NEARLY_EMPTY_G) {
+      } else if (sp && sp.remainingWeight < getWorkshopSettings().nearlyEmptyG) {
         problems.push({ title: `${sp.brand} ${sp.name} ist fast leer`, sub: `${slotName(slot)} · nur noch ${Math.round(sp.remainingWeight)} g`, color: sp.colorHex });
       }
     }
