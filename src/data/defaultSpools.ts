@@ -2129,5 +2129,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.144',
+    label: '1.144 (Aus-Status sichtbar)',
+    releaseDate: '01.11.2026',
+    description: 'Bei „Danach Drucker ausschalten“ siehst du jetzt, ob Home Assistant das Ausschalten übernimmt (ohne offene App). Mit „Prüfen“ richtest du es neu ein.',
+    features: [
+      '✅ Statuszeile unter „Danach Drucker ausschalten“: Home Assistant bereit oder Grund, warum nicht',
+      '🔁 Knopf „Prüfen“: sucht den AMS-Trockenzeit-Sensor und legt die Automation neu an'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

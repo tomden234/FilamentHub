@@ -9,6 +9,7 @@ import { SlotTagSheet } from './SlotTagSheet';
 import { useHumidity, amsHumidityPercent } from '../../utils/humidity';
 import { armDryOff, disarmDryOff, useDryOff } from '../../utils/dryAutoOff';
 import { getHaCredentials } from '../../utils/haClient';
+import { getHaDryOffInfo, installHaDryOff, setHaDryOff } from '../../utils/haDryOff';
 import { updateWorkshopSettings, useWorkshopSettings } from '../../utils/workshopSettings';
 import { Toggle } from '../workshop/ui';
 
@@ -129,6 +130,8 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
   nfcInfo
 }) => {
   const dryOff = useDryOff();
+  const [haInfo, setHaInfo] = useState(getHaDryOffInfo());
+  const [haBusy, setHaBusy] = useState(false);
   const [workshop] = useWorkshopSettings();
   const toggleDryOff = (on: boolean) => {
     if (!on) {
@@ -429,6 +432,28 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                     label="Danach Drucker ausschalten"
                     hint="Steckdose aus, 3 Minuten nach dem Ende der Trocknung. Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus."
                   />
+                  {dryOff.armed && (
+                    <div className="text-[11px] leading-snug rounded-lg border p-2 flex items-start gap-2" style={{ borderColor: 'var(--app-border)', color: 'var(--app-text-muted)' }}>
+                      <span className="flex-1 min-w-0">
+                        {haInfo ? (haInfo.ok ? '✅ ' : '⚠️ ') + haInfo.text : 'Home Assistant: noch nicht geprüft. Ohne Home Assistant schaltet nur die offene App aus.'}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={haBusy}
+                        onClick={async () => {
+                          setHaBusy(true);
+                          const r = await installHaDryOff();
+                          setHaInfo(r);
+                          if (r.ok) await setHaDryOff(true);
+                          setHaBusy(false);
+                        }}
+                        className="shrink-0 px-2 py-1 rounded-lg border font-bold cursor-pointer disabled:opacity-50"
+                        style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+                      >
+                        {haBusy ? '…' : 'Prüfen'}
+                      </button>
+                    </div>
+                  )}
                   <Toggle
                     on={workshop.dryLightOff}
                     onChange={v => updateWorkshopSettings({ dryLightOff: v })}
