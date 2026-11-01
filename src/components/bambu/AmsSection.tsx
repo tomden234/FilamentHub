@@ -153,6 +153,10 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
   const dryOff = useDryOff();
   const [haInfo, setHaInfo] = useState(getHaDryOffInfo());
   const [haBusy, setHaBusy] = useState(false);
+  React.useEffect(() => {
+    const id = setInterval(() => setHaInfo(getHaDryOffInfo()), 3000);
+    return () => clearInterval(id);
+  }, []);
   const [workshop] = useWorkshopSettings();
   const toggleDryOff = (on: boolean) => {
     if (!on) {
@@ -455,10 +459,10 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                     hint={`Dauerhaft: Nach jeder Trocknung geht die Steckdose ${workshop.dryOffDelayMin} Minute${workshop.dryOffDelayMin === 1 ? '' : 'n'} nach dem Ende aus (Zeit in den Benachrichtigungen einstellbar). Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus.`}
                   />
                   {dryOff.armed && dryOff.endedAt > 0 && !isDryingActive && <DryOffCountdown endedAt={dryOff.endedAt} onCancel={() => { skipDryOffRun(); void cancelHaDryOffRun(); }} />}
-                  {dryOff.armed && (
+                  {dryOff.armed && haInfo && !haInfo.ok && (
                     <div className="text-[11px] leading-snug rounded-lg border p-2 flex items-start gap-2" style={{ borderColor: 'var(--app-border)', color: 'var(--app-text-muted)' }}>
                       <span className="flex-1 min-w-0">
-                        {haInfo ? (haInfo.ok ? '✅ ' : '⚠️ ') + haInfo.text : 'Home Assistant: noch nicht geprüft. Ohne Home Assistant schaltet nur die offene App aus.'}
+                        {'⚠️ ' + haInfo.text}
                       </span>
                       <button
                         type="button"
@@ -473,7 +477,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                         className="shrink-0 px-2 py-1 rounded-lg border font-bold cursor-pointer disabled:opacity-50"
                         style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
                       >
-                        {haBusy ? '…' : 'Prüfen'}
+                        {haBusy ? '…' : 'Nochmal prüfen'}
                       </button>
                       {haInfo && !haInfo.ok && getHaDryOffJson() && (
                         <button

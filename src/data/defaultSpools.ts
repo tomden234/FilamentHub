@@ -2308,5 +2308,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.157',
+    label: '1.157 (Auto-Prüfen)',
+    releaseDate: '01.11.2026',
+    description: 'Home Assistant wird bei jedem App-Start von selbst geprüft und die Automation „Nach Trocknen aus“ eingerichtet. Der Knopf „Prüfen“ ist weg und erscheint nur noch, wenn etwas nicht klappt.',
+    features: [
+      '🔄 Beim Öffnen der App: Sensoren suchen, Automation anlegen oder aktualisieren, an/aus passend zum Schalter',
+      '🙈 Kein Prüfen-Knopf mehr nötig, die Statuszeile erscheint nur noch bei einem Problem (mit „Nochmal prüfen“)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

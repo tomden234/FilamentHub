@@ -60,7 +60,7 @@ import { useDryAfterPrint } from '../hooks/useDryAfterPrint';
 import { DrySuggestSheet } from './bambu/DrySuggestSheet';
 import { armDryPlan, disarmDryPlan, dryPlanFor, needsDryingNow } from '../utils/dryAfterPrint';
 import { setHaAutoOff } from '../utils/haAutoOff';
-import { setHaDryOff } from '../utils/haDryOff';
+import { installHaDryOff, setHaDryOff } from '../utils/haDryOff';
 import { usePrintPlanRunner } from '../hooks/usePrintPlan';
 import { clearPrintPlan, setPrintPlan, clockText } from '../utils/printPlan';
 import { PrintPlanSheet } from './bambu/PrintPlanSheet';
@@ -126,6 +126,9 @@ const DEFAULT_LIVE_STATE: BambuLiveState = {
     statusColor: '#64748b'
   }
 };
+
+/** Pro App-Start wird die Home-Assistant-Automation „Nach Trocknen aus“ einmal automatisch geprüft */
+let haDryOffCheckedThisStart = false;
 
 export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   spools,
@@ -414,7 +417,14 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   const haDryOffWanted = dryOffState.armed;
   useEffect(() => {
     if (!haSwitchState.configured) return;
-    void setHaDryOff(haDryOffWanted);
+    void (async () => {
+      // Bei jedem App-Start einmal prüfen (Sensoren suchen, Automation anlegen/aktualisieren), danach nur noch an/aus
+      if (haDryOffWanted && !haDryOffCheckedThisStart) {
+        const r = await installHaDryOff();
+        if (r.ok) haDryOffCheckedThisStart = true; // bei Fehler beim nächsten Mal erneut versuchen
+      }
+      await setHaDryOff(haDryOffWanted);
+    })();
   }, [haDryOffWanted, haSwitchState.configured, workshopSettings.dryOffDelayMin]);
 
   // Druck-Planer: danach trocknen / ausschalten / Druck verzögern (Fenster bei neuem Druck)
