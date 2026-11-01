@@ -4,7 +4,7 @@ Filament-Verwaltung für Bambu-Lab-Drucker (getestet mit dem X2D und AMS 2 Pro):
 
 > **English:** FilamentHub is a self-hosted filament inventory and printer companion for Bambu Lab printers (tested with the X2D + AMS 2 Pro): spool inventory, tare/scale calculator, drying reminders, print history, Home Assistant, NFC tags and optional cloud sync. It runs as a web app (GitHub Pages), an Android app (Capacitor) and a Windows app (Electron). The UI is in German. Contributions are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Aktuelle Version: **1.146 (HA-Automation kopieren)**. Die Zählung läuft ab 1.100 einfach weiter, die 2 bleibt für ein großes Update frei (intern heißt 1.146 im Paket 2.0.146, damit Updates sicher aufwärts zählen). Alle Versionen stehen im Revisionsmenü der App und lassen sich dort auswählen. Was seit 1.105 dazukam, steht in [docs/CHANGELOG.md](docs/CHANGELOG.md).
+Aktuelle Version: **1.147 (HA-Fehler mit Schritt)**. Die Zählung läuft ab 1.100 einfach weiter, die 2 bleibt für ein großes Update frei (intern heißt 1.147 im Paket 2.0.147, damit Updates sicher aufwärts zählen). Alle Versionen stehen im Revisionsmenü der App und lassen sich dort auswählen. Was seit 1.105 dazukam, steht in [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## Schnellstart: eigene Version in 5 Minuten (Fork)
 

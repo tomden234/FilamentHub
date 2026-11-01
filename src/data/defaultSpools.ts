@@ -2168,5 +2168,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.147',
+    label: '1.147 (HA-Fehler mit Schritt)',
+    releaseDate: '01.11.2026',
+    description: 'Die Meldung zu „Danach Drucker ausschalten“ nennt jetzt den Schritt und den genauen Fehler. Home-Assistant-Anfragen dürfen länger dauern (25 s).',
+    features: [
+      '🔎 Meldung zeigt Schritt (Sensoren lesen, Automation anlegen) und Fehlertext',
+      '⏱️ Zeitgrenze für Home-Assistant-Anfragen von 12 auf 25 Sekunden'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

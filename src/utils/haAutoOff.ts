@@ -38,7 +38,7 @@ export async function haFetch(path: string, init?: RequestInit): Promise<Respons
   return fetch(`${url}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    signal: AbortSignal.timeout(12000)
+    signal: AbortSignal.timeout(25000)
   });
 }
 

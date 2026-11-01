@@ -50,6 +50,7 @@ async function findDryEntities(): Promise<{ dry: string[]; automation?: string }
 export async function installHaDryOff(): Promise<HaDryOffInfo> {
   const { token, switchEntity } = getHaCredentials();
   if (!token) return setInfo(false, 'Kein Home-Assistant-Token in der App.');
+  let step = 'Sensoren lesen';
   try {
     const { status } = await findEntities();
     const { dry, automation: existing } = await findDryEntities();
@@ -88,6 +89,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
       ]
     };
     safeStorage.setItem(JSON_KEY, JSON.stringify(config, null, 2));
+    step = 'Automation anlegen';
     let res: Response;
     try {
       res = await haFetch(`/api/config/automation/config/${AUTOMATION_ID}`, { method: 'POST', body: JSON.stringify(config) });
@@ -99,6 +101,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
       );
     }
     if (!res.ok) return setInfo(false, res.status === 401 || res.status === 403 ? 'Der Home-Assistant-Token darf keine Automationen anlegen (Admin-Benutzer nötig).' : `Home Assistant hat die Automation abgelehnt (${res.status}).`);
+    step = 'Automation einschalten';
     let entity = '';
     for (let i = 0; i < 6 && !entity; i++) {
       await new Promise(r => setTimeout(r, 1000));
@@ -121,8 +124,8 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
     return setInfo(
       false,
       netFail
-        ? `Home Assistant (${host}) nicht erreichbar. Adresse in den Einstellungen prüfen, Internet an? Bei eigener Adresse (http://…) darf die App sie nur im selben WLAN erreichen.`
-        : `Home Assistant meldet: ${raw}`
+        ? `Home Assistant (${host}) nicht erreichbar (Schritt: ${step}, Fehler: ${raw}). Adresse in den Einstellungen prüfen, Internet an? Bei eigener Adresse (http://…) darf die App sie nur im selben WLAN erreichen.`
+        : `Home Assistant meldet (Schritt: ${step}): ${raw}`
     );
   }
   }
