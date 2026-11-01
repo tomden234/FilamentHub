@@ -2207,5 +2207,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.150',
+    label: '1.150 (Trockenzeit-Sensor finden)',
+    releaseDate: '01.11.2026',
+    description: 'Die App sucht den Trockenzeit-Sensor in Home Assistant breiter und zeigt in der Meldung, was sie gefunden hat.',
+    features: [
+      '🔍 Breitere Suche nach dem AMS-Trockenzeit-Sensor (auch deutsche Namen)',
+      '📋 Meldung nennt gefundenen Druckstatus-Sensor und ähnliche Trocken-Sensoren'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -38,13 +38,19 @@ function setInfo(ok: boolean, text: string): HaDryOffInfo {
 }
 
 /** Sensoren der AMS-Rest-Trockenzeit in Home Assistant suchen */
-async function findDryEntities(): Promise<{ dry: string[]; automation?: string }> {
+async function findDryEntities(): Promise<{ dry: string[]; maybe: string[]; automation?: string }> {
   const res = await haFetch('/api/states');
   if (!res.ok) throw new Error(`Home Assistant antwortet mit ${res.status}`);
   const states: any[] = await res.json();
-  const dry = states.map(s => String(s.entity_id)).filter(id => /^sensor\..*ams.*(remaining_)?dry(ing)?_time$/.test(id));
+  const sensors = states.filter(s => String(s.entity_id).startsWith('sensor.'));
+  const text = (s: any) => `${s.entity_id} ${s.attributes?.friendly_name || ''}`.toLowerCase();
+  // Rest-Trockenzeit: „drying_time“, „dry_time“, „Rest-Trockenzeit“, „Remaining drying time“ ...
+  const dry = sensors
+    .filter(s => /(dry|drying|trock)/.test(text(s)) && /(time|zeit|remaining|rest|left)/.test(text(s)) && !/(temp|humid|feucht)/.test(text(s)))
+    .map(s => String(s.entity_id));
+  const maybe = sensors.filter(s => /(dry|trock)/.test(text(s))).map(s => String(s.entity_id)).slice(0, 6);
   const automation = states.find(s => String(s.entity_id).startsWith('automation.') && s.attributes?.id === AUTOMATION_ID)?.entity_id;
-  return { dry, automation };
+  return { dry, maybe, automation };
 }
 
 export async function installHaDryOff(): Promise<HaDryOffInfo> {
@@ -53,14 +59,15 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
   let step = 'Sensoren lesen';
   try {
     const { status } = await findEntities();
-    const { dry, automation: existing } = await findDryEntities();
+    const { dry, maybe, automation: existing } = await findDryEntities();
     if (existing) {
       safeStorage.setItem(ENTITY_KEY, existing);
       await callHaService('automation', 'turn_off', { entity_id: existing });
       return setInfo(true, `Automation in Home Assistant gefunden (${existing}). Home Assistant schaltet 3 Minuten nach Trocknungsende aus.`);
     }
     if (!status || !dry.length) {
-      return setInfo(false, 'In Home Assistant fehlen Druckstatus oder AMS-Rest-Trockenzeit (Bambu-Lab-Integration, HACS). Bis dahin schaltet die App selbst aus, solange sie läuft.');
+      const found = `Gefunden: Druckstatus ${status || 'nein'}, Trockenzeit ${dry[0] || 'nein'}${maybe.length ? `, ähnliche Sensoren: ${maybe.join(', ')}` : ''}.`;
+      return setInfo(false, `In Home Assistant fehlen Druckstatus oder AMS-Rest-Trockenzeit (Bambu-Lab-Integration, HACS). ${found} Bis dahin schaltet die App selbst aus, solange sie läuft.`);
     }
     const below = dry.map(e => ({ condition: 'numeric_state', entity_id: e, below: 0.01 }));
     const config = {
