@@ -62,7 +62,7 @@ async function createWindow() {
     minWidth: 420,
     minHeight: 600,
     title: 'FilamentHub',
-    backgroundColor: '#062116',
+    backgroundColor: '#0d1a19',
     icon: path.join(__dirname, '..', 'public', process.platform === 'win32' ? 'icon.ico' : 'pwa-512x512.png'),
     autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, nodeIntegration: false, preload: path.join(__dirname, 'preload.cjs') }
@@ -84,7 +84,7 @@ async function createWindow() {
     await waitForServer();
     await win.loadURL(URL);
   } catch (e) {
-    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent('<body style="font-family:sans-serif;background:#062116;color:#fff;padding:32px"><h2>FilamentHub startet nicht</h2><p>Der interne Server antwortet nicht. Port ' + PORT + ' evtl. belegt. Log: ' + path.join(app.getPath('userData'), 'server.log') + '</p></body>'));
+    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent('<body style="font-family:sans-serif;background:#0d1a19;color:#f2e9da;padding:32px"><h2>FilamentHub startet nicht</h2><p>Der interne Server antwortet nicht. Port ' + PORT + ' evtl. belegt. Log: ' + path.join(app.getPath('userData'), 'server.log') + '</p></body>'));
   }
 }
 

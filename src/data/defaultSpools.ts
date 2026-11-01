@@ -2390,5 +2390,15 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.163',
+    label: '1.163 (Cozy am PC)',
+    releaseDate: '01.11.2026',
+    description: 'Die Windows-App startet im Cozy-Ton statt Dunkelgrün. Das Cozy-Design kommt mit diesem Update auch in die Windows-App.',
+    features: ['🖥️ Windows-App: Fenster-Hintergrund beim Start im Cozy-Petrol', '☕ Cozy-Design aus 1.162 jetzt auch in der Windows-App (nach dem Update)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
