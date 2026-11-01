@@ -2337,5 +2337,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.159',
+    label: '1.159 (Android-Build repariert)',
+    releaseDate: '01.11.2026',
+    description: 'Der Android-Build von 1.158 schlug fehl (eine Datei war versehentlich leer). Jetzt wieder in Ordnung, mit Warteschlange und Homescreen-Widget.',
+    features: [
+      '🔧 Live-Update-Teil der Android-App wiederhergestellt, APK baut wieder',
+      '📱 Homescreen-Widget und Warteschlange aus 1.158 sind enthalten'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
