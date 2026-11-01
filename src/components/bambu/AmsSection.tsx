@@ -7,9 +7,9 @@ import { readTrays, readExternal, activeSlotFromPrinter, syncSlots, mismatch, EX
 import { SpoolPicker } from '../SpoolPicker';
 import { SlotTagSheet } from './SlotTagSheet';
 import { useHumidity, amsHumidityPercent } from '../../utils/humidity';
-import { armDryOff, disarmDryOff, useDryOff } from '../../utils/dryAutoOff';
+import { armDryOff, disarmDryOff, skipDryOffRun, useDryOff, DRY_OFF_SETTLE_MS } from '../../utils/dryAutoOff';
 import { getHaCredentials } from '../../utils/haClient';
-import { getHaDryOffInfo, getHaDryOffJson, installHaDryOff, setHaDryOff } from '../../utils/haDryOff';
+import { cancelHaDryOffRun, getHaDryOffInfo, getHaDryOffJson, installHaDryOff, setHaDryOff } from '../../utils/haDryOff';
 import { updateWorkshopSettings, useWorkshopSettings } from '../../utils/workshopSettings';
 import { Toggle } from '../workshop/ui';
 
@@ -109,6 +109,27 @@ const BoxClimate: React.FC<{ unit: any }> = ({ unit }) => {
   );
 };
 
+/** 3-Minuten-Zähler bis zum Ausschalten, mit Knopf zum Abbrechen (nur dieses Mal) */
+const DryOffCountdown: React.FC<{ endedAt: number; onCancel: () => void }> = ({ endedAt, onCancel }) => {
+  const [now, setNow] = useState(Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const left = Math.max(0, Math.ceil((endedAt + DRY_OFF_SETTLE_MS - now) / 1000));
+  const mm = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  return (
+    <div className="flex items-center gap-2 rounded-lg border p-2 text-xs" style={{ borderColor: 'var(--app-accent)', color: 'var(--app-text)' }}>
+      <span className="flex-1 min-w-0 font-bold">{left > 0 ? `⏱️ Trocknung fertig. Drucker geht aus in ${mm}` : '🔌 Drucker wird ausgeschaltet …'}</span>
+      {left > 0 && (
+        <button type="button" onClick={onCancel} className="shrink-0 px-2 py-1 rounded-lg border font-bold cursor-pointer" style={{ borderColor: 'var(--app-border)' }}>
+          Abbrechen
+        </button>
+      )}
+    </div>
+  );
+};
+
 export const AmsSection: React.FC<AmsSectionProps> = ({
   compact = false,
   setAmsSlots,
@@ -136,7 +157,8 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
   const toggleDryOff = (on: boolean) => {
     if (!on) {
       disarmDryOff();
-      setActionToast({ text: 'Drucker bleibt nach dem Trocknen an.', ok: true });
+      void cancelHaDryOffRun();
+      setActionToast({ text: 'Aus: Der Drucker bleibt nach dem Trocknen an.', ok: true });
       return;
     }
     const ha = getHaCredentials();
@@ -145,7 +167,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
       return;
     }
     armDryOff();
-    setActionToast({ text: 'Nach dem Trocknen schaltet die App den Drucker aus (3 Minuten nach dem Ende, nur ohne Druck).', ok: true });
+    setActionToast({ text: 'An: Nach jeder Trocknung geht der Drucker 3 Minuten nach dem Ende aus (nur ohne Druck), bis du es ausmachst.', ok: true });
   };
   const connected = Boolean(liveState.connected);
   const [pickSlot, setPickSlot] = useState<number | null>(null);
@@ -415,7 +437,8 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
 
                   <button
                     onClick={() => {
-                      disarmDryOff(); // von Hand gestoppt: der Drucker bleibt an
+                      skipDryOffRun(); // von Hand gestoppt: diesmal bleibt der Drucker an, der Schalter bleibt aber an
+                      void cancelHaDryOffRun();
                       void handleToggleAmsDrying(false);
                     }}
                     disabled={dryLoading}
@@ -430,8 +453,9 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                     on={dryOff.armed}
                     onChange={toggleDryOff}
                     label="Danach Drucker ausschalten"
-                    hint="Steckdose aus, 3 Minuten nach dem Ende der Trocknung. Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus."
+                    hint="Dauerhaft: Nach jeder Trocknung geht die Steckdose 3 Minuten nach dem Ende aus. Nur ohne Druck. Home Assistant schaltet auch ohne offene App aus."
                   />
+                  {dryOff.armed && dryOff.endedAt > 0 && !isDryingActive && <DryOffCountdown endedAt={dryOff.endedAt} onCancel={() => { skipDryOffRun(); void cancelHaDryOffRun(); }} />}
                   {dryOff.armed && (
                     <div className="text-[11px] leading-snug rounded-lg border p-2 flex items-start gap-2" style={{ borderColor: 'var(--app-border)', color: 'var(--app-text-muted)' }}>
                       <span className="flex-1 min-w-0">

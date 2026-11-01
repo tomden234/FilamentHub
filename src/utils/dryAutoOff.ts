@@ -1,5 +1,6 @@
 // „Nach Trocknen ausschalten“: gemerkter Schalter + reine Entscheidungslogik (ohne Browser, darum testbar).
 // Die Steckdose geht aus, wenn die AMS-Trocknung gelaufen und zu Ende ist und kein Druck läuft.
+// Der Schalter bleibt dauerhaft an (gilt für jede Trocknung), bis du ihn selbst ausmachst.
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { ACTIVE_STATES } from './printSession';
@@ -7,19 +8,19 @@ import { ACTIVE_STATES } from './printSession';
 export interface DryOffState {
   armed: boolean;
   armedAt: number;
+  /** Wann die letzte Trocknung zu Ende ging (0 = keine, die 3 Minuten laufen) */
+  endedAt: number;
+  /** Von Hand abgebrochen: der laufende Durchgang zählt nicht */
+  skipAt: number;
 }
 
 const KEY = 'filamenthub_dry_power_off_v1';
-const OFF: DryOffState = { armed: false, armedAt: 0 };
+const OFF: DryOffState = { armed: false, armedAt: 0, endedAt: 0, skipAt: 0 };
 
 /** Nach dem Ende der Trocknung warten (Lüfter/Ventile des AMS laufen noch aus) */
 export const DRY_OFF_SETTLE_MS = 3 * 60_000;
-/** Gewählt, aber die Trocknung startet nie: nach so langer Zeit vergessen */
-export const DRY_OFF_NEVER_STARTED_MS = 30 * 60_000;
-/** Ein Schalter, der älter ist, wird nicht mehr beachtet */
-export const DRY_OFF_STALE_MS = 36 * 3600_000;
 
-export type DryOffAction = 'wait' | 'switch-off' | 'cancel-print' | 'cancel-never-started' | 'cancel-stale' | 'cancel-socket-off';
+export type DryOffAction = 'wait' | 'switch-off' | 'cancel-print' | 'cancel-socket-off';
 
 export interface DryOffInput {
   armedAt: number;
@@ -33,14 +34,9 @@ export interface DryOffInput {
 
 /** Was soll jetzt passieren? */
 export function dryOffAction(i: DryOffInput): DryOffAction {
-  if (i.now - i.armedAt > DRY_OFF_STALE_MS) return 'cancel-stale';
   const printing = ACTIVE_STATES.has(String(i.gcodeState || ''));
   if (i.dryingNow) return 'wait'; // läuft noch (auch neben einem Druck): nie ausschalten
-  if (i.lastDryingAt === 0) {
-    // Trocknung noch nicht gesehen: warten, aber nicht ewig
-    if (printing) return 'wait';
-    return i.now - i.armedAt > DRY_OFF_NEVER_STARTED_MS ? 'cancel-never-started' : 'wait';
-  }
+  if (i.lastDryingAt === 0) return 'wait'; // Trocknung in diesem Durchgang noch nicht gesehen
   // Trocknung ist vorbei
   if (i.switchState === 'off') return 'cancel-socket-off'; // schon aus (z. B. von Hand): erledigt
   if (printing) return 'cancel-print'; // danach hat ein neuer Druck begonnen: Drucker bleibt an
@@ -54,7 +50,7 @@ const listeners = new Set<() => void>();
 function read(): DryOffState {
   try {
     const v = JSON.parse(safeStorage.getItem(KEY) || 'null');
-    if (v && typeof v.armed === 'boolean') return { armed: v.armed, armedAt: Number(v.armedAt) || 0 };
+    if (v && typeof v.armed === 'boolean') return { armed: v.armed, armedAt: Number(v.armedAt) || 0, endedAt: Number(v.endedAt) || 0, skipAt: Number(v.skipAt) || 0 };
   } catch {
     /* kaputt */
   }
@@ -74,7 +70,19 @@ function save(s: DryOffState): void {
 }
 
 export function armDryOff(): void {
-  save({ armed: true, armedAt: Date.now() });
+  save({ armed: true, armedAt: Date.now(), endedAt: 0, skipAt: 0 });
+}
+
+/** Ende der Trocknung merken (für den 3-Minuten-Zähler), 0 = kein Zähler */
+export function setDryEndedAt(ts: number): void {
+  const c = getDryOff();
+  if (c.armed && c.endedAt !== ts) save({ ...c, endedAt: ts });
+}
+
+/** Diesen Durchgang abbrechen (z. B. Trocknung von Hand gestoppt), der Schalter bleibt an */
+export function skipDryOffRun(): void {
+  const c = getDryOff();
+  if (c.armed) save({ ...c, endedAt: 0, skipAt: Date.now() });
 }
 
 export function disarmDryOff(): void {

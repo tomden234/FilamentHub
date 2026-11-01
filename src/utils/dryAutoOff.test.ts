@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DRY_OFF_NEVER_STARTED_MS, DRY_OFF_SETTLE_MS, DRY_OFF_STALE_MS, dryOffAction, type DryOffInput } from './dryAutoOff';
+import { DRY_OFF_SETTLE_MS, dryOffAction, type DryOffInput } from './dryAutoOff';
 
 const T0 = 1_000_000_000_000;
 const base: DryOffInput = { armedAt: T0, now: T0, lastDryingAt: 0, dryingNow: false, gcodeState: 'IDLE', switchState: 'on' };
@@ -9,9 +9,9 @@ describe('dryOffAction', () => {
   it('wartet, solange getrocknet wird', () => {
     expect(dryOffAction(at({ now: T0 + 60_000, dryingNow: true, lastDryingAt: T0 + 60_000 }))).toBe('wait');
   });
-  it('wartet, solange die Trocknung noch nicht gestartet wurde, und gibt nach 30 Minuten auf', () => {
+  it('wartet, solange die Trocknung noch nicht gestartet wurde (auch tagelang)', () => {
     expect(dryOffAction(at({ now: T0 + 5 * 60_000 }))).toBe('wait');
-    expect(dryOffAction(at({ now: T0 + DRY_OFF_NEVER_STARTED_MS + 1 }))).toBe('cancel-never-started');
+    expect(dryOffAction(at({ now: T0 + 5 * 24 * 3600_000 }))).toBe('wait');
   });
   it('schaltet erst 3 Minuten nach dem Ende der Trocknung aus', () => {
     const end = T0 + 6 * 3600_000;
@@ -39,8 +39,5 @@ describe('dryOffAction', () => {
   });
   it('ist die Steckdose vor der Trocknung aus, passiert nichts', () => {
     expect(dryOffAction(at({ now: T0 + 60_000, switchState: 'off' }))).toBe('wait');
-  });
-  it('alter Schalter wird verworfen', () => {
-    expect(dryOffAction(at({ now: T0 + DRY_OFF_STALE_MS + 1, lastDryingAt: T0 }))).toBe('cancel-stale');
   });
 });

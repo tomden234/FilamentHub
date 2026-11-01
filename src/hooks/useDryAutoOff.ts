@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react';
 import { toggleHaSwitch } from '../utils/haClient';
 import { raiseAlert } from '../utils/alerts';
 import { addSystemLog } from '../utils/logService';
-import { disarmDryOff, dryOffAction, useDryOff } from '../utils/dryAutoOff';
+import { dryOffAction, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
 
 // „Nach Trocknen ausschalten“: Ist die AMS-Trocknung zu Ende (und kein Druck), geht nach 3 Minuten die Steckdose über Home Assistant aus.
 //  - gilt nur, wenn die Trocknung nach dem Wählen wirklich gelaufen ist
-//  - startet ein Druck, bleibt der Drucker an (Schalter wird abgewählt)
-//  - du stoppst die Trocknung von Hand: Schalter wird abgewählt (siehe AmsSection)
+//  - der Schalter bleibt an und gilt für jede weitere Trocknung, bis du ihn selbst ausmachst
+//  - startet ein Druck, bleibt der Drucker an (nur dieses Mal)
+//  - du stoppst die Trocknung von Hand: kein Ausschalten (nur dieses Mal, siehe AmsSection)
+//  - die 3 Minuten laufen als Zähler in der Trocknen-Ansicht
 // Läuft auf jedem Gerät, auf dem die App offen ist (Android: auch im Hintergrund mit Hintergrund-Dienst).
 
 interface Params {
@@ -37,15 +39,20 @@ export function useDryAutoOff(p: Params) {
       fails.current = 0;
       return;
     }
+    /** Durchgang abgeschlossen: Schalter bleibt an, der nächste Durchgang beginnt neu */
     const finish = (title: string, text: string, ok: boolean, kind: 'info' = 'info') => {
-      disarmDryOff();
+      lastDryingAt.current = 0;
+      setDryEndedAt(0);
       addSystemLog('steckdose', title, text, ok ? 'success' : 'info');
-      void raiseAlert({ kind, key: `dry-off-${state.armedAt}-${title}`, title, text, toast: `${ok ? '🔌' : 'ℹ️'} ${text}` }, t => latest.current.notify({ text: t, ok }));
+      void raiseAlert({ kind, key: `dry-off-${Date.now()}-${title}`, title, text, toast: `${ok ? '🔌' : 'ℹ️'} ${text}` }, t => latest.current.notify({ text: t, ok }));
     };
     const tick = async () => {
       const cur = latest.current;
       if (!cur.connected || busy.current) return;
-      if (cur.drying) lastDryingAt.current = Date.now();
+      // Nach einem Abbruch von Hand ignorieren, bis die Trocknung wirklich aus ist
+      const skipping = Date.now() - state.skipAt < 120_000;
+      if (cur.drying && !skipping) lastDryingAt.current = Date.now();
+      if (state.skipAt && lastDryingAt.current && lastDryingAt.current < state.skipAt) lastDryingAt.current = 0;
       const action = dryOffAction({
         armedAt: state.armedAt,
         now: Date.now(),
@@ -54,19 +61,16 @@ export function useDryAutoOff(p: Params) {
         gcodeState: cur.gcodeState,
         switchState: cur.switchState
       });
+      // Zähler für die Anzeige: läuft ab Trocknungsende, solange nicht gedruckt wird
+      setDryEndedAt(!cur.drying && lastDryingAt.current && action !== 'cancel-print' && action !== 'cancel-socket-off' ? lastDryingAt.current : 0);
       switch (action) {
         case 'wait':
-          return;
-        case 'cancel-stale':
-        case 'cancel-never-started':
-          disarmDryOff();
-          addSystemLog('steckdose', 'Nach Trocknen aus verworfen', action === 'cancel-stale' ? 'Der Schalter war über 36 Stunden alt' : 'Die Trocknung wurde nicht gestartet', 'info');
           return;
         case 'cancel-socket-off':
           finish('Drucker ausgeschaltet', 'Nach dem Trocknen ist der Drucker aus.', true);
           return;
         case 'cancel-print':
-          finish('Drucker bleibt an', 'Nach dem Trocknen hat ein Druck begonnen. „Nach Trocknen aus“ ist abgewählt, der Drucker bleibt an.', false);
+          finish('Drucker bleibt an', 'Nach dem Trocknen hat ein Druck begonnen. Der Drucker bleibt an (nur dieses Mal).', false);
           return;
         case 'switch-off': {
           busy.current = true;
@@ -76,6 +80,7 @@ export function useDryAutoOff(p: Params) {
               finish('Drucker ausgeschaltet', 'Trocknung fertig, Drucker automatisch ausgeschaltet (3 Minuten nach dem Ende).', true);
               setTimeout(() => latest.current.refreshSwitch(), 800);
             } else if (++fails.current >= MAX_FAILS) {
+              fails.current = 0;
               finish('Ausschalten fehlgeschlagen', `Ausschalten hat nicht geklappt (Home Assistant: ${res.message || 'keine Antwort'}). Bitte selbst ausschalten.`, false);
             }
           } catch {
@@ -89,7 +94,7 @@ export function useDryAutoOff(p: Params) {
     const id = setInterval(() => void tick(), TICK_MS);
     void tick();
     return () => clearInterval(id);
-  }, [state.armed, state.armedAt]);
+  }, [state.armed, state.armedAt, state.skipAt]);
 
   return state;
 }

@@ -1,7 +1,7 @@
 // „Nach Trocknen aus“ auch ohne offene App: Wie bei „Nach Druck aus“ legt die App in Home Assistant eine Automation an
 // und schaltet sie nur ein, solange „Nach Trocknen ausschalten“ gewählt ist. Home Assistant schaltet die Steckdose aus,
-// 3 Minuten nachdem die Rest-Trockenzeit des AMS auf 0 gefallen ist (und nicht gedruckt wird).
-// Beginnt vorher ein Druck, schaltet sich die Automation selbst ab (Drucker bleibt an).
+// 3 Minuten nachdem die Rest-Trockenzeit des AMS von mehr als 0 auf 0 gefallen ist (und nicht gedruckt wird).
+// Die Automation bleibt dauerhaft an und gilt für jede Trocknung, bis „Nach Trocknen ausschalten“ abgewählt wird.
 // Braucht die Bambu-Lab-Integration (HACS: ha-bambulab) mit dem Sensor „Rest-Trockenzeit“ des AMS.
 import { callHaService, getHaCredentials } from './haClient';
 import { findEntities, haFetch } from './haAutoOff';
@@ -11,6 +11,9 @@ const AUTOMATION_ID = 'filamenthub_dry_off';
 const ENTITY_KEY = 'filamenthub_ha_dryoff_entity';
 const INFO_KEY = 'filamenthub_ha_dryoff_info';
 const JSON_KEY = 'filamenthub_ha_dryoff_json';
+const VERSION_KEY = 'filamenthub_ha_dryoff_version';
+/** Hochzählen, wenn sich die Automation ändert: dann wird sie in Home Assistant neu geschrieben */
+const CONFIG_VERSION = '2';
 
 /** Automation als Text zum Einfügen in Home Assistant (YAML-Editor), falls die App sie nicht selbst anlegen darf */
 export function getHaDryOffJson(): string {
@@ -60,7 +63,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
   try {
     const { status } = await findEntities();
     const { dry, maybe, automation: existing } = await findDryEntities();
-    if (existing) {
+    if (existing && safeStorage.getItem(VERSION_KEY) === CONFIG_VERSION) {
       safeStorage.setItem(ENTITY_KEY, existing);
       await callHaService('automation', 'turn_off', { entity_id: existing });
       return setInfo(true, `Automation in Home Assistant gefunden (${existing}). Home Assistant schaltet 3 Minuten nach Trocknungsende aus.`);
@@ -69,30 +72,26 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
       const found = `Gefunden: Druckstatus ${status || 'nein'}, Trockenzeit ${dry[0] || 'nein'}${maybe.length ? `, ähnliche Sensoren: ${maybe.join(', ')}` : ''}.`;
       return setInfo(false, `In Home Assistant fehlen Druckstatus oder AMS-Rest-Trockenzeit (Bambu-Lab-Integration, HACS). ${found} Bis dahin schaltet die App selbst aus, solange sie läuft.`);
     }
-    const below = dry.map(e => ({ condition: 'numeric_state', entity_id: e, below: 0.01 }));
+    // Ablauf: Rest-Trockenzeit fällt von mehr als 0 auf 0 → 3 Minuten warten → wenn nicht gedruckt wird und die Trocknung nicht neu
+    // gestartet wurde → Steckdose aus. Die Automation bleibt dauerhaft an (gilt für jede Trocknung). Läuft sie gerade (Wartezeit),
+    // genügt „Automation aus“, um das Ausschalten zu stoppen.
     const config = {
       id: AUTOMATION_ID,
       alias: 'FilamentHub: Drucker nach Trocknen aus',
-      description: 'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Nach Trocknen ausschalten“ gewählt ist. 3 Minuten nach Trocknungsende geht die Steckdose aus, außer es wird gedruckt.',
+      description: 'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Nach Trocknen ausschalten“ gewählt ist. 3 Minuten nach Trocknungsende geht die Steckdose aus, außer es wird gedruckt oder die Trocknung läuft wieder.',
       mode: 'single',
-      trigger: [
-        ...dry.map(e => ({ platform: 'numeric_state', entity_id: e, below: 0.01, for: { minutes: 3 }, id: 'dryend' })),
-        { platform: 'state', entity_id: status, to: ['running', 'prepare', 'pause'], id: 'print' }
-      ],
-      condition: [],
-      action: [
+      trigger: dry.map(e => ({ platform: 'state', entity_id: e, id: 'dryend' })),
+      condition: [
         {
-          choose: [
-            {
-              conditions: [{ condition: 'trigger', id: 'print' }],
-              sequence: [{ service: 'automation.turn_off', target: { entity_id: '{{ this.entity_id }}' } }, { stop: 'Druck gestartet: Drucker bleibt an' }]
-            }
-          ]
-        },
-        ...below,
+          condition: 'template',
+          value_template: '{{ trigger.from_state is not none and trigger.to_state is not none and (trigger.from_state.state | float(0)) > 0 and (trigger.to_state.state | float(-1)) == 0 }}'
+        }
+      ],
+      action: [
+        { delay: { minutes: 3 } },
+        ...dry.map(e => ({ condition: 'numeric_state', entity_id: e, below: 0.01 })),
         { condition: 'not', conditions: [{ condition: 'state', entity_id: status, state: ['running', 'prepare', 'pause'] }] },
-        { service: 'switch.turn_off', target: { entity_id: switchEntity } },
-        { service: 'automation.turn_off', target: { entity_id: '{{ this.entity_id }}' } }
+        { service: 'switch.turn_off', target: { entity_id: switchEntity } }
       ]
     };
     safeStorage.setItem(JSON_KEY, JSON.stringify(config, null, 2));
@@ -116,6 +115,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
     }
     if (!entity) return setInfo(false, 'Automation angelegt, aber Home Assistant zeigt sie noch nicht. Gleich nochmal versuchen.');
     safeStorage.setItem(ENTITY_KEY, entity);
+    safeStorage.setItem(VERSION_KEY, CONFIG_VERSION);
     await callHaService('automation', 'turn_off', { entity_id: entity });
     return setInfo(true, `Eingerichtet. Home Assistant schaltet 3 Minuten nach Trocknungsende aus (${dry.join(', ')}).`);
   } catch (e: any) {
@@ -150,4 +150,13 @@ export async function setHaDryOff(on: boolean): Promise<boolean> {
   if (!entity) return false;
   const r = await callHaService('automation', on ? 'turn_on' : 'turn_off', { entity_id: entity });
   return r.success;
+}
+
+/** Trocknung von Hand gestoppt: laufende 3-Minuten-Wartezeit in Home Assistant abbrechen (Automation kurz aus, dann wieder an) */
+export async function cancelHaDryOffRun(): Promise<void> {
+  const entity = safeStorage.getItem(ENTITY_KEY) || '';
+  if (!entity) return;
+  await callHaService('automation', 'turn_off', { entity_id: entity });
+  await new Promise(r => setTimeout(r, 2000));
+  await callHaService('automation', 'turn_on', { entity_id: entity });
 }

@@ -2233,5 +2233,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.152',
+    label: '1.152 (Aus-Timer, dauerhaft)',
+    releaseDate: '01.11.2026',
+    description: '„Danach Drucker ausschalten“ bleibt jetzt dauerhaft an und gilt für jede Trocknung. Nach dem Ende läuft ein 3-Minuten-Zähler mit Abbrechen-Knopf. Stoppst du die Trocknung von Hand, bleibt der Drucker an.',
+    features: [
+      '🔁 Schalter bleibt nach dem Ausschalten an, bis du ihn selbst ausmachst',
+      '⏱️ 3-Minuten-Zähler „Drucker geht aus in 2:41“ mit Knopf „Abbrechen“ (nur dieses Mal)',
+      '⏹️ Trocknung von Hand stoppen: kein Ausschalten, der Schalter bleibt an',
+      '🏠 Home-Assistant-Automation passend umgebaut (erkennt nur echtes Trocknungsende, wird beim Prüfen automatisch aktualisiert)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
