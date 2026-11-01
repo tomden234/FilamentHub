@@ -7,6 +7,10 @@ import { IS_NATIVE } from './utils/env';
 import { applySystemBars } from './utils/systemBars';
 import { installNativeNfc } from './utils/nativeNfc';
 import { startLiveUpdate } from './utils/liveUpdate';
+import { applyThemeStyle } from './utils/themeStyle';
+
+// Design-Stil (Klassisch / Cozy) vor dem ersten Zeichnen setzen, damit nichts aufblitzt
+applyThemeStyle();
 
 // Android-App: NFC über das native Plugin (Web NFC gibt es in der WebView nicht)
 installNativeNfc();

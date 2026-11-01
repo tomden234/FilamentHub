@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* "dark:" folgt dem App-Theme (Graphit/Nacht), nicht der Handy-/PC-Einstellung */
-@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *));
+@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *));
 
 /* Die Akzentfarbe steuert auch alle bisherigen "orange"-Klassen (Tailwind), damit Blau, Grün usw. überall greifen */
 @theme {
@@ -439,3 +439,108 @@ progress {
   --color-yellow-400: #854d0e;
 }
 :root[data-theme="warm"] .text-emerald-500 { color: #065f46; }
+
+/* ───────────── Design „Cozy“ (Einstellungen > Design) ─────────────
+   Dunkles Petrol, Creme-Schrift, Messing-Akzent, Serifen-Überschriften, weichere Ecken.
+   Liegt über den dunklen Grundregeln (data-theme="slate"). Abschalten: Design „Klassisch“. */
+:root[data-style="cozy"] {
+  color-scheme: dark;
+  --app-bg: #0d1a19;
+  --app-card: #15292a;
+  --app-card-sub: #112221;
+  --app-border: #2a4342;
+  --app-text: #f2e9da;
+  --app-text-muted: #a7b6ae;
+  --app-input-bg: #0b1716;
+  --app-accent: #a8743f;
+  --app-accent-hover: #8f6133;
+  --app-accent-sub: rgba(201, 150, 90, 0.16);
+  --app-accent-bar: #c9965a;
+  --app-accent-gradient: linear-gradient(90deg, #8f6133 0%, #c9965a 55%, #e6c08e 100%);
+  --app-accent-text: #e3bd8b;
+  --app-danger-text: #f4a29a;
+  --a-100: #f6e7d2;
+  --a-300: #e3bd8b;
+  --a-400: #d6a66c;
+  --a-500: #c9965a;
+  --a-600: #a8743f;
+  --a-700: #8f6133;
+  --color-emerald-300: #b5e4c8;
+  --color-emerald-400: #8fd3ad;
+  --color-green-300: #bfe6c4;
+  --color-green-400: #98d6a2;
+  --color-teal-300: #a6e3d8;
+  --color-teal-400: #7fd0c2;
+  --color-sky-300: #c3e2ef;
+  --color-sky-400: #9fcfe3;
+  --color-cyan-300: #b3e6ea;
+  --color-cyan-400: #8ad6dc;
+  --color-blue-300: #c4d4f2;
+  --color-blue-400: #a3bcec;
+  --color-amber-300: #f3d39b;
+  --color-amber-400: #ecc07a;
+  --color-yellow-300: #f3e09b;
+  --color-yellow-400: #ead27a;
+  --color-rose-300: #f6c1bd;
+  --color-rose-400: #f0a19a;
+  --color-red-300: #f6bdb5;
+  --color-red-400: #ef9a8f;
+  --color-violet-300: #d9cdf5;
+  --color-violet-400: #c3b1ef;
+  --radius-lg: 0.8rem;
+  --radius-xl: 1.05rem;
+  --radius-2xl: 1.45rem;
+}
+:root[data-style="cozy"] .text-emerald-500 { color: #8fd3ad; }
+:root[data-style="cozy"] .text-green-500 { color: #98d6a2; }
+:root[data-style="cozy"] .text-rose-500 { color: #f0a19a; }
+:root[data-style="cozy"] .text-amber-500 { color: #ecc07a; }
+:root[data-style="cozy"] .text-sky-500 { color: #9fcfe3; }
+:root[data-style="cozy"] .text-orange-500 { color: var(--a-300); }
+
+/* Warmer Lichtschein im Hintergrund, wie Abendlicht */
+:root[data-style="cozy"] body {
+  background:
+    radial-gradient(1100px 620px at 8% -12%, rgba(201, 150, 90, 0.11), transparent 62%),
+    radial-gradient(900px 640px at 108% 4%, rgba(54, 120, 110, 0.2), transparent 60%),
+    radial-gradient(800px 500px at 50% 115%, rgba(201, 150, 90, 0.06), transparent 60%),
+    var(--app-bg);
+  background-attachment: fixed;
+}
+
+/* Überschriften in einer warmen Serifen-Schrift */
+:root[data-style="cozy"] :is(h1, h2, h3, h4, .fh-serif) {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Große Karten und Fenster: weicher Schatten, feine Lichtkante oben */
+:root[data-style="cozy"] .rounded-2xl.border,
+:root[data-style="cozy"] .rounded-t-2xl.border {
+  box-shadow:
+    inset 0 1px 0 rgba(242, 233, 218, 0.05),
+    0 18px 40px -22px rgba(0, 0, 0, 0.75);
+}
+:root[data-style="cozy"] .rounded-xl.border {
+  box-shadow: inset 0 1px 0 rgba(242, 233, 218, 0.035);
+}
+
+/* Fenster-Hintergrund leicht getönt statt Schwarz */
+:root[data-style="cozy"] .bg-black\/75 {
+  background-color: rgba(6, 14, 13, 0.72);
+}
+
+/* Kleine Abschnitts-Überschriften: Großbuchstaben mit Abstand (wie ein Menü) */
+.fh-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+:root[data-style="cozy"] .fh-eyebrow {
+  color: var(--app-accent-text);
+  letter-spacing: 0.22em;
+}

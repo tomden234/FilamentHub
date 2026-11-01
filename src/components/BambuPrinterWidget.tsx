@@ -956,7 +956,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
 
   return (
     <div
-      className="rounded-2xl border transition-all shadow-md overflow-hidden"
+      className="@container rounded-2xl border transition-all shadow-md overflow-hidden"
       style={{
         backgroundColor: 'var(--app-card)',
         borderColor: 'var(--app-border)',
@@ -966,7 +966,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
       {/* Header Bar */}
       <div
         onClick={() => setIsExpanded(prev => !prev)}
-        className="p-3 sm:p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-2.5 border-b cursor-pointer transition select-none"
+        className="p-3 sm:p-3.5 flex flex-col @2xl:flex-row @2xl:items-center justify-between gap-2.5 border-b cursor-pointer transition select-none"
         style={{ borderColor: 'var(--app-border)' }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -1070,7 +1070,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
         </div>
 
         {/* Schnellaktionen Header: Aufgeräumt ohne unschönes Wrapping */}
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap @2xl:flex-nowrap" onClick={e => e.stopPropagation()}>
           {/* 1. LAN-Steckdose Toggle */}
           <button
             onClick={handleToggleSwitch}

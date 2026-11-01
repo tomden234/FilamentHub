@@ -27,10 +27,10 @@ export const SettingsThemesPanel: React.FC<SettingsThemesPanelProps> = ({
                   >
                     <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--app-text)' }}>
                       <Sliders className="w-4 h-4 text-orange-400" />
-                      <span>Farbschemata & 5 Helligkeitsstufen</span>
+                      <span>Design und Farben</span>
                     </span>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'var(--app-text-muted)' }}>
-                      Wähle aus 5 Helligkeiten (Weiß, Soft, Grau, Graphit, Nacht). Standard ist Soft. Menü und alle Bereiche passen sich automatisch an.
+                      Neu: Design „Cozy“ (dunkles Petrol, Creme, Messing). Oder „Klassisch“ mit 5 Helligkeiten und eigener Akzentfarbe. Du kannst jederzeit zurück.
                     </p>
                   </div>
 

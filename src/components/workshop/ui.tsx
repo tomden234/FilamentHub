@@ -56,3 +56,41 @@ export const buttonStyle: React.CSSProperties = {
   borderColor: 'var(--app-border)',
   color: 'var(--app-text)'
 };
+
+/** Bereich mit kleiner Überschrift (in „Cozy“ als Serifen-Schrift) */
+export const Section: React.FC<{
+  id: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  sub?: string;
+  children: React.ReactNode;
+}> = ({ id, icon: Icon, title, sub, children }) => (
+  <section id={`notices-${id}`} className="space-y-2 scroll-mt-2">
+    <div className="flex items-end gap-2 px-1">
+      <span
+        className="w-7 h-7 rounded-lg border flex items-center justify-center shrink-0"
+        style={{ backgroundColor: 'var(--app-accent-sub)', borderColor: 'var(--app-border)', color: 'var(--app-accent-text)' }}
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </span>
+      <div className="min-w-0">
+        <h4 className="text-sm font-extrabold leading-tight" style={{ color: 'var(--app-text)' }}>
+          {title}
+        </h4>
+        {sub && (
+          <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+            {sub}
+          </p>
+        )}
+      </div>
+    </div>
+    {children}
+  </section>
+);
+
+/** Schalter untereinander mit feinen Trennlinien */
+export const ToggleList: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="divide-y divide-[var(--app-border)] [&>*]:py-2.5 [&>*:first-child]:pt-0.5 [&>*:last-child]:pb-0.5" style={{ borderColor: 'var(--app-border)' }}>
+    {children}
+  </div>
+);

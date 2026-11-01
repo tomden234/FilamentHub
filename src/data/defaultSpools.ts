@@ -2375,5 +2375,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.162',
+    label: '1.162 (Cozy-Design)',
+    releaseDate: '01.11.2026',
+    description: 'Neues Design „Cozy“: dunkles Petrol, Creme-Schrift, Messing-Akzent, Serifen-Überschriften, weiche Karten. Zurück jederzeit über Menü > Einstellungen > Design > Klassisch. Einstellungen der Mitteilungen neu sortiert.',
+    features: [
+      '☕ Design „Cozy“ als Standard, „Klassisch“ jederzeit wählbar (Helligkeit und Farbe bleiben gespeichert)',
+      '🗂️ Mitteilungs-Einstellungen in Bereiche sortiert: Druck, Trocknen, Spulen, Handy, LED, Zeiten, mit Sprung-Leiste',
+      '⏱️ „Zeiten und Grenzen“ eingeklappt, Test-Mitteilung beim Handy-Bereich',
+      '🔧 Drucker-Kopf: Name und Knöpfe überlappen nicht mehr'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

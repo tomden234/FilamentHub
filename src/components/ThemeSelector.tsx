@@ -5,7 +5,8 @@ import {
   BRIGHTNESS_OPTIONS,
   ACCENT_OPTIONS
 } from '../types/theme';
-import { Palette, Sun } from 'lucide-react';
+import { Coffee, Palette, Sun, Sparkles } from 'lucide-react';
+import { useThemeStyle, type ThemeStyle } from '../utils/themeStyle';
 
 interface ThemeSelectorProps {
   brightness: ThemeBrightness;
@@ -22,6 +23,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   onSetAccent,
   compact = false
 }) => {
+  const [style, setStyle] = useThemeStyle();
+  const cozy = style === 'cozy';
   if (compact) {
     return (
       <div
@@ -70,8 +73,60 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         color: 'var(--app-text)'
       }}
     >
-      {/* 5 Helligkeitsstufen */}
+      {/* Design-Stil: Klassisch oder Cozy */}
       <div className="space-y-1.5">
+        <span className="font-bold flex items-center gap-1.5 uppercase text-[10px] tracking-wider" style={{ color: 'var(--app-text-muted)' }}>
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>Design</span>
+        </span>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              { id: 'classic', name: 'Klassisch', sub: 'Hell oder dunkel, eigene Farbe', bg: '#d6dce5', card: '#eceff4', ink: '#0f172a', acc: '#168a47', serif: false },
+              { id: 'cozy', name: 'Cozy', sub: 'Petrol, Creme, Messing', bg: '#0d1a19', card: '#15292a', ink: '#f2e9da', acc: '#c9965a', serif: true }
+            ] as const
+          ).map(o => {
+            const active = style === o.id;
+            return (
+              <button
+                key={o.id}
+                onClick={() => setStyle(o.id as ThemeStyle)}
+                className={`rounded-xl border p-2 text-left cursor-pointer transition ${active ? 'ring-2 ring-[var(--app-accent)]/40' : 'hover:opacity-90'}`}
+                style={{ backgroundColor: active ? 'var(--app-accent-sub)' : 'var(--app-card)', borderColor: active ? 'var(--app-accent)' : 'var(--app-border)' }}
+                aria-pressed={active}
+              >
+                {/* kleine Vorschau */}
+                <div className="rounded-lg p-2 mb-1.5 border" style={{ backgroundColor: o.bg, borderColor: 'rgba(127,127,127,.25)' }}>
+                  <div className="rounded-md p-1.5 space-y-1" style={{ backgroundColor: o.card }}>
+                    <div
+                      className="text-[11px] leading-none"
+                      style={{ color: o.ink, fontFamily: o.serif ? "'Fraunces', Georgia, serif" : "'Plus Jakarta Sans', sans-serif", fontWeight: o.serif ? 600 : 800 }}
+                    >
+                      Filament
+                    </div>
+                    <div className="h-1 rounded-full w-3/4" style={{ backgroundColor: o.acc }} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] font-bold" style={{ color: active ? 'var(--app-accent-text)' : 'var(--app-text)' }}>
+                  {o.id === 'cozy' && <Coffee className="w-3 h-3" />}
+                  {o.name}
+                </div>
+                <div className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+                  {o.sub}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {cozy && (
+          <p className="text-[10.5px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+            Cozy hat feste Farben. Helligkeit und Akzentfarbe unten gelten wieder, sobald du „Klassisch“ wählst. Sie bleiben gespeichert.
+          </p>
+        )}
+      </div>
+
+      {/* 5 Helligkeitsstufen */}
+      <div className={`space-y-1.5 pt-2 border-t ${cozy ? 'opacity-50' : ''}`} style={{ borderColor: 'var(--app-border)' }}>
         <div className="flex items-center justify-between" style={{ color: 'var(--app-text-muted)' }}>
           <span className="font-bold flex items-center gap-1.5 uppercase text-[10px] tracking-wider">
             <Sun className="w-3.5 h-3.5 text-amber-400" />
@@ -125,7 +180,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       </div>
 
       {/* Akzentfarben */}
-      <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
+      <div className={`space-y-1.5 pt-2 border-t ${cozy ? 'opacity-50' : ''}`} style={{ borderColor: 'var(--app-border)' }}>
         <span className="font-bold flex items-center gap-1.5 uppercase text-[10px] tracking-wider" style={{ color: 'var(--app-text-muted)' }}>
           <Palette className="w-3.5 h-3.5 text-sky-400" />
           <span>Akzent-Farbschema</span>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ThemeBrightness, DEFAULT_BRIGHTNESS, BRIGHTNESS_OPTIONS, ThemeAccent } from '../types/theme';
 import { safeStorage } from '../utils/safeStorage';
 import { applySystemBars } from '../utils/systemBars';
+import { effectiveTheme } from '../utils/themeStyle';
 import { STORAGE_KEY_THEME_BRIGHT, STORAGE_KEY_THEME_MIGRATED, STORAGE_KEY_THEME_ACCENT } from '../utils/storageKeys';
 
 export function useThemeSettings() {
@@ -27,7 +28,7 @@ export function useThemeSettings() {
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', themeBrightness);
+    document.documentElement.setAttribute('data-theme', effectiveTheme(themeBrightness));
     safeStorage.setItem(STORAGE_KEY_THEME_BRIGHT, themeBrightness);
     applySystemBars();
   }, [themeBrightness]);

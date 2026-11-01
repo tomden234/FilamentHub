@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, BellRing, CheckCircle2, Lightbulb, PackageMinus, Send, SlidersHorizontal, Waves } from 'lucide-react';
+import { BellRing, CheckCircle2, ChevronDown, Lightbulb, PackageMinus, Printer, Send, SlidersHorizontal, Smartphone, Waves } from 'lucide-react';
 import { useHumidity } from '../../utils/humidity';
 import { IS_NATIVE } from '../../utils/env';
 import { testAlert, TEST_KINDS } from '../../utils/alerts';
 import type { InboxKind } from '../../utils/inbox';
 import { notifyPermission, localNotify, requestNotifyPermission, refreshNotifyPermission, openNotifySettings, notifyNeedsNewApk, type NotifyPermission } from '../../utils/notify';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
-import { Card, Toggle, buttonStyle, inputStyle } from './ui';
+import { Card, Section, Toggle, ToggleList, buttonStyle, inputStyle } from './ui';
 import { NumInput } from '../ui/NumInput';
 import { getLedInfo, getLedJson, installStatusLed, setStatusLed } from '../../utils/statusLed';
 
 const PRESETS = [50, 100, 150, 200];
+
+const SECTIONS = [
+  { id: 'print', label: 'Druck', icon: Printer },
+  { id: 'dry', label: 'Trocknen', icon: Waves },
+  { id: 'spools', label: 'Spulen', icon: PackageMinus },
+  { id: 'device', label: 'Handy', icon: Smartphone },
+  { id: 'led', label: 'LED', icon: Lightbulb },
+  { id: 'advanced', label: 'Zeiten', icon: SlidersHorizontal }
+];
 
 const PERMISSION_TEXT: Record<NotifyPermission, string> = {
   granted: 'Erlaubt',
@@ -43,37 +52,47 @@ export const NoticesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-3">
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <BellRing className="w-4 h-4 text-orange-400" />
-          <span>Welche Mitteilungen willst du?</span>
-        </div>
-        <div className="space-y-3">
-          <Toggle on={s.alertPrintStart} onChange={v => update({ alertPrintStart: v })} label="Druck gestartet" hint="Auch wenn du über Bambu Studio, Handy oder Display startest." />
-          <Toggle on={s.alertPrintCheck} onChange={v => update({ alertPrintCheck: v })} label="Spulen-Check beim Start" hint="Warnt, wenn das Filament nicht reicht, das Material fehlt oder nicht zur Spule passt." />
-          <Toggle on={s.alertErrors} onChange={v => update({ alertErrors: v })} label="Druckerfehler" hint="Nur schwere Fehler während eines Drucks, und erst wenn sie 1 Minute anstehen (Düse verstopft, Spaghetti, AMS …). Keine Dialoge wie Düse wechseln oder Filament einlegen." />
-          {s.alertErrors && <Toggle on={s.alertErrorsAll} onChange={v => update({ alertErrorsAll: v })} label="Auch Hinweise und Dialoge melden" hint="Alles, was der Drucker anzeigt: Hinweise, „fortsetzen?“, Düse wechseln, Filament einlegen. Meist zu viel." />}
-          <Toggle on={s.alertPrintDone} onChange={v => update({ alertPrintDone: v })} label="Druck fertig" hint="Sobald der Drucker das Ende meldet. War die App zu, kommt die Meldung beim nächsten Öffnen." />
-          <Toggle on={s.alertPrintFail} onChange={v => update({ alertPrintFail: v })} label="Druck fehlgeschlagen oder abgebrochen" />
-          <Toggle on={s.liveStatus} onChange={v => update({ liveStatus: v })} label="Stehende Mitteilung (Android)" hint="Bleibt oben, solange gedruckt oder getrocknet wird: Balken, Prozent, Restzeit und Uhrzeit, wann es fertig ist. Leise, ohne Ton." />
-          <Toggle on={s.alertDryDone} onChange={v => update({ alertDryDone: v })} label="Trocknung fertig" hint="Mit Dauer, Temperatur und den getrockneten Spulen." />
-          <Toggle on={s.alertDryStop} onChange={v => update({ alertDryStop: v })} label="Trocknung gestoppt" hint="Wenn die Trocknung vor dem Ende angehalten wird." />
-          <Toggle on={s.alertDryDue} onChange={v => update({ alertDryDue: v })} label="Trocknen fällig" hint="Einmal pro Tag und Spule, mit Temperatur und Zeit." />
-          <Toggle on={s.drySuggest} onChange={v => update({ drySuggest: v })} label="Trocknen-Vorschlag beim Einlegen" hint="Kommt eine Spule ins AMS, die trocknen sollte: Mitteilung und Frage „Nach dem Druck trocknen“." />
-          <Toggle on={s.alertLow} onChange={v => update({ alertLow: v })} label="Spule fast leer" hint="Kommt, wenn der Rest unter die Grenze fällt." />
-        </div>
-        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-          Mitteilungen kommen, solange die App läuft oder im Hintergrund offen ist und mit dem Drucker verbunden bleibt. Alle landen im Postfach (Reiter „Mitteilungen“).
-        </p>
-      </Card>
+    <div className="space-y-5">
+      {/* Schnellsprung zu den Bereichen */}
+      <nav className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Bereiche">
+        {SECTIONS.map(sec => (
+          <button
+            key={sec.id}
+            onClick={() => document.getElementById(`notices-${sec.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="px-2.5 py-1 rounded-full border text-[11px] font-bold whitespace-nowrap cursor-pointer flex items-center gap-1 shrink-0"
+            style={buttonStyle}
+          >
+            <sec.icon className="w-3 h-3" />
+            {sec.label}
+          </button>
+        ))}
+      </nav>
 
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <Waves className="w-4 h-4 text-sky-400" />
-          <span>Luftfeuchte</span>
-        </div>
-        <Toggle on={s.alertHumidity} onChange={v => update({ alertHumidity: v })} label="Melden, wenn die Feuchte zu hoch ist" hint="AMS-Messwert und der Sensor in der Lagerbox. Erst nach 5 Minuten über der Grenze." />
+      <Section id="print" icon={Printer} title="Druck" sub="Was beim Drucken gemeldet wird.">
+        <Card>
+          <ToggleList>
+            <Toggle on={s.alertPrintStart} onChange={v => update({ alertPrintStart: v })} label="Druck gestartet" hint="Auch wenn du über Bambu Studio, Handy oder Display startest." />
+            <Toggle on={s.alertPrintCheck} onChange={v => update({ alertPrintCheck: v })} label="Spulen-Check beim Start" hint="Warnt, wenn das Filament nicht reicht, das Material fehlt oder nicht zur Spule passt." />
+            <Toggle on={s.alertPrintDone} onChange={v => update({ alertPrintDone: v })} label="Druck fertig" hint="Sobald der Drucker das Ende meldet. War die App zu, kommt die Meldung beim nächsten Öffnen." />
+            <Toggle on={s.alertPrintFail} onChange={v => update({ alertPrintFail: v })} label="Druck fehlgeschlagen oder abgebrochen" />
+            <Toggle on={s.alertErrors} onChange={v => update({ alertErrors: v })} label="Druckerfehler" hint="Nur schwere Fehler während eines Drucks, und erst wenn sie 1 Minute anstehen (Düse verstopft, Spaghetti, AMS …)." />
+            {s.alertErrors && <Toggle on={s.alertErrorsAll} onChange={v => update({ alertErrorsAll: v })} label="Auch Hinweise und Dialoge melden" hint="Alles, was der Drucker anzeigt: Hinweise, „fortsetzen?“, Düse wechseln, Filament einlegen. Meist zu viel." />}
+          </ToggleList>
+        </Card>
+      </Section>
+
+      <Section id="dry" icon={Waves} title="Trocknen und Feuchte" sub="Trockner, AMS-Feuchte und externe Sensoren.">
+        <Card>
+          <ToggleList>
+            <Toggle on={s.alertDryDone} onChange={v => update({ alertDryDone: v })} label="Trocknung fertig" hint="Mit Dauer, Temperatur und den getrockneten Spulen." />
+            <Toggle on={s.alertDryStop} onChange={v => update({ alertDryStop: v })} label="Trocknung gestoppt" hint="Wenn die Trocknung vor dem Ende angehalten wird." />
+            <Toggle on={s.alertDryDue} onChange={v => update({ alertDryDue: v })} label="Trocknen fällig" hint="Einmal pro Tag und Spule, mit Temperatur und Zeit." />
+            <Toggle on={s.drySuggest} onChange={v => update({ drySuggest: v })} label="Trocknen-Vorschlag beim Einlegen" hint="Kommt eine Spule ins AMS, die trocknen sollte: Mitteilung und Frage „Nach dem Druck trocknen“." />
+          </ToggleList>
+        </Card>
+        <Card>
+          <div className="fh-eyebrow">Luftfeuchte</div>
+          <Toggle on={s.alertHumidity} onChange={v => update({ alertHumidity: v })} label="Melden, wenn die Feuchte zu hoch ist" hint="AMS-Messwert und der Sensor in der Lagerbox. Erst nach 5 Minuten über der Grenze." />
         <div className="grid grid-cols-3 gap-2 text-[11px]">
           <div className="rounded-lg border p-2" style={{ borderColor: 'var(--app-border)' }}>
             <div style={{ color: 'var(--app-text-muted)' }}>AMS</div>
@@ -161,13 +180,129 @@ export const NoticesTab: React.FC = () => {
             Zweiter SHT31 in der externen Trockenbox (5. Spule). Die App zeigt Temperatur und Feuchte neben AMS und Box-Sensor, auch im Trocknen-Bereich (kein Alarm).
           </span>
         </label>
-      </Card>
+        </Card>
+      </Section>
 
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <Lightbulb className="w-4 h-4 text-amber-400" />
-          <span>Status-LED</span>
+      <Section id="spools" icon={PackageMinus} title="Spulen" sub="Wann eine Spule als fast leer gilt.">
+        <Card>
+          <Toggle on={s.alertLow} onChange={v => update({ alertLow: v })} label="Mitteilung bei fast leerer Spule" hint="Kommt, wenn der Rest unter die Grenze fällt." />
+          <Toggle on={s.lowWarning} onChange={v => update({ lowWarning: v })} label="Fast leere Spulen markieren" hint="Banner oben und Abzeichen auf der Karte." />
+        {s.lowWarning && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {PRESETS.map(p => (
+              <button
+                key={p}
+                onClick={() => update({ lowWeightG: p })}
+                className="px-2.5 py-1 rounded-lg border text-[11px] font-mono-num font-bold cursor-pointer"
+                style={{
+                  backgroundColor: s.lowWeightG === p ? 'var(--app-accent)' : 'var(--app-card)',
+                  borderColor: s.lowWeightG === p ? 'var(--app-accent)' : 'var(--app-border)',
+                  color: s.lowWeightG === p ? '#fff' : 'var(--app-text)'
+                }}
+              >
+                {p} g
+              </button>
+            ))}
+            <NumInput
+              type="number"
+              min={0}
+              max={1000}
+              value={s.lowWeightG}
+              onChange={e => update({ lowWeightG: parseInt(e.target.value, 10) || 0 })}
+              className="w-20 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none"
+              style={inputStyle}
+              aria-label="Grenze in Gramm"
+            />
+          </div>
+        )}
+        </Card>
+      </Section>
+
+      <Section id="device" icon={Smartphone} title="Aufs Handy" sub="Benachrichtigungen, stehende Anzeige und Test.">
+        <Card>
+          <Toggle on={s.liveStatus} onChange={v => update({ liveStatus: v })} label="Stehende Mitteilung (Android)" hint="Bleibt oben, solange gedruckt oder getrocknet wird: Balken, Prozent, Restzeit und Uhrzeit, wann es fertig ist. Leise, ohne Ton." />
+        <Toggle
+          on={s.systemPush}
+          onChange={v => update({ systemPush: v })}
+          label="Zusätzlich als Benachrichtigung anzeigen"
+          hint="Nur die wichtigen: Druck fertig, Druck fehlgeschlagen, schwere Druckerfehler, Trocknung fertig. Ein Tipp darauf öffnet die App direkt bei der Mitteilung."
+        />
+        {s.systemPush && (
+          <Toggle
+            on={s.pushAll}
+            onChange={v => update({ pushAll: v })}
+            label="Auch weniger wichtige als Benachrichtigung"
+            hint="Druck gestartet, Spulen-Check, Trocknen fällig, Feuchte, fast leer, Trocknung gestoppt, Info. Die landen sonst nur im Postfach."
+          />
+        )}
+        {IS_NATIVE && (
+          <Toggle
+            on={s.keepAlive}
+            onChange={v => update({ keepAlive: v })}
+            label="Im Hintergrund aktiv bleiben"
+            hint="Zeigt eine kleine dauerhafte Anzeige. So bleibt die Verbindung zum Drucker offen und Meldungen kommen auch, wenn die App zu ist."
+          />
+        )}
+        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+          Status: <strong style={{ color: 'var(--app-text)' }}>{PERMISSION_TEXT[perm]}</strong>
+        </p>
+        {notifyNeedsNewApk() && (
+          <p className="text-[11px] leading-snug text-amber-400">Deine installierte App ist zu alt für Benachrichtigungen. Bitte die neueste APK installieren.</p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {perm !== 'granted' && perm !== 'unsupported' && (
+            <button
+              onClick={async () => setPerm(await requestNotifyPermission())}
+              className="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer flex items-center gap-1.5"
+              style={buttonStyle}
+            >
+              <BellRing className="w-3.5 h-3.5 text-orange-400" />
+              <span>Erlauben</span>
+            </button>
+          )}
+          {perm !== 'granted' && notifyPermission() !== 'unsupported' && (
+            <button onClick={() => void openNotifySettings()} className="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer" style={buttonStyle}>
+              Android-Einstellungen öffnen
+            </button>
+          )}
         </div>
+        </Card>
+        <Card>
+          <div className="fh-eyebrow flex items-center gap-1.5">
+            <Send className="w-3 h-3" />
+            Test-Mitteilung
+          </div>
+        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+          Wähle aus, welche Mitteilung geschickt wird. Sie sieht aus wie die echte und landet auch im Postfach.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={testKind}
+            onChange={e => setTestKind(e.target.value as InboxKind)}
+            className="flex-1 min-w-[10rem] px-2.5 py-2 rounded-lg border text-xs font-semibold outline-none cursor-pointer"
+            style={inputStyle}
+            aria-label="Welche Test-Mitteilung"
+          >
+            {TEST_KINDS.map(t => (
+              <option key={t.kind} value={t.kind}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <button onClick={sendTest} className="px-3 py-2 rounded-lg border text-xs font-bold cursor-pointer flex items-center gap-1.5" style={buttonStyle}>
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            Senden
+          </button>
+        </div>
+        {testInfo && <p className="text-[11px] leading-snug text-emerald-400">{testInfo}</p>}
+        </Card>
+        <p className="text-[11px] leading-snug px-1" style={{ color: 'var(--app-text-muted)' }}>
+          Mitteilungen kommen, solange die App läuft oder im Hintergrund offen ist und mit dem Drucker verbunden bleibt. Alle landen im Postfach.
+        </p>
+      </Section>
+
+      <Section id="led" icon={Lightbulb} title="Status-LED" sub="LED-Streifen am Drucker zeigt den Stand.">
+        <Card>
         <Toggle
           on={s.statusLed}
           onChange={v => update({ statusLed: v })}
@@ -230,16 +365,16 @@ export const NoticesTab: React.FC = () => {
             )}
           </>
         )}
-      </Card>
+        </Card>
+      </Section>
 
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
-          <span>Zeiten und Grenzen</span>
-        </div>
-        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-          Alles, was die App sonst fest vorgibt. Tippe den Wert einfach ein.
-        </p>
+      <Section id="advanced" icon={SlidersHorizontal} title="Zeiten und Grenzen" sub="Alles, was die App sonst fest vorgibt.">
+        <details className="group rounded-xl border" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
+          <summary className="px-3 py-2.5 text-xs font-bold cursor-pointer list-none flex items-center justify-between">
+            <span>Werte anzeigen</span>
+            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" style={{ color: 'var(--app-text-muted)' }} />
+          </summary>
+          <div className="px-3 pb-3 space-y-2">
         {(
           [
             ['humidityHoldMin', 'Feuchte-Alarm: melden nach', 'min', 1, 120, 'So lange muss die Feuchte über der Grenze liegen, bevor gemeldet wird.'],
@@ -277,125 +412,9 @@ export const NoticesTab: React.FC = () => {
             </span>
           </label>
         ))}
-      </Card>
-
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <PackageMinus className="w-4 h-4 text-rose-400" />
-          <span>Grenze für „fast leer“</span>
-        </div>
-        <Toggle on={s.lowWarning} onChange={v => update({ lowWarning: v })} label="Fast leere Spulen markieren" hint="Banner oben und Abzeichen auf der Karte." />
-        {s.lowWarning && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            {PRESETS.map(p => (
-              <button
-                key={p}
-                onClick={() => update({ lowWeightG: p })}
-                className="px-2.5 py-1 rounded-lg border text-[11px] font-mono-num font-bold cursor-pointer"
-                style={{
-                  backgroundColor: s.lowWeightG === p ? 'var(--app-accent)' : 'var(--app-card)',
-                  borderColor: s.lowWeightG === p ? 'var(--app-accent)' : 'var(--app-border)',
-                  color: s.lowWeightG === p ? '#fff' : 'var(--app-text)'
-                }}
-              >
-                {p} g
-              </button>
-            ))}
-            <NumInput
-              type="number"
-              min={0}
-              max={1000}
-              value={s.lowWeightG}
-              onChange={e => update({ lowWeightG: parseInt(e.target.value, 10) || 0 })}
-              className="w-20 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none"
-              style={inputStyle}
-              aria-label="Grenze in Gramm"
-            />
           </div>
-        )}
-      </Card>
-
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <Bell className="w-4 h-4 text-orange-400" />
-          <span>Benachrichtigung aufs Gerät</span>
-        </div>
-        <Toggle
-          on={s.systemPush}
-          onChange={v => update({ systemPush: v })}
-          label="Zusätzlich als Benachrichtigung anzeigen"
-          hint="Nur die wichtigen: Druck fertig, Druck fehlgeschlagen, schwere Druckerfehler, Trocknung fertig. Ein Tipp darauf öffnet die App direkt bei der Mitteilung."
-        />
-        {s.systemPush && (
-          <Toggle
-            on={s.pushAll}
-            onChange={v => update({ pushAll: v })}
-            label="Auch weniger wichtige als Benachrichtigung"
-            hint="Druck gestartet, Spulen-Check, Trocknen fällig, Feuchte, fast leer, Trocknung gestoppt, Info. Die landen sonst nur im Postfach."
-          />
-        )}
-        {IS_NATIVE && (
-          <Toggle
-            on={s.keepAlive}
-            onChange={v => update({ keepAlive: v })}
-            label="Im Hintergrund aktiv bleiben"
-            hint="Zeigt eine kleine dauerhafte Anzeige. So bleibt die Verbindung zum Drucker offen und Meldungen kommen auch, wenn die App zu ist."
-          />
-        )}
-        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-          Status: <strong style={{ color: 'var(--app-text)' }}>{PERMISSION_TEXT[perm]}</strong>
-        </p>
-        {notifyNeedsNewApk() && (
-          <p className="text-[11px] leading-snug text-amber-400">Deine installierte App ist zu alt für Benachrichtigungen. Bitte die neueste APK installieren.</p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          {perm !== 'granted' && perm !== 'unsupported' && (
-            <button
-              onClick={async () => setPerm(await requestNotifyPermission())}
-              className="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer flex items-center gap-1.5"
-              style={buttonStyle}
-            >
-              <BellRing className="w-3.5 h-3.5 text-orange-400" />
-              <span>Erlauben</span>
-            </button>
-          )}
-          {perm !== 'granted' && notifyPermission() !== 'unsupported' && (
-            <button onClick={() => void openNotifySettings()} className="px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer" style={buttonStyle}>
-              Android-Einstellungen öffnen
-            </button>
-          )}
-        </div>
-      </Card>
-
-      <Card>
-        <div className="flex items-center gap-2 text-xs font-extrabold">
-          <Send className="w-4 h-4 text-sky-400" />
-          <span>Test-Mitteilung</span>
-        </div>
-        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-          Wähle aus, welche Mitteilung geschickt wird. Sie sieht aus wie die echte und landet auch im Postfach.
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={testKind}
-            onChange={e => setTestKind(e.target.value as InboxKind)}
-            className="flex-1 min-w-[10rem] px-2.5 py-2 rounded-lg border text-xs font-semibold outline-none cursor-pointer"
-            style={inputStyle}
-            aria-label="Welche Test-Mitteilung"
-          >
-            {TEST_KINDS.map(t => (
-              <option key={t.kind} value={t.kind}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          <button onClick={sendTest} className="px-3 py-2 rounded-lg border text-xs font-bold cursor-pointer flex items-center gap-1.5" style={buttonStyle}>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            Senden
-          </button>
-        </div>
-        {testInfo && <p className="text-[11px] leading-snug text-emerald-400">{testInfo}</p>}
-      </Card>
+        </details>
+      </Section>
     </div>
   );
 };
