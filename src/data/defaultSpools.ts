@@ -2350,5 +2350,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.160',
+    label: '1.160 (Status-LED)',
+    releaseDate: '01.11.2026',
+    description: 'Ein LED-Streifen am Drucker zeigt den Status: blau mit Fortschrittsbalken beim Druck, grün wenn fertig, rot bei Fehler, orange beim Trocknen.',
+    features: [
+      '💡 Status-LED: WLED-Streifen über Home Assistant, die App legt die Automation selbst an (Mitteilungen > Status-LED)',
+      '🔵 Blau mit Fortschrittsbalken, 🟡 Pause, 🟢 fertig, 🔴 Fehler, 🟠 AMS trocknet',
+      '🔆 Helligkeit einstellbar, Standard 30 %',
+      '📄 Aufbau ohne Widerstand und Kondensator: hardware/status-led'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

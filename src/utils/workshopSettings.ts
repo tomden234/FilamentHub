@@ -66,6 +66,10 @@ export interface WorkshopSettings {
   dryOffDelayMin: number;
   /** Spulen-Check beim Druckstart: unter so vielen Gramm gilt eine Spule als fast leer */
   nearlyEmptyG: number;
+  /** Status-LED (WLED-Streifen über Home Assistant): zeigt Druck, Pause, fertig, Fehler und Trocknen */
+  statusLed: boolean;
+  /** Helligkeit der Status-LED in Prozent */
+  statusLedBrightness: number;
 }
 
 export const WORKSHOP_SETTINGS_KEY = 'filamenthub_workshop_settings';
@@ -103,7 +107,9 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   autoDryHoldMin: 10,
   autoDryPauseH: 24,
   dryOffDelayMin: 3,
-  nearlyEmptyG: 30
+  nearlyEmptyG: 30,
+  statusLed: false,
+  statusLedBrightness: 30
 };
 
 let cache: WorkshopSettings | null = null;
@@ -142,7 +148,7 @@ function sanitize(raw: (Partial<WorkshopSettings> & Record<string, unknown>) | n
   if (s.humidityRoomEntity === 'sensor.filament_ams_raum_feuchte') s.humidityRoomEntity = DEFAULT_WORKSHOP_SETTINGS.humidityRoomEntity;
   const ad = Number(s.autoDryAt);
   s.autoDryAt = Number.isFinite(ad) ? Math.max(10, Math.min(90, Math.round(ad))) : DEFAULT_WORKSHOP_SETTINGS.autoDryAt;
-  const clampNum = (k: 'humidityHoldMin' | 'humidityRepeatH' | 'autoDryHoldMin' | 'autoDryPauseH' | 'dryOffDelayMin' | 'nearlyEmptyG', lo: number, hi: number) => {
+  const clampNum = (k: 'humidityHoldMin' | 'humidityRepeatH' | 'autoDryHoldMin' | 'autoDryPauseH' | 'dryOffDelayMin' | 'nearlyEmptyG' | 'statusLedBrightness', lo: number, hi: number) => {
     const n = Number(s[k]);
     s[k] = Number.isFinite(n) ? Math.max(lo, Math.min(hi, Math.round(n))) : DEFAULT_WORKSHOP_SETTINGS[k];
   };
@@ -152,6 +158,7 @@ function sanitize(raw: (Partial<WorkshopSettings> & Record<string, unknown>) | n
   clampNum('autoDryPauseH', 1, 168);
   clampNum('dryOffDelayMin', 1, 30);
   clampNum('nearlyEmptyG', 0, 500);
+  clampNum('statusLedBrightness', 5, 100);
   return s;
 }
 

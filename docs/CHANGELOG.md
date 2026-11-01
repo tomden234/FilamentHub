@@ -91,3 +91,5 @@ Links ein Spulen-Symbol in der Filamentfarbe; wie dick das Filament darauf ist, 
 - 🟡 **Halter und ESP32-Gehäuse drucken:** STL fertig.
 - ⚪ **Am Gerät testen:** neue APK (Push, Hintergrund-Dienst), Druckerfehler, Home-Assistant-Automation, Fotos am Druckende.
 - ⚪ **Spulen-Diktat:** alle Spulen einmal neu eintragen.
+
+- ✅ **Status-LED (1.160):** WLED-Streifen am Drucker, Aufbau in `hardware/status-led/`. Die App legt die Home-Assistant-Automation selbst an. Noch zu tun: Streifen und ESP32 verdrahten, WLED flashen.

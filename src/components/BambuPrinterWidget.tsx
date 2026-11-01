@@ -62,6 +62,7 @@ import { DrySuggestSheet } from './bambu/DrySuggestSheet';
 import { armDryPlan, disarmDryPlan, dryPlanFor, needsDryingNow } from '../utils/dryAfterPrint';
 import { setHaAutoOff } from '../utils/haAutoOff';
 import { installHaDryOff, setHaDryOff } from '../utils/haDryOff';
+import { installStatusLed, setStatusLed } from '../utils/statusLed';
 import { usePrintPlanRunner } from '../hooks/usePrintPlan';
 import { clearPrintPlan, setPrintPlan, clockText } from '../utils/printPlan';
 import { PrintPlanSheet } from './bambu/PrintPlanSheet';
@@ -130,6 +131,8 @@ const DEFAULT_LIVE_STATE: BambuLiveState = {
 
 /** Pro App-Start wird die Home-Assistant-Automation „Nach Trocknen aus“ einmal automatisch geprüft */
 let haDryOffCheckedThisStart = false;
+/** Dasselbe für die Status-LED-Automation */
+let statusLedCheckedThisStart = false;
 
 export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   spools,
@@ -428,6 +431,18 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
       await setHaDryOff(haDryOffWanted);
     })();
   }, [haDryOffWanted, haSwitchState.configured, workshopSettings.dryOffDelayMin]);
+
+  // Status-LED (WLED über Home Assistant): Automation beim Start prüfen, danach nur noch an/aus
+  useEffect(() => {
+    if (!haSwitchState.configured) return;
+    void (async () => {
+      if (workshopSettings.statusLed && !statusLedCheckedThisStart) {
+        const r = await installStatusLed();
+        if (r.ok) statusLedCheckedThisStart = true;
+      }
+      await setStatusLed(workshopSettings.statusLed);
+    })();
+  }, [workshopSettings.statusLed, workshopSettings.statusLedBrightness, haSwitchState.configured]);
 
   // Druck-Planer: danach trocknen / ausschalten / Druck verzögern (Fenster bei neuem Druck)
   const armDryAfterNow = (temp: number, hours: number, ids: string[]) => {

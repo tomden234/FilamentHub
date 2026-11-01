@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, BellRing, CheckCircle2, PackageMinus, Send, SlidersHorizontal, Waves } from 'lucide-react';
+import { Bell, BellRing, CheckCircle2, Lightbulb, PackageMinus, Send, SlidersHorizontal, Waves } from 'lucide-react';
 import { useHumidity } from '../../utils/humidity';
 import { IS_NATIVE } from '../../utils/env';
 import { testAlert, TEST_KINDS } from '../../utils/alerts';
@@ -8,6 +8,7 @@ import { notifyPermission, localNotify, requestNotifyPermission, refreshNotifyPe
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { Card, Toggle, buttonStyle, inputStyle } from './ui';
 import { NumInput } from '../ui/NumInput';
+import { getLedInfo, getLedJson, installStatusLed, setStatusLed } from '../../utils/statusLed';
 
 const PRESETS = [50, 100, 150, 200];
 
@@ -25,6 +26,8 @@ export const NoticesTab: React.FC = () => {
   const [perm, setPerm] = useState<NotifyPermission>(notifyPermission());
   const [testInfo, setTestInfo] = useState('');
   const [testKind, setTestKind] = useState<InboxKind>('dry-done');
+  const [ledInfo, setLedInfo] = useState(getLedInfo());
+  const [ledBusy, setLedBusy] = useState(false);
   useEffect(() => {
     const refresh = () => void refreshNotifyPermission().then(setPerm);
     refresh();
@@ -158,6 +161,75 @@ export const NoticesTab: React.FC = () => {
             Zweiter SHT31 in der externen Trockenbox (5. Spule). Die App zeigt Temperatur und Feuchte neben AMS und Box-Sensor, auch im Trocknen-Bereich (kein Alarm).
           </span>
         </label>
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-2 text-xs font-extrabold">
+          <Lightbulb className="w-4 h-4 text-amber-400" />
+          <span>Status-LED</span>
+        </div>
+        <Toggle
+          on={s.statusLed}
+          onChange={v => update({ statusLed: v })}
+          label="LED-Streifen zeigt den Druckerstatus"
+          hint="Blau mit Fortschrittsbalken beim Druck, Gelb bei Pause, Grün wenn fertig, Rot blinkend bei Fehler, Orange atmend beim Trocknen, sonst aus. Braucht den WLED-Streifen in Home Assistant (Aufbau: hardware/status-led). Die App legt die Automation selbst an."
+        />
+        {s.statusLed && (
+          <>
+            <label className="flex items-center justify-between gap-2 text-xs font-bold">
+              <span>Helligkeit</span>
+              <span className="flex items-center gap-1">
+                <NumInput
+                  type="number"
+                  min={5}
+                  max={100}
+                  value={s.statusLedBrightness}
+                  onChange={e => {
+                    const n = parseInt(e.target.value, 10);
+                    if (Number.isFinite(n)) update({ statusLedBrightness: n });
+                  }}
+                  className="w-16 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none text-right"
+                  style={inputStyle}
+                  aria-label="Helligkeit der Status-LED"
+                />
+                <span className="w-6 font-normal" style={{ color: 'var(--app-text-muted)' }}>%</span>
+              </span>
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                disabled={ledBusy}
+                onClick={async () => {
+                  setLedBusy(true);
+                  try {
+                    await installStatusLed();
+                    await setStatusLed(true);
+                  } finally {
+                    setLedInfo(getLedInfo());
+                    setLedBusy(false);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer disabled:opacity-60"
+                style={buttonStyle}
+              >
+                {ledBusy ? 'Prüfe …' : 'Nochmal prüfen'}
+              </button>
+              {ledInfo && !ledInfo.ok && getLedJson() && (
+                <button
+                  onClick={() => void navigator.clipboard?.writeText(getLedJson())}
+                  className="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer"
+                  style={buttonStyle}
+                >
+                  Automation kopieren
+                </button>
+              )}
+            </div>
+            {ledInfo && (
+              <p className="text-[11px] leading-snug" style={{ color: ledInfo.ok ? 'var(--app-text-muted)' : '#f59e0b' }}>
+                {ledInfo.text}
+              </p>
+            )}
+          </>
+        )}
       </Card>
 
       <Card>
