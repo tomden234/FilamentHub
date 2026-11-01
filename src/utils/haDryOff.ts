@@ -88,7 +88,22 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
     await callHaService('automation', 'turn_off', { entity_id: entity });
     return setInfo(true, `Eingerichtet. Home Assistant schaltet 3 Minuten nach Trocknungsende aus (${dry.join(', ')}).`);
   } catch (e: any) {
-    return setInfo(false, `Home Assistant nicht erreichbar: ${e?.message || e}`);
+    {
+    const raw = String(e?.message || e);
+    let host = '';
+    try {
+      host = new URL(getHaCredentials().url).host;
+    } catch {
+      host = getHaCredentials().url || 'keine Adresse';
+    }
+    const netFail = /failed to fetch|networkerror|load failed|timeout|aborted/i.test(raw);
+    return setInfo(
+      false,
+      netFail
+        ? `Home Assistant (${host}) nicht erreichbar. Adresse in den Einstellungen prüfen, Internet an? Bei eigener Adresse (http://…) darf die App sie nur im selben WLAN erreichen.`
+        : `Home Assistant meldet: ${raw}`
+    );
+  }
   }
 }
 

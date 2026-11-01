@@ -2142,5 +2142,17 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.145',
+    label: '1.145 (HA-Fehler klarer)',
+    releaseDate: '01.11.2026',
+    description: 'Wenn Home Assistant nicht erreichbar ist, zeigt die App jetzt die genutzte Adresse und sagt, was zu prüfen ist.',
+    features: [
+      '🔎 Statuszeile bei „Danach Drucker ausschalten“ nennt die Home-Assistant-Adresse und den wahrscheinlichen Grund'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
