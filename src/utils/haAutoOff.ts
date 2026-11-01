@@ -1,3 +1,4 @@
+import { homeAssistantApi } from '../api';
 // „Nach Druck aus“ auch ohne offene App: Die App legt in Home Assistant eine Automation an (einmalig, automatisch)
 // und schaltet sie nur ein, solange „Nach Druck aus“ gewählt ist. Home Assistant schaltet dann die Steckdose aus,
 // 3 Minuten nach Druckende (feste Zeit, ohne Düsentemperatur). Braucht in Home Assistant die Bambu-Lab-Integration (HACS: ha-bambulab),
@@ -35,11 +36,26 @@ function setInfo(i: HaAutoOffInfo): HaAutoOffInfo {
 
 export async function haFetch(path: string, init?: RequestInit): Promise<Response> {
   const { url, token } = getHaCredentials();
-  return fetch(`${url}${path}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    signal: AbortSignal.timeout(25000)
-  });
+  try {
+    return await fetch(`${url}${path}`, {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(init?.headers || {}) },
+      signal: AbortSignal.timeout(25000)
+    });
+  } catch (directError) {
+    // Direkt gesperrt (Browser-Sperre bei Nabu Casa): über den eigenen Server gehen (Windows-App / lokaler Server)
+    try {
+      const method = (init?.method || 'GET').toUpperCase();
+      const body = typeof init?.body === 'string' && init.body ? JSON.parse(init.body) : undefined;
+      const r = await homeAssistantApi.proxyService('/api/homeassistant/raw', { haUrl: url, haToken: token, method, path, body });
+      if (r.ok && r.isJson && r.data?.success) {
+        return new Response(r.data.text || '', { status: r.data.status || 200, headers: { 'Content-Type': 'application/json' } });
+      }
+    } catch {
+      /* Server nicht da */
+    }
+    throw directError;
+  }
 }
 
 /** Bambu-Sensoren in Home Assistant suchen (Druckstatus und Düsentemperatur) */

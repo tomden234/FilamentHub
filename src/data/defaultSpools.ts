@@ -2194,5 +2194,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.149',
+    label: '1.149 (Home Assistant über Server)',
+    releaseDate: '01.11.2026',
+    description: 'Die Windows-App erreicht Home Assistant jetzt auch dann, wenn der Browser Nabu Casa direkt sperrt: Anfragen laufen über den eingebauten Server. Damit kann „Nach Trocknen aus“ die Automation selbst anlegen.',
+    features: [
+      '🔌 Home-Assistant-Anfragen laufen bei Sperre über den eigenen Server (nur Zustände lesen, FilamentHub-Automationen anlegen, Automationen ein-/ausschalten)',
+      '🤖 „Danach Drucker ausschalten“ und „Nach Druck aus“ legen ihre Automation damit selbst an'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

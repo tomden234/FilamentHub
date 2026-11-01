@@ -149,6 +149,15 @@ export async function callHaService(domain: string, service: string, serviceData
     } else if (domain === 'light') {
       proxyEndpoint = '/api/homeassistant/set-light';
       bodyData = { entity: serviceData.entity_id, mode: service === 'turn_on' ? 'on' : 'off' };
+    } else if (domain === 'automation' && (service === 'turn_on' || service === 'turn_off')) {
+      const r = await homeAssistantApi.proxyService('/api/homeassistant/raw', {
+        haUrl: url,
+        haToken: token,
+        method: 'POST',
+        path: `/api/services/automation/${service}`,
+        body: serviceData
+      });
+      if (r.ok && r.isJson && r.data?.success && r.data.status < 300) return { success: true, message: `Home Assistant: automation.${service} ausgeführt.` };
     } else if (domain === 'automation' && service === 'trigger') {
       proxyEndpoint = '/api/homeassistant/trigger-pull-automation';
       bodyData = { entity_id: serviceData.entity_id, haUrl: url, haToken: token };

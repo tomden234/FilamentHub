@@ -11,6 +11,37 @@ router.post('/api/homeassistant/trigger-pull-automation', async (req, res) => {
   return res.json(result);
 });
 
+// Begrenzte Weiterleitung an Home Assistant (Browser dürfen Nabu Casa oft nicht direkt ansprechen, der Server schon).
+// Erlaubt sind nur: Zustände lesen, die FilamentHub-Automationen anlegen und Automationen ein-/ausschalten.
+const RAW_ALLOWED = [
+  { method: 'GET', path: /^\/api\/states$/ },
+  { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/ },
+  { method: 'POST', path: /^\/api\/services\/automation\/(turn_on|turn_off)$/ }
+];
+router.post('/api/homeassistant/raw', async (req, res) => {
+  try {
+    const config = loadHaConfig();
+    const { method = 'GET', path = '', body } = req.body || {};
+    const url = String(req.body?.haUrl || config.haUrl || '').trim().replace(/\/+$/, '');
+    const token = String(req.body?.haToken || config.haToken || '');
+    if (!url || !token) return res.status(400).json({ success: false, error: 'Home Assistant URL und Token erforderlich.' });
+    if (!/^https?:\/\//i.test(url)) return res.status(400).json({ success: false, error: 'Ungültige Adresse.' });
+    if (!RAW_ALLOWED.some(a => a.method === method && a.path.test(String(path)))) {
+      return res.status(403).json({ success: false, error: 'Diese Anfrage ist nicht erlaubt.' });
+    }
+    const resp = await fetch(`${url}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: method === 'POST' ? JSON.stringify(body ?? {}) : undefined,
+      signal: AbortSignal.timeout(25000)
+    });
+    const text = await resp.text();
+    return res.json({ success: true, status: resp.status, text });
+  } catch (e: any) {
+    return res.status(502).json({ success: false, error: String(e?.message || e) });
+  }
+});
+
 // HA Konfiguration abrufen (inkl. Nabu Casa Adresse & Token)
 router.get('/api/homeassistant/config', (_req, res) => {
   const config = loadHaConfig();
