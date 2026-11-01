@@ -2262,5 +2262,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.154',
+    label: '1.154 (Zähler läuft weiter)',
+    releaseDate: '01.11.2026',
+    description: 'Der 3-Minuten-Zähler läuft auch weiter, wenn du die App schließt und wieder öffnest (z. B. nach 1 Minute zeigt er noch 2 Minuten). Arbeitest du am Drucker (verfahren, Düse wechseln, aufheizen), wird das Ausschalten abgebrochen.',
+    features: [
+      '⏱️ Zähler nimmt den Stand von Home Assistant, auf jedem Gerät gleich, auch nach App zu und wieder auf',
+      '🛠️ Abbruch, wenn du den Drucker verfährst, bedienst, aufheizt oder Düse/Filament wechselst',
+      '🏠 Home-Assistant-Automation erkennt Arbeitsschritt und Zieltemperaturen (beim Prüfen automatisch aktualisiert)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

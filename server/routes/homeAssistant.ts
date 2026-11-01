@@ -15,6 +15,7 @@ router.post('/api/homeassistant/trigger-pull-automation', async (req, res) => {
 // Erlaubt sind nur: Zustände lesen, die FilamentHub-Automationen anlegen und Automationen ein-/ausschalten.
 const RAW_ALLOWED = [
   { method: 'GET', path: /^\/api\/states$/ },
+  { method: 'GET', path: /^\/api\/states\/automation\.filamenthub_[a-z0-9_]+$/ },
   { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/ },
   { method: 'POST', path: /^\/api\/services\/automation\/(turn_on|turn_off)$/ }
 ];

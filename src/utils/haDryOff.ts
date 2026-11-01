@@ -13,7 +13,7 @@ const INFO_KEY = 'filamenthub_ha_dryoff_info';
 const JSON_KEY = 'filamenthub_ha_dryoff_json';
 const VERSION_KEY = 'filamenthub_ha_dryoff_version';
 /** Hochzählen, wenn sich die Automation ändert: dann wird sie in Home Assistant neu geschrieben */
-const CONFIG_VERSION = '3';
+const CONFIG_VERSION = '4';
 
 /** Automation als Text zum Einfügen in Home Assistant (YAML-Editor), falls die App sie nicht selbst anlegen darf */
 export function getHaDryOffJson(): string {
@@ -41,7 +41,7 @@ function setInfo(ok: boolean, text: string): HaDryOffInfo {
 }
 
 /** Sensoren der AMS-Rest-Trockenzeit in Home Assistant suchen */
-async function findDryEntities(): Promise<{ dry: string[]; maybe: string[]; automation?: string }> {
+async function findDryEntities(): Promise<{ dry: string[]; maybe: string[]; stage?: string; targets: string[]; automation?: string }> {
   const res = await haFetch('/api/states');
   if (!res.ok) throw new Error(`Home Assistant antwortet mit ${res.status}`);
   const states: any[] = await res.json();
@@ -52,8 +52,13 @@ async function findDryEntities(): Promise<{ dry: string[]; maybe: string[]; auto
     .filter(s => /(dry|drying|trock)/.test(text(s)) && /(time|zeit|remaining|rest|left)/.test(text(s)) && !/(temp|humid|feucht)/.test(text(s)))
     .map(s => String(s.entity_id));
   const maybe = sensors.filter(s => /(dry|trock)/.test(text(s))).map(s => String(s.entity_id)).slice(0, 6);
+  // Arbeitsschritt („Aktueller Arbeitsschritt“) und Zieltemperaturen: ändert sich etwas, macht jemand etwas am Drucker
+  const stage = sensors.find(s => /(current_stage|arbeitsschritt)/.test(text(s)));
+  const targets = sensors
+    .filter(s => /(target|ziel)/.test(text(s)) && /(temp|düse|druckbett|kammer|nozzle|bed)/.test(text(s)))
+    .map(s => String(s.entity_id));
   const automation = states.find(s => String(s.entity_id).startsWith('automation.') && s.attributes?.id === AUTOMATION_ID)?.entity_id;
-  return { dry, maybe, automation };
+  return { dry, maybe, stage: stage ? String(stage.entity_id) : undefined, targets, automation };
 }
 
 export async function installHaDryOff(): Promise<HaDryOffInfo> {
@@ -62,7 +67,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
   let step = 'Sensoren lesen';
   try {
     const { status } = await findEntities();
-    const { dry, maybe, automation: existing } = await findDryEntities();
+    const { dry, maybe, stage, targets, automation: existing } = await findDryEntities();
     if (existing && safeStorage.getItem(VERSION_KEY) === CONFIG_VERSION) {
       safeStorage.setItem(ENTITY_KEY, existing);
       await callHaService('automation', 'turn_off', { entity_id: existing });
@@ -78,7 +83,7 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
     const config = {
       id: AUTOMATION_ID,
       alias: 'FilamentHub: Drucker nach Trocknen aus',
-      description: 'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Nach Trocknen ausschalten“ gewählt ist. 3 Minuten nach Trocknungsende geht die Steckdose aus, außer es beginnt ein Druck oder eine neue Trocknung.',
+      description: 'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Nach Trocknen ausschalten“ gewählt ist. 3 Minuten nach Trocknungsende geht die Steckdose aus, außer es beginnt ein Druck, eine neue Trocknung oder jemand arbeitet am Drucker (Düse wechseln, aufheizen ...).',
       mode: 'single',
       trigger: dry.map(e => ({ platform: 'state', entity_id: e, id: 'dryend' })),
       condition: [
@@ -92,7 +97,10 @@ export async function installHaDryOff(): Promise<HaDryOffInfo> {
         {
           wait_for_trigger: [
             { platform: 'state', entity_id: status, to: ['running', 'prepare', 'pause'] },
-            ...dry.map(e => ({ platform: 'numeric_state', entity_id: e, above: 0 }))
+            ...dry.map(e => ({ platform: 'numeric_state', entity_id: e, above: 0 })),
+            // jemand arbeitet am Drucker: anderer Arbeitsschritt als Leerlauf, oder irgendeine Zieltemperatur über 0
+            ...(stage ? [{ platform: 'state', entity_id: stage, not_to: ['idle', 'unavailable', 'unknown'] }] : []),
+            ...targets.map(e => ({ platform: 'numeric_state', entity_id: e, above: 0 }))
           ],
           timeout: { minutes: 3 },
           continue_on_timeout: true
@@ -168,4 +176,26 @@ export async function cancelHaDryOffRun(): Promise<void> {
   await callHaService('automation', 'turn_off', { entity_id: entity });
   await new Promise(r => setTimeout(r, 2000));
   await callHaService('automation', 'turn_on', { entity_id: entity });
+}
+
+export interface HaDryOffRun {
+  running: boolean;
+  /** Wann der Ablauf begann (= Ende der Trocknung), in ms */
+  startedAt: number;
+}
+
+/** Läuft in Home Assistant gerade die 3-Minuten-Wartezeit? Damit zeigt jedes Gerät denselben Zähler, auch nach Schließen und Öffnen der App. */
+export async function getHaDryOffRun(): Promise<HaDryOffRun | null> {
+  const entity = safeStorage.getItem(ENTITY_KEY) || '';
+  if (!entity) return null;
+  try {
+    const res = await haFetch(`/api/states/${entity}`);
+    if (!res.ok) return null;
+    const st = await res.json();
+    const running = Number(st?.attributes?.current) > 0 && st?.state === 'on';
+    const startedAt = Date.parse(st?.attributes?.last_triggered || '') || 0;
+    return { running, startedAt };
+  } catch {
+    return null;
+  }
 }

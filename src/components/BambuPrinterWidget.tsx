@@ -362,6 +362,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     gcodeState: liveState.data.gcode_state,
     drying: dryLeftNow > 0,
     switchState: haSwitchState.state,
+    busy: (liveState.data.nozzle_target_temper || 0) > 0 || (liveState.data.nozzle2_target_temper || 0) > 0 || (liveState.data.bed_target_temper || 0) > 0,
     refreshSwitch: () => void handleFetchSwitchStatus(),
     notify: setActionToast
   });

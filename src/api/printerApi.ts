@@ -55,6 +55,8 @@ export interface PrintTask {
   filaments: Array<{ material: string; colorHex: string; grams: number; slot?: number }>;
 }
 
+import { noteDryOffActivity } from '../utils/dryOffActivity';
+
 export const printerApi = {
   /** Letzte Druckaufträge mit Filamentverbrauch (Bambu Cloud) */
   tasks: (limit = 15) => apiPost<ApiBase & { tasks?: PrintTask[] }>('/api/printer/tasks', { limit }, { timeoutMs: 20000 }),
@@ -67,21 +69,30 @@ export const printerApi = {
   /** Verbindung sofort neu aufbauen (nutzt gespeicherte Zugangsdaten, sucht ggf. den Drucker im Konto) */
   reconnect: () => apiPost<ApiBase & { status?: BambuLiveState }>('/api/printer/reconnect', undefined, { timeoutMs: 45000 }),
 
-  command: (command: 'pause' | 'resume' | 'stop', pin?: string) =>
-    apiPost<ApiBase>('/api/printer/command', { command, pin }),
+  command: (command: 'pause' | 'resume' | 'stop', pin?: string) => {
+    noteDryOffActivity('Druck-Befehl');
+    return apiPost<ApiBase>('/api/printer/command', { command, pin });
+  },
 
   /** „Druck verzögern“: Sicherheitsnetz im Drucker-Kern (resumeAt in ms, 0 = aus) */
   delayResume: (resumeAt: number) => apiPost<ApiBase>('/api/printer/delay-resume', { resumeAt }),
 
-  gcodeLine: (gcode: string) => apiPost<ApiBase>('/api/printer/gcode-line', { gcode }),
+  gcodeLine: (gcode: string) => {
+    noteDryOffActivity('Drucker bewegt oder bedient');
+    return apiPost<ApiBase>('/api/printer/gcode-line', { gcode });
+  },
 
-  temperature: (target: 'nozzle1' | 'nozzle2' | 'bed', temp: number) =>
-    apiPost<ApiBase>('/api/printer/temperature', { target, temp }),
+  temperature: (target: 'nozzle1' | 'nozzle2' | 'bed', temp: number) => {
+    if (temp > 0) noteDryOffActivity('Heizen');
+    return apiPost<ApiBase>('/api/printer/temperature', { target, temp });
+  },
 
   light: (mode: 'on' | 'off') => apiPost<ApiBase>('/api/printer/light', { mode }),
 
-  uploadGcode: (payload: { fileName: string; fileContent: string; startPrint: boolean }) =>
-    apiPost<ApiBase>('/api/printer/upload-gcode', payload),
+  uploadGcode: (payload: { fileName: string; fileContent: string; startPrint: boolean }) => {
+    noteDryOffActivity('Druckdatei gesendet');
+    return apiPost<ApiBase>('/api/printer/upload-gcode', payload);
+  },
 
   /** Slot-Daten (Farbe, Material, Temperatur) an den Drucker senden. Wartet, bis der Drucker es bestätigt oder ablehnt. */
   amsFilament: (payload: {

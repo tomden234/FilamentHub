@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { toggleHaSwitch } from '../utils/haClient';
 import { raiseAlert } from '../utils/alerts';
 import { addSystemLog } from '../utils/logService';
-import { dryOffAction, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
+import { DRY_OFF_SETTLE_MS, dryOffAction, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
+import { getHaDryOffRun } from '../utils/haDryOff';
 
 // „Nach Trocknen ausschalten“: Ist die AMS-Trocknung zu Ende (und kein Druck), geht nach 3 Minuten die Steckdose über Home Assistant aus.
 //  - gilt nur, wenn die Trocknung nach dem Wählen wirklich gelaufen ist
@@ -20,6 +21,8 @@ interface Params {
   /** AMS trocknet gerade (Restzeit > 0) */
   drying: boolean;
   switchState: 'on' | 'off' | 'unknown' | 'error';
+  /** Am Drucker wird gearbeitet (Düse/Bett heizen auf Zieltemperatur) */
+  busy: boolean;
   refreshSwitch: () => void;
   notify: (t: { text: string; ok: boolean }) => void;
 }
@@ -35,15 +38,32 @@ export function useDryAutoOff(p: Params) {
   const busy = useRef(false);
   const fails = useRef(0);
 
+  /** Home Assistant meldet: 3-Minuten-Wartezeit läuft seit diesem Zeitpunkt (0 = nein) */
+  const haRunAt = useRef(0);
+
   useEffect(() => {
     if (!state.armed) {
+      haRunAt.current = 0;
       lastDryingAt.current = 0;
       fails.current = 0;
       return;
     }
     /** Durchgang abgeschlossen: Schalter bleibt an, der nächste Durchgang beginnt neu */
+    // App war zu und wird wieder geöffnet: Zähler läuft weiter, wo er war (nur wenn noch innerhalb der 3 Minuten + Puffer)
+    if (state.endedAt > 0) {
+      if (Date.now() - state.endedAt < DRY_OFF_SETTLE_MS + 60_000 && state.endedAt > state.skipAt) lastDryingAt.current = state.endedAt;
+      else setDryEndedAt(0);
+    }
+    const pollHa = async () => {
+      const r = await getHaDryOffRun();
+      if (!r) return;
+      haRunAt.current = r.running && r.startedAt > state.skipAt ? r.startedAt : 0;
+    };
+    void pollHa();
+    const haId = setInterval(() => void pollHa(), 15_000);
     const finish = (title: string, text: string, ok: boolean, kind: 'info' = 'info') => {
       lastDryingAt.current = 0;
+      haRunAt.current = 0;
       setDryEndedAt(0);
       addSystemLog('steckdose', title, text, ok ? 'success' : 'info');
       void raiseAlert({ kind, key: `dry-off-${Date.now()}-${title}`, title, text, toast: `${ok ? '🔌' : 'ℹ️'} ${text}` }, t => latest.current.notify({ text: t, ok }));
@@ -55,6 +75,11 @@ export function useDryAutoOff(p: Params) {
       const skipping = Date.now() - state.skipAt < 120_000;
       if (cur.drying && !skipping) lastDryingAt.current = Date.now();
       if (state.skipAt && lastDryingAt.current && lastDryingAt.current < state.skipAt) lastDryingAt.current = 0;
+      // Jemand arbeitet am Drucker (Düse wechseln, aufheizen ...): nicht ausschalten
+      if (cur.busy && !cur.drying && lastDryingAt.current > 0) {
+        finish('Drucker bleibt an', 'Am Drucker wird gearbeitet (Düse/Bett heizen). Der Drucker bleibt an (nur dieses Mal).', false);
+        return;
+      }
       const action = dryOffAction({
         armedAt: state.armedAt,
         now: Date.now(),
@@ -64,7 +89,8 @@ export function useDryAutoOff(p: Params) {
         switchState: cur.switchState
       });
       // Zähler für die Anzeige: läuft ab Trocknungsende, solange nicht gedruckt wird
-      setDryEndedAt(!cur.drying && lastDryingAt.current && action !== 'cancel-print' && action !== 'cancel-socket-off' ? lastDryingAt.current : 0);
+      const localEnded = !cur.drying && lastDryingAt.current && action !== 'cancel-print' && action !== 'cancel-socket-off' ? lastDryingAt.current : 0;
+      setDryEndedAt(cur.drying ? 0 : haRunAt.current || localEnded);
       switch (action) {
         case 'wait':
           return;
@@ -95,7 +121,10 @@ export function useDryAutoOff(p: Params) {
     };
     const id = setInterval(() => void tick(), TICK_MS);
     void tick();
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      clearInterval(haId);
+    };
   }, [state.armed, state.armedAt, state.skipAt]);
 
   return state;
