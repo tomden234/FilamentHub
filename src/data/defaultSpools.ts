@@ -2573,5 +2573,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.176',
+    label: '1.176 (Windows-Update repariert)',
+    releaseDate: '02.11.2026',
+    description: 'Windows-App: „Nach Update suchen“ meldete „sha512 checksum mismatch“. Die App lädt Updates jetzt immer komplett (kein Teil-Download), leert bei diesem Fehler den Zwischenspeicher und versucht es einmal neu. Wirkt ab dieser Version, die alte App muss einmal per Hand installiert werden.',
+    features: [
+      '🖥️ Update lädt komplett statt per Blockmap-Teil-Download',
+      '♻️ Bei Prüfsummen-Fehler: Zwischenspeicher leeren und automatisch neu versuchen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

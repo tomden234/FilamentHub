@@ -214,13 +214,41 @@ function sendStatus(s) {
   if (win && !win.isDestroyed()) win.webContents.send('update:status', s);
 }
 
+// 1.176: „sha512 checksum mismatch“ kam von halb geladenen oder gemischten Update-Dateien (Teil-Download per Blockmap).
+// Jetzt immer ganz laden, und bei diesem Fehler den Zwischenspeicher leeren und einmal neu versuchen.
+function clearUpdaterCache() {
+  try {
+    const base = process.env.LOCALAPPDATA;
+    if (!base) return;
+    for (const n of ['filamenthub-updater', 'FilamentHub-updater', 'filamenthub']) {
+      const dir = require('path').join(base, n + (n.endsWith('-updater') ? '' : '-updater'));
+      require('fs').rmSync(dir, { recursive: true, force: true });
+    }
+  } catch {
+    /* Cache nicht löschbar: egal */
+  }
+}
+const isChecksumError = e => /checksum|sha512|sha256/i.test(String((e && e.message) || e));
+
 function setupAutoUpdate() {
+  try {
+    autoUpdater.disableDifferentialDownload = true;
+  } catch {
+    /* ältere Version ohne dieses Feld */
+  }
   // Knopf in der App: jetzt nach Update suchen / installieren
   ipcMain.handle('update:check', async () => {
     if (!app.isPackaged) return { state: 'dev', message: 'Entwicklungsmodus: kein Update möglich.' };
     try {
       sendStatus({ state: 'checking' });
-      const r = await autoUpdater.checkForUpdates();
+      let r;
+      try {
+        r = await autoUpdater.checkForUpdates();
+      } catch (e0) {
+        if (!isChecksumError(e0)) throw e0;
+        clearUpdaterCache();
+        r = await autoUpdater.checkForUpdates();
+      }
       const v = r && r.updateInfo && r.updateInfo.version;
       if (!v || v === app.getVersion()) {
         const s = { state: 'current', version: app.getVersion() };
@@ -270,7 +298,13 @@ function setupAutoUpdate() {
     console.error('Update-Fehler:', e && e.message);
     sendStatus({ state: 'error', message: String((e && e.message) || e).slice(0, 160) });
   });
-  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  const check = () =>
+    autoUpdater.checkForUpdates().catch(e => {
+      if (isChecksumError(e)) {
+        clearUpdaterCache();
+        autoUpdater.checkForUpdates().catch(() => {});
+      }
+    });
   setTimeout(check, 8000);
   setInterval(check, 30 * 60 * 1000);
 }
