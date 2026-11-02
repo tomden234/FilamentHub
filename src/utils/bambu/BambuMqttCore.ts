@@ -132,6 +132,8 @@ export abstract class BambuMqttCore {
   private static readonly STALE_MS = 150_000;
   /** Nach einem Licht-Befehl kurz den gewünschten Zustand halten (sonst flackert die Anzeige durch alte Meldungen) */
   private lightHold: { mode: string; until: number } | null = null;
+  /** Externe Spulen (H2D/X2D: vir_slot) */
+  private virSlots: any[] = [];
   /** Letzte Antwort des Druckers auf „ams_filament_setting" (zur Prüfung, ob der Slot wirklich gesetzt wurde) */
   private amsCmdResult: { result: string; reason: string; at: number } | null = null;
   /** Der Drucker meldet „MQTT command verification failed" (Bambu lässt Fremd-Befehle über die Cloud nicht zu) */
@@ -949,6 +951,13 @@ export abstract class BambuMqttCore {
     if (delta.spd_mag !== undefined) this.printData.spd_mag = Number(delta.spd_mag);
     if (delta.ams !== undefined) this.mergeAms(delta.ams);
     if (delta.vt_tray !== undefined) this.printData.vt_tray = delta.vt_tray;
+    // 1.170: H2D/X2D melden die externen Spulen als Liste „vir_slot“ (ids 254/255) statt „vt_tray“
+    if (Array.isArray(delta.vir_slot) && delta.vir_slot.length) {
+      this.virSlots = delta.vir_slot;
+      if (delta.vt_tray === undefined) {
+        this.printData.vt_tray = delta.vir_slot.find((x: any) => x?.tray_type) || delta.vir_slot[0];
+      }
+    }
     if (delta.lights_report !== undefined) {
       const hold = this.lightHold;
       const incoming = Array.isArray(delta.lights_report)
@@ -1378,35 +1387,51 @@ export abstract class BambuMqttCore {
     const maxTemp = params.maxTemp || (material === 'PLA' ? 240 : material === 'PETG' ? 260 : 270);
 
     const reqTopic = `device/${this.serialNumber}/request`;
-    // Externe Spule: ams_id 255, tray_id = id aus vt_tray (254, sonst Standard). AMS: ams_id 0, tray_id 0-3.
+    // Externe Spule: X1/P1 = ams_id 255 + tray_id 254. H2D/X2D haben zwei externe Plätze (ids 254/255).
+    // Weil das beim X2D nicht sicher bekannt ist, werden die Varianten nacheinander probiert, bis der Drucker eine übernimmt.
     const external = Boolean(params.external);
-    const extId = Number(this.printData.vt_tray?.id);
-    const trayId = external ? (Number.isFinite(extId) && extId >= 254 ? extId : 254) : Number(slotIdx);
-    const payload = {
-      print: {
-        sequence_id: String(Date.now()),
-        command: 'ams_filament_setting',
-        ams_id: external ? 255 : 0,
-        tray_id: trayId,
-        tray_info_idx: infoIdx,
-        tray_color: color,
-        nozzle_temp_min: minTemp,
-        nozzle_temp_max: maxTemp,
-        tray_type: material
-      }
-    };
+    const extIds = [this.printData.vt_tray?.id, ...this.virSlots.map((x: any) => x?.id)].map(Number).filter(n => n === 254 || n === 255);
+    const variants: [number, number][] = external
+      ? (() => {
+          const v: [number, number][] = [];
+          const add = (x: number, y: number) => { if (!v.some(e => e[0] === x && e[1] === y)) v.push([x, y]); };
+          add(255, extIds[0] ?? 254);
+          extIds.forEach(id => { add(id, id); add(id, 254); add(id, 0); });
+          add(255, 254); add(254, 254); add(255, 255); add(254, 0); add(255, 0);
+          return v;
+        })()
+      : [[0, Number(slotIdx)]];
 
     // Keine Schein-Aktualisierung: die Anzeige ändert sich erst, wenn der Drucker den Slot wirklich meldet.
-    this.amsCmdResult = null;
     // Alter „Befehl nicht verifiziert“-Fehler, der schon vor diesem Befehl in der HMS-Liste stand, zählt nicht als Ablehnung
     const hmsBlockedBefore = this.hmsBlocked;
-    this.client.publish(reqTopic, JSON.stringify(payload));
-    this.schedulePushall(800);
-    this.schedulePushall(2500);
-
-    const outcome = external
-      ? await this.waitForExternal(color.slice(0, 6), material, 5000, hmsBlockedBefore)
-      : await this.waitForAmsSlot(slotIdx, color.slice(0, 6), material, 5000, hmsBlockedBefore);
+    let outcome: 'confirmed' | 'blocked' | 'unconfirmed' = 'unconfirmed';
+    let lastReply = '';
+    for (const [amsId, trayId] of variants) {
+      const payload = {
+        print: {
+          sequence_id: String(Date.now()),
+          command: 'ams_filament_setting',
+          ams_id: amsId,
+          tray_id: trayId,
+          tray_info_idx: infoIdx,
+          tray_color: color,
+          nozzle_temp_min: minTemp,
+          nozzle_temp_max: maxTemp,
+          tray_type: material
+        }
+      };
+      this.amsCmdResult = null;
+      this.client.publish(reqTopic, JSON.stringify(payload));
+      this.schedulePushall(800);
+      this.schedulePushall(2500);
+      outcome = external
+        ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 3500 : 5000, hmsBlockedBefore)
+        : await this.waitForAmsSlot(slotIdx, color.slice(0, 6), material, 5000, hmsBlockedBefore);
+      const r = this.amsCmdResult as { result: string; reason: string } | null;
+      if (r) lastReply = `${amsId}/${trayId}: ${r.result || '?'}${r.reason ? ' (' + r.reason + ')' : ''}`;
+      if (outcome !== 'unconfirmed') break;
+    }
     const lan = this.lanMode;
     const colorHex = `#${color.slice(0, 6)}`;
     const n = external ? 'Extern (5)' : slotIdx + 1;
@@ -1431,7 +1456,7 @@ export abstract class BambuMqttCore {
         : emptySlot
         ? `Der Drucker hat Slot ${n} nicht übernommen. Der Slot ist leer: erst Filament einlegen, dann übertragen.`
         : external
-        ? 'Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen.'
+        ? `Der Drucker hat die externe Spule nicht übernommen${lastReply ? ' (Antwort ' + lastReply + ')' : ''}. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen.`
         : `Der Drucker hat Slot ${n} nicht übernommen. Bambu lässt Fremd-Befehle über die Cloud oft nicht zu.`;
     return {
       success: false,
@@ -1453,10 +1478,14 @@ export abstract class BambuMqttCore {
     const wantColor = color6.toUpperCase();
     const wantType = material.toUpperCase();
     while (Date.now() - startedAt < timeoutMs) {
-      const t = this.printData.vt_tray;
-      const cols: string[] = Array.isArray(t?.cols) ? t.cols.map((x: any) => String(x).toUpperCase()) : [];
-      const colorOk = String(t?.tray_color || '').toUpperCase().startsWith(wantColor) || cols.some(x => x.startsWith(wantColor));
-      if (t && String(t.tray_type || '').toUpperCase() === wantType && colorOk) return 'confirmed';
+      // vt_tray und (H2D/X2D) alle Einträge aus vir_slot prüfen
+      const hit = [this.printData.vt_tray, ...this.virSlots].some((t: any) => {
+        if (!t) return false;
+        const cols: string[] = Array.isArray(t.cols) ? t.cols.map((x: any) => String(x).toUpperCase()) : [];
+        const colorOk = String(t.tray_color || '').toUpperCase().startsWith(wantColor) || cols.some(x => x.startsWith(wantColor));
+        return String(t.tray_type || '').toUpperCase() === wantType && colorOk;
+      });
+      if (hit) return 'confirmed';
       const r = this.amsCmdResult;
       if (r) {
         if (r.result === 'fail' || /verif/i.test(r.reason)) return 'blocked';

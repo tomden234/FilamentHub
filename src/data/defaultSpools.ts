@@ -2492,5 +2492,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.170',
+    label: '1.170 (Extern-Spule X2D)',
+    releaseDate: '02.11.2026',
+    description: 'Extern-Spule am X2D: Der Drucker meldet zwei externe Plätze (vir_slot). Die App probiert jetzt mehrere Befehlsformen nacheinander, bis der Drucker die Spule übernimmt, und prüft alle externen Plätze. Bei Misserfolg zeigt die Meldung die Antwort des Druckers.',
+    features: [
+      '🧵 Extern-Spule: mehrere Befehlsformen (ams_id 254/255) werden nacheinander versucht',
+      '👀 Liste „vir_slot“ des X2D wird gelesen und zeigt die externe Spule an',
+      '🩺 Fehlermeldung nennt die Antwort des Druckers (zum Nachsehen)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
