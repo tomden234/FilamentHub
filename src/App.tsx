@@ -30,6 +30,7 @@ import { MobileAppBar } from './components/app/MobileAppBar';
 import { OpenInAppBanner } from './components/OpenInAppBanner';
 import { Navbar, DeviceMode } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import { useBackLayer } from './utils/backNav';
 
 
 import { HistoryModal } from './components/HistoryModal';
@@ -38,6 +39,7 @@ import { addSystemLog } from './utils/logService';
 import { EditUsedModal } from './components/app/EditUsedModal';
 import { MobileAppView } from './components/app/MobileAppView';
 import { DesktopDashboard } from './components/app/DesktopDashboard';
+import { PrinterDock } from './components/app/PrinterDock';
 import {
   STORAGE_KEY_SPOOLS,
   STORAGE_KEY_HISTORY,
@@ -124,7 +126,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.164';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.165';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -160,30 +162,27 @@ export default function App() {
     // App-Modus ist der Standard: immer in der Android-App, der installierten Web-App und auf dem Handy.
     // Nur auf großen Bildschirmen im Browser wird die zuletzt gewählte Ansicht beibehalten.
     if (isAppShell() || window.innerWidth < 768) return 'app';
-    return (safeStorage.getItem('filamenthub_device_mode') as DeviceMode) || 'app';
+    // Neuer Schlüssel (1.165): am PC startet jetzt die Desktop-Ansicht mit Drucker rechts. Umschalten bleibt gespeichert.
+    return (safeStorage.getItem('filamenthub_device_mode_v2') as DeviceMode) || (window.innerWidth >= 1100 ? 'desktop' : 'app');
   });
 
-  // Am PC (Windows-App oder breiter Browser) bleibt das Menü als feste Seitenleiste offen; per Knopf einklappbar.
-  const [wideScreen, setWideScreen] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth >= 1100);
+  // Am PC (Windows-App oder breiter Browser) sitzt der Drucker als feste Leiste rechts. Das Menü links startet IMMER zu
+  // (es merkt sich nicht mehr, ob es offen war). Auf sehr breiten Bildschirmen kann es als feste Seitenleiste angedockt werden,
+  // sonst fährt es als Fenster aus.
+  const [winW, setWinW] = useState<number>(() => (typeof window !== 'undefined' ? window.innerWidth : 1280));
   useEffect(() => {
-    const onResize = () => setWideScreen(window.innerWidth >= 1100);
+    const onResize = () => setWinW(window.innerWidth);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  const [dockPref, setDockPrefState] = useState<boolean>(() => safeStorage.getItem('filamenthub_dock_v2') === '1'); // ab 1.164: Menü startet zu
-  const setDockPref = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
-    setDockPrefState(prev => {
-      const next = typeof v === 'function' ? v(prev) : v;
-      safeStorage.setItem('filamenthub_dock_v2', next ? '1' : '0');
-      return next;
-    });
-  }, []);
-  const canDock = deviceMode === 'desktop' && !isAppShell() && wideScreen;
+  const [dockPref, setDockPref] = useState<boolean>(false);
+  const rightDock = deviceMode === 'desktop' && !isAppShell() && winW >= 1100;
+  const canDock = deviceMode === 'desktop' && !isAppShell() && winW >= 1560;
   const isDocked = canDock && dockPref;
 
   const handleSetDeviceMode = useCallback((mode: DeviceMode) => {
     setDeviceMode(mode);
-    safeStorage.setItem('filamenthub_device_mode', mode);
+    safeStorage.setItem('filamenthub_device_mode_v2', mode);
   }, []);
 
   // Hauptbestand. Eine leere Liste ist ein gültiger Stand (alles gelöscht), nur ohne gespeicherten Wert startet die App leer.
@@ -321,6 +320,10 @@ export default function App() {
   const [appAndQrTab, setAppAndQrTab] = useState<'app' | 'qr'>('app');
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
+  useBackLayer(isSpoolModalOpen, () => { setIsSpoolModalOpen(false); setSpoolToEdit(null); setSpoolPrefill(null); }, 'spool');
+  useBackLayer(isHistoryModalOpen, () => setIsHistoryModalOpen(false), 'history');
+  useBackLayer(isAppAndQrOpen, () => setIsAppAndQrOpen(false), 'appqr');
+  useBackLayer(isCameraModalOpen, () => setIsCameraModalOpen(false), 'camera');
   const [isNfcModalOpen, setIsNfcModalOpen] = useState<boolean>(false);
   const [nfcModalMode, setNfcModalMode] = useState<'read' | 'write' | 'batch' | 'write-direct' | 'inspect'>('batch');
   const [nfcSpoolId, setNfcSpoolId] = useState<string | undefined>(undefined);
@@ -1284,10 +1287,25 @@ export default function App() {
           /* ============================================================== */
           /* DESKTOP-MODUS: VOLLE WERKSTATT-DASHBOARD VERSION               */
           /* ============================================================== */
-          <DesktopDashboard spools={spools} totalGrams={totalGrams} totalValue={totalValue} dueDryingCount={dueDryingCount} setEditUsedInputValue={setEditUsedInputValue} totalUsedGrams={totalUsedGrams} setIsEditUsedModalOpen={setIsEditUsedModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} setIsCameraModalOpen={setIsCameraModalOpen} quickLinkText={quickLinkText} setQuickLinkText={setQuickLinkText} handleQuickScan={handleQuickScan} isQuickScanning={isQuickScanning} searchQuery={searchQuery} setSearchQuery={setSearchQuery} sortBy={sortBy} setSortBy={setSortBy} activeMaterialFilter={activeMaterialFilter} setActiveMaterialFilter={setActiveMaterialFilter} filteredSpools={filteredSpools} appSettings={appSettings} now={now} handleApplyScale={handleApplyScale} handleMarkDried={handleMarkDried} handleDuplicateSpool={handleDuplicateSpool} handleDeleteSpool={handleDeleteSpool} handleOpenSpoolNfc={handleOpenSpoolNfc} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} />
+          <DesktopDashboard spools={spools} totalGrams={totalGrams} totalValue={totalValue} dueDryingCount={dueDryingCount} setEditUsedInputValue={setEditUsedInputValue} totalUsedGrams={totalUsedGrams} setIsEditUsedModalOpen={setIsEditUsedModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} setIsCameraModalOpen={setIsCameraModalOpen} quickLinkText={quickLinkText} setQuickLinkText={setQuickLinkText} handleQuickScan={handleQuickScan} isQuickScanning={isQuickScanning} searchQuery={searchQuery} setSearchQuery={setSearchQuery} sortBy={sortBy} setSortBy={setSortBy} activeMaterialFilter={activeMaterialFilter} setActiveMaterialFilter={setActiveMaterialFilter} filteredSpools={filteredSpools} appSettings={appSettings} now={now} handleApplyScale={handleApplyScale} handleMarkDried={handleMarkDried} handleDuplicateSpool={handleDuplicateSpool} handleDeleteSpool={handleDeleteSpool} handleOpenSpoolNfc={handleOpenSpoolNfc} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} hidePrinter={rightDock} />
         )}
       </main>
       </div>
+
+      {/* Drucker als feste Leiste rechts (PC) */}
+      {rightDock && (
+        <PrinterDock
+          spools={spools}
+          viewMode={viewMode}
+          onDeductWeight={handleDeductWeight}
+          onApplyDryingCredit={handleApplyDryingCredit}
+          onOpenNewSpool={(prefill?: Partial<Spool>) => {
+            setSpoolToEdit(null);
+            setSpoolPrefill(prefill || null);
+            setIsSpoolModalOpen(true);
+          }}
+        />
+      )}
 
       {/* Spool Modal */}
       {isSpoolModalOpen && (
@@ -1444,7 +1462,7 @@ export default function App() {
       </div>
 
       {/* Rechts angedockter Live-Log Streifen & Ausklapp-Drawer (ca. 1cm) */}
-      <RightLogDrawer spools={spools} onDeductWeight={handleDeductWeight} />
+      <RightLogDrawer spools={spools} onDeductWeight={handleDeductWeight} logsOnly={rightDock} />
     </div>
   );
 }

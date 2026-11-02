@@ -2415,5 +2415,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.165',
+    label: '1.165 (Drucker rechts & Lila-Design)',
+    releaseDate: '02.11.2026',
+    description: 'Der Drucker sitzt am PC als lange Leiste rechts, das Menü ist schöner und startet zu, Mitteilungen sind kompakter. Neu: Design Nacht (dunkles Lila), Cozy in Waldgrün. Zurück-Taste und Maus-Tasten gehen im Menü und in Fenstern.',
+    features: [
+      '🖨️ Drucker als lange Leiste rechts (scrollbar), am PC startet jetzt die Desktop-Ansicht',
+      '🌙 Neu: Design Nacht (dunkles, augenschonendes Lila). Cozy jetzt in Waldgrün',
+      '📂 Menü: links immer zu beim Start, „Material-Einstellungen“, Verbindungen mit Status-LED, ohne Mitteilungen',
+      '🔔 Mitteilungen: kompakter, zwei Spalten, „Zeiten und Grenzen“ immer offen, ohne Status-LED',
+      '↩️ Zurück/Vor: Handy-Zurück, Maus-Tasten (Windows-App) und Browser-Zurück schließen Menü und Fenster'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

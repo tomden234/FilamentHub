@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   DatabaseBackup
 } from 'lucide-react';
+import { useBackLayer } from '../utils/backNav';
 import {
   AppSettings,
   BrandConfig,
@@ -313,6 +314,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onAddWeight
   });
 
+  // Zurück-Taste: erst die Seite im Menü, dann das Menü selbst
+  useBackLayer(isOpen && !docked, onClose, 'menu');
+  useBackLayer((isOpen || docked) && activeTab !== 'home', () => setActiveTab('home'), 'menu-page');
+
   if (!isOpen && !docked) return null;
 
   const activeVersion =
@@ -354,18 +359,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ...(APP ? [] : [{ key: 'gcode', group: 'Helfer', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Druckkosten berechnen', go: () => setActiveTab('gcode') }]),
     { key: 'tools', group: 'Daten', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Cloud-Abgleich', go: () => setActiveTab('tools') },
     { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: () => { setSettingsSubTab('themes'); setActiveTab('settings'); } },
-    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material', sub: 'Trocknung und Leergewichte', go: () => { setSettingsSubTab('presets'); setActiveTab('settings'); } }]),
-    { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Mitteilungen', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
+    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material-Einstellungen', sub: 'Trocknung und Leergewichte je Material', go: () => { setSettingsSubTab('presets'); setActiveTab('settings'); } }]),
+    { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, NFC-Leser, Status-LED', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
     ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Einstellungen', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }])
+  ,
+    { key: 'funfacts', group: 'Info', icon: Sparkles, title: 'Fun Facts', sub: 'Echte Zahlen zu Druckzeit, Lager und Code', go: () => setShowFunFacts(true) }
   ];
+  const TONES: Record<string, string> = {
+    Helfer: 'text-violet-400 bg-violet-500/15 border-violet-500/30',
+    Daten: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
+    Einstellungen: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+    Info: 'text-amber-400 bg-amber-500/15 border-amber-500/30'
+  };
   const pageTitle =
     activeTab === 'ai' ? 'KI-Assistent'
     : activeTab === 'gcode' || activeTab === 'calc' ? 'G-Code und Kosten'
     : activeTab === 'tools' ? 'Sichern und Laden'
     : activeTab === 'connect' ? 'Handy'
     : settingsSubTab === 'themes' ? 'Aussehen'
-    : settingsSubTab === 'presets' ? 'Material'
+    : settingsSubTab === 'presets' ? 'Material-Einstellungen'
     : 'Verbindungen';
 
   return (
@@ -413,8 +426,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xs tracking-tight" style={{ color: 'var(--app-text)' }}>
-                  FilamentHub Menü
+                <span className="fh-serif font-extrabold text-sm tracking-tight" style={{ color: 'var(--app-text)' }}>
+                  Menü
                 </span>
                 <span className="text-[10px] font-mono-num font-bold px-1.5 py-0.2 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30">
                   {activeVersion?.id}
@@ -423,21 +436,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setShowFunFacts(true)}
-              className="px-2 py-1 rounded-lg text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer hover:opacity-90 active:scale-95 shadow-xs"
-              style={{
-                backgroundColor: 'var(--app-card)',
-                borderColor: 'var(--app-accent)',
-                color: 'var(--app-accent-text)'
-              }}
-              title="Echte Zahlen: Druckzeit, Lager, Filament-Länge, Code"
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Fun Facts</span>
-            </button>
-
             {docked ? (
               <button
                 onClick={onToggleDock}
@@ -638,7 +636,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           {/* START: Menü-Liste in Gruppen */}
           {activeTab === 'home' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {Array.from(new Set(homeItems.map(i => i.group))).map(group => (
                 <div key={group} className="space-y-1.5">
                   <div className="fh-eyebrow px-1">{group}</div>
@@ -651,16 +649,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <button
                             key={item.key}
                             onClick={item.go}
-                            className="w-full px-3 py-2.5 flex items-center gap-3 text-left cursor-pointer hover:opacity-80 transition"
+                            className="w-full px-3.5 py-3 flex items-center gap-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition"
                           >
                             <span
-                              className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0"
-                              style={{ backgroundColor: 'var(--app-accent-sub)', borderColor: 'var(--app-border)', color: 'var(--app-accent-text)' }}
+                              className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${TONES[item.group] || TONES.Einstellungen}`}
                             >
-                              <Icon className="w-4 h-4" />
+                              <Icon className="w-[18px] h-[18px]" />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block text-xs font-bold" style={{ color: 'var(--app-text)' }}>{item.title}</span>
+                              <span className="block text-[13px] font-bold" style={{ color: 'var(--app-text)' }}>{item.title}</span>
                               <span className="block text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>{item.sub}</span>
                             </span>
                             <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--app-text-muted)' }} />

@@ -76,6 +76,17 @@ async function createWindow() {
       event.preventDefault();
     }
   });
+  // Maus-Zurück/Vorwärts-Tasten (Windows) und Wischgesten (Mac)
+  const goBack = () => { if (win.webContents.navigationHistory?.canGoBack?.() ?? win.webContents.canGoBack()) win.webContents.goBack(); };
+  const goFwd = () => { if (win.webContents.navigationHistory?.canGoForward?.() ?? win.webContents.canGoForward()) win.webContents.goForward(); };
+  win.on('app-command', (_e, cmd) => {
+    if (cmd === 'browser-backward') goBack();
+    else if (cmd === 'browser-forward') goFwd();
+  });
+  win.on('swipe', (_e, dir) => {
+    if (dir === 'left') goBack();
+    else if (dir === 'right') goFwd();
+  });
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (!url.startsWith(URL)) shell.openExternal(url);
     return { action: url.startsWith(URL) ? 'allow' : 'deny' };

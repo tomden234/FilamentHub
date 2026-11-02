@@ -41,6 +41,8 @@ export interface DesktopDashboardProps {
   locations: any;
   activeLocationFilter: any;
   setActiveLocationFilter: any;
+  /** Drucker steckt in der festen Leiste rechts, hier nicht nochmal zeigen */
+  hidePrinter?: boolean;
 }
 
 export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
@@ -78,7 +80,8 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
   handleOpenSpoolNfc,
   locations,
   activeLocationFilter,
-  setActiveLocationFilter
+  setActiveLocationFilter,
+  hidePrinter = false
 }) => {
   return (
 <>
@@ -121,8 +124,8 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
               </button>
             </section>
 
-            {/* Bambu Lab Live-Drucker-Monitor */}
-            <BambuPrinterWidget
+            {/* Bambu Lab Live-Drucker-Monitor (am breiten PC in der Leiste rechts) */}
+            {!hidePrinter && <BambuPrinterWidget
               spools={spools}
               viewMode={viewMode}
               onDeductWeight={handleDeductWeight}
@@ -132,7 +135,7 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                 setSpoolPrefill(prefill || null);
                 setIsSpoolModalOpen(true);
               }}
-            />
+            />}
 
             {/* Schnell-Erfassung per Kamera & Link (nur in vollständiger Ansicht) */}
             {viewMode === 'full' && (

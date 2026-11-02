@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* "dark:" folgt dem App-Theme (Graphit/Nacht), nicht der Handy-/PC-Einstellung */
-@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *));
+@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *));
 
 /* Die Akzentfarbe steuert auch alle bisherigen "orange"-Klassen (Tailwind), damit Blau, Grün usw. überall greifen */
 @theme {
@@ -444,6 +444,7 @@ progress {
    Beide mit weniger Kontrast als „Klassisch“, damit sie lange angenehm bleiben. Cozy liegt über den dunklen Grundregeln
    (data-theme="slate"), Sand über den hellen (data-theme="warm"). Abschalten: Design „Klassisch“. */
 :root[data-style="cozy"],
+:root[data-style="night"],
 :root[data-style="sand"] {
   --radius-lg: 0.8rem;
   --radius-xl: 1.05rem;
@@ -453,26 +454,26 @@ progress {
 /* Cozy: gedämpftes Grün-Grau, weiches Creme, mattes Messing */
 :root[data-style="cozy"] {
   color-scheme: dark;
-  --app-bg: #1c2321;
-  --app-card: #252e2b;
-  --app-card-sub: #202825;
-  --app-border: #37433f;
-  --app-text: #e4ddcf;
-  --app-text-muted: #9aa69f;
-  --app-input-bg: #1a211f;
-  --app-accent: #8f7549;
-  --app-accent-hover: #7b653d;
-  --app-accent-sub: rgba(183, 154, 106, 0.14);
-  --app-accent-bar: #b39a6c;
-  --app-accent-gradient: linear-gradient(90deg, #7b653d 0%, #a58b5c 60%, #c9b184 100%);
-  --app-accent-text: #d2bb92;
+  --app-bg: #14241c;
+  --app-card: #1c3126;
+  --app-card-sub: #182b21;
+  --app-border: #2c4a39;
+  --app-text: #e3eadf;
+  --app-text-muted: #94ad9f;
+  --app-input-bg: #12211a;
+  --app-accent: #3f9460;
+  --app-accent-hover: #348052;
+  --app-accent-sub: rgba(111, 191, 138, 0.15);
+  --app-accent-bar: #5fb582;
+  --app-accent-gradient: linear-gradient(90deg, #2f7a4e 0%, #4aa56f 60%, #8fd4a8 100%);
+  --app-accent-text: #a5dfba;
   --app-danger-text: #e8a9a2;
-  --a-100: #efe3cf;
-  --a-300: #d2bb92;
-  --a-400: #c3a877;
-  --a-500: #b39a6c;
-  --a-600: #8f7549;
-  --a-700: #7b653d;
+  --a-100: #e0f3e7;
+  --a-300: #a5dfba;
+  --a-400: #7ccb9a;
+  --a-500: #5fb582;
+  --a-600: #3f9460;
+  --a-700: #348052;
   --color-emerald-300: #b0d9c0;
   --color-emerald-400: #8bc4a4;
   --color-green-300: #b9dbbf;
@@ -503,6 +504,50 @@ progress {
 :root[data-style="cozy"] .text-sky-500 { color: #9ac3d6; }
 :root[data-style="cozy"] .text-orange-500 { color: var(--a-300); }
 
+/* Nacht: dunkles, gedecktes Lila, augenschonend (wenig Sättigung, weicher Kontrast) */
+:root[data-style="night"] {
+  color-scheme: dark;
+  --app-bg: #16132a;
+  --app-card: #201c38;
+  --app-card-sub: #1b1830;
+  --app-border: #35305a;
+  --app-text: #e6e2f4;
+  --app-text-muted: #9f99c0;
+  --app-input-bg: #141126;
+  --app-accent: #7d6bd6;
+  --app-accent-hover: #6a59c0;
+  --app-accent-sub: rgba(147, 128, 235, 0.16);
+  --app-accent-bar: #9484e6;
+  --app-accent-gradient: linear-gradient(90deg, #5d4cb8 0%, #8372dd 60%, #b5a8f2 100%);
+  --app-accent-text: #bfb4f4;
+  --app-danger-text: #eaa7b4;
+  --a-100: #ece8fb;
+  --a-300: #bfb4f4;
+  --a-400: #a89bee;
+  --a-500: #9484e6;
+  --a-600: #7d6bd6;
+  --a-700: #6a59c0;
+  --color-emerald-400: #8bc4a4;
+  --color-green-400: #96c9a0;
+  --color-rose-400: #e6a39c;
+  --color-amber-400: #e2bd80;
+  --color-sky-400: #9ac3d6;
+}
+:root[data-style="night"] .text-emerald-500 { color: #8bc4a4; }
+:root[data-style="night"] .text-green-500 { color: #96c9a0; }
+:root[data-style="night"] .text-rose-500 { color: #e6a39c; }
+:root[data-style="night"] .text-amber-500 { color: #e2bd80; }
+:root[data-style="night"] .text-sky-500 { color: #9ac3d6; }
+:root[data-style="night"] .text-orange-500 { color: var(--a-300); }
+:root[data-style="night"] body {
+  background:
+    radial-gradient(1000px 560px at 6% -10%, rgba(147, 128, 235, 0.09), transparent 62%),
+    radial-gradient(900px 600px at 108% 2%, rgba(98, 76, 190, 0.12), transparent 60%),
+    var(--app-bg);
+  background-attachment: fixed;
+}
+:root[data-style="night"] .bg-black\/75 { background-color: rgba(10, 8, 24, 0.62); }
+
 /* Sand: warmes Papier mit Waldgrün, kein reines Weiß */
 :root[data-style="sand"] {
   color-scheme: light;
@@ -513,9 +558,9 @@ progress {
   --app-text: #2f2b23;
   --app-text-muted: #6c6556;
   --app-input-bg: #faf7ef;
-  --app-accent: #4f7a5a;
-  --app-accent-hover: #3f6648;
-  --app-accent-sub: rgba(79, 122, 90, 0.15);
+  --app-accent: #3f8a5c;
+  --app-accent-hover: #327049;
+  --app-accent-sub: rgba(63, 138, 92, 0.15);
   --app-accent-bar: #5f8d6b;
   --app-accent-gradient: linear-gradient(90deg, #3f6648 0%, #5f8d6b 60%, #8bb396 100%);
   --app-accent-text: #3b6444;
@@ -531,8 +576,8 @@ progress {
 /* Warmer, sehr leichter Lichtschein statt hartem Hintergrund */
 :root[data-style="cozy"] body {
   background:
-    radial-gradient(1000px 560px at 6% -10%, rgba(179, 154, 108, 0.06), transparent 62%),
-    radial-gradient(900px 600px at 108% 2%, rgba(70, 120, 108, 0.1), transparent 60%),
+    radial-gradient(1000px 560px at 6% -10%, rgba(111, 191, 138, 0.07), transparent 62%),
+    radial-gradient(900px 600px at 108% 2%, rgba(63, 148, 96, 0.12), transparent 60%),
     var(--app-bg);
   background-attachment: fixed;
 }
@@ -545,6 +590,7 @@ progress {
 
 /* Überschriften in einer warmen Serifen-Schrift */
 :root[data-style="cozy"] :is(h1, h2, h3, h4, .fh-serif),
+:root[data-style="night"] :is(h1, h2, h3, h4, .fh-serif),
 :root[data-style="sand"] :is(h1, h2, h3, h4, .fh-serif) {
   font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
   font-optical-sizing: auto;
@@ -554,7 +600,9 @@ progress {
 
 /* Große Karten und Fenster: sehr weicher Schatten statt Kante */
 :root[data-style="cozy"] .rounded-2xl.border,
-:root[data-style="cozy"] .rounded-t-2xl.border {
+:root[data-style="cozy"] .rounded-t-2xl.border,
+:root[data-style="night"] .rounded-2xl.border,
+:root[data-style="night"] .rounded-t-2xl.border {
   box-shadow: 0 14px 34px -24px rgba(0, 0, 0, 0.6);
 }
 :root[data-style="sand"] .rounded-2xl.border,
@@ -573,6 +621,7 @@ progress {
   color: var(--app-text-muted);
 }
 :root[data-style="cozy"] .fh-eyebrow,
+:root[data-style="night"] .fh-eyebrow,
 :root[data-style="sand"] .fh-eyebrow {
   color: var(--app-accent-text);
   letter-spacing: 0.2em;

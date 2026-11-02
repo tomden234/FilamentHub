@@ -28,7 +28,7 @@ export const Toggle: React.FC<{ on: boolean; onChange: (v: boolean) => void; lab
         {label}
       </span>
       {hint && (
-        <span className="text-[11px] block leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+        <span className="text-[10.5px] block leading-snug" style={{ color: 'var(--app-text-muted)' }}>
           {hint}
         </span>
       )}
@@ -90,7 +90,7 @@ export const Section: React.FC<{
 
 /** Schalter untereinander mit feinen Trennlinien */
 export const ToggleList: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="divide-y divide-[var(--app-border)] [&>*]:py-2.5 [&>*:first-child]:pt-0.5 [&>*:last-child]:pb-0.5" style={{ borderColor: 'var(--app-border)' }}>
+  <div className="divide-y divide-[var(--app-border)] [&>*]:py-2 [&>*:first-child]:pt-0.5 [&>*:last-child]:pb-0.5" style={{ borderColor: 'var(--app-border)' }}>
     {children}
   </div>
 );

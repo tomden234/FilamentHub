@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BellRing, CheckCircle2, ChevronDown, Lightbulb, PackageMinus, Printer, Send, SlidersHorizontal, Smartphone, Waves } from 'lucide-react';
+import { BellRing, CheckCircle2, PackageMinus, Printer, Send, SlidersHorizontal, Smartphone, Waves } from 'lucide-react';
 import { useHumidity } from '../../utils/humidity';
 import { IS_NATIVE } from '../../utils/env';
 import { testAlert, TEST_KINDS } from '../../utils/alerts';
@@ -8,7 +8,6 @@ import { notifyPermission, localNotify, requestNotifyPermission, refreshNotifyPe
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { Card, Section, Toggle, ToggleList, buttonStyle, inputStyle } from './ui';
 import { NumInput } from '../ui/NumInput';
-import { getLedInfo, getLedJson, installStatusLed, setStatusLed } from '../../utils/statusLed';
 
 const PRESETS = [50, 100, 150, 200];
 
@@ -17,7 +16,6 @@ const SECTIONS = [
   { id: 'dry', label: 'Trocknen', icon: Waves },
   { id: 'spools', label: 'Spulen', icon: PackageMinus },
   { id: 'device', label: 'Handy', icon: Smartphone },
-  { id: 'led', label: 'LED', icon: Lightbulb },
   { id: 'advanced', label: 'Zeiten', icon: SlidersHorizontal }
 ];
 
@@ -35,8 +33,6 @@ export const NoticesTab: React.FC = () => {
   const [perm, setPerm] = useState<NotifyPermission>(notifyPermission());
   const [testInfo, setTestInfo] = useState('');
   const [testKind, setTestKind] = useState<InboxKind>('dry-done');
-  const [ledInfo, setLedInfo] = useState(getLedInfo());
-  const [ledBusy, setLedBusy] = useState(false);
   useEffect(() => {
     const refresh = () => void refreshNotifyPermission().then(setPerm);
     refresh();
@@ -52,7 +48,7 @@ export const NoticesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Schnellsprung zu den Bereichen */}
       <nav className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Bereiche">
         {SECTIONS.map(sec => (
@@ -68,6 +64,7 @@ export const NoticesTab: React.FC = () => {
         ))}
       </nav>
 
+      <div className="md:columns-2 md:gap-5 [&>section]:mb-4 [&>section]:break-inside-avoid">
       <Section id="print" icon={Printer} title="Druck" sub="Was beim Drucken gemeldet wird.">
         <Card>
           <ToggleList>
@@ -301,80 +298,9 @@ export const NoticesTab: React.FC = () => {
         </p>
       </Section>
 
-      <Section id="led" icon={Lightbulb} title="Status-LED" sub="LED-Streifen am Drucker zeigt den Stand.">
-        <Card>
-        <Toggle
-          on={s.statusLed}
-          onChange={v => update({ statusLed: v })}
-          label="LED-Streifen zeigt den Druckerstatus"
-          hint="Blau mit Fortschrittsbalken beim Druck, Gelb bei Pause, Grün wenn fertig, Rot blinkend bei Fehler, Orange atmend beim Trocknen, sonst aus. Braucht den WLED-Streifen in Home Assistant (Aufbau: hardware/status-led). Die App legt die Automation selbst an."
-        />
-        {s.statusLed && (
-          <>
-            <label className="flex items-center justify-between gap-2 text-xs font-bold">
-              <span>Helligkeit</span>
-              <span className="flex items-center gap-1">
-                <NumInput
-                  type="number"
-                  min={5}
-                  max={100}
-                  value={s.statusLedBrightness}
-                  onChange={e => {
-                    const n = parseInt(e.target.value, 10);
-                    if (Number.isFinite(n)) update({ statusLedBrightness: n });
-                  }}
-                  className="w-16 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none text-right"
-                  style={inputStyle}
-                  aria-label="Helligkeit der Status-LED"
-                />
-                <span className="w-6 font-normal" style={{ color: 'var(--app-text-muted)' }}>%</span>
-              </span>
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                disabled={ledBusy}
-                onClick={async () => {
-                  setLedBusy(true);
-                  try {
-                    await installStatusLed();
-                    await setStatusLed(true);
-                  } finally {
-                    setLedInfo(getLedInfo());
-                    setLedBusy(false);
-                  }
-                }}
-                className="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer disabled:opacity-60"
-                style={buttonStyle}
-              >
-                {ledBusy ? 'Prüfe …' : 'Nochmal prüfen'}
-              </button>
-              {ledInfo && !ledInfo.ok && getLedJson() && (
-                <button
-                  onClick={() => void navigator.clipboard?.writeText(getLedJson())}
-                  className="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer"
-                  style={buttonStyle}
-                >
-                  Automation kopieren
-                </button>
-              )}
-            </div>
-            {ledInfo && (
-              <p className="text-[11px] leading-snug" style={{ color: ledInfo.ok ? 'var(--app-text-muted)' : '#f59e0b' }}>
-                {ledInfo.text}
-              </p>
-            )}
-          </>
-        )}
-        </Card>
-      </Section>
-
       <Section id="advanced" icon={SlidersHorizontal} title="Zeiten und Grenzen" sub="Alles, was die App sonst fest vorgibt.">
-        <details className="group rounded-xl border" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
-          <summary className="px-3 py-2.5 text-xs font-bold cursor-pointer list-none flex items-center justify-between">
-            <span>Werte anzeigen</span>
-            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" style={{ color: 'var(--app-text-muted)' }} />
-          </summary>
-          <div className="px-3 pb-3 space-y-2">
+        <Card>
+          <div className="space-y-2.5">
         {(
           [
             ['humidityHoldMin', 'Feuchte-Alarm: melden nach', 'min', 1, 120, 'So lange muss die Feuchte über der Grenze liegen, bevor gemeldet wird.'],
@@ -413,8 +339,9 @@ export const NoticesTab: React.FC = () => {
           </label>
         ))}
           </div>
-        </details>
+        </Card>
       </Section>
+      </div>
     </div>
   );
 };

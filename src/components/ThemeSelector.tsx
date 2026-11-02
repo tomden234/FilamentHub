@@ -79,12 +79,13 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
           <span>Design</span>
         </span>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(
             [
               { id: 'classic', name: 'Klassisch', sub: 'Hell oder dunkel, eigene Farbe', bg: '#d6dce5', card: '#eceff4', ink: '#0f172a', acc: '#168a47', serif: false },
-              { id: 'cozy', name: 'Cozy', sub: 'Ruhig dunkel', bg: '#1c2321', card: '#252e2b', ink: '#e4ddcf', acc: '#b39a6c', serif: true },
-              { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#4f7a5a', serif: true }
+              { id: 'cozy', name: 'Cozy', sub: 'Ruhig dunkelgrün', bg: '#14241c', card: '#1c3126', ink: '#e3eadf', acc: '#5fb582', serif: true },
+              { id: 'night', name: 'Nacht', sub: 'Dunkles Lila', bg: '#16132a', card: '#201c38', ink: '#e6e2f4', acc: '#9484e6', serif: true },
+              { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#3f8a5c', serif: true }
             ] as const
           ).map(o => {
             const active = style === o.id;
@@ -121,7 +122,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         </div>
         {cozy && (
           <p className="text-[10.5px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Cozy und Sand haben feste Farben. Helligkeit und Akzentfarbe unten gelten wieder, sobald du „Klassisch“ wählst. Sie bleiben gespeichert.
+            Cozy, Nacht und Sand haben feste Farben. Helligkeit und Akzentfarbe unten gelten wieder, sobald du „Klassisch“ wählst. Sie bleiben gespeichert.
           </p>
         )}
       </div>

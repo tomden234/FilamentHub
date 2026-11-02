@@ -23,20 +23,26 @@ import { PrintsTab } from './workshop/PrintsTab';
 import { LogCategory, SystemLogEntry, Spool } from '../types/filament';
 import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logService';
 import { safeStorage } from '../utils/safeStorage';
+import { useBackLayer } from '../utils/backNav';
 
 interface RightLogDrawerProps {
   onOpenPrinterSettings?: () => void;
   spools?: Spool[];
   onDeductWeight?: (spoolId: string, grams: number) => void;
+  /** Drucker steckt schon in der festen Leiste: hier nur die Logs */
+  logsOnly?: boolean;
 }
 
 export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   onOpenPrinterSettings: _onOpenPrinterSettings,
   spools,
-  onDeductWeight
+  onDeductWeight,
+  logsOnly = false
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [panelTab, setPanelTab] = useState<'queue' | 'prints' | 'logs'>('queue');
+  const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>('queue');
+  const panelTab = logsOnly ? 'logs' : panelTabState;
+  useBackLayer(isOpen, () => setIsOpen(false), 'log-drawer');
   const [logs, setLogs] = useState<SystemLogEntry[]>(() => getSystemLogs());
   const [selectedCategory, setSelectedCategory] = useState<LogCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -181,7 +187,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
       >
         <button
           onClick={handleToggle}
-          title="Drucker: Warteschlange, Drucke und Logs"
+          title={logsOnly ? 'Logs: Steckdose, Druckerstatus, Licht, Temperaturen, Spulen' : 'Drucker: Warteschlange, Drucke und Logs'}
           className="group relative flex flex-col items-center justify-between w-7 sm:w-8 min-h-[64px] sm:min-h-[140px] py-2 sm:py-3 px-0.5 sm:px-1.5 rounded-l-2xl border-l-2 border-t border-b shadow-2xl backdrop-blur-xl cursor-pointer transition-all opacity-80 hover:opacity-100 sm:opacity-100 hover:scale-105 active:scale-95"
           style={{
             backgroundColor: 'var(--app-card)',
@@ -210,7 +216,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
               className="hidden sm:block text-[10px] font-black tracking-widest uppercase [writing-mode:vertical-lr] rotate-180 group-hover:opacity-100 transition-opacity"
               style={{ color: 'var(--app-text)' }}
             >
-              DRUCKER
+              {logsOnly ? 'LOGS' : 'DRUCKER'}
             </span>
             <span
               className="text-[9px] font-mono font-bold px-1 py-0.5 rounded border"
@@ -271,7 +277,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-extrabold text-sm tracking-tight truncate" style={{ color: 'var(--app-text)' }}>
-                Drucker
+                {logsOnly ? 'Logs' : 'Drucker'}
               </h3>
               <p className="text-[10px] truncate" style={{ color: 'var(--app-text-muted)' }}>
                 {panelTab === 'queue' ? 'Was als Nächstes gedruckt wird' : panelTab === 'prints' ? 'Fertige Drucke mit Foto' : 'Steckdose, Drucker, Licht, Temperatur und Spulen'}
@@ -330,6 +336,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
         </div>
 
         {/* REITER: Warteschlange, Drucke, Logs */}
+        {!logsOnly && (
         <div className="flex gap-1.5 px-3 pt-3 shrink-0">
           {(
             [
@@ -359,6 +366,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
             );
           })}
         </div>
+        )}
 
         {panelTab === 'queue' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-3">

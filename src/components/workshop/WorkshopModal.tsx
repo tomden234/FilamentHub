@@ -4,6 +4,7 @@ import type { Spool } from '../../types/filament';
 import { NoticesTab } from './NoticesTab';
 import { InboxTab } from './InboxTab';
 import { useUnreadCount } from '../../utils/inbox';
+import { useBackLayer } from '../../utils/backNav';
 import { LabelsTab } from './LabelsTab';
 import { StatsTab } from './StatsTab';
 
@@ -33,6 +34,7 @@ export interface WorkshopModalProps {
 /** Glocke: Mitteilungen mit Einstellungen. Werkzeug-Knopf: Werkstatt (Statistik, Etiketten). */
 export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, tab, onTabChange, spools, labelSpoolId, focusId }) => {
   const unread = useUnreadCount();
+  useBackLayer(isOpen, onClose, 'workshop');
   if (!isOpen) return null;
   const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue';
   // Drucke und Warteschlange stecken jetzt in der Drucker-Leiste rechts; alte Verweise landen bei der Statistik
@@ -47,7 +49,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-3xl rounded-t-2xl sm:rounded-2xl border shadow-2xl flex flex-col max-h-[92vh]"
+        className={`w-full ${tab === 'notices' ? 'max-w-5xl' : 'max-w-3xl'} rounded-t-2xl sm:rounded-2xl border shadow-2xl flex flex-col max-h-[92vh]`}
         style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
       >
         <div className="flex items-center justify-between gap-3 p-4 border-b shrink-0" style={{ borderColor: 'var(--app-border)' }}>

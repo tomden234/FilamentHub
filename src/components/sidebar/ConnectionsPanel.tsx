@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Home, Cloud, Nfc, BellRing, Smartphone, ChevronDown, Settings2, Inbox } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, Cloud, Nfc, Smartphone, ChevronDown, Settings2, Lightbulb } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
 import { IS_DESKTOP, IS_NATIVE, IS_STATIC, isAppShell } from '../../utils/env';
 import { isGistUrl } from '../../utils/gistStore';
-import { notifyPermission, refreshNotifyPermission, type NotifyPermission } from '../../utils/notify';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
-import { useUnreadCount } from '../../utils/inbox';
-import { openWorkshop } from '../../utils/uiEvents';
 import { getSyncPass } from '../../utils/deviceSync';
 import { CloudStoreCard } from './CloudStoreCard';
 import { DeviceSyncCard } from './DeviceSyncCard';
 import { HomeAssistantCard } from './HomeAssistantCard';
+import { StatusLedCard } from './StatusLedCard';
 import { Toggle } from '../workshop/ui';
 import { ThreeDPrinterIcon } from '../ThreeDPrinterIcon';
 import { usePrinterLive, isPrinterConfigured, isPrinterLan } from '../../utils/printerLive';
@@ -101,26 +99,14 @@ const ActionButton: React.FC<{ onClick: () => void; children: React.ReactNode; p
   </button>
 );
 
-const PERM_TEXT: Record<NotifyPermission, string> = {
-  granted: 'Benachrichtigungen erlaubt',
-  denied: 'Benachrichtigungen blockiert',
-  default: 'Benachrichtigungen noch nicht erlaubt',
-  unsupported: 'Nur Postfach in der App'
-};
-
 /**
  * Verbindungen: eine aufgeräumte Liste. Jede Zeile zeigt den Stand auf einen Blick, Details klappen auf.
  * Was es auf dem Gerät nicht gibt, wird gar nicht erst gezeigt (z. B. keine App-Installation in der App).
  */
-export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, onCloudUrlChange, onOpenBambu, onOpenPhone, onOpenPWAInstall, onClose }) => {
+export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, onCloudUrlChange, onOpenBambu, onOpenPhone, onOpenPWAInstall }) => {
   const [open, setOpen] = useState<string | null>(null);
   const [rev, setRev] = useState(0); // erzwingt Neuberechnung des Stands nach „Speichern“
   const [settings, update] = useWorkshopSettings();
-  const unread = useUnreadCount();
-  const [perm, setPerm] = useState<NotifyPermission>(notifyPermission());
-  useEffect(() => {
-    void refreshNotifyPermission().then(setPerm);
-  }, []);
 
   const live = usePrinterLive();
   const bambuOk = isPrinterConfigured();
@@ -189,18 +175,8 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
         <Toggle on={settings.amsNfcToPrinter} onChange={v => update({ amsNfcToPrinter: v })} label="Material und Farbe an den Drucker senden" hint="Nur wenn der Slot im Drucker nicht passt. Entwickler-Modus nötig." />
       </Row>
 
-      <Row id="notify" open={open} setOpen={setOpen} icon={BellRing} tone="text-orange-400 bg-orange-500/15 border-orange-500/30" title="Mitteilungen" status={`${unread > 0 ? `${unread} ungelesen · ` : ''}${PERM_TEXT[perm]}`} level={perm === 'granted' ? 'ok' : perm === 'unsupported' ? 'off' : 'warn'}>
-        <p className="text-[11px] leading-relaxed" style={muted}>
-          Trocknen fertig, Druck fertig, Spule fast leer: alles landet im Postfach. Ein Tipp auf die Benachrichtigung öffnet die Mitteilung.
-        </p>
-        <ActionButton primary onClick={() => { onClose(); openWorkshop('notices'); }}>
-          <Settings2 className="w-4 h-4" />
-          Einstellungen und Test-Mitteilung
-        </ActionButton>
-        <ActionButton onClick={() => { onClose(); openWorkshop('inbox'); }}>
-          <Inbox className="w-4 h-4" />
-          Postfach öffnen
-        </ActionButton>
+      <Row id="led" open={open} setOpen={setOpen} icon={Lightbulb} tone="text-amber-400 bg-amber-500/15 border-amber-500/30" title="Status-LED" status={settings.statusLed ? (haOk ? `An · ${settings.statusLedBrightness} % Helligkeit` : 'An · braucht Home Assistant') : 'Aus'} level={settings.statusLed ? (haOk ? 'ok' : 'warn') : 'off'}>
+        <StatusLedCard />
       </Row>
 
       {!IS_NATIVE && (
