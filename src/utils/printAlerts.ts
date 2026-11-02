@@ -36,26 +36,29 @@ interface StartExtra {
   remainingMin: number;
   etaText: string;
   showToast?: (t: string) => void;
+  /** App wurde während des Drucks geöffnet: neue Meldung, auch wenn der Start schon gemeldet war */
+  resume?: boolean;
 }
 
 export function alertPrintStart(s: PrintSession, x: StartExtra): void {
   const name = s.name || 'Druckauftrag';
   const sp = spoolInSlot(x.activeSlot, x.spools);
   const eta = x.remainingMin > 0 && x.etaText && !x.etaText.includes('--') ? x.etaText : '';
-  const title = s.midway ? 'Druck läuft' : 'Druck gestartet';
-  const text = s.midway
+  const live = s.midway || x.resume;
+  const title = live ? 'Druck läuft' : 'Druck gestartet';
+  const text = live
     ? `${name} läuft (${Math.round(x.percent)} %).${eta ? ` Fertig ca. ${eta}.` : ''}`
     : `${name} wurde gestartet.${eta ? ` Fertig ca. ${eta}.` : ''}`;
   void raiseAlert(
     {
       kind: 'print-start',
-      key: `print-start-${s.id}`,
+      key: x.resume ? `print-open-${s.id}-${Date.now()}` : `print-start-${s.id}`,
       title,
       text,
       toast: `▶️ ${text}`,
       facts: [
         { label: 'Auftrag', value: name },
-        { label: s.midway ? 'Gesehen' : 'Gestartet', value: clock(s.startMs || s.seenAt) },
+        { label: live ? 'Gesehen' : 'Gestartet', value: clock(s.startMs || s.seenAt) },
         ...(x.remainingMin > 0 ? [{ label: 'Restzeit', value: fmtMinutes(x.remainingMin) }] : []),
         ...(eta ? [{ label: 'Fertig ca.', value: eta }] : [])
       ],

@@ -2686,5 +2686,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.184',
+    label: '1.184 (Druck-Meldung beim Öffnen)',
+    releaseDate: '02.11.2026',
+    description: 'Öffnest du die App, während ein Druck läuft, kommt jetzt immer eine Meldung „Druck läuft“ mit Auftrag, Fortschritt, Restzeit und Spule. Auch wenn der Druck schon vor Minuten gestartet wurde oder die Start-Meldung schon da war.',
+    features: [
+      '🔔 Beim Öffnen der App mitten im Druck: immer mindestens eine Meldung „Druck läuft“',
+      '🔁 Gilt auch nach Neu verbinden und bei neu gestartetem Druck',
+      '📊 Zeigt Auftrag, Prozent, Restzeit, fertig ca. und aktive Spule'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

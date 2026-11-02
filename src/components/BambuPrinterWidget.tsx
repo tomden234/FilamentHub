@@ -278,6 +278,17 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
         );
       }
     },
+    onResume: session => {
+      alertPrintStart(session, {
+        spools,
+        activeSlot: activeSlotFromPrinter(liveState.data.ams),
+        percent: Number(liveState.data.mc_percent) || 0,
+        remainingMin: Number(liveState.data.mc_remaining_time) || 0,
+        etaText: liveState.formatted.etaClockStr,
+        showToast: printToast,
+        resume: true
+      });
+    },
     onEnd: (session, info) => {
       const end = Date.now();
       const begin = session.startMs || (session.midway ? 0 : session.seenAt);

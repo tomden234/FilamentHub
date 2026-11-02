@@ -33,6 +33,8 @@ interface Params {
   percent: number;
   ams: any;
   onStart: (s: PrintSession) => void;
+  /** App geöffnet / neu verbunden, während der Druck schon läuft und schon gemeldet war: trotzdem melden */
+  onResume?: (s: PrintSession) => void;
   onEnd: (s: PrintSession, info: PrintEndInfo) => void;
 }
 
@@ -143,6 +145,8 @@ export function usePrintWatch(p: Params) {
         return;
       }
       save(s, changed);
+      // App kommt mitten in einen laufenden Druck (auch wenn er schon vor 2 Minuten startete): immer eine Meldung
+      if (before === null && s.announced && !s.ended) latest.current.onResume?.(s);
       return;
     }
 
