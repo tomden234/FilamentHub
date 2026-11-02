@@ -512,7 +512,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] font-bold text-[var(--app-text)] flex items-center gap-1">
                     <Scale className="w-3.5 h-3.5 text-orange-400" />
-                    <span>4. Netto-Filament ({remainingWeight}g Rest)</span>
+                    <span>4. Netto-Filament ({Math.round(Number(remainingWeight) || 0)}g Rest)</span>
                   </span>
                   <span className="text-[10px] text-[var(--app-text-muted)]">
                     {onSpool ? `Leerspule: ${emptySpoolWeight}g` : 'Ohne Spule'}
@@ -552,7 +552,7 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
                     className="w-24 px-2.5 py-1 rounded-lg text-xs font-mono-num bg-[var(--app-input-bg)] border border-[var(--app-border)] text-[var(--app-text)] focus:outline-none focus:border-orange-500 text-center"
                   />
                   <span className="text-[11px] text-emerald-400 font-mono-num font-bold">
-                    = {remainingWeight}g Netto
+                    = {Math.round(Number(remainingWeight) || 0)}g Netto
                   </span>
                 </div>
               </div>

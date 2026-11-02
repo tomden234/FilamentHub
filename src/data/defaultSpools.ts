@@ -2626,5 +2626,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.180',
+    label: '1.180 (Ganze Gramm, Extern & Trocknung live)',
+    releaseDate: '02.11.2026',
+    description: 'Gewicht ohne Nachkommastellen (kein 749.9000000000001 g mehr). Die Spule auf Platz 5 heißt jetzt „Extern“ statt „AMS 5“. „Trocknet“ kommt jetzt vom Drucker selbst und nur für AMS-Slots 1-4, nicht mehr aus einer lokalen Merkliste. Die Spulen-Anzeige aktualisiert sich jede Sekunde.',
+    features: [
+      '⚖️ Gewicht überall in ganzen Gramm',
+      '🧵 Platz 5 heißt „Extern“ statt „AMS 5“',
+      '☀️ „Trocknet“ nur, wenn der Drucker wirklich trocknet (nur Slot 1-4, Restzeit vom Drucker)',
+      '⏱️ Slot-Zuweisung und Trocknung in der Liste aktualisieren sich jede Sekunde'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

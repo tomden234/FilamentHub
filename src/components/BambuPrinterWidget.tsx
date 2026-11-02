@@ -1,3 +1,4 @@
+import { publishLiveAms } from '../utils/liveAms';
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import QRCode from 'qrcode';
 import {
@@ -145,6 +146,10 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   const [isExpanded, setIsExpanded] = useState<boolean>(() => viewMode !== 'simple');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [liveState, setLiveState] = useState<BambuLiveState>(DEFAULT_LIVE_STATE);
+  // Echter AMS-Stand (Trocknung) für die Spulen-Liste
+  useEffect(() => {
+    publishLiveAms(liveState);
+  }, [liveState]);
 
   // Klappe für Live-Kamera
   const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);

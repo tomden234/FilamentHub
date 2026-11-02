@@ -198,7 +198,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                         </div>
                         <div className="text-right shrink-0">
                           <span className="font-mono-num font-extrabold text-sm text-emerald-400 block">
-                            {activeLoadedSpool.remainingWeight}g
+                            {Math.round(Number(activeLoadedSpool.remainingWeight) || 0)}g
                           </span>
                           <span className="text-[10px] text-[var(--app-text-muted)]">von {activeLoadedSpool.initialWeight || 1000}g Netto</span>
                         </div>
@@ -219,7 +219,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                             <span>⚡ Direkt vom Filament abziehen / hinzufügen:</span>
                           </span>
                           <span className="text-[11px] text-emerald-400 font-mono-num font-extrabold">
-                            Rest: {activeLoadedSpool.remainingWeight}g
+                            Rest: {Math.round(Number(activeLoadedSpool.remainingWeight) || 0)}g
                           </span>
                         </div>
 
@@ -313,7 +313,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                         <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/80 border border-[var(--app-border)] text-[10px] text-[var(--app-text-muted)] flex items-center justify-between">
                           <span>🔄 Echtzeit-Bestand:</span>
                           <span className="font-mono-num font-bold text-[var(--app-text)]">
-                            {activeLoadedSpool.remainingWeight}g Netto ({Math.round((activeLoadedSpool.remainingWeight / (activeLoadedSpool.initialWeight || 1000)) * 100)}%)
+                            {Math.round(Number(activeLoadedSpool.remainingWeight) || 0)}g Netto ({Math.round((activeLoadedSpool.remainingWeight / (activeLoadedSpool.initialWeight || 1000)) * 100)}%)
                           </span>
                         </div>
                       </div>

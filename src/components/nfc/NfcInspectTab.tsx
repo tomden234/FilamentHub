@@ -68,7 +68,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
                   </div>
                   <div className="text-right shrink-0">
                     <span className="font-mono-num font-extrabold text-sm text-emerald-400 block">
-                      {activeTargetSpool.remainingWeight}g
+                      {Math.round(Number(activeTargetSpool.remainingWeight) || 0)}g
                     </span>
                     <span className="text-[10px] text-[var(--app-text-muted)]">von {activeTargetSpool.initialWeight}g</span>
                   </div>
@@ -111,7 +111,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
                     ⚡ Gewicht direkt anpassen (+ / -):
                   </span>
                   <span className="text-[11px] text-emerald-400 font-mono-num font-extrabold">
-                    Aktuell: {activeTargetSpool.remainingWeight}g
+                    Aktuell: {Math.round(Number(activeTargetSpool.remainingWeight) || 0)}g
                   </span>
                 </div>
 
@@ -205,7 +205,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
                 <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/80 border border-[var(--app-border)] text-[10px] text-[var(--app-text-muted)] flex items-center justify-between">
                   <span>🔄 Direkt synchronisiert:</span>
                   <span className="font-mono-num font-bold text-[var(--app-text)]">
-                    {activeTargetSpool.remainingWeight}g Netto ({Math.round((activeTargetSpool.remainingWeight / (activeTargetSpool.initialWeight || 1000)) * 100)}%)
+                    {Math.round(Number(activeTargetSpool.remainingWeight) || 0)}g Netto ({Math.round((activeTargetSpool.remainingWeight / (activeTargetSpool.initialWeight || 1000)) * 100)}%)
                   </span>
                 </div>
               </div>

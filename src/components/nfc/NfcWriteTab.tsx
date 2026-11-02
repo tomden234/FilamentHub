@@ -49,7 +49,7 @@ export const NfcWriteTab: React.FC<NfcWriteTabProps> = ({
                     />
                     <div className="min-w-0">
                       <span className="font-bold text-[var(--app-text)] block truncate">{targetSpool.brand} {targetSpool.name}</span>
-                      <span className="text-[10px] text-[var(--app-text-muted)]">{targetSpool.material} • {targetSpool.remainingWeight}g Netto</span>
+                      <span className="text-[10px] text-[var(--app-text-muted)]">{targetSpool.material} • {Math.round(Number(targetSpool.remainingWeight) || 0)}g Netto</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">

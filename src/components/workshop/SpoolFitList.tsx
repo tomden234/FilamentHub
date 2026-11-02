@@ -62,7 +62,7 @@ export const SpoolFitList: React.FC<Props> = ({ spools, grams, material, amsSlot
             <span className="w-3 h-3 rounded-full border border-black/20 shrink-0" style={{ backgroundColor: f.spool.colorHex }} />
             <span className="min-w-0 flex-1 truncate font-bold">
               {f.spool.name}
-              {f.amsSlot ? <span className="ml-1 text-[#00AE42]">AMS {f.amsSlot}</span> : null}
+              {f.amsSlot ? <span className="ml-1 text-[#00AE42]">{f.amsSlot === 5 ? 'Extern' : `AMS ${f.amsSlot}`}</span> : null}
             </span>
             <span className="font-mono-num shrink-0" style={{ color: f.ok ? '#34d399' : '#fb7185' }}>
               {f.ok ? `Rest danach ${Math.round(f.diff)} g` : `fehlt ${Math.abs(Math.round(f.diff))} g`}

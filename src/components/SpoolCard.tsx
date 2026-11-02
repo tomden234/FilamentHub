@@ -1,5 +1,6 @@
 import { LabelPrintButton } from './LabelPrintButton';
 import { useNow } from '../hooks/useNow';
+import { useSpoolAms } from '../hooks/useSpoolAms';
 import React, { useState, useEffect } from 'react';
 import {
   ExternalLink,
@@ -66,92 +67,8 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
   const [scaleInput, setScaleInput] = useState('');
   const [copiedParam, setCopiedParam] = useState(false);
 
-  // AMS Slot & Trocknungsstatus
-  const [amsInfo, setAmsInfo] = useState<{
-    slot: number | null;
-    isDrying: boolean;
-    dryTemp: number;
-    remainingTime: string | null;
-  }>(() => {
-    try {
-      const slotsRaw = localStorage.getItem('filamenthub_ams_slots_x2d');
-      const slots: Record<string, string> = slotsRaw ? JSON.parse(slotsRaw) : {};
-      let assignedSlot: number | null = null;
-      for (const [sKey, sVal] of Object.entries(slots)) {
-        if (sVal === spool.id) {
-          assignedSlot = parseInt(sKey, 10);
-          break;
-        }
-      }
-
-      const dryRaw = localStorage.getItem('filamenthub_ams_drying_state');
-      let isDrying = false;
-      let dryTemp = 50;
-      let remainingTime = null;
-      if (dryRaw) {
-        const parsed = JSON.parse(dryRaw);
-        if (parsed && parsed.isDrying && assignedSlot !== null) {
-          const elapsedMs = Date.now() - (parsed.startTimestamp || 0);
-          const totalMs = (parsed.durationHours || 4) * 3600 * 1000;
-          if (elapsedMs < totalMs) {
-            isDrying = true;
-            dryTemp = parsed.targetTemp || 50;
-            const remMs = totalMs - elapsedMs;
-            const h = Math.floor(remMs / 3600000);
-            const m = Math.floor((remMs % 3600000) / 60000);
-            remainingTime = `${h}h ${m}m`;
-          }
-        }
-      }
-      return { slot: assignedSlot, isDrying, dryTemp, remainingTime };
-    } catch {
-      return { slot: null, isDrying: false, dryTemp: 50, remainingTime: null };
-    }
-  });
-
-  useEffect(() => {
-    const handleUpdate = () => {
-      try {
-        const slotsRaw = localStorage.getItem('filamenthub_ams_slots_x2d');
-        const slots: Record<string, string> = slotsRaw ? JSON.parse(slotsRaw) : {};
-        let assignedSlot: number | null = null;
-        for (const [sKey, sVal] of Object.entries(slots)) {
-          if (sVal === spool.id) {
-            assignedSlot = parseInt(sKey, 10);
-            break;
-          }
-        }
-
-        const dryRaw = localStorage.getItem('filamenthub_ams_drying_state');
-        let isDrying = false;
-        let dryTemp = 50;
-        let remainingTime = null;
-        if (dryRaw) {
-          const parsed = JSON.parse(dryRaw);
-          if (parsed && parsed.isDrying && assignedSlot !== null) {
-            const elapsedMs = Date.now() - (parsed.startTimestamp || 0);
-            const totalMs = (parsed.durationHours || 4) * 3600 * 1000;
-            if (elapsedMs < totalMs) {
-              isDrying = true;
-              dryTemp = parsed.targetTemp || 50;
-              const remMs = totalMs - elapsedMs;
-              const h = Math.floor(remMs / 3600000);
-              const m = Math.floor((remMs % 3600000) / 60000);
-              remainingTime = `${h}h ${m}m`;
-            }
-          }
-        }
-        setAmsInfo({ slot: assignedSlot, isDrying, dryTemp, remainingTime });
-      } catch {}
-    };
-
-    window.addEventListener('filamenthub_drying_update', handleUpdate);
-    const interval = setInterval(handleUpdate, 15000);
-    return () => {
-      window.removeEventListener('filamenthub_drying_update', handleUpdate);
-      clearInterval(interval);
-    };
-  }, [spool.id]);
+  // AMS Slot & Trocknungsstatus (vom Drucker, jede Sekunde aktuell)
+  const amsInfo = useSpoolAms(spool.id);
 
   // Eibos-Beutel Einbeziehung
   const isEibosStorage = isInEibos(spool);
@@ -161,7 +78,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
   const silicaTara = appSettings?.silicaBagTara ?? 57;
 
   const initW = Number(spool.initialWeight) || 1000;
-  const remW = Number(spool.remainingWeight) || 0;
+  const remW = Math.round(Number(spool.remainingWeight) || 0);
   const brandInfo = getBrandInfo(spool.brand, appSettings);
   const tara = spoolTara(spool, brandInfo.tara);
   const effectiveTara = tara + (includeEibosBag ? eibosTara : 0) + (includeSilica ? silicaTara : 0);
@@ -435,7 +352,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
               </span>
               {amsInfo.slot !== null && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/40 font-bold">
-                  AMS Slot {amsInfo.slot}
+                  {amsInfo.slot === 5 ? 'Extern (5. Spule)' : `AMS Slot ${amsInfo.slot}`}
                 </span>
               )}
               {amsInfo.isDrying && (

@@ -115,7 +115,7 @@ export const NfcSlotModal: React.FC<Props> = ({ spools, onClose, trays = [], onA
         material: s.material,
         colorHex: s.colorHex || '#888888',
         label: `${s.brand} ${s.name}`,
-        sub: `${s.material} · ${s.colorName || ''} · ${s.remainingWeight}\u00a0g`,
+        sub: `${s.material} · ${s.colorName || ''} · ${Math.round(Number(s.remainingWeight) || 0)}\u00a0g`,
         temps: [prof.minTemp, prof.maxTemp],
         viaNfc
       });
@@ -304,7 +304,7 @@ export const NfcSlotModal: React.FC<Props> = ({ spools, onClose, trays = [], onA
                         {s.brand} {s.name}
                       </span>
                       <span className="block text-[10px] truncate" style={{ color: 'var(--app-text-muted)' }}>
-                        {s.colorName} · {s.remainingWeight} g{s.location ? ` · ${s.location}` : ''}
+                        {s.colorName} · {Math.round(Number(s.remainingWeight) || 0)} g{s.location ? ` · ${s.location}` : ''}
                       </span>
                     </span>
                     <span

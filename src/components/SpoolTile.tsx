@@ -1,3 +1,4 @@
+import { slotLabel } from '../utils/slotLabel';
 import React, { useState } from 'react';
 import { Pencil, Trash2, Tag, Sun, ShoppingCart, ChevronDown, Minus, Plus } from 'lucide-react';
 import type { AppSettings, Spool } from '../types/filament';
@@ -71,8 +72,8 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
   const link = getSpoolLink(spool);
   const dry = getDryingStatus(spool, now);
 
-  const initW = Number(spool.initialWeight) || 1000;
-  const remW = Number(spool.remainingWeight) || 0;
+  const initW = Math.round(Number(spool.initialWeight) || 1000);
+  const remW = Math.round(Number(spool.remainingWeight) || 0);
   const pct = Math.max(0, Math.min(100, Math.round((remW / initW) * 100)));
   const barColor = pct <= 15 ? '#ef4444' : pct <= 30 ? '#f59e0b' : 'linear-gradient(90deg, var(--app-accent), var(--app-accent-bar, var(--app-accent)))';
   const hex = spool.colorHex || '#94a3b8';
@@ -120,7 +121,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
 
       {(ams.slot !== null || ams.isDrying || dry.isOverdue || spool.needsDrying || low) && !open && (
         <div className="pl-[4.75rem] pr-3.5 pb-3 -mt-0.5 flex flex-wrap items-center gap-1">
-          {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">AMS {ams.slot}</span>}
+          {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">{slotLabel(ams.slot)}</span>}
           {ams.isDrying && (
             <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-500/20 text-sky-400 border border-sky-500/40 inline-flex items-center gap-1">
               <Sun className="w-2.5 h-2.5" />
@@ -135,7 +136,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
       {open && (
         <div className="pl-3 pr-3.5 pb-3.5 space-y-2.5 border-t pt-3" style={{ borderColor: 'var(--app-border)' }} onClick={stop}>
           <div className="flex flex-wrap items-center gap-1 empty:hidden">
-            {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">AMS {ams.slot}</span>}
+            {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">{slotLabel(ams.slot)}</span>}
             <SpoolBadges spool={spool} />
           </div>
           <div className="grid grid-cols-4 gap-1.5">

@@ -125,7 +125,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.179';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.180';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -733,7 +733,8 @@ export default function App() {
     const prevRemaining = spool.remainingWeight || 0;
     // Mit „+“ nie über die Füllmenge der Spule (oder den bisherigen Stand, falls die Waage mehr ergab)
     const maxWeight = Math.max(spool.initialWeight || 1000, prevRemaining);
-    const newRemaining = Math.max(0, Math.min(maxWeight, prevRemaining + deltaGrams));
+    // Ganze Gramm, keine Nachkommastellen (vorher: 749.9000000000001 g durch Rechenrest)
+    const newRemaining = Math.max(0, Math.min(maxWeight, Math.round(prevRemaining + deltaGrams)));
     // Wer Filament abzieht, hat die Spule benutzt: „verschweißt“ endet
     const updatedSpools = spools.map(s =>
       s.id === spoolId ? { ...s, remainingWeight: newRemaining, ...(deltaGrams < 0 ? { sealed: false } : {}) } : s
