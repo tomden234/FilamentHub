@@ -30,7 +30,7 @@ import { MobileAppBar } from './components/app/MobileAppBar';
 import { OpenInAppBanner } from './components/OpenInAppBanner';
 import { Navbar, DeviceMode } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { useBackLayer } from './utils/backNav';
+import { useBackLayer, closeTopLayer } from './utils/backNav';
 
 
 import { HistoryModal } from './components/HistoryModal';
@@ -125,7 +125,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.174';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.175';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -323,6 +323,7 @@ export default function App() {
   useBackLayer(isAppAndQrOpen, () => setIsAppAndQrOpen(false), 'appqr');
   useBackLayer(isCameraModalOpen, () => setIsCameraModalOpen(false), 'camera');
   const [isNfcModalOpen, setIsNfcModalOpen] = useState<boolean>(false);
+  useBackLayer(isNfcModalOpen, () => setIsNfcModalOpen(false), 'nfc');
   const [nfcModalMode, setNfcModalMode] = useState<'read' | 'write' | 'batch' | 'write-direct' | 'inspect'>('batch');
   const [nfcSpoolId, setNfcSpoolId] = useState<string | undefined>(undefined);
   // Tag wurde schon gelesen (Halten am Handy / App-Start durch Tag): Tag-Fenster zeigt direkt diese Spule
@@ -587,13 +588,9 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsSidebarOpen(false);
-        setIsSpoolModalOpen(false);
-        setIsAppAndQrOpen(false);
-        setIsHistoryModalOpen(false);
-        setIsCameraModalOpen(false);
-        setIsNfcModalOpen(false);
-        setIsWorkshopOpen(false);
+        // 1.175: Esc schließt immer nur EINE Ebene (Fenster, Menü-Seite, Menü), wie die Zurück-Taste.
+        // Fenster mit useEscapeClose sind schon vorher dran gewesen (Capture-Phase).
+        if (!closeTopLayer()) setIsNfcModalOpen(false);
       }
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;

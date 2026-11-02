@@ -26,6 +26,20 @@ function install(): void {
   });
 }
 
+/** Escape-Taste: genau die oberste Ebene schließen (wie die Zurück-Taste). Gibt false zurück, wenn keine offen ist. */
+export function closeTopLayer(): boolean {
+  const top = stack.pop();
+  if (!top) return false;
+  ignorePop++;
+  try {
+    window.history.back();
+  } catch {
+    ignorePop--;
+  }
+  top.close();
+  return true;
+}
+
 /** Solange `active` wahr ist, gehört diese Ebene zum Verlauf: „Zurück“ ruft `close` auf. */
 export function useBackLayer(active: boolean, close: () => void, id: string): void {
   const closeRef = useRef(close);

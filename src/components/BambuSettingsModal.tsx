@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { printerApi } from '../api';
+import { useEscapeClose } from '../hooks/useEscapeClose';
 import {
   X,
   Shield,
@@ -74,14 +75,8 @@ export const BambuSettingsModal: React.FC<BambuSettingsModalProps> = ({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  // ESC schließt Modal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  // ESC schließt nur dieses Fenster (eine Ebene)
+  useEscapeClose(onClose, isOpen);
 
   if (!isOpen) return null;
 

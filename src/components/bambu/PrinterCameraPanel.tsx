@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, RefreshCw, Lightbulb, Power, Plug, AlertTriangle, Maximize2, X } from 'lucide-react';
 import { diagnoseHaCamera } from '../../utils/haClient';
+import { useEscapeClose } from '../../hooks/useEscapeClose';
 
 export interface PrinterCameraPanelProps {
   setCameraSnapshotKey: any;
@@ -57,14 +58,12 @@ export const PrinterCameraPanel: React.FC<PrinterCameraPanelProps> = ({
   }, [haCameraBlobUrl, check]);
 
   const [big, setBig] = useState(false);
+  useEscapeClose(() => setBig(false), big);
   useEffect(() => {
     if (!big) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setBig(false);
-    window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
   }, [big]);

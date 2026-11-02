@@ -2560,5 +2560,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.175',
+    label: '1.175 (Esc eine Ebene zurück)',
+    releaseDate: '02.11.2026',
+    description: 'Die Esc-Taste schließt jetzt immer nur die oberste Ebene, wie die Zurück-Taste: erst Fenster, dann Seite im Menü, dann das Menü. Vorher schloss Esc alles auf einmal.',
+    features: [
+      '⎋ Esc = ein Schritt zurück (Fenster → Menü-Seite → Menü)',
+      '🪟 NFC-Fenster, Drucker-Einstellungen und Kamera-Großansicht zählen als eigene Ebene'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
