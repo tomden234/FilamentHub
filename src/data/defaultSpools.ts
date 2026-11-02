@@ -2599,5 +2599,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.178',
+    label: '1.178 (Extern wie Bambu Studio)',
+    releaseDate: '02.11.2026',
+    description: 'Echte Ursache gefunden: Der X2D braucht beim Setzen der externen Spule das Feld slot_id 0 (so macht es Bambu Studio und Home Assistant). Ohne das Feld hängt der X2D und antwortet gar nicht. Jetzt: ams_id 255, tray_id 254, slot_id 0, wie die anderen Programme.',
+    features: [
+      '🧵 Extern-Befehl wie Bambu Studio: ams_id 255, tray_id 254, slot_id 0',
+      '⏱️ Längere Wartezeit (6 s) für die Bestätigung'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

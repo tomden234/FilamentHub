@@ -1407,8 +1407,10 @@ export abstract class BambuMqttCore {
     // Externe Spule: X1/P1 = ams_id 255 + tray_id 254. H2D/X2D haben zwei externe Plätze (ids 254/255).
     // Weil das beim X2D nicht sicher bekannt ist, werden die Varianten nacheinander probiert, bis der Drucker eine übernimmt.
     const external = Boolean(params.external);
-    // Externe Spule des X2D = id 255 (so meldet es der Drucker). [255,255] hat Home Assistant nachweislich angenommen.
-    const variants: [number, number][] = external ? [[255, EXT_ID], [254, EXT_ID], [255, 254]] : [[0, Number(slotIdx)]];
+    // 1.178: Externe Spule wie Bambu Studio / Home Assistant: ams_id 255, tray_id 254 und slot_id 0.
+    // Ohne slot_id hängt der X2D und antwortet gar nicht (Kommentar in ha-bambulab, coordinator.py).
+    // Die externe Spule in den Druckerdaten ist id 255 (vir_slot). Zweite Form nur als Rückfall.
+    const variants: [number, number][] = external ? [[255, 254], [255, 255]] : [[0, Number(slotIdx)]];
 
     // Keine Schein-Aktualisierung: die Anzeige ändert sich erst, wenn der Drucker den Slot wirklich meldet.
     // Alter „Befehl nicht verifiziert“-Fehler, der schon vor diesem Befehl in der HMS-Liste stand, zählt nicht als Ablehnung
@@ -1423,6 +1425,7 @@ export abstract class BambuMqttCore {
           command: 'ams_filament_setting',
           ams_id: amsId,
           tray_id: trayId,
+          ...(external ? { slot_id: 0 } : {}),
           tray_info_idx: infoIdx,
           tray_color: color,
           nozzle_temp_min: minTemp,
@@ -1435,7 +1438,7 @@ export abstract class BambuMqttCore {
       this.schedulePushall(800);
       this.schedulePushall(2500);
       outcome = external
-        ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 3000 : 5000, hmsBlockedBefore)
+        ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 6000 : 5000, hmsBlockedBefore)
         : await this.waitForAmsSlot(slotIdx, color.slice(0, 6), material, 5000, hmsBlockedBefore);
       const r = this.amsCmdResult as { result: string; reason: string } | null;
       if (r && r.result === 'fail') anyFail = true;
@@ -1479,7 +1482,7 @@ export abstract class BambuMqttCore {
         : emptySlot
         ? `Der Drucker hat Slot ${n} nicht übernommen. Der Slot ist leer: erst Filament einlegen, dann übertragen.`
         : external
-        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.177 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
+        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.178 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
         : `Der Drucker hat Slot ${n} nicht übernommen. Bambu lässt Fremd-Befehle über die Cloud oft nicht zu.`;
     return {
       success: false,
