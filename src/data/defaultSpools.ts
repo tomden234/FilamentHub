@@ -2533,5 +2533,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.173',
+    label: '1.173 (Extern-Suche & Test-Fix)',
+    releaseDate: '02.11.2026',
+    description: 'Extern-Fehlermeldung nennt jetzt auch, welche Felder der Drucker für externe Spulen schickt (zur Fehlersuche am X2D). CI-Test repariert (brauchte ein fehlendes Paket).',
+    features: [
+      '🔎 Meldung zeigt die Feldnamen des Druckers (vir_slot, vt_tray …)',
+      '✅ Test für „Farben je Design“ läuft jetzt auch in der CI'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

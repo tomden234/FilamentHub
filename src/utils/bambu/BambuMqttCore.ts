@@ -134,6 +134,7 @@ export abstract class BambuMqttCore {
   private lightHold: { mode: string; until: number } | null = null;
   /** Externe Spulen (H2D/X2D: vir_slot) */
   private virSlots: any[] = [];
+  private extKeys = new Set<string>();
   /** Letzte Antwort des Druckers auf „ams_filament_setting" (zur Prüfung, ob der Slot wirklich gesetzt wurde) */
   private amsCmdResult: { result: string; reason: string; at: number } | null = null;
   /** Der Drucker meldet „MQTT command verification failed" (Bambu lässt Fremd-Befehle über die Cloud nicht zu) */
@@ -951,6 +952,8 @@ export abstract class BambuMqttCore {
     if (delta.spd_mag !== undefined) this.printData.spd_mag = Number(delta.spd_mag);
     if (delta.ams !== undefined) this.mergeAms(delta.ams);
     if (delta.vt_tray !== undefined) this.printData.vt_tray = delta.vt_tray;
+    // Zur Fehlersuche: welche Felder mit „vir/vt/ext/slot“ im Namen schickt der Drucker überhaupt?
+    for (const k of Object.keys(delta)) if (/vir|vt_|ext|slot/i.test(k) && this.extKeys.size < 12) this.extKeys.add(k);
     // 1.170: H2D/X2D melden die externen Spulen als Liste „vir_slot“ (ids 254/255) statt „vt_tray“
     if (Array.isArray(delta.vir_slot) && delta.vir_slot.length) {
       this.virSlots = delta.vir_slot;
@@ -1448,7 +1451,7 @@ export abstract class BambuMqttCore {
         : emptySlot
         ? `Der Drucker hat Slot ${n} nicht übernommen. Der Slot ist leer: erst Filament einlegen, dann übertragen.`
         : external
-        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.172 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
+        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.173 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
         : `Der Drucker hat Slot ${n} nicht übernommen. Bambu lässt Fremd-Befehle über die Cloud oft nicht zu.`;
     return {
       success: false,
@@ -1467,8 +1470,9 @@ export abstract class BambuMqttCore {
   /** Kurzer Text, was der Drucker über die externen Spulen meldet (für Fehlermeldungen) */
   private extSummary(): string {
     const list = this.virSlots.length ? this.virSlots : this.printData.vt_tray ? [this.printData.vt_tray] : [];
-    if (!list.length) return 'nichts (kein vt_tray/vir_slot)';
-    return list.map((t: any) => `id ${t?.id ?? '?'}=${t?.tray_type || 'leer'} ${String(t?.tray_color || '').slice(0, 6)}`).join(', ');
+    const keys = this.extKeys.size ? ` | Felder: ${[...this.extKeys].join(',')}` : '';
+    if (!list.length) return `nichts (kein vt_tray/vir_slot)${keys}`;
+    return list.map((t: any) => `id ${t?.id ?? '?'}=${t?.tray_type || 'leer'} ${String(t?.tray_color || '').slice(0, 6)}`).join(', ') + keys;
   }
 
   /** Wartet, bis der Drucker die externe Spule (vt_tray) mit den gesendeten Werten meldet (oder ablehnt). */

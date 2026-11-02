@@ -1,5 +1,11 @@
-// @vitest-environment happy-dom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('./safeStorage', () => {
+  const m = new Map<string, string>();
+  return { safeStorage: { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) } };
+});
+vi.mock('./systemBars', () => ({ applySystemBars: () => {} }));
+
 import { getCustomize, setCustomize, resetCustomize, setActiveCustomizeStyle, CUSTOM_DEFAULT } from './customize';
 
 describe('Customize je Design (1.169)', () => {
