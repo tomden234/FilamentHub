@@ -952,6 +952,16 @@ export abstract class BambuMqttCore {
     if (delta.spd_mag !== undefined) this.printData.spd_mag = Number(delta.spd_mag);
     if (delta.ams !== undefined) this.mergeAms(delta.ams);
     if (delta.vt_tray !== undefined) this.printData.vt_tray = delta.vt_tray;
+    // 1.174: Der X2D legt externe Spulen evtl. an anderer Stelle ab. Überall nach Spulen-Objekten mit id 254/255 suchen.
+    {
+      const found = this.collectExt(delta);
+      if (found.length) {
+        const byId = new Map<number, any>(this.virSlots.map((x: any) => [Number(x?.id), x]));
+        found.forEach(f => byId.set(Number(f.id), { ...(byId.get(Number(f.id)) || {}), ...f }));
+        this.virSlots = [...byId.values()];
+        if (delta.vt_tray === undefined) this.printData.vt_tray = byId.get(254) || this.virSlots[0];
+      }
+    }
     // Zur Fehlersuche: welche Felder mit „vir/vt/ext/slot“ im Namen schickt der Drucker überhaupt?
     for (const k of Object.keys(delta)) if (/vir|vt_|ext|slot/i.test(k) && this.extKeys.size < 12) this.extKeys.add(k);
     // 1.170: H2D/X2D melden die externen Spulen als Liste „vir_slot“ (ids 254/255) statt „vt_tray“
@@ -1402,6 +1412,7 @@ export abstract class BambuMqttCore {
     const hmsBlockedBefore = this.hmsBlocked;
     let outcome: 'confirmed' | 'blocked' | 'unconfirmed' = 'unconfirmed';
     const replies: string[] = [];
+    let anyFail = false;
     for (const [amsId, trayId] of variants) {
       const payload = {
         print: {
@@ -1424,6 +1435,7 @@ export abstract class BambuMqttCore {
         ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 3000 : 5000, hmsBlockedBefore)
         : await this.waitForAmsSlot(slotIdx, color.slice(0, 6), material, 5000, hmsBlockedBefore);
       const r = this.amsCmdResult as { result: string; reason: string } | null;
+      if (r && r.result === 'fail') anyFail = true;
       replies.push(`${amsId}/${trayId}: ${r ? (r.result || '?') + (r.reason ? ' (' + r.reason + ')' : '') : 'keine Antwort'}`);
       if (outcome !== 'unconfirmed') break;
     }
@@ -1442,6 +1454,19 @@ export abstract class BambuMqttCore {
         material
       };
     }
+    if (external && outcome === 'unconfirmed' && !anyFail && !this.hmsBlocked && !this.virSlots.length && !this.printData.vt_tray) {
+      // Befehl ging raus, nichts abgelehnt, aber der Drucker meldet externe Spulen gar nicht zurück: nicht als Fehler zeigen
+      return {
+        success: true,
+        confirmed: true,
+        blocked: false,
+        lan,
+        message: `Extern (5. Spule): ${material} ${colorHex} gesendet. Der Drucker meldet die externe Spule nicht zurück, bitte am Drucker kurz prüfen.`,
+        slotIdx,
+        colorHex,
+        material
+      };
+    }
     const emptySlot = external ? false : this.isAmsSlotEmpty(slotIdx);
     const error =
       outcome === 'blocked'
@@ -1451,7 +1476,7 @@ export abstract class BambuMqttCore {
         : emptySlot
         ? `Der Drucker hat Slot ${n} nicht übernommen. Der Slot ist leer: erst Filament einlegen, dann übertragen.`
         : external
-        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.173 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
+        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.174 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
         : `Der Drucker hat Slot ${n} nicht übernommen. Bambu lässt Fremd-Befehle über die Cloud oft nicht zu.`;
     return {
       success: false,
@@ -1465,6 +1490,13 @@ export abstract class BambuMqttCore {
       colorHex,
       material
     };
+  }
+
+  private collectExt(o: any, depth = 0, out: any[] = []): any[] {
+    if (!o || typeof o !== 'object' || depth > 5) return out;
+    if (!Array.isArray(o) && (o.tray_type !== undefined || o.tray_color !== undefined || o.tray_info_idx !== undefined) && [254, 255].includes(Number(o.id))) out.push(o);
+    for (const v of Object.values(o)) if (v && typeof v === 'object') this.collectExt(v, depth + 1, out);
+    return out;
   }
 
   /** Kurzer Text, was der Drucker über die externen Spulen meldet (für Fehlermeldungen) */
@@ -1485,7 +1517,7 @@ export abstract class BambuMqttCore {
       const hit = [this.printData.vt_tray, ...this.virSlots.filter((x: any) => Number(x?.id) !== 255)].some((t: any) => {
         if (!t) return false;
         const cols: string[] = Array.isArray(t.cols) ? t.cols.map((x: any) => String(x).toUpperCase()) : [];
-        const colorOk = String(t.tray_color || '').toUpperCase().startsWith(wantColor) || cols.some(x => x.startsWith(wantColor));
+        const colorOk = !t.tray_color && !cols.length ? true : String(t.tray_color || '').toUpperCase().startsWith(wantColor) || cols.some(x => x.startsWith(wantColor));
         return String(t.tray_type || '').toUpperCase() === wantType && colorOk;
       });
       if (hit) return 'confirmed';

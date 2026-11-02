@@ -2546,5 +2546,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.174',
+    label: '1.174 (Extern lesen & melden)',
+    releaseDate: '02.11.2026',
+    description: 'Extern-Spule am X2D: Home Assistant zeigt, dass der Drucker die App-Werte annimmt, die App hat es aber nicht erkannt. Jetzt sucht die App externe Spulen (id 254/255) überall in den Druckerdaten, prüft die Farbe nur wenn gemeldet, und meldet „gesendet“ statt Fehler, wenn der Drucker nichts ablehnt.',
+    features: [
+      '🔎 Externe Spulen werden an jeder Stelle der Druckerdaten gefunden',
+      '✅ Kein falscher Fehler mehr, wenn der Drucker die Extern-Spule nicht zurückmeldet',
+      '🧵 Farbe wird nur geprüft, wenn der Drucker eine meldet'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
