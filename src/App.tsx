@@ -124,7 +124,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.163';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.164';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -170,11 +170,11 @@ export default function App() {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  const [dockPref, setDockPrefState] = useState<boolean>(() => safeStorage.getItem('filamenthub_dock') !== '0');
+  const [dockPref, setDockPrefState] = useState<boolean>(() => safeStorage.getItem('filamenthub_dock_v2') === '1'); // ab 1.164: Menü startet zu
   const setDockPref = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
     setDockPrefState(prev => {
       const next = typeof v === 'function' ? v(prev) : v;
-      safeStorage.setItem('filamenthub_dock', next ? '1' : '0');
+      safeStorage.setItem('filamenthub_dock_v2', next ? '1' : '0');
       return next;
     });
   }, []);
@@ -1236,7 +1236,7 @@ export default function App() {
         syncOk={syncStatus.ok}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
         onOpenWorkshop={() => {
-          setWorkshopTab('prints');
+          setWorkshopTab('stats');
           setLabelSpoolId(null);
           setIsWorkshopOpen(true);
         }}

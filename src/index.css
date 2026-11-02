@@ -440,97 +440,129 @@ progress {
 }
 :root[data-theme="warm"] .text-emerald-500 { color: #065f46; }
 
-/* ───────────── Design „Cozy“ (Einstellungen > Design) ─────────────
-   Dunkles Petrol, Creme-Schrift, Messing-Akzent, Serifen-Überschriften, weichere Ecken.
-   Liegt über den dunklen Grundregeln (data-theme="slate"). Abschalten: Design „Klassisch“. */
-:root[data-style="cozy"] {
-  color-scheme: dark;
-  --app-bg: #0d1a19;
-  --app-card: #15292a;
-  --app-card-sub: #112221;
-  --app-border: #2a4342;
-  --app-text: #f2e9da;
-  --app-text-muted: #a7b6ae;
-  --app-input-bg: #0b1716;
-  --app-accent: #a8743f;
-  --app-accent-hover: #8f6133;
-  --app-accent-sub: rgba(201, 150, 90, 0.16);
-  --app-accent-bar: #c9965a;
-  --app-accent-gradient: linear-gradient(90deg, #8f6133 0%, #c9965a 55%, #e6c08e 100%);
-  --app-accent-text: #e3bd8b;
-  --app-danger-text: #f4a29a;
-  --a-100: #f6e7d2;
-  --a-300: #e3bd8b;
-  --a-400: #d6a66c;
-  --a-500: #c9965a;
-  --a-600: #a8743f;
-  --a-700: #8f6133;
-  --color-emerald-300: #b5e4c8;
-  --color-emerald-400: #8fd3ad;
-  --color-green-300: #bfe6c4;
-  --color-green-400: #98d6a2;
-  --color-teal-300: #a6e3d8;
-  --color-teal-400: #7fd0c2;
-  --color-sky-300: #c3e2ef;
-  --color-sky-400: #9fcfe3;
-  --color-cyan-300: #b3e6ea;
-  --color-cyan-400: #8ad6dc;
-  --color-blue-300: #c4d4f2;
-  --color-blue-400: #a3bcec;
-  --color-amber-300: #f3d39b;
-  --color-amber-400: #ecc07a;
-  --color-yellow-300: #f3e09b;
-  --color-yellow-400: #ead27a;
-  --color-rose-300: #f6c1bd;
-  --color-rose-400: #f0a19a;
-  --color-red-300: #f6bdb5;
-  --color-red-400: #ef9a8f;
-  --color-violet-300: #d9cdf5;
-  --color-violet-400: #c3b1ef;
+/* ───────────── Designs „Cozy“ (ruhig dunkel) und „Sand“ (warm hell) ─────────────
+   Beide mit weniger Kontrast als „Klassisch“, damit sie lange angenehm bleiben. Cozy liegt über den dunklen Grundregeln
+   (data-theme="slate"), Sand über den hellen (data-theme="warm"). Abschalten: Design „Klassisch“. */
+:root[data-style="cozy"],
+:root[data-style="sand"] {
   --radius-lg: 0.8rem;
   --radius-xl: 1.05rem;
   --radius-2xl: 1.45rem;
 }
-:root[data-style="cozy"] .text-emerald-500 { color: #8fd3ad; }
-:root[data-style="cozy"] .text-green-500 { color: #98d6a2; }
-:root[data-style="cozy"] .text-rose-500 { color: #f0a19a; }
-:root[data-style="cozy"] .text-amber-500 { color: #ecc07a; }
-:root[data-style="cozy"] .text-sky-500 { color: #9fcfe3; }
+
+/* Cozy: gedämpftes Grün-Grau, weiches Creme, mattes Messing */
+:root[data-style="cozy"] {
+  color-scheme: dark;
+  --app-bg: #1c2321;
+  --app-card: #252e2b;
+  --app-card-sub: #202825;
+  --app-border: #37433f;
+  --app-text: #e4ddcf;
+  --app-text-muted: #9aa69f;
+  --app-input-bg: #1a211f;
+  --app-accent: #8f7549;
+  --app-accent-hover: #7b653d;
+  --app-accent-sub: rgba(183, 154, 106, 0.14);
+  --app-accent-bar: #b39a6c;
+  --app-accent-gradient: linear-gradient(90deg, #7b653d 0%, #a58b5c 60%, #c9b184 100%);
+  --app-accent-text: #d2bb92;
+  --app-danger-text: #e8a9a2;
+  --a-100: #efe3cf;
+  --a-300: #d2bb92;
+  --a-400: #c3a877;
+  --a-500: #b39a6c;
+  --a-600: #8f7549;
+  --a-700: #7b653d;
+  --color-emerald-300: #b0d9c0;
+  --color-emerald-400: #8bc4a4;
+  --color-green-300: #b9dbbf;
+  --color-green-400: #96c9a0;
+  --color-teal-300: #a3d8cd;
+  --color-teal-400: #7fc3b5;
+  --color-sky-300: #bcd9e6;
+  --color-sky-400: #9ac3d6;
+  --color-cyan-300: #b0dde0;
+  --color-cyan-400: #88c8ce;
+  --color-blue-300: #bccdec;
+  --color-blue-400: #9db6e0;
+  --color-amber-300: #ecd1a0;
+  --color-amber-400: #e2bd80;
+  --color-yellow-300: #ecdca0;
+  --color-yellow-400: #e0cd80;
+  --color-rose-300: #efc2bd;
+  --color-rose-400: #e6a39c;
+  --color-red-300: #efbdb5;
+  --color-red-400: #e49e92;
+  --color-violet-300: #d5cbef;
+  --color-violet-400: #bfb0e6;
+}
+:root[data-style="cozy"] .text-emerald-500 { color: #8bc4a4; }
+:root[data-style="cozy"] .text-green-500 { color: #96c9a0; }
+:root[data-style="cozy"] .text-rose-500 { color: #e6a39c; }
+:root[data-style="cozy"] .text-amber-500 { color: #e2bd80; }
+:root[data-style="cozy"] .text-sky-500 { color: #9ac3d6; }
 :root[data-style="cozy"] .text-orange-500 { color: var(--a-300); }
 
-/* Warmer Lichtschein im Hintergrund, wie Abendlicht */
+/* Sand: warmes Papier mit Waldgrün, kein reines Weiß */
+:root[data-style="sand"] {
+  color-scheme: light;
+  --app-bg: #e9e2d3;
+  --app-card: #f5f0e4;
+  --app-card-sub: #eee7d8;
+  --app-border: #d5cbb6;
+  --app-text: #2f2b23;
+  --app-text-muted: #6c6556;
+  --app-input-bg: #faf7ef;
+  --app-accent: #4f7a5a;
+  --app-accent-hover: #3f6648;
+  --app-accent-sub: rgba(79, 122, 90, 0.15);
+  --app-accent-bar: #5f8d6b;
+  --app-accent-gradient: linear-gradient(90deg, #3f6648 0%, #5f8d6b 60%, #8bb396 100%);
+  --app-accent-text: #3b6444;
+  --app-danger-text: #b4372f;
+  --a-100: #e3efe6;
+  --a-300: #3b6444;
+  --a-400: #3b6444;
+  --a-500: #5f8d6b;
+  --a-600: #4f7a5a;
+  --a-700: #3b6444;
+}
+
+/* Warmer, sehr leichter Lichtschein statt hartem Hintergrund */
 :root[data-style="cozy"] body {
   background:
-    radial-gradient(1100px 620px at 8% -12%, rgba(201, 150, 90, 0.11), transparent 62%),
-    radial-gradient(900px 640px at 108% 4%, rgba(54, 120, 110, 0.2), transparent 60%),
-    radial-gradient(800px 500px at 50% 115%, rgba(201, 150, 90, 0.06), transparent 60%),
+    radial-gradient(1000px 560px at 6% -10%, rgba(179, 154, 108, 0.06), transparent 62%),
+    radial-gradient(900px 600px at 108% 2%, rgba(70, 120, 108, 0.1), transparent 60%),
+    var(--app-bg);
+  background-attachment: fixed;
+}
+:root[data-style="sand"] body {
+  background:
+    radial-gradient(1000px 560px at 6% -10%, rgba(255, 250, 235, 0.55), transparent 62%),
     var(--app-bg);
   background-attachment: fixed;
 }
 
 /* Überschriften in einer warmen Serifen-Schrift */
-:root[data-style="cozy"] :is(h1, h2, h3, h4, .fh-serif) {
+:root[data-style="cozy"] :is(h1, h2, h3, h4, .fh-serif),
+:root[data-style="sand"] :is(h1, h2, h3, h4, .fh-serif) {
   font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
   font-optical-sizing: auto;
   font-weight: 600;
   letter-spacing: -0.005em;
 }
 
-/* Große Karten und Fenster: weicher Schatten, feine Lichtkante oben */
+/* Große Karten und Fenster: sehr weicher Schatten statt Kante */
 :root[data-style="cozy"] .rounded-2xl.border,
 :root[data-style="cozy"] .rounded-t-2xl.border {
-  box-shadow:
-    inset 0 1px 0 rgba(242, 233, 218, 0.05),
-    0 18px 40px -22px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 14px 34px -24px rgba(0, 0, 0, 0.6);
 }
-:root[data-style="cozy"] .rounded-xl.border {
-  box-shadow: inset 0 1px 0 rgba(242, 233, 218, 0.035);
+:root[data-style="sand"] .rounded-2xl.border,
+:root[data-style="sand"] .rounded-t-2xl.border {
+  box-shadow: 0 12px 28px -22px rgba(70, 55, 30, 0.35);
 }
-
-/* Fenster-Hintergrund leicht getönt statt Schwarz */
-:root[data-style="cozy"] .bg-black\/75 {
-  background-color: rgba(6, 14, 13, 0.72);
-}
+:root[data-style="cozy"] .bg-black\/75 { background-color: rgba(10, 16, 14, 0.62); }
+:root[data-style="sand"] .bg-black\/75 { background-color: rgba(47, 43, 35, 0.5); }
 
 /* Kleine Abschnitts-Überschriften: Großbuchstaben mit Abstand (wie ein Menü) */
 .fh-eyebrow {
@@ -540,7 +572,8 @@ progress {
   text-transform: uppercase;
   color: var(--app-text-muted);
 }
-:root[data-style="cozy"] .fh-eyebrow {
+:root[data-style="cozy"] .fh-eyebrow,
+:root[data-style="sand"] .fh-eyebrow {
   color: var(--app-accent-text);
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
 }

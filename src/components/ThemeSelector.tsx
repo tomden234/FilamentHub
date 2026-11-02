@@ -24,7 +24,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   compact = false
 }) => {
   const [style, setStyle] = useThemeStyle();
-  const cozy = style === 'cozy';
+  const cozy = style !== 'classic';
   if (compact) {
     return (
       <div
@@ -79,11 +79,12 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
           <span>Design</span>
         </span>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {(
             [
               { id: 'classic', name: 'Klassisch', sub: 'Hell oder dunkel, eigene Farbe', bg: '#d6dce5', card: '#eceff4', ink: '#0f172a', acc: '#168a47', serif: false },
-              { id: 'cozy', name: 'Cozy', sub: 'Petrol, Creme, Messing', bg: '#0d1a19', card: '#15292a', ink: '#f2e9da', acc: '#c9965a', serif: true }
+              { id: 'cozy', name: 'Cozy', sub: 'Ruhig dunkel', bg: '#1c2321', card: '#252e2b', ink: '#e4ddcf', acc: '#b39a6c', serif: true },
+              { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#4f7a5a', serif: true }
             ] as const
           ).map(o => {
             const active = style === o.id;
@@ -108,7 +109,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-1 text-[11px] font-bold" style={{ color: active ? 'var(--app-accent-text)' : 'var(--app-text)' }}>
-                  {o.id === 'cozy' && <Coffee className="w-3 h-3" />}
+                  {o.id !== 'classic' && <Coffee className="w-3 h-3" />}
                   {o.name}
                 </div>
                 <div className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
@@ -120,7 +121,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         </div>
         {cozy && (
           <p className="text-[10.5px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Cozy hat feste Farben. Helligkeit und Akzentfarbe unten gelten wieder, sobald du „Klassisch“ wählst. Sie bleiben gespeichert.
+            Cozy und Sand haben feste Farben. Helligkeit und Akzentfarbe unten gelten wieder, sobald du „Klassisch“ wählst. Sie bleiben gespeichert.
           </p>
         )}
       </div>

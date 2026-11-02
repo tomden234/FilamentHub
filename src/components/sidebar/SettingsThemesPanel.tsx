@@ -30,7 +30,7 @@ export const SettingsThemesPanel: React.FC<SettingsThemesPanelProps> = ({
                       <span>Design und Farben</span>
                     </span>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'var(--app-text-muted)' }}>
-                      Neu: Design „Cozy“ (dunkles Petrol, Creme, Messing). Oder „Klassisch“ mit 5 Helligkeiten und eigener Akzentfarbe. Du kannst jederzeit zurück.
+                      Design „Cozy“ (ruhig dunkel) oder „Sand“ (warm hell). Oder „Klassisch“ mit 5 Helligkeiten und eigener Akzentfarbe. Du kannst jederzeit zurück.
                     </p>
                   </div>
 

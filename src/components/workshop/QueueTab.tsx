@@ -34,14 +34,14 @@ export const QueueTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
           Name wie die Datei im Slicer. Ist ein Druck fertig, nimmt die App ihn aus der Liste und meldet, was als Nächstes dran ist und ob das Filament reicht.
           Gestartet wird nichts von selbst: erst Platte frei machen.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_9rem_6rem_auto] gap-2 items-center">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && add()}
             placeholder="Name des Drucks"
-            className="px-2.5 py-1.5 rounded-lg border text-xs outline-none"
+            className="col-span-2 min-w-0 px-2.5 py-1.5 rounded-lg border text-xs outline-none"
             style={inputStyle}
             aria-label="Name des Drucks"
           />
@@ -51,7 +51,7 @@ export const QueueTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
             value={material}
             onChange={e => setMaterial(e.target.value)}
             placeholder="Material (z. B. PETG)"
-            className="px-2.5 py-1.5 rounded-lg border text-xs outline-none"
+            className="min-w-0 px-2.5 py-1.5 rounded-lg border text-xs outline-none"
             style={inputStyle}
             aria-label="Material"
           />
@@ -76,7 +76,7 @@ export const QueueTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
           <button
             onClick={add}
             disabled={!name.trim()}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40"
+            className="col-span-2 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer disabled:opacity-40"
             style={{ backgroundColor: 'var(--app-accent)', color: '#fff' }}
           >
             <Plus className="w-3.5 h-3.5" /> Vormerken

@@ -2400,5 +2400,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.164',
+    label: '1.164 (Ruhiges Design & neues Menü)',
+    releaseDate: '02.11.2026',
+    description: 'Ruhigere Farben (Cozy dunkel, neu: Sand hell), das linke Menü startet zu und ist eine klare Liste, rechts steht jetzt die Drucker-Leiste mit Warteschlange, Drucken und Logs.',
+    features: [
+      '🎨 Cozy weicher (weniger Kontrast), neu: Sand (warm hell). Klassisch weiter wählbar unter Menü > Aussehen',
+      '📂 Linkes Menü startet zu. Innen eine Liste in Gruppen: Helfer, Daten, Einstellungen, mit „Zurück“',
+      '🖨️ Rechte Leiste heißt „Drucker“: Reiter Warteschlange, Drucke, Logs (Drucke und Warteschlange sind aus der Werkstatt hierher gezogen)',
+      '🔧 Warteschlange: Eingabefelder passen in die schmale Leiste'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

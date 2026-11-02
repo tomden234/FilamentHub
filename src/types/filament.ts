@@ -60,7 +60,7 @@ export interface VersionProfile {
 
 export type ViewMode = 'full' | 'simple' | 'params';
 
-export type SidebarTab = 'ai' | 'gcode' | 'calc' | 'tools' | 'settings' | 'connect';
+export type SidebarTab = 'home' | 'ai' | 'gcode' | 'calc' | 'tools' | 'settings' | 'connect';
 
 export interface GCodeAnalysis {
   weightGrams: number;

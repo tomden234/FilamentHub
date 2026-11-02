@@ -1,22 +1,24 @@
-// Design-Stil: „classic“ (bisheriges Aussehen mit Helligkeit + Akzentfarbe) oder „cozy“ (dunkles Petrol, Creme, Messing,
-// Serifen-Überschriften, weiche Karten). Jederzeit umschaltbar, die alte Helligkeit/Farbe bleibt gespeichert.
+// Design-Stil: „classic“ (bisheriges Aussehen mit Helligkeit + Akzentfarbe), „cozy“ (ruhig dunkel: Grün-Grau, Creme, mattes
+// Messing) oder „sand“ (warm hell: Papier und Waldgrün), beide mit Serifen-Überschriften und weichen Karten. Jederzeit umschaltbar, die alte Helligkeit/Farbe bleibt gespeichert.
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { STORAGE_KEY_THEME_BRIGHT } from './storageKeys';
 import { applySystemBars } from './systemBars';
 
-export type ThemeStyle = 'classic' | 'cozy';
+export type ThemeStyle = 'classic' | 'cozy' | 'sand';
 const KEY = 'filamenthub_theme_style';
 const listeners = new Set<() => void>();
 
 /** Ab 1.162 ist Cozy der Standard. Wer „Klassisch“ wählt, behält das. */
 export function getThemeStyle(): ThemeStyle {
-  return safeStorage.getItem(KEY) === 'classic' ? 'classic' : 'cozy';
+  const v = safeStorage.getItem(KEY);
+  return v === 'classic' || v === 'sand' ? v : 'cozy';
 }
 
 /** data-theme, das wirklich gesetzt wird: Cozy nutzt die dunklen Grundregeln (Graphit) und legt seine Farben darüber */
 export function effectiveTheme(brightness: string): string {
-  return getThemeStyle() === 'cozy' ? 'slate' : brightness;
+  const st = getThemeStyle();
+  return st === 'cozy' ? 'slate' : st === 'sand' ? 'warm' : brightness;
 }
 
 export function applyThemeStyle(): void {

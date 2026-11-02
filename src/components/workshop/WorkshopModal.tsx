@@ -1,13 +1,11 @@
 import React from 'react';
-import { BarChart3, Bell, BellRing, Camera, ListOrdered, QrCode, SlidersHorizontal, Wrench, X } from 'lucide-react';
+import { BarChart3, Bell, BellRing, QrCode, SlidersHorizontal, Wrench, X } from 'lucide-react';
 import type { Spool } from '../../types/filament';
 import { NoticesTab } from './NoticesTab';
 import { InboxTab } from './InboxTab';
 import { useUnreadCount } from '../../utils/inbox';
 import { LabelsTab } from './LabelsTab';
-import { PrintsTab } from './PrintsTab';
 import { StatsTab } from './StatsTab';
-import { QueueTab } from './QueueTab';
 
 export type WorkshopTab = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue';
 
@@ -17,8 +15,6 @@ const NOTICE_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{
   { id: 'notices', label: 'Einstellungen', icon: SlidersHorizontal }
 ];
 const WORKSHOP_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'prints', label: 'Drucke', icon: Camera },
-  { id: 'queue', label: 'Warteschlange', icon: ListOrdered },
   { id: 'stats', label: 'Statistik', icon: BarChart3 },
   { id: 'labels', label: 'Etiketten', icon: QrCode }
 ];
@@ -34,11 +30,13 @@ export interface WorkshopModalProps {
   focusId?: string | null;
 }
 
-/** Glocke: Mitteilungen mit Einstellungen. Werkzeug-Knopf: Werkstatt (Etiketten). */
+/** Glocke: Mitteilungen mit Einstellungen. Werkzeug-Knopf: Werkstatt (Statistik, Etiketten). */
 export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, tab, onTabChange, spools, labelSpoolId, focusId }) => {
   const unread = useUnreadCount();
   if (!isOpen) return null;
   const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue';
+  // Drucke und Warteschlange stecken jetzt in der Drucker-Leiste rechts; alte Verweise landen bei der Statistik
+  if (tab === 'prints' || tab === 'queue') queueMicrotask(() => onTabChange('stats'));
   const tabs = isWorkshop ? WORKSHOP_TABS : NOTICE_TABS;
   const HeadIcon = isWorkshop ? Wrench : BellRing;
 
@@ -109,9 +107,8 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
         <div className="p-4 overflow-y-auto min-h-0">{tab === 'inbox' && <InboxTab focusId={focusId || undefined} />}
           {tab === 'notices' && <NoticesTab />}
           {tab === 'labels' && <LabelsTab spools={spools} preselectId={labelSpoolId} />}
-          {tab === 'prints' && <PrintsTab />}
           {tab === 'stats' && <StatsTab spools={spools} />}
-          {tab === 'queue' && <QueueTab spools={spools} />}</div>
+</div>
       </div>
     </div>
   );

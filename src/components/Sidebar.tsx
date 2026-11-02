@@ -19,7 +19,10 @@ import {
   Palette,
   FlaskConical,
   Plug,
-  PanelLeftClose
+  PanelLeftClose,
+  ChevronRight,
+  ChevronLeft,
+  DatabaseBackup
 } from 'lucide-react';
 import {
   AppSettings,
@@ -134,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   // Android-App und installierte Web-App: nur die App-Funktionen. Windows-App/Browser: alles.
   const APP = isAppShell();
-  const [activeTab, setActiveTabRaw] = useState<SidebarTab>('ai'); // Standard: KI-Assistent
+  const [activeTab, setActiveTabRaw] = useState<SidebarTab>('home'); // Start: Menü-Liste
   // G-Code-Rechner gibt es in der App nicht: dorthin springt nichts
   const setActiveTab = (t: SidebarTab) => setActiveTabRaw(APP && (t === 'gcode' || t === 'calc') ? 'tools' : t);
 
@@ -344,21 +347,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isThemesTab = activeTab === 'settings' && settingsSubTab === 'themes';
 
-  // Menüpunkte je nach Gerät: App = KI, Tools, Einstellungen. Windows-App/Browser zusätzlich G-Code-Rechner (und im Browser „Handy“).
-  const navItems: { id: string; icon: React.ComponentType<{ className?: string }>; label?: string; labelLine1?: string; labelLine2?: string }[] = [
-    { id: 'ai', icon: Bot, label: 'KI' },
-    ...(APP ? [] : [{ id: 'gcode', icon: FileCode2, labelLine1: 'G-Code', labelLine2: 'Rechner' }]),
-    { id: 'tools', icon: Wrench, label: 'Tools' },
-    { id: 'settings', icon: Settings, label: 'Einst.' },
-    // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Einstellungen → Verbindungen
-    ...(APP || IS_DESKTOP ? [] : [{ id: 'connect', icon: Smartphone, label: 'Handy' }])
+  // Menü als Liste: jeder Punkt öffnet seine Seite, oben links „Zurück“. App = ohne G-Code-Rechner und Material,
+  // Windows-App/Browser = alles (im Browser zusätzlich „Handy“).
+  const homeItems: { key: string; icon: React.ComponentType<{ className?: string }>; title: string; sub: string; go: () => void; group: string }[] = [
+    { key: 'ai', group: 'Helfer', icon: Bot, title: 'KI-Assistent', sub: 'Fragen zu deinen Spulen stellen', go: () => setActiveTab('ai') },
+    ...(APP ? [] : [{ key: 'gcode', group: 'Helfer', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Druckkosten berechnen', go: () => setActiveTab('gcode') }]),
+    { key: 'tools', group: 'Daten', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Cloud-Abgleich', go: () => setActiveTab('tools') },
+    { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: () => { setSettingsSubTab('themes'); setActiveTab('settings'); } },
+    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material', sub: 'Trocknung und Leergewichte', go: () => { setSettingsSubTab('presets'); setActiveTab('settings'); } }]),
+    { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Mitteilungen', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
+    // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
+    ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Einstellungen', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }])
   ];
-  const settingTabs = ([
-    { id: 'themes', label: 'Aussehen', icon: Palette },
-    // Material (Trocknung, Leerspulen-Gewichte) braucht man in der App nicht
-    ...(APP ? [] : [{ id: 'presets', label: 'Material', icon: FlaskConical }]),
-    { id: 'connections', label: 'Verbindungen', icon: Plug }
-  ] as const);
+  const pageTitle =
+    activeTab === 'ai' ? 'KI-Assistent'
+    : activeTab === 'gcode' || activeTab === 'calc' ? 'G-Code und Kosten'
+    : activeTab === 'tools' ? 'Sichern und Laden'
+    : activeTab === 'connect' ? 'Handy'
+    : settingsSubTab === 'themes' ? 'Aussehen'
+    : settingsSubTab === 'presets' ? 'Material'
+    : 'Verbindungen';
 
   return (
     <div className={docked ? 'contents' : 'fixed inset-0 z-50 flex'}>
@@ -600,48 +608,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </form>
         )}
 
-        {/* SCHLANKE, PLATZSPARENDE MENÜ-NAVIGATION:
-            Kompakte Punkte, damit die Unterpunkte NIE verdeckt werden */}
-        <div
-          className="p-1.5 border-b shrink-0 transition-colors"
-          style={{
-            backgroundColor: 'var(--app-card-sub)',
-            borderColor: 'var(--app-border)'
-          }}
-        >
-          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}>
-            {navItems.map(item => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id || (item.id === 'gcode' && activeTab === 'calc');
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as SidebarTab)}
-                  className={`py-1 px-0.5 rounded-lg border text-[11px] font-bold transition flex flex-col items-center justify-center gap-0.5 cursor-pointer min-h-[46px] ${
-                    isActive ? 'shadow-sm' : 'hover:opacity-80'
-                  }`}
-                  style={{
-                    backgroundColor: isActive ? 'var(--app-accent-sub)' : 'var(--app-card)',
-                    borderColor: isActive ? 'var(--app-accent)' : 'var(--app-border)',
-                    color: isActive ? 'var(--app-accent-text)' : 'var(--app-text-muted)',
-                    boxShadow: isActive ? '0 0 0 1px var(--app-accent)' : undefined
-                  }}
-                  title={item.labelLine1 ? `${item.labelLine1} & ${item.labelLine2}` : item.label}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  {item.labelLine1 ? (
-                    <div className="flex flex-col items-center text-center leading-none">
-                      <span className="text-[9.5px] leading-tight font-bold">{item.labelLine1}</span>
-                      <span className="text-[8.5px] leading-tight opacity-80">{item.labelLine2}</span>
-                    </div>
-                  ) : (
-                    <span className="truncate text-[10px]">{item.label}</span>
-                  )}
-                </button>
-              );
-            })}
+        {/* Zurück-Leiste (nicht auf der Startliste) */}
+        {activeTab !== 'home' && (
+          <div
+            className="px-2.5 py-2 border-b shrink-0 flex items-center gap-2 transition-colors"
+            style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}
+          >
+            <button
+              onClick={() => setActiveTab('home')}
+              className="px-2 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 cursor-pointer hover:opacity-80"
+              style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Menü
+            </button>
+            <h3 className="fh-serif text-sm font-extrabold truncate" style={{ color: 'var(--app-text)' }}>
+              {pageTitle}
+            </h3>
           </div>
-        </div>
+        )}
 
         {/* TAB-INHALTE: Großzügig, scrollbar & passt sich 100% dem Theme an */}
         <div
@@ -651,34 +636,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
             color: 'var(--app-text)'
           }}
         >
+          {/* START: Menü-Liste in Gruppen */}
+          {activeTab === 'home' && (
+            <div className="space-y-4">
+              {Array.from(new Set(homeItems.map(i => i.group))).map(group => (
+                <div key={group} className="space-y-1.5">
+                  <div className="fh-eyebrow px-1">{group}</div>
+                  <div className="rounded-xl border overflow-hidden divide-y divide-[var(--app-border)]" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
+                    {homeItems
+                      .filter(i => i.group === group)
+                      .map(item => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.key}
+                            onClick={item.go}
+                            className="w-full px-3 py-2.5 flex items-center gap-3 text-left cursor-pointer hover:opacity-80 transition"
+                          >
+                            <span
+                              className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: 'var(--app-accent-sub)', borderColor: 'var(--app-border)', color: 'var(--app-accent-text)' }}
+                            >
+                              <Icon className="w-4 h-4" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-xs font-bold" style={{ color: 'var(--app-text)' }}>{item.title}</span>
+                              <span className="block text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>{item.sub}</span>
+                            </span>
+                            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--app-text-muted)' }} />
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* TAB 1: ZENTRALER EINSTELLUNGS-HUB */}
           {activeTab === 'settings' && (
             <div className="space-y-3">
-              {/* Einstellungs-Sub-Navigation: 3 aufgeräumte Hauptbereiche */}
-              <div
-                className="grid gap-1 p-1 rounded-xl border text-[11px] font-bold transition-colors"
-                style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', gridTemplateColumns: `repeat(${settingTabs.length}, minmax(0, 1fr))` }}
-                role="tablist"
-              >
-                {settingTabs.map(t => {
-                  const Icon = t.icon;
-                  const on = settingsSubTab === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      role="tab"
-                      aria-selected={on}
-                      onClick={() => setSettingsSubTab(t.id as 'themes' | 'presets' | 'connections')}
-                      className={`py-1.5 px-1 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 font-bold ${on ? 'shadow' : 'hover:opacity-80'}`}
-                      style={{ backgroundColor: on ? 'var(--app-accent)' : 'transparent', color: on ? '#ffffff' : 'var(--app-text-muted)' }}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
               {/* BEREICH 1: THEMES & DESIGN */}
               {settingsSubTab === 'themes' && <SettingsThemesPanel themeBrightness={themeBrightness} themeAccent={themeAccent} onSetBrightness={onSetBrightness} onSetAccent={onSetAccent} />}
 
