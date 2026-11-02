@@ -118,6 +118,7 @@ export function useAmsControl({ spools, liveState, onApplyDryingCredit, setActio
       if (spool && slotIdx === EXTERNAL_SLOT && liveState?.connected) {
         const ext = readExternal(liveState.data?.vt_tray);
         if (!ext || ext.empty || mismatch(spool, ext)) {
+          setActionToast({ text: '🧵 Extern: sende an den Drucker … (kann bis 10 s dauern)', ok: true });
           void sendToSlot(EXTERNAL_SLOT, paramsFromSpool(spool)).then(r =>
             setActionToast({ text: r.confirmed ? `🧵 ${r.text}` : `Extern: ${r.text}`, ok: r.confirmed })
           );

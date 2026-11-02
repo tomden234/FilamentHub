@@ -2506,5 +2506,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.171',
+    label: '1.171 (Extern rechts, schneller)',
+    releaseDate: '02.11.2026',
+    description: 'Extern ist immer die rechte externe Spule (Haupt-Extruder, id 254). Die linke wird nicht mehr angefasst oder angezeigt. Weniger Befehlsformen, dadurch kürzere Wartezeit, und beim Antippen kommt sofort eine Meldung „sende an den Drucker“.',
+    features: [
+      '➡️ Extern = immer rechte externe Spule (id 254), die linke bleibt unberührt',
+      '⏱️ Nur noch 3 Befehlsformen à 3 s statt 5, sofort Meldung beim Antippen',
+      '🔎 Bestätigung prüft nur die rechte Spule'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

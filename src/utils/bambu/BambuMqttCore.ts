@@ -955,7 +955,8 @@ export abstract class BambuMqttCore {
     if (Array.isArray(delta.vir_slot) && delta.vir_slot.length) {
       this.virSlots = delta.vir_slot;
       if (delta.vt_tray === undefined) {
-        this.printData.vt_tray = delta.vir_slot.find((x: any) => x?.tray_type) || delta.vir_slot[0];
+        // rechte externe Spule (Haupt-Extruder, id 254) ist die „externe“ Spule der App; die linke (255) wird ignoriert
+        this.printData.vt_tray = delta.vir_slot.find((x: any) => Number(x?.id) === 254) || delta.vir_slot[0];
       }
     }
     if (delta.lights_report !== undefined) {
@@ -1390,17 +1391,8 @@ export abstract class BambuMqttCore {
     // Externe Spule: X1/P1 = ams_id 255 + tray_id 254. H2D/X2D haben zwei externe Plätze (ids 254/255).
     // Weil das beim X2D nicht sicher bekannt ist, werden die Varianten nacheinander probiert, bis der Drucker eine übernimmt.
     const external = Boolean(params.external);
-    const extIds = [this.printData.vt_tray?.id, ...this.virSlots.map((x: any) => x?.id)].map(Number).filter(n => n === 254 || n === 255);
-    const variants: [number, number][] = external
-      ? (() => {
-          const v: [number, number][] = [];
-          const add = (x: number, y: number) => { if (!v.some(e => e[0] === x && e[1] === y)) v.push([x, y]); };
-          add(255, extIds[0] ?? 254);
-          extIds.forEach(id => { add(id, id); add(id, 254); add(id, 0); });
-          add(255, 254); add(254, 254); add(255, 255); add(254, 0); add(255, 0);
-          return v;
-        })()
-      : [[0, Number(slotIdx)]];
+    // Externe Spule = immer die rechte (id 254). Die linke (255) wird nicht angefasst.
+    const variants: [number, number][] = external ? [[255, 254], [254, 254], [254, 0]] : [[0, Number(slotIdx)]];
 
     // Keine Schein-Aktualisierung: die Anzeige ändert sich erst, wenn der Drucker den Slot wirklich meldet.
     // Alter „Befehl nicht verifiziert“-Fehler, der schon vor diesem Befehl in der HMS-Liste stand, zählt nicht als Ablehnung
@@ -1426,7 +1418,7 @@ export abstract class BambuMqttCore {
       this.schedulePushall(800);
       this.schedulePushall(2500);
       outcome = external
-        ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 3500 : 5000, hmsBlockedBefore)
+        ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 3000 : 5000, hmsBlockedBefore)
         : await this.waitForAmsSlot(slotIdx, color.slice(0, 6), material, 5000, hmsBlockedBefore);
       const r = this.amsCmdResult as { result: string; reason: string } | null;
       if (r) lastReply = `${amsId}/${trayId}: ${r.result || '?'}${r.reason ? ' (' + r.reason + ')' : ''}`;
@@ -1479,7 +1471,7 @@ export abstract class BambuMqttCore {
     const wantType = material.toUpperCase();
     while (Date.now() - startedAt < timeoutMs) {
       // vt_tray und (H2D/X2D) alle Einträge aus vir_slot prüfen
-      const hit = [this.printData.vt_tray, ...this.virSlots].some((t: any) => {
+      const hit = [this.printData.vt_tray, ...this.virSlots.filter((x: any) => Number(x?.id) !== 255)].some((t: any) => {
         if (!t) return false;
         const cols: string[] = Array.isArray(t.cols) ? t.cols.map((x: any) => String(x).toUpperCase()) : [];
         const colorOk = String(t.tray_color || '').toUpperCase().startsWith(wantColor) || cols.some(x => x.startsWith(wantColor));
