@@ -37,33 +37,61 @@ export const CUSTOM_PRESETS: { id: string; name: string; sub: string; style: The
   { id: 'paper', name: 'Papier', sub: 'Hell, ohne Effekte', style: 'sand', c: { glass: 0, glow: 20, calm: true } }
 ];
 
-const KEY = 'filamenthub_custom_v1';
+// 1.169: Eigene Einstellungen gelten je Design. Jedes Design hat seinen eigenen Satz (Schlüssel v2).
+// Der alte globale Satz (v1) wird nicht mehr gelesen, damit nichts Verstelltes mitwandert.
+const KEY = 'filamenthub_custom_v2';
+const STYLE_KEY = 'filamenthub_theme_style';
 const listeners = new Set<() => void>();
 let cache: Customize | null = null;
+let activeStyle: string | null = null;
+
+function currentStyle(): string {
+  if (activeStyle) return activeStyle;
+  let v = safeStorage.getItem(STYLE_KEY) || 'cozy';
+  if (v === 'glass') v = 'glass-purple';
+  activeStyle = v;
+  return v;
+}
+
+function readAll(): Record<string, Partial<Customize>> {
+  try {
+    const raw = safeStorage.getItem(KEY);
+    const o = raw ? JSON.parse(raw) : {};
+    return o && typeof o === 'object' ? o : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Vom Design-Wechsel aufgerufen: anderes Design = anderer Satz */
+export function setActiveCustomizeStyle(style: string): void {
+  if (activeStyle === style) return;
+  activeStyle = style;
+  cache = null;
+  listeners.forEach(l => l());
+}
 
 export function getCustomize(): Customize {
   if (cache) return cache;
-  let c = { ...CUSTOM_DEFAULT };
-  try {
-    const raw = safeStorage.getItem(KEY);
-    if (raw) c = { ...c, ...JSON.parse(raw) };
-  } catch {
-    // kaputter Eintrag: Standard
-  }
-  cache = c;
-  return c;
+  cache = { ...CUSTOM_DEFAULT, ...(readAll()[currentStyle()] || {}) };
+  return cache;
 }
 
 export function setCustomize(patch: Partial<Customize>): void {
   cache = { ...getCustomize(), ...patch };
-  safeStorage.setItem(KEY, JSON.stringify(cache));
+  const all = readAll();
+  all[currentStyle()] = cache;
+  safeStorage.setItem(KEY, JSON.stringify(all));
   applyCustomize();
   listeners.forEach(l => l());
 }
 
+/** Setzt nur das aktuelle Design zurück, andere bleiben */
 export function resetCustomize(): void {
   cache = { ...CUSTOM_DEFAULT };
-  safeStorage.removeItem(KEY);
+  const all = readAll();
+  delete all[currentStyle()];
+  safeStorage.setItem(KEY, JSON.stringify(all));
   applyCustomize();
   listeners.forEach(l => l());
 }

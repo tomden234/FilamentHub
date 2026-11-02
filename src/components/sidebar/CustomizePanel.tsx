@@ -51,6 +51,7 @@ export const CustomizePanel: React.FC = () => {
   const up = (p: Partial<Customize>) => set(p);
   return (
     <div className="space-y-3">
+      <p className="text-[11px] leading-snug px-1" style={{ color: 'var(--app-text-muted)' }}>Alle Regler gelten nur für das gewählte Design. Jedes Design merkt sich seine eigenen Werte.</p>
       <div className="rounded-xl border p-3" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: 'var(--app-text)' }}>

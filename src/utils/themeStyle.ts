@@ -2,7 +2,7 @@
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { STORAGE_KEY_THEME_BRIGHT } from './storageKeys';
-import { applyCustomize } from './customize';
+import { applyCustomize, setActiveCustomizeStyle } from './customize';
 
 export type ThemeStyle = 'classic' | 'cozy' | 'night' | 'glass-green' | 'glass-purple' | 'glass-cream' | 'sand';
 const KEY = 'filamenthub_theme_style';
@@ -29,6 +29,7 @@ export function applyThemeStyle(): void {
   if (style.startsWith('glass')) root.setAttribute('data-tone', style.slice(6));
   else root.removeAttribute('data-tone');
   root.setAttribute('data-theme', effectiveTheme(safeStorage.getItem(STORAGE_KEY_THEME_BRIGHT) || 'warm'));
+  setActiveCustomizeStyle(style); // eigene Einstellungen gelten je Design (1.169)
   applyCustomize(); // setzt auch die Systemleisten
 }
 

@@ -805,3 +805,6 @@ progress {
 :root:is([data-style="glass"], [data-style="cozy"], [data-style="night"], [data-style="sand"], [data-custom]) .fh-root {
   background-color: transparent !important;
 }
+
+/* 1.169: Such-Symbol im Creme-Look war zu blass */
+:root[data-style="glass"][data-tone="cream"] svg.lucide-search { color: #4a5a4e !important; opacity: 1; }

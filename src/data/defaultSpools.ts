@@ -2477,5 +2477,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.169',
+    label: '1.169 (Farben je Design)',
+    releaseDate: '02.11.2026',
+    description: 'Die Customize-Regler (Farbanteil, Tönung, Akzent, Glas ...) gelten jetzt nur für das gewählte Design. Grün bleibt grün und Lila bleibt lila, jedes Design merkt sich seine eigenen Werte. Zurücksetzen betrifft nur das aktuelle Design. Das Such-Symbol im Creme-Look ist dunkler.',
+    features: [
+      '🎨 Customize-Regler gelten je Design, nicht mehr global',
+      '♻️ „Zurücksetzen“ setzt nur das aktuelle Design zurück',
+      '🔍 Creme: Such-Symbol besser lesbar',
+      '🧹 Alte globale Werte werden nicht mehr gelesen (Neustart bei Standardwerten)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
