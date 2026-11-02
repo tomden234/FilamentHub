@@ -84,7 +84,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             [
               { id: 'classic', name: 'Klassisch', sub: 'Hell oder dunkel, eigene Farbe', bg: '#d6dce5', card: '#eceff4', ink: '#0f172a', acc: '#168a47', serif: false },
               { id: 'cozy', name: 'Cozy', sub: 'Ruhig dunkelgrün', bg: '#14241c', card: '#1c3126', ink: '#e3eadf', acc: '#5fb582', serif: true },
-              { id: 'glass', name: 'Glas', sub: 'Flüssigglas wie iOS', bg: 'linear-gradient(135deg,#3b2a78,#0c0c13 60%,#1f3a78)', card: 'rgba(255,255,255,.14)', ink: '#f3f2f9', acc: '#8a6cf2', serif: false },
+              { id: 'glass-green', name: 'Glas Grün', sub: 'Dunkelgrün, Creme', bg: 'linear-gradient(135deg,#1c5a40,#07130e 62%,#2b4a2f)', card: 'rgba(206,240,220,.14)', ink: '#f0ead9', acc: '#6fae88', serif: false },
+              { id: 'glass-purple', name: 'Glas Lila', sub: 'Dunkellila, Creme', bg: 'linear-gradient(135deg,#4a2f86,#0d0a17 62%,#35246b)', card: 'rgba(226,214,255,.14)', ink: '#f1ebdd', acc: '#8f7bd0', serif: false },
+              { id: 'glass-cream', name: 'Glas Creme', sub: 'Hell, Salbeigrün', bg: 'linear-gradient(135deg,#f3d9b8,#ece3d0 55%,#cfe3d2)', card: 'rgba(255,252,244,.7)', ink: '#2b281f', acc: '#4d7a5b', serif: false },
               { id: 'night', name: 'Nacht', sub: 'Dunkles Lila', bg: '#16132a', card: '#201c38', ink: '#e6e2f4', acc: '#9484e6', serif: true },
               { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#3f8a5c', serif: true }
             ] as const

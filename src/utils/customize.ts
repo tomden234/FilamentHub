@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { applySystemBars } from './systemBars';
+import type { ThemeStyle } from './themeStyle';
 
 export interface Customize {
   color: number; // Farbanteil 0..100: wie viel Farbe (z. B. Lila) in Flächen und Hintergrundlicht steckt
@@ -28,11 +29,11 @@ export const CUSTOM_DEFAULT: Customize = {
 };
 
 /** Fertige Looks (setzen auch das Design) */
-export const CUSTOM_PRESETS: { id: string; name: string; sub: string; style: 'classic' | 'cozy' | 'night' | 'glass' | 'sand'; c: Partial<Customize> }[] = [
-  { id: 'glass', name: 'Flüssigglas', sub: 'Wie iOS: Glas, Lila als Akzent', style: 'glass', c: {} },
-  { id: 'glass-calm', name: 'Glas ruhig', sub: 'Glas, kaum Farbe', style: 'glass', c: { color: 30, glow: 40 } },
-  { id: 'deep', name: 'Tief Violett', sub: 'Sehr dunkel, ruhig', style: 'night', c: { light: -5, tintOn: true, tintHue: 265, tintAmount: 55, glow: 35, glass: 15 } },
-  { id: 'forest', name: 'Wald Glas', sub: 'Waldgrün mit Glas', style: 'cozy', c: { glass: 55, glow: 70, radius: 115 } },
+export const CUSTOM_PRESETS: { id: string; name: string; sub: string; style: ThemeStyle; c: Partial<Customize> }[] = [
+  { id: 'glass-green', name: 'Glas Dunkelgrün', sub: 'Tiefes Grün, Creme, leichte Akzente', style: 'glass-green', c: {} },
+  { id: 'glass-purple', name: 'Glas Dunkellila', sub: 'Tiefes Lila, Creme, leichte Akzente', style: 'glass-purple', c: {} },
+  { id: 'glass-cream', name: 'Glas Creme', sub: 'Hell, cremig, Salbeigrün', style: 'glass-cream', c: {} },
+  { id: 'glass-calm', name: 'Glas ruhig', sub: 'Dunkellila, fast ohne Farbe', style: 'glass-purple', c: { color: 25, glow: 30 } },
   { id: 'paper', name: 'Papier', sub: 'Hell, ohne Effekte', style: 'sand', c: { glass: 0, glow: 20, calm: true } }
 ];
 

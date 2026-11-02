@@ -2462,5 +2462,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.168',
+    label: '1.168 (Glas Grün, Lila & Creme)',
+    releaseDate: '02.11.2026',
+    description: 'Drei fertige Glas-Looks zum Auswählen unter Aussehen: Dunkelgrün, Dunkellila (beide mit Creme-Text und ganz leichten Akzenten) und helles Creme mit Salbeigrün.',
+    features: [
+      '🌲 Glas Grün: tiefes Dunkelgrün, Creme-Schrift, zarter Salbei als Akzent',
+      '🍇 Glas Lila: tiefes Dunkellila, Creme-Schrift, zarter Flieder als Akzent',
+      '🥛 Glas Creme: helles Milchglas auf warmem Papier, Salbeigrün',
+      '🎛️ Weiter einstellbar im Customize-Menü (Farbanteil, Glas, Leuchten, Rundung)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

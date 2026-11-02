@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* "dark:" folgt dem App-Theme (Graphit/Nacht), nicht der Handy-/PC-Einstellung */
-@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *, [data-style="glass"], [data-style="glass"] *));
+@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *, [data-style="glass"]:not([data-tone="cream"]), [data-style="glass"]:not([data-tone="cream"]) *));
 
 /* Die Akzentfarbe steuert auch alle bisherigen "orange"-Klassen (Tailwind), damit Blau, Grün usw. überall greifen */
 @theme {
@@ -653,33 +653,88 @@ progress {
    Dunkles Graphit, bunte weiche Lichtflecken im Hintergrund, durchscheinende Karten mit starker Unschärfe,
    hellem Rand oben und großen runden Ecken. Lila nur als Akzent. Feinabstimmung im Customize-Menü. */
 :root[data-style="glass"] {
-  color-scheme: dark;
   --radius-md: 0.8rem;
   --radius-lg: 1rem;
   --radius-xl: 1.3rem;
   --radius-2xl: 1.8rem;
-  --app-bg: #0c0c13;
-  --app-card: rgba(255, 255, 255, 0.075);
-  --app-card-sub: rgba(255, 255, 255, 0.05);
-  --app-border: rgba(255, 255, 255, 0.15);
-  --app-text: #f3f2f9;
-  --app-text-muted: #a9a7bd;
-  --app-input-bg: rgba(0, 0, 0, 0.3);
-  --app-accent: #8a6cf2;
-  --app-accent-hover: #7857e0;
-  --app-accent-sub: rgba(138, 108, 242, 0.2);
-  --app-accent-bar: #a28af7;
-  --app-accent-gradient: linear-gradient(90deg, #6d4fe0 0%, #9078f5 60%, #c3b5fb 100%);
-  --app-accent-text: #cbbfff;
-  --app-danger-text: #ff9fb0;
-  --a-100: #efeaff;
-  --a-300: #cbbfff;
-  --a-400: #b2a2fa;
-  --a-500: #a28af7;
-  --a-600: #8a6cf2;
-  --a-700: #7857e0;
-  --fh-glow-hue: 262;
-  --fh-glass-blur: 28px;
+  --fh-glass-blur: 26px;
+  --a-100: #f3efe4;
+}
+/* Dunkellila (Standard von „Glas“): tiefes Aubergine, Creme-Text, zarter Flieder als Akzent */
+:root[data-style="glass"], :root[data-style="glass"][data-tone="purple"] {
+  color-scheme: dark;
+  --fh-glow-hue: 268;
+  --fh-glow-sat: 55%;
+  --app-bg: #0d0a17;
+  --app-card: rgba(226, 214, 255, 0.065);
+  --app-card-sub: rgba(226, 214, 255, 0.04);
+  --app-border: rgba(236, 226, 255, 0.13);
+  --app-text: #f1ebdd;
+  --app-text-muted: #aaa3bd;
+  --app-input-bg: rgba(8, 5, 18, 0.45);
+  --app-accent: #8f7bd0;
+  --app-accent-hover: #7d69bf;
+  --app-accent-sub: rgba(160, 140, 225, 0.16);
+  --app-accent-bar: #a897e2;
+  --app-accent-gradient: linear-gradient(90deg, #7664b8 0%, #9a88dc 60%, #cfc4f2 100%);
+  --app-accent-text: #d8cff5;
+  --app-danger-text: #f0a6b4;
+  --a-300: #d8cff5;
+  --a-400: #bfb2ee;
+  --a-500: #a897e2;
+  --a-600: #8f7bd0;
+  --a-700: #7d69bf;
+}
+/* Dunkelgrün: tiefer Wald, Creme-Text, zarter Salbei als Akzent */
+:root[data-style="glass"][data-tone="green"] {
+  color-scheme: dark;
+  --fh-glow-hue: 158;
+  --fh-glow-sat: 50%;
+  --app-bg: #07130e;
+  --app-card: rgba(206, 240, 220, 0.06);
+  --app-card-sub: rgba(206, 240, 220, 0.038);
+  --app-border: rgba(226, 244, 230, 0.13);
+  --app-text: #f0ead9;
+  --app-text-muted: #9fb5a7;
+  --app-input-bg: rgba(3, 14, 9, 0.5);
+  --app-accent: #6fae88;
+  --app-accent-hover: #5e9c77;
+  --app-accent-sub: rgba(120, 190, 150, 0.15);
+  --app-accent-bar: #8cc4a2;
+  --app-accent-gradient: linear-gradient(90deg, #57906f 0%, #78b28f 60%, #bfe0cb 100%);
+  --app-accent-text: #cdeadb;
+  --app-danger-text: #f0a99d;
+  --a-300: #cdeadb;
+  --a-400: #a6d3b8;
+  --a-500: #8cc4a2;
+  --a-600: #6fae88;
+  --a-700: #5e9c77;
+}
+/* Creme: helles Milchglas auf warmem Papier, Salbeigrün als Akzent */
+:root[data-style="glass"][data-tone="cream"] {
+  color-scheme: light;
+  --fh-glow-hue: 38;
+  --fh-glow-sat: 70%;
+  --app-bg: #ece3d0;
+  --app-card: rgba(255, 252, 244, 0.55);
+  --app-card-sub: rgba(255, 252, 244, 0.35);
+  --app-border: rgba(120, 100, 60, 0.2);
+  --app-text: #2b281f;
+  --app-text-muted: #6b6454;
+  --app-input-bg: rgba(255, 253, 247, 0.7);
+  --app-accent: #4d7a5b;
+  --app-accent-hover: #3f6849;
+  --app-accent-sub: rgba(77, 122, 91, 0.14);
+  --app-accent-bar: #5f8d6c;
+  --app-accent-gradient: linear-gradient(90deg, #3f6849 0%, #5f8d6c 60%, #9bbfa6 100%);
+  --app-accent-text: #3a6346;
+  --app-danger-text: #b4372f;
+  --a-100: #e3efe6;
+  --a-300: #3a6346;
+  --a-400: #3a6346;
+  --a-500: #5f8d6c;
+  --a-600: #4d7a5b;
+  --a-700: #3a6346;
 }
 :root[data-style="glass"] .text-emerald-500 { color: #7fe0b0; }
 :root[data-style="glass"] .text-green-500 { color: #8be3a6; }
@@ -687,12 +742,25 @@ progress {
 :root[data-style="glass"] .text-amber-500 { color: #ffd37a; }
 :root[data-style="glass"] .text-sky-500 { color: #8fd0ff; }
 :root[data-style="glass"] .text-orange-500 { color: var(--a-300); }
+:root[data-style="glass"][data-tone="cream"] .text-emerald-500 { color: #166534; }
+:root[data-style="glass"][data-tone="cream"] .text-green-500 { color: #166534; }
+:root[data-style="glass"][data-tone="cream"] .text-rose-500 { color: #b4372f; }
+:root[data-style="glass"][data-tone="cream"] .text-amber-500 { color: #92400e; }
+:root[data-style="glass"][data-tone="cream"] .text-sky-500 { color: #075985; }
+/* Hintergrund: zwei weiche Farbflecken in der Hauptfarbe und ein warmer Creme-Schimmer unten */
 :root[data-style="glass"] body {
   background:
-    radial-gradient(760px 520px at 8% 4%, hsl(var(--fh-glow-hue) 85% 58% / calc(var(--fh-glow) * 0.62)), transparent 66%),
-    radial-gradient(720px 560px at 94% 12%, hsl(calc(var(--fh-glow-hue) - 50) 90% 58% / calc(var(--fh-glow) * 0.5)), transparent 66%),
-    radial-gradient(760px 600px at 78% 98%, hsl(calc(var(--fh-glow-hue) + 52) 80% 55% / calc(var(--fh-glow) * 0.42)), transparent 68%),
-    radial-gradient(640px 520px at 6% 96%, hsl(calc(var(--fh-glow-hue) - 90) 80% 52% / calc(var(--fh-glow) * 0.28)), transparent 68%),
+    radial-gradient(820px 560px at 6% 2%, hsl(var(--fh-glow-hue) var(--fh-glow-sat, 55%) 38% / calc(var(--fh-glow) * 0.7)), transparent 68%),
+    radial-gradient(760px 560px at 98% 22%, hsl(calc(var(--fh-glow-hue) + 20) var(--fh-glow-sat, 55%) 32% / calc(var(--fh-glow) * 0.55)), transparent 68%),
+    radial-gradient(900px 520px at 55% 112%, hsl(42 55% 52% / calc(var(--fh-glow) * 0.16)), transparent 70%),
+    var(--app-bg);
+  background-attachment: fixed;
+}
+:root[data-style="glass"][data-tone="cream"] body {
+  background:
+    radial-gradient(820px 560px at 6% 2%, hsl(28 80% 80% / calc(var(--fh-glow) * 1.1)), transparent 68%),
+    radial-gradient(760px 560px at 98% 22%, hsl(140 35% 78% / calc(var(--fh-glow) * 1)), transparent 68%),
+    radial-gradient(900px 520px at 55% 112%, hsl(45 80% 85% / calc(var(--fh-glow) * 1)), transparent 70%),
     var(--app-bg);
   background-attachment: fixed;
 }
@@ -707,9 +775,13 @@ progress {
   backdrop-filter: blur(var(--fh-glass-blur, 28px)) saturate(1.7);
 }
 :root[data-style="glass"] :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-t-2xl).border {
-  background-image: linear-gradient(150deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.05) 100%);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(255, 255, 255, 0.05), 0 22px 46px -24px rgba(0, 0, 0, 0.75);
+  background-image: linear-gradient(150deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 50%, rgba(255, 255, 255, 0.035) 100%);
+  border-color: var(--app-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 22px 46px -26px rgba(0, 0, 0, 0.7);
+}
+:root[data-style="glass"][data-tone="cream"] :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-t-2xl).border {
+  background-image: linear-gradient(150deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 40px -26px rgba(90, 70, 30, 0.45);
 }
 /* Fenster, Menü und Leisten: etwas dichter, damit der Text ruhig bleibt */
 :root[data-style="glass"] :is(aside, header, nav, [role="dialog"]),
@@ -719,9 +791,9 @@ progress {
 }
 :root[data-style="glass"] aside,
 :root[data-style="glass"] .fixed :is(.rounded-2xl, .rounded-t-2xl).border {
-  background-color: rgba(22, 20, 38, 0.74) !important;
+  background-color: color-mix(in srgb, var(--app-bg) 82%, transparent) !important;
 }
-:root[data-style="glass"] header { background-color: rgba(14, 13, 24, 0.55) !important; }
+:root[data-style="glass"] header { background-color: color-mix(in srgb, var(--app-bg) 60%, transparent) !important; }
 /* Knöpfe in Akzentfarbe: leichter Glanz */
 :root[data-style="glass"] button[class*="bg-[var(--app-accent)]"],
 :root[data-style="glass"] .bg-\[var\(--app-accent\)\] {
