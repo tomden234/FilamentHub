@@ -1398,7 +1398,7 @@ export abstract class BambuMqttCore {
     // Alter „Befehl nicht verifiziert“-Fehler, der schon vor diesem Befehl in der HMS-Liste stand, zählt nicht als Ablehnung
     const hmsBlockedBefore = this.hmsBlocked;
     let outcome: 'confirmed' | 'blocked' | 'unconfirmed' = 'unconfirmed';
-    let lastReply = '';
+    const replies: string[] = [];
     for (const [amsId, trayId] of variants) {
       const payload = {
         print: {
@@ -1421,7 +1421,7 @@ export abstract class BambuMqttCore {
         ? await this.waitForExternal(color.slice(0, 6), material, variants.length > 1 ? 3000 : 5000, hmsBlockedBefore)
         : await this.waitForAmsSlot(slotIdx, color.slice(0, 6), material, 5000, hmsBlockedBefore);
       const r = this.amsCmdResult as { result: string; reason: string } | null;
-      if (r) lastReply = `${amsId}/${trayId}: ${r.result || '?'}${r.reason ? ' (' + r.reason + ')' : ''}`;
+      replies.push(`${amsId}/${trayId}: ${r ? (r.result || '?') + (r.reason ? ' (' + r.reason + ')' : '') : 'keine Antwort'}`);
       if (outcome !== 'unconfirmed') break;
     }
     const lan = this.lanMode;
@@ -1448,7 +1448,7 @@ export abstract class BambuMqttCore {
         : emptySlot
         ? `Der Drucker hat Slot ${n} nicht übernommen. Der Slot ist leer: erst Filament einlegen, dann übertragen.`
         : external
-        ? `Der Drucker hat die externe Spule nicht übernommen${lastReply ? ' (Antwort ' + lastReply + ')' : ''}. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen.`
+        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.172 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
         : `Der Drucker hat Slot ${n} nicht übernommen. Bambu lässt Fremd-Befehle über die Cloud oft nicht zu.`;
     return {
       success: false,
@@ -1462,6 +1462,13 @@ export abstract class BambuMqttCore {
       colorHex,
       material
     };
+  }
+
+  /** Kurzer Text, was der Drucker über die externen Spulen meldet (für Fehlermeldungen) */
+  private extSummary(): string {
+    const list = this.virSlots.length ? this.virSlots : this.printData.vt_tray ? [this.printData.vt_tray] : [];
+    if (!list.length) return 'nichts (kein vt_tray/vir_slot)';
+    return list.map((t: any) => `id ${t?.id ?? '?'}=${t?.tray_type || 'leer'} ${String(t?.tray_color || '').slice(0, 6)}`).join(', ');
   }
 
   /** Wartet, bis der Drucker die externe Spule (vt_tray) mit den gesendeten Werten meldet (oder ablehnt). */

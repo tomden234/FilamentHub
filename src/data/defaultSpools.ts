@@ -2520,5 +2520,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.172',
+    label: '1.172 (Extern-Fehler genau)',
+    releaseDate: '02.11.2026',
+    description: 'Wenn der Drucker die Extern-Spule nicht übernimmt, zeigt die Meldung jetzt genau: Version, LAN oder Cloud, welche Befehle probiert wurden, ob der Drucker geantwortet hat und was er über die externen Spulen meldet.',
+    features: [
+      '🩺 Fehlermeldung Extern enthält Version, Verbindung, Versuche und Druckerantwort',
+      '🧵 Anzeige der externen Spulen-Ids (254/255) mit Material und Farbe'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
