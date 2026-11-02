@@ -47,6 +47,7 @@ import { useLanDeduct } from '../hooks/useLanDeduct';
 import { usePrintWatch } from '../hooks/usePrintWatch';
 import { useAutoPowerOff } from '../hooks/useAutoPowerOff';
 import { useDryAutoOff } from '../hooks/useDryAutoOff';
+import { armDryOff, disarmDryOff } from '../utils/dryAutoOff';
 import { useDryLightOff } from '../hooks/useDryLightOff';
 import { useLiveStatus } from '../hooks/useLiveStatus';
 import { amsHumidityPercent } from '../utils/humidity';
@@ -468,7 +469,15 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     },
     notify: setActionToast
   });
-  const applyPrintPlan = (o: { dry: boolean; off: boolean; resumeAt: number }) => {
+  // Vorschlag fürs Trocknen-Fenster: wie bisher aus den Spulen im AMS (fällige zuerst)
+  const suggestDry = (() => {
+    const inAms = amsSpools();
+    if (!inAms.length) return { temp: dryAfter.plan.armed ? dryAfter.plan.temp : 50, hours: dryAfter.plan.armed ? dryAfter.plan.hours : 8 };
+    if (dryAfter.plan.armed) return { temp: dryAfter.plan.temp, hours: dryAfter.plan.hours };
+    const due = inAms.filter(needsDryingNow);
+    return dryPlanFor(due.length ? due : inAms, inAms);
+  })();
+  const applyPrintPlan = (o: { dry: boolean; off: boolean; resumeAt: number; dryTemp: number; dryHours: number; dryOff: boolean }) => {
     const parts: string[] = [];
     if (o.off) {
       if (!autoOff.armed) {
@@ -484,9 +493,15 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
       if (!inAms.length) setActionToast({ text: 'Erst Spulen den AMS-Slots zuordnen.', ok: false });
       else if (!autoOff.armed) {
         const due = inAms.filter(needsDryingNow);
-        const plan = dryPlanFor(due.length ? due : inAms, inAms);
-        armDryAfterNow(plan.temp, plan.hours, (due.length ? due : inAms).map(sp => sp.id));
-        parts.push(`danach trocknen (${plan.temp} °C, ${plan.hours} h)`);
+        // Temperatur und Dauer wie im Fenster gewählt (Vorschlag aus den Spulen ist dort schon voreingestellt)
+        armDryAfterNow(o.dryTemp, o.dryHours, (due.length ? due : inAms).map(sp => sp.id));
+        parts.push(`danach trocknen (${o.dryTemp} °C, ${o.dryHours} h)`);
+        if (o.dryOff && haSwitchState.configured) {
+          armDryOff();
+          parts.push('danach Drucker aus');
+        } else if (!o.dryOff && dryOffState.armed) {
+          disarmDryOff();
+        }
       }
     }
     if (o.resumeAt > Date.now()) {
@@ -1432,6 +1447,10 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
           dryArmed={dryAfter.plan.armed}
           offArmed={autoOff.armed}
           drying={dryLeftNow > 0}
+          suggestTemp={suggestDry.temp}
+          suggestHours={suggestDry.hours}
+          canSwitchOff={haSwitchState.configured}
+          dryOffArmed={dryOffState.armed}
           onApply={o => applyPrintPlan(o)}
           onClose={() => setPrintPlan({ state: 'none' })}
         />

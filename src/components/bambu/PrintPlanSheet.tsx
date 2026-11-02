@@ -12,15 +12,27 @@ interface Props {
   offArmed: boolean;
   /** AMS trocknet gerade */
   drying: boolean;
-  onApply: (o: { dry: boolean; off: boolean; resumeAt: number }) => void;
+  /** Vorschlag für die Trocknung (aus den Spulen im AMS) */
+  suggestTemp: number;
+  suggestHours: number;
+  /** Home Assistant mit Steckdose eingerichtet (für „Nach dem Trocknen ausschalten“) */
+  canSwitchOff: boolean;
+  dryOffArmed: boolean;
+  onApply: (o: { dry: boolean; off: boolean; resumeAt: number; dryTemp: number; dryHours: number; dryOff: boolean }) => void;
   onClose: () => void;
 }
 
 const PRESETS = [1, 2, 3, 4];
+const TEMPS = [45, 50, 55, 60, 65];
+const HOURS = [2, 4, 6, 8, 12, 24];
 
-export const PrintPlanSheet: React.FC<Props> = ({ jobName, dryArmed, offArmed, drying, onApply, onClose }) => {
+export const PrintPlanSheet: React.FC<Props> = ({ jobName, dryArmed, offArmed, drying, suggestTemp, suggestHours, canSwitchOff, dryOffArmed, onApply, onClose }) => {
   const [dry, setDry] = useState(dryArmed);
   const [off, setOff] = useState(offArmed);
+  const [dryTemp, setDryTemp] = useState(Math.max(45, Math.min(65, Math.round(suggestTemp / 5) * 5)));
+  const [dryHours, setDryHours] = useState(Math.max(1, Math.min(24, Math.round(suggestHours))));
+  const [customHours, setCustomHours] = useState(false);
+  const [dryOff, setDryOff] = useState(dryOffArmed);
   const [delayMode, setDelayMode] = useState<'none' | 'preset' | 'in' | 'at'>('none');
   const [presetH, setPresetH] = useState(2);
   const [inH, setInH] = useState('1');
@@ -90,6 +102,65 @@ export const PrintPlanSheet: React.FC<Props> = ({ jobName, dryArmed, offArmed, d
           )}
         </div>
 
+        {dry && !off && (
+          <div className="space-y-2 rounded-xl border p-2.5" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
+            <div className="text-xs font-extrabold">Trocknen: Einstellungen</div>
+            <div>
+              <div className="text-[10px] font-bold mb-1" style={{ color: 'var(--app-text-muted)' }}>Temperatur (AMS 2 Pro: 45–65 °C)</div>
+              <div className="flex flex-wrap gap-1.5">
+                {TEMPS.map(t => (
+                  <button key={t} onClick={() => setDryTemp(t)} className="px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer" style={chip(dryTemp === t)}>
+                    {t} °C
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold mb-1" style={{ color: 'var(--app-text-muted)' }}>Dauer</div>
+              <div className="flex flex-wrap gap-1.5">
+                {HOURS.map(h => (
+                  <button
+                    key={h}
+                    onClick={() => {
+                      setDryHours(h);
+                      setCustomHours(false);
+                    }}
+                    className="px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer"
+                    style={chip(!customHours && dryHours === h)}
+                  >
+                    {h} h
+                  </button>
+                ))}
+                <button onClick={() => setCustomHours(true)} className="px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer" style={chip(customHours)}>
+                  Eigene …
+                </button>
+              </div>
+              {customHours && (
+                <div className="flex items-center gap-1.5 text-xs mt-1.5">
+                  <NumInput type="number" min={1} max={24} value={String(dryHours)} onChange={e => setDryHours(Math.max(1, Math.min(24, Math.round(Number(e.target.value) || 1))))} className="w-16 px-2 py-1 rounded-lg border text-center bg-transparent" style={{ borderColor: 'var(--app-border)' }} />
+                  <span>Stunden (1–24)</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => canSwitchOff && setDryOff(v => !v)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer text-left"
+              style={chip(dryOff && canSwitchOff, !canSwitchOff)}
+            >
+              <Power className="w-4 h-4 shrink-0" />
+              <span>{dryOff && canSwitchOff ? 'Nach dem Trocknen ausschalten ✓' : 'Nach dem Trocknen ausschalten'}</span>
+            </button>
+            {!canSwitchOff && (
+              <p className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+                Dafür braucht die App Home Assistant mit Steckdose (Verbindungen).
+              </p>
+            )}
+            <div className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+              Vorschlag aus deinen Spulen: {Math.max(45, Math.min(65, Math.round(suggestTemp / 5) * 5))} °C, {Math.round(suggestHours)} h
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-extrabold">
             <Timer className="w-4 h-4 text-amber-400" />
@@ -147,7 +218,7 @@ export const PrintPlanSheet: React.FC<Props> = ({ jobName, dryArmed, offArmed, d
         <div className="flex flex-col gap-2">
           <button
             disabled={delayInvalid}
-            onClick={() => onApply({ dry: dry && !off, off, resumeAt: delayMode === 'none' ? 0 : resumeAt })}
+            onClick={() => onApply({ dry: dry && !off, off, resumeAt: delayMode === 'none' ? 0 : resumeAt, dryTemp, dryHours, dryOff: dry && !off && canSwitchOff && dryOff })}
             className="w-full py-2 rounded-xl text-white text-xs font-extrabold cursor-pointer disabled:opacity-50"
             style={{ backgroundImage: 'var(--app-accent-gradient)' }}
           >

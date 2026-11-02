@@ -2641,5 +2641,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.181',
+    label: '1.181 (Trocknen-Optionen)',
+    releaseDate: '02.11.2026',
+    description: 'Im Fenster „Neuer Druck“ gibt es bei „Danach trocknen“ jetzt Einstellungen: Temperatur (45–65 °C), Dauer (2–24 h oder eigene) und „Nach dem Trocknen ausschalten“. Voreingestellt ist der Vorschlag aus deinen Spulen im AMS.',
+    features: [
+      '🌡️ Trocknen: Temperatur wählbar (45, 50, 55, 60, 65 °C)',
+      '⏲️ Trocknen: Dauer wählbar (2, 4, 6, 8, 12, 24 h oder eigene Stunden)',
+      '🔌 „Nach dem Trocknen ausschalten“ direkt im Fenster (mit Home Assistant Steckdose)',
+      '💡 Vorschlag aus den Spulen im AMS bleibt als Startwert'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
