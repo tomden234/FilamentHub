@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Versionsnummer hochzählen (sonst sieht der Updater keine neue Version)
+        run: npm pkg set version=2.1.${{ github.run_number }}
       - name: Update-Quelle auf dieses Repository stellen
         run: sed -i "s#github.com/[^/]*/[^/]*/releases/download/desktop-latest/#github.com/${GITHUB_REPOSITORY}/releases/download/desktop-latest/#" electron-builder.yml
       - name: Oberfläche und Server bauen

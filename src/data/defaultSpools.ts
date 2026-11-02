@@ -2716,5 +2716,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.186',
+    label: '1.186 (Windows-Update-Fix)',
+    releaseDate: '03.11.2026',
+    description: 'Die Windows-App fand keine neuen Versionen mehr, weil die Programm-Versionsnummer seit 1.168 gleich blieb (2.0.181). Jetzt zählt jeder Build automatisch hoch (2.1.x), dann erkennt der Updater jede neue Version.',
+    features: [
+      '🔢 Programm-Version zählt bei jedem Windows-Build automatisch hoch (2.1.Build-Nummer)',
+      '🔄 „Nach Update suchen“ findet damit wieder neue Versionen',
+      '📌 Einmalig: Setup von GitHub neu installieren, danach läuft das Update von selbst'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
