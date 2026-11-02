@@ -5,6 +5,7 @@ import { safeStorage } from './safeStorage';
 import { applySystemBars } from './systemBars';
 
 export interface Customize {
+  color: number; // Farbanteil 0..100: wie viel Farbe (z. B. Lila) in Flächen und Hintergrundlicht steckt
   light: number; // Helligkeit -25..25 (Prozentpunkte Lightness der Flächen)
   tintOn: boolean; // Hintergrund einfärben
   tintHue: number; // 0..360
@@ -22,13 +23,14 @@ export interface Customize {
 }
 
 export const CUSTOM_DEFAULT: Customize = {
-  light: 0, tintOn: false, tintHue: 270, tintAmount: 40, accentOn: false, accentHue: 262, accentSat: 60,
+  color: 100, light: 0, tintOn: false, tintHue: 270, tintAmount: 40, accentOn: false, accentHue: 262, accentSat: 60,
   glass: 0, glow: 50, radius: 100, font: 100, serif: true, calm: false, textWarm: 0
 };
 
 /** Fertige Looks (setzen auch das Design) */
-export const CUSTOM_PRESETS: { id: string; name: string; sub: string; style: 'classic' | 'cozy' | 'night' | 'sand'; c: Partial<Customize> }[] = [
-  { id: 'glass', name: 'Lila Glas', sub: 'Dunkel, durchscheinend, lila Akzent', style: 'night', c: { glass: 70, glow: 80, light: -2, accentOn: true, accentHue: 268, accentSat: 70, radius: 120 } },
+export const CUSTOM_PRESETS: { id: string; name: string; sub: string; style: 'classic' | 'cozy' | 'night' | 'glass' | 'sand'; c: Partial<Customize> }[] = [
+  { id: 'glass', name: 'Flüssigglas', sub: 'Wie iOS: Glas, Lila als Akzent', style: 'glass', c: {} },
+  { id: 'glass-calm', name: 'Glas ruhig', sub: 'Glas, kaum Farbe', style: 'glass', c: { color: 30, glow: 40 } },
   { id: 'deep', name: 'Tief Violett', sub: 'Sehr dunkel, ruhig', style: 'night', c: { light: -5, tintOn: true, tintHue: 265, tintAmount: 55, glow: 35, glass: 15 } },
   { id: 'forest', name: 'Wald Glas', sub: 'Waldgrün mit Glas', style: 'cozy', c: { glass: 55, glow: 70, radius: 115 } },
   { id: 'paper', name: 'Papier', sub: 'Hell, ohne Effekte', style: 'sand', c: { glass: 0, glow: 20, calm: true } }
@@ -145,6 +147,7 @@ export function applyCustomize(): void {
     if (!col) return;
     let [h, s, l] = rgb2hsl(col);
     l += c.light * (k === '--app-border' ? 0.7 : 1);
+    s *= c.color / 100;
     if (c.tintOn) {
       h = c.tintHue;
       s = clamp(s * 0.4 + c.tintAmount * (dark ? 0.55 : 0.4), 0, 90);
@@ -176,7 +179,7 @@ export function applyCustomize(): void {
   }
   // Leuchten
   const glowHue = c.accentOn ? c.accentHue : c.tintOn ? c.tintHue : numberOr(cs.getPropertyValue('--fh-glow-hue'), 150);
-  set('--fh-glow', String(c.glow / 100));
+  set('--fh-glow', String((c.glow / 100) * (c.color / 100)));
   set('--fh-glow-hue', String(glowHue));
   if (c.glass > 0) {
     set('--fh-glass-blur', `${Math.round(6 + c.glass * 0.22)}px`);

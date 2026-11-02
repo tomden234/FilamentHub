@@ -79,11 +79,12 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
           <span>Design</span>
         </span>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {(
             [
               { id: 'classic', name: 'Klassisch', sub: 'Hell oder dunkel, eigene Farbe', bg: '#d6dce5', card: '#eceff4', ink: '#0f172a', acc: '#168a47', serif: false },
               { id: 'cozy', name: 'Cozy', sub: 'Ruhig dunkelgrün', bg: '#14241c', card: '#1c3126', ink: '#e3eadf', acc: '#5fb582', serif: true },
+              { id: 'glass', name: 'Glas', sub: 'Flüssigglas wie iOS', bg: 'linear-gradient(135deg,#3b2a78,#0c0c13 60%,#1f3a78)', card: 'rgba(255,255,255,.14)', ink: '#f3f2f9', acc: '#8a6cf2', serif: false },
               { id: 'night', name: 'Nacht', sub: 'Dunkles Lila', bg: '#16132a', card: '#201c38', ink: '#e6e2f4', acc: '#9484e6', serif: true },
               { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#3f8a5c', serif: true }
             ] as const
@@ -98,8 +99,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 aria-pressed={active}
               >
                 {/* kleine Vorschau */}
-                <div className="rounded-lg p-2 mb-1.5 border" style={{ backgroundColor: o.bg, borderColor: 'rgba(127,127,127,.25)' }}>
-                  <div className="rounded-md p-1.5 space-y-1" style={{ backgroundColor: o.card }}>
+                <div className="rounded-lg p-2 mb-1.5 border" style={{ background: o.bg, borderColor: 'rgba(127,127,127,.25)' }}>
+                  <div className="rounded-md p-1.5 space-y-1" style={{ backgroundColor: o.card, backdropFilter: 'blur(6px)' }}>
                     <div
                       className="text-[11px] leading-none"
                       style={{ color: o.ink, fontFamily: o.serif ? "'Fraunces', Georgia, serif" : "'Plus Jakarta Sans', sans-serif", fontWeight: o.serif ? 600 : 800 }}
@@ -122,7 +123,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         </div>
         {cozy && (
           <p className="text-[10.5px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Cozy, Nacht und Sand haben feste Farben. Feinabstimmung (Helligkeit, Farbton, Glas) machst du unten bei „Helligkeit und Farbe“. Die 5 Helligkeiten und die Akzentfarbe hier gelten nur bei „Klassisch“.
+            Cozy, Glas, Nacht und Sand haben feste Farben. Feinabstimmung (Helligkeit, Farbton, Glas) machst du unten bei „Farbe und Helligkeit“. Die 5 Helligkeiten und die Akzentfarbe hier gelten nur bei „Klassisch“.
           </p>
         )}
       </div>

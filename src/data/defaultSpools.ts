@@ -2447,5 +2447,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.167',
+    label: '1.167 (Flüssigglas & Farbanteil)',
+    releaseDate: '02.11.2026',
+    description: 'Neues Design Glas (Flüssigglas wie iOS): durchscheinende Karten mit Unschärfe, Glanzkante und weichen Farbflecken. Neuer Regler Farbanteil: weniger Lila, nur Akzente. Der Hintergrundglanz wird jetzt in allen Designs sichtbar.',
+    features: [
+      '🪟 Neues Design „Glas“: Flüssigglas wie iOS, dunkles Graphit, Lila nur als Akzent',
+      '🎚️ Regler „Farbanteil“: weniger Lila in Flächen und Hintergrund. „Hell / Dunkel“ ändert nur die Helligkeit',
+      '✨ Neue Looks: Flüssigglas, Glas ruhig',
+      '🌈 Hintergrund-Leuchten war verdeckt und ist jetzt sichtbar (Cozy, Nacht, Sand, Glas)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

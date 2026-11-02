@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* "dark:" folgt dem App-Theme (Graphit/Nacht), nicht der Handy-/PC-Einstellung */
-@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *));
+@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *, [data-style="glass"], [data-style="glass"] *));
 
 /* Die Akzentfarbe steuert auch alle bisherigen "orange"-Klassen (Tailwind), damit Blau, Grün usw. überall greifen */
 @theme {
@@ -647,4 +647,89 @@ progress {
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
+}
+
+/* ───────────── Design „Glas“ (1.167): Flüssigglas wie bei iOS ─────────────
+   Dunkles Graphit, bunte weiche Lichtflecken im Hintergrund, durchscheinende Karten mit starker Unschärfe,
+   hellem Rand oben und großen runden Ecken. Lila nur als Akzent. Feinabstimmung im Customize-Menü. */
+:root[data-style="glass"] {
+  color-scheme: dark;
+  --radius-md: 0.8rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.3rem;
+  --radius-2xl: 1.8rem;
+  --app-bg: #0c0c13;
+  --app-card: rgba(255, 255, 255, 0.075);
+  --app-card-sub: rgba(255, 255, 255, 0.05);
+  --app-border: rgba(255, 255, 255, 0.15);
+  --app-text: #f3f2f9;
+  --app-text-muted: #a9a7bd;
+  --app-input-bg: rgba(0, 0, 0, 0.3);
+  --app-accent: #8a6cf2;
+  --app-accent-hover: #7857e0;
+  --app-accent-sub: rgba(138, 108, 242, 0.2);
+  --app-accent-bar: #a28af7;
+  --app-accent-gradient: linear-gradient(90deg, #6d4fe0 0%, #9078f5 60%, #c3b5fb 100%);
+  --app-accent-text: #cbbfff;
+  --app-danger-text: #ff9fb0;
+  --a-100: #efeaff;
+  --a-300: #cbbfff;
+  --a-400: #b2a2fa;
+  --a-500: #a28af7;
+  --a-600: #8a6cf2;
+  --a-700: #7857e0;
+  --fh-glow-hue: 262;
+  --fh-glass-blur: 28px;
+}
+:root[data-style="glass"] .text-emerald-500 { color: #7fe0b0; }
+:root[data-style="glass"] .text-green-500 { color: #8be3a6; }
+:root[data-style="glass"] .text-rose-500 { color: #ff9fb0; }
+:root[data-style="glass"] .text-amber-500 { color: #ffd37a; }
+:root[data-style="glass"] .text-sky-500 { color: #8fd0ff; }
+:root[data-style="glass"] .text-orange-500 { color: var(--a-300); }
+:root[data-style="glass"] body {
+  background:
+    radial-gradient(760px 520px at 8% 4%, hsl(var(--fh-glow-hue) 85% 58% / calc(var(--fh-glow) * 0.62)), transparent 66%),
+    radial-gradient(720px 560px at 94% 12%, hsl(calc(var(--fh-glow-hue) - 50) 90% 58% / calc(var(--fh-glow) * 0.5)), transparent 66%),
+    radial-gradient(760px 600px at 78% 98%, hsl(calc(var(--fh-glow-hue) + 52) 80% 55% / calc(var(--fh-glow) * 0.42)), transparent 68%),
+    radial-gradient(640px 520px at 6% 96%, hsl(calc(var(--fh-glow-hue) - 90) 80% 52% / calc(var(--fh-glow) * 0.28)), transparent 68%),
+    var(--app-bg);
+  background-attachment: fixed;
+}
+:root[data-style="glass"] :is(h1, h2, h3, h4, .fh-serif) { font-weight: 700; letter-spacing: -0.015em; }
+:root[data-style="glass"] .fh-eyebrow { color: var(--app-accent-text); letter-spacing: 0.16em; }
+:root[data-style="glass"] .bg-black\/75 { background-color: rgba(6, 5, 14, 0.5); }
+
+/* Glas-Karten (Design Glas und der Glas-Regler): Unschärfe, heller Rand, Glanzkante */
+:root[data-style="glass"] :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-t-2xl, .rounded-lg).border,
+:root[data-glass] :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-t-2xl, .rounded-lg).border {
+  -webkit-backdrop-filter: blur(var(--fh-glass-blur, 28px)) saturate(1.7);
+  backdrop-filter: blur(var(--fh-glass-blur, 28px)) saturate(1.7);
+}
+:root[data-style="glass"] :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-t-2xl).border {
+  background-image: linear-gradient(150deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(255, 255, 255, 0.05), 0 22px 46px -24px rgba(0, 0, 0, 0.75);
+}
+/* Fenster, Menü und Leisten: etwas dichter, damit der Text ruhig bleibt */
+:root[data-style="glass"] :is(aside, header, nav, [role="dialog"]),
+:root[data-style="glass"] .fixed :is(.rounded-2xl, .rounded-t-2xl).border {
+  -webkit-backdrop-filter: blur(34px) saturate(1.8);
+  backdrop-filter: blur(34px) saturate(1.8);
+}
+:root[data-style="glass"] aside,
+:root[data-style="glass"] .fixed :is(.rounded-2xl, .rounded-t-2xl).border {
+  background-color: rgba(22, 20, 38, 0.74) !important;
+}
+:root[data-style="glass"] header { background-color: rgba(14, 13, 24, 0.55) !important; }
+/* Knöpfe in Akzentfarbe: leichter Glanz */
+:root[data-style="glass"] button[class*="bg-[var(--app-accent)]"],
+:root[data-style="glass"] .bg-\[var\(--app-accent\)\] {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 55%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px -10px var(--app-accent);
+}
+
+/* Der Hintergrund-Glanz liegt auf dem body: die App-Hülle darf ihn nicht zudecken */
+:root:is([data-style="glass"], [data-style="cozy"], [data-style="night"], [data-style="sand"], [data-custom]) .fh-root {
+  background-color: transparent !important;
 }

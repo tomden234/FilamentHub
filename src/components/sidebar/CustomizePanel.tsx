@@ -77,8 +77,9 @@ export const CustomizePanel: React.FC = () => {
         </div>
       </div>
 
-      <Group title="Helligkeit und Farbe">
-        <Slider label="Helligkeit" hint="Dunkler oder heller, gilt für alle Designs" value={c.light} min={-25} max={25} unit=" %" onChange={n => up({ light: n })} />
+      <Group title="Farbe und Helligkeit">
+        <Slider label="Farbanteil" hint="Weniger = kaum Lila, nur Akzente. Gilt für Flächen und Hintergrundlicht" value={c.color} min={0} max={100} unit=" %" onChange={n => up({ color: n })} />
+        <Slider label="Hell / Dunkel" hint="Flächen heller oder dunkler, die Farbe bleibt gleich" value={c.light} min={-25} max={25} unit=" %" onChange={n => up({ light: n })} />
         <Sw label="Hintergrund einfärben" hint="Tönt Flächen in einer Farbe, z. B. Lila" on={c.tintOn} set={v => up({ tintOn: v })} />
         <Slider label="Farbton Hintergrund" value={c.tintHue} min={0} max={360} unit="°" hue disabled={!c.tintOn} onChange={n => up({ tintHue: n })} />
         <Slider label="Stärke der Tönung" value={c.tintAmount} min={0} max={100} unit=" %" disabled={!c.tintOn} onChange={n => up({ tintAmount: n })} />
