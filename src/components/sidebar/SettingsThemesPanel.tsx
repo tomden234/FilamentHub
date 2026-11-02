@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sliders } from 'lucide-react';
 import { ThemeSelector } from '../ThemeSelector';
+import { CustomizePanel } from './CustomizePanel';
 import type { SidebarProps as ParentProps } from '../Sidebar';
 
 export interface SettingsThemesPanelProps {
@@ -30,7 +31,7 @@ export const SettingsThemesPanel: React.FC<SettingsThemesPanelProps> = ({
                       <span>Design und Farben</span>
                     </span>
                     <p className="text-[11px] leading-relaxed" style={{ color: 'var(--app-text-muted)' }}>
-                      Design „Cozy“ (ruhig dunkel) oder „Sand“ (warm hell). Oder „Klassisch“ mit 5 Helligkeiten und eigener Akzentfarbe. Du kannst jederzeit zurück.
+                      Wähle ein Design und stelle es unten nach deinem Geschmack ein: Helligkeit, Farben, Glas, Rundung, Schrift. „Zurücksetzen“ bringt alles auf Anfang.
                     </p>
                   </div>
 
@@ -41,6 +42,8 @@ export const SettingsThemesPanel: React.FC<SettingsThemesPanelProps> = ({
                     onSetAccent={onSetAccent}
                     compact={false}
                   />
+
+                  <CustomizePanel />
                 </div>
   );
 };

@@ -39,7 +39,6 @@ import { addSystemLog } from './utils/logService';
 import { EditUsedModal } from './components/app/EditUsedModal';
 import { MobileAppView } from './components/app/MobileAppView';
 import { DesktopDashboard } from './components/app/DesktopDashboard';
-import { PrinterDock } from './components/app/PrinterDock';
 import {
   STORAGE_KEY_SPOOLS,
   STORAGE_KEY_HISTORY,
@@ -126,7 +125,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.165';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.166';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -162,8 +161,7 @@ export default function App() {
     // App-Modus ist der Standard: immer in der Android-App, der installierten Web-App und auf dem Handy.
     // Nur auf großen Bildschirmen im Browser wird die zuletzt gewählte Ansicht beibehalten.
     if (isAppShell() || window.innerWidth < 768) return 'app';
-    // Neuer Schlüssel (1.165): am PC startet jetzt die Desktop-Ansicht mit Drucker rechts. Umschalten bleibt gespeichert.
-    return (safeStorage.getItem('filamenthub_device_mode_v2') as DeviceMode) || (window.innerWidth >= 1100 ? 'desktop' : 'app');
+    return (safeStorage.getItem('filamenthub_device_mode') as DeviceMode) || 'app';
   });
 
   // Am PC (Windows-App oder breiter Browser) sitzt der Drucker als feste Leiste rechts. Das Menü links startet IMMER zu
@@ -176,13 +174,13 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
   const [dockPref, setDockPref] = useState<boolean>(false);
-  const rightDock = deviceMode === 'desktop' && !isAppShell() && winW >= 1100;
+  const rightDock = false; // Drucker-Leiste rechts (1.165) wurde in 1.166 wieder entfernt: Drucker steht wieder in der Mitte
   const canDock = deviceMode === 'desktop' && !isAppShell() && winW >= 1560;
   const isDocked = canDock && dockPref;
 
   const handleSetDeviceMode = useCallback((mode: DeviceMode) => {
     setDeviceMode(mode);
-    safeStorage.setItem('filamenthub_device_mode_v2', mode);
+    safeStorage.setItem('filamenthub_device_mode', mode);
   }, []);
 
   // Hauptbestand. Eine leere Liste ist ein gültiger Stand (alles gelöscht), nur ohne gespeicherten Wert startet die App leer.
@@ -1160,6 +1158,7 @@ export default function App() {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onOpenNotices={() => { setIsSidebarOpen(false); setWorkshopTab('notices'); setIsWorkshopOpen(true); }}
         viewMode={viewMode}
         onSetViewMode={handleSetViewMode}
         spools={spools}
@@ -1292,20 +1291,6 @@ export default function App() {
       </main>
       </div>
 
-      {/* Drucker als feste Leiste rechts (PC) */}
-      {rightDock && (
-        <PrinterDock
-          spools={spools}
-          viewMode={viewMode}
-          onDeductWeight={handleDeductWeight}
-          onApplyDryingCredit={handleApplyDryingCredit}
-          onOpenNewSpool={(prefill?: Partial<Spool>) => {
-            setSpoolToEdit(null);
-            setSpoolPrefill(prefill || null);
-            setIsSpoolModalOpen(true);
-          }}
-        />
-      )}
 
       {/* Spool Modal */}
       {isSpoolModalOpen && (

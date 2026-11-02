@@ -539,13 +539,6 @@ progress {
 :root[data-style="night"] .text-amber-500 { color: #e2bd80; }
 :root[data-style="night"] .text-sky-500 { color: #9ac3d6; }
 :root[data-style="night"] .text-orange-500 { color: var(--a-300); }
-:root[data-style="night"] body {
-  background:
-    radial-gradient(1000px 560px at 6% -10%, rgba(147, 128, 235, 0.09), transparent 62%),
-    radial-gradient(900px 600px at 108% 2%, rgba(98, 76, 190, 0.12), transparent 60%),
-    var(--app-bg);
-  background-attachment: fixed;
-}
 :root[data-style="night"] .bg-black\/75 { background-color: rgba(10, 8, 24, 0.62); }
 
 /* Sand: warmes Papier mit Waldgrün, kein reines Weiß */
@@ -574,16 +567,24 @@ progress {
 }
 
 /* Warmer, sehr leichter Lichtschein statt hartem Hintergrund */
-:root[data-style="cozy"] body {
+:root[data-style="cozy"] { --fh-glow-hue: 150; }
+:root[data-style="night"] { --fh-glow-hue: 262; }
+:root[data-style="sand"] { --fh-glow-hue: 45; }
+:root { --fh-glow: 0.5; }
+:root[data-style="cozy"] body,
+:root[data-style="night"] body,
+:root[data-custom] body {
   background:
-    radial-gradient(1000px 560px at 6% -10%, rgba(111, 191, 138, 0.07), transparent 62%),
-    radial-gradient(900px 600px at 108% 2%, rgba(63, 148, 96, 0.12), transparent 60%),
+    radial-gradient(1000px 560px at 6% -10%, hsl(var(--fh-glow-hue) 70% 62% / calc(var(--fh-glow) * 0.16)), transparent 62%),
+    radial-gradient(900px 600px at 108% 2%, hsl(calc(var(--fh-glow-hue) + 18) 60% 48% / calc(var(--fh-glow) * 0.26)), transparent 60%),
+    radial-gradient(800px 500px at 50% 112%, hsl(calc(var(--fh-glow-hue) - 14) 60% 50% / calc(var(--fh-glow) * 0.14)), transparent 65%),
     var(--app-bg);
   background-attachment: fixed;
 }
 :root[data-style="sand"] body {
   background:
-    radial-gradient(1000px 560px at 6% -10%, rgba(255, 250, 235, 0.55), transparent 62%),
+    radial-gradient(1000px 560px at 6% -10%, rgba(255, 250, 235, calc(0.3 + var(--fh-glow) * 0.5)), transparent 62%),
+    radial-gradient(900px 600px at 108% 2%, hsl(var(--fh-glow-hue) 70% 60% / calc(var(--fh-glow) * 0.14)), transparent 60%),
     var(--app-bg);
   background-attachment: fixed;
 }
@@ -625,4 +626,25 @@ progress {
 :root[data-style="sand"] .fh-eyebrow {
   color: var(--app-accent-text);
   letter-spacing: 0.2em;
+}
+
+/* ───────────── Eigenes Aussehen (1.166): Glas, Serifen aus, Bewegung aus ───────────── */
+:root[data-glass] :is(.rounded-2xl, .rounded-xl, .rounded-3xl, .rounded-t-2xl, header, nav, aside).border,
+:root[data-glass] :is(header, aside) {
+  -webkit-backdrop-filter: blur(var(--fh-glass-blur, 14px)) saturate(1.35);
+  backdrop-filter: blur(var(--fh-glass-blur, 14px)) saturate(1.35);
+}
+:root[data-glass] :is(.rounded-2xl, .rounded-xl, .rounded-3xl, .rounded-t-2xl).border {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 18px 40px -26px rgba(0, 0, 0, 0.7);
+}
+:root[data-noserif][data-style] :is(h1, h2, h3, h4, .fh-serif) {
+  font-family: inherit;
+  font-weight: 700;
+}
+:root[data-calm] *, :root[data-calm] *::before, :root[data-calm] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }

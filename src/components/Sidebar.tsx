@@ -22,7 +22,8 @@ import {
   PanelLeftClose,
   ChevronRight,
   ChevronLeft,
-  DatabaseBackup
+  DatabaseBackup,
+  Bell
 } from 'lucide-react';
 import { useBackLayer } from '../utils/backNav';
 import {
@@ -67,6 +68,7 @@ export interface SidebarProps {
   onMarkDried: (spoolId: string) => void;
   onOpenNewSpool: (prefill?: Partial<Spool>) => void;
   onOpenQr: () => void;
+  onOpenNotices?: () => void;
   onSyncCloud: () => void;
   onExportBackup: () => void;
   onImportBackup: (file: File) => void;
@@ -108,6 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAddWeight,
   onMarkDried,
   onOpenNewSpool,
+  onOpenNotices,
   onSyncCloud,
   onExportBackup,
   onImportBackup,
@@ -359,6 +362,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ...(APP ? [] : [{ key: 'gcode', group: 'Helfer', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Druckkosten berechnen', go: () => setActiveTab('gcode') }]),
     { key: 'tools', group: 'Daten', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Cloud-Abgleich', go: () => setActiveTab('tools') },
     { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: () => { setSettingsSubTab('themes'); setActiveTab('settings'); } },
+    { key: 'notices', group: 'Einstellungen', icon: Bell, title: 'Mitteilungen', sub: 'Druck, Trocknen, Feuchte, Spulen, Handy', go: () => onOpenNotices?.() },
     ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material-Einstellungen', sub: 'Trocknung und Leergewichte je Material', go: () => { setSettingsSubTab('presets'); setActiveTab('settings'); } }]),
     { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, NFC-Leser, Status-LED', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen

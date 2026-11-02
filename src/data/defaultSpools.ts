@@ -2431,5 +2431,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.166',
+    label: '1.166 (Customize-Menü & Drucker zurück)',
+    releaseDate: '02.11.2026',
+    description: 'Drucker-Leiste rechts ist wieder weg (Drucker steht wieder in der Mitte). Neu: großes Customize-Menü unter Aussehen mit Helligkeit, Farbton, Akzent, Glas, Leuchten, Rundung und Schrift. Mitteilungen sind wieder im Menü.',
+    features: [
+      '🎛️ Customize-Menü: Helligkeit für alle Designs, Hintergrund-Tönung, eigene Akzentfarbe, Glas-Effekt, Leuchten, Rundung, Schriftgröße, Serifen, ruhige Bewegung',
+      '✨ Fertige Looks: Lila Glas, Tief Violett, Wald Glas, Papier (mit „Zurücksetzen“)',
+      '🖨️ Drucker wieder in der Mitte, rechte Drucker-Leiste entfernt',
+      '🔔 „Mitteilungen“ wieder im Menü unter Einstellungen',
+      '💾 Aussehen bleibt über alle Versionen gespeichert'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

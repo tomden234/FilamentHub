@@ -2,7 +2,7 @@
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { STORAGE_KEY_THEME_BRIGHT } from './storageKeys';
-import { applySystemBars } from './systemBars';
+import { applyCustomize } from './customize';
 
 export type ThemeStyle = 'classic' | 'cozy' | 'night' | 'sand';
 const KEY = 'filamenthub_theme_style';
@@ -26,7 +26,7 @@ export function applyThemeStyle(): void {
   const style = getThemeStyle();
   root.setAttribute('data-style', style);
   root.setAttribute('data-theme', effectiveTheme(safeStorage.getItem(STORAGE_KEY_THEME_BRIGHT) || 'warm'));
-  applySystemBars();
+  applyCustomize(); // setzt auch die Systemleisten
 }
 
 export function setThemeStyle(s: ThemeStyle): void {

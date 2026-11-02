@@ -122,7 +122,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         </div>
         {cozy && (
           <p className="text-[10.5px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Cozy, Nacht und Sand haben feste Farben. Helligkeit und Akzentfarbe unten gelten wieder, sobald du „Klassisch“ wählst. Sie bleiben gespeichert.
+            Cozy, Nacht und Sand haben feste Farben. Feinabstimmung (Helligkeit, Farbton, Glas) machst du unten bei „Helligkeit und Farbe“. Die 5 Helligkeiten und die Akzentfarbe hier gelten nur bei „Klassisch“.
           </p>
         )}
       </div>
