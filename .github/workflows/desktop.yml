@@ -55,8 +55,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          gh release delete desktop-latest --cleanup-tag --yes || true
-          gh release create desktop-latest release/FilamentHub-Setup.exe release/FilamentHub-Setup.exe.blockmap release/latest.yml \
-            --title "FilamentHub Windows v$VERSION" \
-            --notes "Automatisch gebaut aus Commit ${GITHUB_SHA::7}. Installer ausführen (Windows meldet evtl. SmartScreen: Weitere Informationen, Trotzdem ausführen)." \
-            --latest=false
+          NOTES="Automatisch gebaut aus Commit ${GITHUB_SHA::7}. Installer ausführen (Windows meldet evtl. SmartScreen: Weitere Informationen, Trotzdem ausführen)."
+          if gh release view desktop-latest >/dev/null 2>&1; then
+            # Release bleibt bestehen (kein Moment ohne latest.yml): erst Installer, dann latest.yml ersetzen
+            gh release upload desktop-latest release/FilamentHub-Setup.exe release/FilamentHub-Setup.exe.blockmap --clobber
+            gh release upload desktop-latest release/latest.yml --clobber
+            gh release edit desktop-latest --title "FilamentHub Windows v$VERSION" --notes "$NOTES"
+          else
+            gh release create desktop-latest release/FilamentHub-Setup.exe release/FilamentHub-Setup.exe.blockmap release/latest.yml \
+              --title "FilamentHub Windows v$VERSION" --notes "$NOTES" --latest=false
+          fi

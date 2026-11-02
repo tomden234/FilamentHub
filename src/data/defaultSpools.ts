@@ -2730,5 +2730,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.187',
+    label: '1.187 (Update ohne Lücke)',
+    releaseDate: '03.11.2026',
+    description: 'Der Fehler „Cannot find channel latest.yml“ kam, weil die neue Version genau beim Prüfen veröffentlicht wurde. Jetzt bleibt das Release bestehen, und die App probiert es bei so einem Fehler nach 6 Sekunden selbst noch einmal.',
+    features: [
+      '📦 Windows-Release wird ersetzt statt gelöscht: nie ein Moment ohne Update-Datei',
+      '🔁 App wiederholt die Prüfung bei Netz- oder Veröffentlichungs-Fehler automatisch',
+      '💬 Verständliche Meldung statt „Cannot find channel“'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

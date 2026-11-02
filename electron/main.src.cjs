@@ -246,9 +246,16 @@ function setupAutoUpdate() {
       try {
         r = await autoUpdater.checkForUpdates();
       } catch (e0) {
-        if (!isChecksumError(e0)) throw e0;
-        clearUpdaterCache();
-        r = await autoUpdater.checkForUpdates();
+        if (isChecksumError(e0)) {
+          clearUpdaterCache();
+          r = await autoUpdater.checkForUpdates();
+        } else if (/latest\.yml|channel|404|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(String((e0 && e0.message) || e0))) {
+          // Release wird gerade neu veröffentlicht oder kurzer Netzfehler: nach 6 s noch einmal
+          await new Promise(res => setTimeout(res, 6000));
+          r = await autoUpdater.checkForUpdates();
+        } else {
+          throw e0;
+        }
       }
       const v = r && r.updateInfo && r.updateInfo.version;
       if (!v || v === app.getVersion()) {
@@ -258,7 +265,11 @@ function setupAutoUpdate() {
       }
       return { state: 'downloading', version: v };
     } catch (e) {
-      const s = { state: 'error', message: String((e && e.message) || e).slice(0, 160) };
+      const raw = String((e && e.message) || e);
+      const s = {
+        state: 'error',
+        message: /latest\.yml|channel/i.test(raw) ? 'Neue Version wird gerade veröffentlicht. In 3 Minuten nochmal prüfen.' : raw.slice(0, 160)
+      };
       sendStatus(s);
       return s;
     }
