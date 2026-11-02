@@ -2672,5 +2672,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.183',
+    label: '1.183 (Status-LED in der Werkstatt)',
+    releaseDate: '02.11.2026',
+    description: 'Alles zur Status-LED hat jetzt einen eigenen Tab „Status-LED“ in der Werkstatt (Werkzeug-Knopf oben). Unter Verbindungen ist sie weg, unter Mitteilungen war sie nie.',
+    features: [
+      '💡 Werkstatt: neuer Tab „Status-LED“ neben Statistik und Etiketten',
+      '🔌 Verbindungen: nur noch Drucker, Home Assistant, Cloud, NFC-Leser (kurze, sortierte Liste)',
+      '📄 Doku und Menütexte angepasst: Werkstatt > Status-LED'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

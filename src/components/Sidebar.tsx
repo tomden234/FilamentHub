@@ -364,7 +364,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: () => { setSettingsSubTab('themes'); setActiveTab('settings'); } },
     { key: 'notices', group: 'Einstellungen', icon: Bell, title: 'Mitteilungen', sub: 'Druck, Trocknen, Feuchte, Spulen, Handy', go: () => onOpenNotices?.() },
     ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material-Einstellungen', sub: 'Trocknung und Leergewichte je Material', go: () => { setSettingsSubTab('presets'); setActiveTab('settings'); } }]),
-    { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, NFC-Leser, Status-LED', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
+    { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud, NFC-Leser', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
     ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Einstellungen', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }])
   ,

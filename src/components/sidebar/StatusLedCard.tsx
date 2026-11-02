@@ -4,7 +4,7 @@ import { NumInput } from '../ui/NumInput';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { getLedInfo, getLedJson, installStatusLed, setStatusLed } from '../../utils/statusLed';
 
-/** Status-LED (LED-Streifen am Drucker, ESPHome oder WLED): an/aus, Helligkeit, Prüfen. Steht unter Verbindungen, weil es ein Gerät ist. */
+/** Status-LED (LED-Streifen am Drucker, ESPHome oder WLED): an/aus, Helligkeit, Prüfen. Steht in der Werkstatt als eigener Tab „Status-LED“. */
 export const StatusLedCard: React.FC = () => {
   const [s, update] = useWorkshopSettings();
   const [ledInfo, setLedInfo] = useState(getLedInfo());

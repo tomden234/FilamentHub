@@ -23,7 +23,7 @@ Kein zweiter ESP32, kein WLED. Der Streifen ist schon in `hardware/ams-nfc/filam
 
 - Streifen nie vom 3V3-Pin versorgen.
 - `led_count` in der yaml auf die echte LED-Zahl stellen (60 oder 144), dann ESP32 neu flashen (OTA).
-- In Home Assistant erscheinen `light.filament_ams_status_led` und `number.filament_ams_status_led_intensity`. Die App findet beides selbst: **Werkstatt > Mitteilungen > Status-LED** einschalten.
+- In Home Assistant erscheinen `light.filament_ams_status_led` und `number.filament_ams_status_led_intensity`. Die App findet beides selbst: **Werkstatt > Status-LED** einschalten.
 - Ab hier gilt alles weitere (Farben, Automation) wie bei WLED. Der Abschnitt „WLED einrichten“ entfällt bei Variante A.
 
 ## Variante B: eigener ESP32 mit WLED
@@ -65,7 +65,7 @@ USB grün/weiß (Daten) bleiben ab. GPIO27 ist auch auf dem NFC-ESP32 frei, fall
    - Brightness: 30 % (die App stellt später die Helligkeit selbst ein)
    - Speichern.
 3. In Home Assistant: **Einstellungen > Geräte & Dienste**. WLED wird meist automatisch gefunden, dort „Hinzufügen“.
-4. In der FilamentHub-App: **Werkstatt > Mitteilungen > Status-LED** einschalten. Die App findet das Gerät und legt die Automation an.
+4. In der FilamentHub-App: **Werkstatt > Status-LED** einschalten. Die App findet das Gerät und legt die Automation an.
 
 Voraussetzung: Die Bambu-Lab-Integration (HACS) ist in Home Assistant, wie für „Nach Trocknen aus“.
 

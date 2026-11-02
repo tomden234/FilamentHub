@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Cloud, Nfc, Smartphone, ChevronDown, Settings2, Lightbulb } from 'lucide-react';
+import { Home, Cloud, Nfc, Smartphone, ChevronDown, Settings2 } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
 import { IS_DESKTOP, IS_NATIVE, IS_STATIC, isAppShell } from '../../utils/env';
 import { isGistUrl } from '../../utils/gistStore';
@@ -8,7 +8,6 @@ import { getSyncPass } from '../../utils/deviceSync';
 import { CloudStoreCard } from './CloudStoreCard';
 import { DeviceSyncCard } from './DeviceSyncCard';
 import { HomeAssistantCard } from './HomeAssistantCard';
-import { StatusLedCard } from './StatusLedCard';
 import { Toggle } from '../workshop/ui';
 import { ThreeDPrinterIcon } from '../ThreeDPrinterIcon';
 import { usePrinterLive, isPrinterConfigured, isPrinterLan } from '../../utils/printerLive';
@@ -175,9 +174,6 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
         <Toggle on={settings.amsNfcToPrinter} onChange={v => update({ amsNfcToPrinter: v })} label="Material und Farbe an den Drucker senden" hint="Nur wenn der Slot im Drucker nicht passt. Entwickler-Modus nötig." />
       </Row>
 
-      <Row id="led" open={open} setOpen={setOpen} icon={Lightbulb} tone="text-amber-400 bg-amber-500/15 border-amber-500/30" title="Status-LED" status={settings.statusLed ? (haOk ? `An · ${settings.statusLedBrightness} % Helligkeit` : 'An · braucht Home Assistant') : 'Aus'} level={settings.statusLed ? (haOk ? 'ok' : 'warn') : 'off'}>
-        <StatusLedCard />
-      </Row>
 
       {!IS_NATIVE && (
         <Row id="phone" open={open} setOpen={setOpen} icon={Smartphone} tone="text-rose-400 bg-rose-500/15 border-rose-500/30" title="Handy koppeln" status="Android-App installieren, QR-Code" level="off">

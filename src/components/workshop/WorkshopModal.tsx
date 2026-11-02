@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Bell, BellRing, QrCode, SlidersHorizontal, Wrench, X } from 'lucide-react';
+import { BarChart3, Bell, BellRing, Lightbulb, QrCode, SlidersHorizontal, Wrench, X } from 'lucide-react';
 import type { Spool } from '../../types/filament';
 import { NoticesTab } from './NoticesTab';
 import { InboxTab } from './InboxTab';
@@ -7,8 +7,9 @@ import { useUnreadCount } from '../../utils/inbox';
 import { useBackLayer } from '../../utils/backNav';
 import { LabelsTab } from './LabelsTab';
 import { StatsTab } from './StatsTab';
+import { StatusLedCard } from '../sidebar/StatusLedCard';
 
-export type WorkshopTab = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue';
+export type WorkshopTab = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue' | 'led';
 
 // Zwei Fenster in einem: „Mitteilungen“ (Postfach + Einstellungen, geöffnet über die Glocke) und „Werkstatt“ (Etiketten)
 const NOTICE_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -17,7 +18,8 @@ const NOTICE_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{
 ];
 const WORKSHOP_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'stats', label: 'Statistik', icon: BarChart3 },
-  { id: 'labels', label: 'Etiketten', icon: QrCode }
+  { id: 'labels', label: 'Etiketten', icon: QrCode },
+  { id: 'led', label: 'Status-LED', icon: Lightbulb }
 ];
 
 export interface WorkshopModalProps {
@@ -36,7 +38,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
   const unread = useUnreadCount();
   useBackLayer(isOpen, onClose, 'workshop');
   if (!isOpen) return null;
-  const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue';
+  const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue' || tab === 'led';
   // Drucke und Warteschlange stecken jetzt in der Drucker-Leiste rechts; alte Verweise landen bei der Statistik
   if (tab === 'prints' || tab === 'queue') queueMicrotask(() => onTabChange('stats'));
   const tabs = isWorkshop ? WORKSHOP_TABS : NOTICE_TABS;
@@ -63,7 +65,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
             <div>
               <h3 className="font-extrabold text-base tracking-tight">{isWorkshop ? 'Werkstatt' : 'Mitteilungen'}</h3>
               <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
-                {isWorkshop ? 'Drucke mit Foto, Statistik und Etiketten' : 'Was passiert ist und welche Meldungen du willst'}
+                {isWorkshop ? 'Statistik, Etiketten und Status-LED' : 'Was passiert ist und welche Meldungen du willst'}
               </p>
             </div>
           </div>
@@ -110,6 +112,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
           {tab === 'notices' && <NoticesTab />}
           {tab === 'labels' && <LabelsTab spools={spools} preselectId={labelSpoolId} />}
           {tab === 'stats' && <StatsTab spools={spools} />}
+          {tab === 'led' && <StatusLedCard />}
 </div>
       </div>
     </div>
