@@ -10,6 +10,22 @@ interface Layer {
 
 const stack: Layer[] = [];
 let ignorePop = 0;
+const ignoreTimers: ReturnType<typeof setTimeout>[] = [];
+
+/** Eigener history.back(): das zugehörige popstate ignorieren, aber nur kurz. Kommt keins, wird der Zähler wieder freigegeben. */
+function expectOwnPop(): void {
+  ignorePop++;
+  ignoreTimers.push(
+    setTimeout(() => {
+      ignoreTimers.shift();
+      if (ignorePop > 0) ignorePop--;
+    }, 700)
+  );
+}
+function ownPopArrived(): void {
+  const t = ignoreTimers.shift();
+  if (t) clearTimeout(t);
+}
 let installed = false;
 
 function install(): void {
@@ -18,6 +34,7 @@ function install(): void {
   window.addEventListener('popstate', () => {
     if (ignorePop > 0) {
       ignorePop--;
+      ownPopArrived();
       return;
     }
     // Zurück-Taste: oberste Ebene schließen
@@ -30,11 +47,12 @@ function install(): void {
 export function closeTopLayer(): boolean {
   const top = stack.pop();
   if (!top) return false;
-  ignorePop++;
+  expectOwnPop();
   try {
     window.history.back();
   } catch {
     ignorePop--;
+    ownPopArrived();
   }
   top.close();
   return true;
@@ -60,11 +78,12 @@ export function useBackLayer(active: boolean, close: () => void, id: string): vo
       stack.splice(i, 1);
       // Per Knopf geschlossen: den eigenen Verlaufs-Eintrag wieder entfernen (nur wenn er oben liegt)
       if (i === stack.length) {
-        ignorePop++;
+        expectOwnPop();
         try {
           window.history.back();
         } catch {
           ignorePop--;
+          ownPopArrived();
         }
       }
     };

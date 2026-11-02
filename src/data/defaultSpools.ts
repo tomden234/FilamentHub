@@ -2586,5 +2586,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.177',
+    label: '1.177 (Extern 255 & Zurück stabil)',
+    releaseDate: '02.11.2026',
+    description: 'Extern-Spule: Der X2D meldet deine externe Spule als id 255 (PETG weiß), die App zielte auf 254. Jetzt wird 255 gesetzt, gelesen und bestätigt. Esc und Zurück/Vor: ein hängender Zähler konnte Zurück-Tasten verschlucken, er läuft jetzt nach 0,7 s von selbst ab.',
+    features: [
+      '🧵 Extern = id 255 (laut Druckerdaten), Befehl [255/255] zuerst',
+      '⎋ Zurück/Esc: hängender Zähler läuft ab, keine verschluckten Tasten mehr'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

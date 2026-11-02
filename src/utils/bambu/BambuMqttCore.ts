@@ -106,6 +106,9 @@ export interface BambuPrinterStatusResponse {
   };
 }
 
+/** Id der externen Spule des X2D in den Druckerdaten (vir_slot) */
+const EXT_ID = 255;
+
 export abstract class BambuMqttCore {
   private client: MqttLike | null = null;
 
@@ -959,7 +962,7 @@ export abstract class BambuMqttCore {
         const byId = new Map<number, any>(this.virSlots.map((x: any) => [Number(x?.id), x]));
         found.forEach(f => byId.set(Number(f.id), { ...(byId.get(Number(f.id)) || {}), ...f }));
         this.virSlots = [...byId.values()];
-        if (delta.vt_tray === undefined) this.printData.vt_tray = byId.get(254) || this.virSlots[0];
+        if (delta.vt_tray === undefined) this.printData.vt_tray = byId.get(EXT_ID) || this.virSlots[0];
       }
     }
     // Zur Fehlersuche: welche Felder mit „vir/vt/ext/slot“ im Namen schickt der Drucker überhaupt?
@@ -968,8 +971,8 @@ export abstract class BambuMqttCore {
     if (Array.isArray(delta.vir_slot) && delta.vir_slot.length) {
       this.virSlots = delta.vir_slot;
       if (delta.vt_tray === undefined) {
-        // rechte externe Spule (Haupt-Extruder, id 254) ist die „externe“ Spule der App; die linke (255) wird ignoriert
-        this.printData.vt_tray = delta.vir_slot.find((x: any) => Number(x?.id) === 254) || delta.vir_slot[0];
+        // die externe Spule der App ist id 255 (laut Drucker-Daten des X2D); id 254 wird ignoriert
+        this.printData.vt_tray = delta.vir_slot.find((x: any) => Number(x?.id) === EXT_ID) || delta.vir_slot[0];
       }
     }
     if (delta.lights_report !== undefined) {
@@ -1404,8 +1407,8 @@ export abstract class BambuMqttCore {
     // Externe Spule: X1/P1 = ams_id 255 + tray_id 254. H2D/X2D haben zwei externe Plätze (ids 254/255).
     // Weil das beim X2D nicht sicher bekannt ist, werden die Varianten nacheinander probiert, bis der Drucker eine übernimmt.
     const external = Boolean(params.external);
-    // Externe Spule = immer die rechte (id 254). Die linke (255) wird nicht angefasst.
-    const variants: [number, number][] = external ? [[255, 254], [254, 254], [254, 0]] : [[0, Number(slotIdx)]];
+    // Externe Spule des X2D = id 255 (so meldet es der Drucker). [255,255] hat Home Assistant nachweislich angenommen.
+    const variants: [number, number][] = external ? [[255, EXT_ID], [254, EXT_ID], [255, 254]] : [[0, Number(slotIdx)]];
 
     // Keine Schein-Aktualisierung: die Anzeige ändert sich erst, wenn der Drucker den Slot wirklich meldet.
     // Alter „Befehl nicht verifiziert“-Fehler, der schon vor diesem Befehl in der HMS-Liste stand, zählt nicht als Ablehnung
@@ -1476,7 +1479,7 @@ export abstract class BambuMqttCore {
         : emptySlot
         ? `Der Drucker hat Slot ${n} nicht übernommen. Der Slot ist leer: erst Filament einlegen, dann übertragen.`
         : external
-        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.174 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
+        ? `Der Drucker hat die externe Spule nicht übernommen. Am Drucker einmal Filament in die externe Spule laden oder dort von Hand setzen. [v1.177 | ${lan ? 'LAN' : 'Cloud'} | Versuche: ${replies.join('; ')} | Drucker meldet: ${this.extSummary()}]`
         : `Der Drucker hat Slot ${n} nicht übernommen. Bambu lässt Fremd-Befehle über die Cloud oft nicht zu.`;
     return {
       success: false,
@@ -1514,7 +1517,7 @@ export abstract class BambuMqttCore {
     const wantType = material.toUpperCase();
     while (Date.now() - startedAt < timeoutMs) {
       // vt_tray und (H2D/X2D) alle Einträge aus vir_slot prüfen
-      const hit = [this.printData.vt_tray, ...this.virSlots.filter((x: any) => Number(x?.id) !== 255)].some((t: any) => {
+      const hit = [this.printData.vt_tray, ...this.virSlots.filter((x: any) => Number(x?.id) === EXT_ID)].some((t: any) => {
         if (!t) return false;
         const cols: string[] = Array.isArray(t.cols) ? t.cols.map((x: any) => String(x).toUpperCase()) : [];
         const colorOk = !t.tray_color && !cols.length ? true : String(t.tray_color || '').toUpperCase().startsWith(wantColor) || cols.some(x => x.startsWith(wantColor));
