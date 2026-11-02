@@ -77,6 +77,8 @@ export function readExternal(vt: any): HwTray | null {
 
 /** Aktiver Slot (1-4) laut Drucker, sonst null. tray_now zählt über alle AMS: 0-3 = erste Einheit, 254 = extern, 255 = keiner. */
 export function activeSlotFromPrinter(ams: any): number | null {
+  // X2D/H2D: der Kern legt den aktiven Platz der aktiven Düse in fh_active ab (1-4 AMS, 5 extern, 0 keiner)
+  if (ams && typeof ams.fh_active === 'number') return ams.fh_active >= 1 && ams.fh_active <= 5 ? ams.fh_active : null;
   const n = Number(ams?.tray_now);
   if (n === 254) return EXTERNAL_SLOT; // externe Spule aktiv
   return Number.isInteger(n) && n >= 0 && n <= 3 ? n + 1 : null;

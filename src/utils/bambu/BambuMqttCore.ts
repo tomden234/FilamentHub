@@ -137,6 +137,9 @@ export abstract class BambuMqttCore {
   private lightHold: { mode: string; until: number } | null = null;
   /** Externe Spulen (H2D/X2D: vir_slot) */
   private virSlots: any[] = [];
+  /** X2D/H2D: pro Düse der gerade geladene Platz (snow) und welche Düse aktiv ist (state) */
+  private extruderState: number | null = null;
+  private extruderSnow: Record<number, number> = {};
   private extKeys = new Set<string>();
   /** Letzte Antwort des Druckers auf „ams_filament_setting" (zur Prüfung, ob der Slot wirklich gesetzt wurde) */
   private amsCmdResult: { result: string; reason: string; at: number } | null = null;
@@ -953,7 +956,20 @@ export abstract class BambuMqttCore {
 
     if (delta.fan_gear !== undefined) this.printData.fan_gear = Number(delta.fan_gear);
     if (delta.spd_mag !== undefined) this.printData.spd_mag = Number(delta.spd_mag);
+    // 1.179: Beim X2D steht der aktive Platz nicht in ams.tray_now, sondern pro Düse in device.extruder (snow = ams<<8 | tray).
+    const ex = delta.device?.extruder;
+    if (ex && typeof ex === 'object') {
+      if (ex.state !== undefined && Number.isFinite(Number(ex.state))) this.extruderState = Number(ex.state);
+      if (Array.isArray(ex.info)) {
+        for (const e of ex.info) {
+          if ((Number(e?.id) === 0 || Number(e?.id) === 1) && e?.snow !== undefined && Number.isFinite(Number(e.snow))) {
+            this.extruderSnow[Number(e.id)] = Number(e.snow);
+          }
+        }
+      }
+    }
     if (delta.ams !== undefined) this.mergeAms(delta.ams);
+    this.markActiveSlot();
     if (delta.vt_tray !== undefined) this.printData.vt_tray = delta.vt_tray;
     // 1.174: Der X2D legt externe Spulen evtl. an anderer Stelle ab. Überall nach Spulen-Objekten mit id 254/255 suchen.
     {
@@ -1503,6 +1519,33 @@ export abstract class BambuMqttCore {
     if (!Array.isArray(o) && (o.tray_type !== undefined || o.tray_color !== undefined || o.tray_info_idx !== undefined) && [254, 255].includes(Number(o.id))) out.push(o);
     for (const v of Object.values(o)) if (v && typeof v === 'object') this.collectExt(v, depth + 1, out);
     return out;
+  }
+
+  /**
+   * Aktiven Platz der aktiven Düse bestimmen und in ams.fh_active ablegen (1-4 = AMS, 5 = extern, 0 = keiner).
+   * Ohne Düsen-Daten (X1/P1) bleibt es bei tray_now.
+   */
+  private markActiveSlot() {
+    if (this.extruderState !== null && !this.printData.ams) this.printData.ams = {}; // auch ohne AMS (nur externe Spule)
+    const ams = this.printData.ams;
+    if (!ams || typeof ams !== 'object') return;
+    if (this.extruderState === null || Object.keys(this.extruderSnow).length === 0) {
+      delete ams.fh_active;
+      return;
+    }
+    const nozzle = (this.extruderState >> 4) & 0xf;
+    const snow = this.extruderSnow[nozzle === 1 ? 1 : 0];
+    if (snow === undefined) return;
+    const amsIdx = snow >> 8;
+    const tray = snow & 0xff;
+    let slot = 0;
+    if (amsIdx === 255 || amsIdx === 254) {
+      slot = tray === 255 ? 0 : 5; // externe Spule
+    } else {
+      const firstId = Array.isArray(ams.ams) && ams.ams[0] ? Number(ams.ams[0].id) : 0;
+      if (amsIdx === firstId && tray >= 0 && tray <= 3) slot = tray + 1;
+    }
+    ams.fh_active = slot;
   }
 
   /** Kurzer Text, was der Drucker über die externen Spulen meldet (für Fehlermeldungen) */

@@ -2612,5 +2612,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.179',
+    label: '1.179 (Aktiver Slot am X2D)',
+    releaseDate: '02.11.2026',
+    description: 'Extern-Spule klappt jetzt. Neu: Die App erkennt beim X2D, welcher Platz gerade druckt (pro Düse, wie Home Assistant). Damit wird die externe Spule beim Drucken als aktiv markiert und das Gewicht nach dem Druck von der richtigen Spule abgezogen.',
+    features: [
+      '🟢 Aktiver Slot beim X2D aus den Düsen-Daten (device.extruder), nicht mehr nur tray_now',
+      '🧵 Extern (5) wird als aktiv markiert, wenn die zweite Düse druckt',
+      '⚖️ Abzug nach dem Druck nimmt die Spule des erkannten Platzes'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
