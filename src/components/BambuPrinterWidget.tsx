@@ -33,6 +33,7 @@ import { AmsSlotEditModal } from './bambu/AmsSlotEditModal';
 import { StopPinModal } from './bambu/StopPinModal';
 import { PrinterExpandedPanel } from './bambu/PrinterExpandedPanel';
 import { fetchHaCameraBlobUrl } from '../utils/haClient';
+import { fetchPrinterCameraBlobUrl } from '../utils/printerCamera';
 import { useAmsControl } from './bambu/useAmsControl';
 import { useHaSwitch } from './bambu/useHaSwitch';
 import { useGcodeUpload } from './bambu/useGcodeUpload';
@@ -564,7 +565,8 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
         return;
       }
       const t0 = Date.now();
-      const blob = await fetchHaCameraBlobUrl();
+      // Zuerst direkt vom Drucker, nur wenn das nicht geht über Home Assistant
+      const blob = (await fetchPrinterCameraBlobUrl()) || (await fetchHaCameraBlobUrl());
       if (blob && active) {
         try {
           const im = new Image();

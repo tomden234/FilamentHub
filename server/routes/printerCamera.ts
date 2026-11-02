@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { bambuService } from '../bambuMqtt.js';
+import { getPrinterFrame } from '../printerCameraStream.js';
 
 const router = Router();
 
@@ -17,6 +18,17 @@ function safePrinterIp(raw: unknown): string {
   const isPrivate = o[0] === 10 || (o[0] === 192 && o[1] === 168) || (o[0] === 172 && o[1] >= 16 && o[1] <= 31);
   return isPrivate ? o.join('.') : fallback;
 }
+
+// Kamerabild direkt vom Drucker (RTSPS, ohne Home Assistant). Nur mit LAN-Zugang (IP + Zugangscode).
+router.get('/api/printer/camera-frame', async (_req, res) => {
+  const lan = bambuService.getLanAccess();
+  if (!lan) return res.status(503).json({ success: false, error: 'Kamera direkt braucht den LAN-Modus (Drucker-IP und Zugangscode).' });
+  const r = await getPrinterFrame(lan.ip, lan.code);
+  if (!r.ok) return res.status(503).json({ success: false, error: r.error });
+  res.setHeader('Content-Type', 'image/jpeg');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  return res.send(r.jpeg);
+});
 
 // Echte Kamera Snapshot Proxy-Funktion für Bambu Lab X2D (port 80/8080/322)
 router.get('/api/printer/camera-snapshot', async (req, res) => {

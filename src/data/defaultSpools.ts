@@ -2700,5 +2700,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.185',
+    label: '1.185 (Kamera direkt, Slot-Farbe)',
+    releaseDate: '02.11.2026',
+    description: 'Die Kamera holt sich das Bild jetzt direkt vom Drucker (RTSPS im LAN-Modus), Home Assistant ist nur noch die Reserve. Außerdem zeigt ein AMS-Slot die zugewiesene Spule (z. B. Weiß), nicht mehr die Farbe, die der Drucker meldet.',
+    features: [
+      '📷 Kamera direkt vom Drucker (Windows-App, LAN-Modus), ca. 3 Bilder pro Sekunde, ohne Home Assistant',
+      '🛟 Geht das nicht (Android, Browser), nimmt die App wie bisher Home Assistant',
+      '📦 ffmpeg ist in der Windows-App dabei, nichts zu installieren',
+      '⚪ AMS-Slot zeigt die zugewiesene Spule (Farbe, Marke, Material); weicht der Drucker ab, steht das Warnzeichen',
+      '🧪 Bildfolge-Leser mit Test-ffmpeg geprüft'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

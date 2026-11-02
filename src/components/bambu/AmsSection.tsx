@@ -241,10 +241,11 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                 const hwFilled = Boolean(hw && !hw.empty);
                 const wrongSpool = mismatch(spool, hw);
 
-                // Farbe, Hersteller, Material: laut Drucker, wenn dort Filament steckt; sonst die zugewiesene Spule
-                const color = hwFilled ? hw!.colorHex || '#888888' : spool?.colorHex || null;
+                // Farbe, Hersteller, Material: die zugewiesene Spule (deine Wahl) hat Vorrang; ohne Zuweisung zeigt der Slot, was der Drucker meldet.
+                // Passt der Drucker-Wert nicht dazu, steht das Warnzeichen am Slot.
+                const color = spool ? spool.colorHex || '#888888' : hwFilled ? hw!.colorHex || '#888888' : null;
                 const brand = spool ? spool.brand : hwFilled ? hw!.brand || '–' : '';
-                const material = hwFilled ? hw!.type : spool ? spool.material : '';
+                const material = spool ? spool.material : hwFilled ? hw!.type : '';
                 const missingInAms = Boolean(hw?.empty && spool); // Spule zugewiesen, aber Slot ist laut Drucker leer
                 const emptyAll = !color && !brand && !material;
 
@@ -252,7 +253,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                   <div
                     key={slotIdx}
                     onClick={() => setPickSlot(slotIdx)}
-                    title={wrongSpool ? `Zugewiesene Spule passt nicht zum Slot (${spool?.material}). Tippe auf „Mit Drucker synchronisieren“.` : 'Spule für diesen Slot wählen'}
+                    title={wrongSpool ? `Der Drucker meldet hier ${hw?.brand || ''} ${hw?.type || ''}, zugewiesen ist ${spool?.brand} ${spool?.material}. Tippe auf „Mit Drucker synchronisieren“ oder ändere den Slot am Drucker.` : 'Spule für diesen Slot wählen'}
                     className={`relative rounded-xl border px-2 py-1.5 flex items-center gap-2 cursor-pointer transition active:scale-[0.98] ${
                       isActive ? 'ring-2 ring-[#00AE42]/80' : ''
                     } ${missingInAms || emptyAll ? 'border-dashed' : ''}`}
@@ -298,9 +299,9 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
             {(() => {
               const spool = spools.find(s => s.id === (amsSlots[EXTERNAL_SLOT] || ''));
               const hwFilled = Boolean(ext && !ext.empty);
-              const color = hwFilled ? ext!.colorHex || '#888888' : spool?.colorHex || null;
+              const color = spool ? spool.colorHex || '#888888' : hwFilled ? ext!.colorHex || '#888888' : null;
               const brand = spool ? spool.brand : hwFilled ? ext!.brand || '–' : '';
-              const material = hwFilled ? ext!.type : spool ? spool.material : '';
+              const material = spool ? spool.material : hwFilled ? ext!.type : '';
               const emptyAll = !color && !brand && !material;
               const isActive = shownActive === EXTERNAL_SLOT;
               const wrong = mismatch(spool, ext || undefined);

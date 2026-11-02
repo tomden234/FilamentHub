@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, RefreshCw, Lightbulb, Power, Plug, AlertTriangle, Maximize2, X } from 'lucide-react';
 import { diagnoseHaCamera } from '../../utils/haClient';
+import { getPrinterCameraError } from '../../utils/printerCamera';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 
 export interface PrinterCameraPanelProps {
@@ -41,7 +42,8 @@ export const PrinterCameraPanel: React.FC<PrinterCameraPanelProps> = ({
     setChecking(true);
     if (cameraSource === 'ha') {
       const r = await diagnoseHaCamera();
-      setDiag(r.ok ? null : r.text);
+      const direct = getPrinterCameraError();
+      setDiag(r.ok ? null : `${direct ? `Direkt vom Drucker: ${direct}\n\n` : ''}${r.text}`);
     } else {
       setDiag('Die Bambu-Cloud gibt kein Live-Bild heraus. Die Kamera geht über Home Assistant (Einstellungen → Verbindungen) oder per LAN im Heimnetz.');
     }

@@ -26,7 +26,8 @@ function startServer() {
       NODE_ENV: 'production',
       PORT: String(PORT),
       HOST: '127.0.0.1',
-      FILAMENT_DATA_DIR: dataDir
+      FILAMENT_DATA_DIR: dataDir,
+      ...(fs.existsSync(path.join(process.resourcesPath || '', 'ffmpeg.exe')) ? { FFMPEG_PATH: path.join(process.resourcesPath, 'ffmpeg.exe') } : {})
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true

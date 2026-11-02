@@ -12,6 +12,9 @@ files:
   - public/icon.ico
   - package.json
   - "!**/node_modules/**"
+extraResources:
+  - from: node_modules/ffmpeg-static/ffmpeg.exe
+    to: ffmpeg.exe
 win:
   target: nsis
   icon: public/icon.ico
