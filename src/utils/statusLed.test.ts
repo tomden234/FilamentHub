@@ -31,6 +31,18 @@ describe('findLedEntities', () => {
   });
 });
 
+describe('findLedEntities ESPHome (ein ESP32 mit NFC-Lesern)', () => {
+  it('findet Status LED und Status LED Intensity', () => {
+    const esp = [
+      { entity_id: 'light.filament_ams_status_led', attributes: { friendly_name: 'Filament AMS Status LED', effect_list: ['Solid', 'Percent', 'Blink', 'Breathe'] } },
+      { entity_id: 'number.filament_ams_status_led_intensity', attributes: { friendly_name: 'Filament AMS Status LED Intensity' } },
+      ...states.filter(s => s.entity_id.startsWith('sensor.') || s.entity_id.startsWith('automation.'))
+    ];
+    const f = findLedEntities(esp);
+    expect(f.entities).toMatchObject({ light: 'light.filament_ams_status_led', intensity: 'number.filament_ams_status_led_intensity' });
+  });
+});
+
 describe('buildStatusLedConfig', () => {
   const e = findLedEntities(states).entities!;
   const cfg = buildStatusLedConfig(e, 30);

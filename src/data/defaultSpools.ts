@@ -2656,5 +2656,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.182',
+    label: '1.182 (Status-LED am NFC-ESP)',
+    releaseDate: '02.11.2026',
+    description: 'Der LED-Streifen läuft jetzt am selben ESP32 wie die NFC-Leser (ESPHome, GPIO27). Kein zweiter ESP32 und kein WLED nötig. Fortschrittsbalken, Pause, fertig, Fehler und Trocknen funktionieren wie vorher.',
+    features: [
+      '💡 Streifen (WS2812B) an GPIO27 des NFC-ESP32, in filament-ams.yaml eingebaut',
+      '📊 Effekte „Percent“ (Fortschritt in %), „Solid“, „Blink“, „Breathe“ + Regler „Status LED Intensity“',
+      '🔎 App findet den Streifen von selbst (ESPHome oder WLED)',
+      '📄 Plan: 5 V extra Netzteil (min. 2 A), gemeinsame Masse, LED-Anzahl über led_count',
+      '🧪 Neuer Test für die ESPHome-Erkennung'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

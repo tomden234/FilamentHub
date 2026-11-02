@@ -38,7 +38,7 @@ const text = (s: any) => `${id(s)} ${s.attributes?.friendly_name || ''}`.toLower
 /** WLED-Licht, Fortschritts-Regler, Druckstatus, Fortschritt und AMS-Trockenzeit in Home Assistant suchen (rein, ohne Netz) */
 export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID): LedFind {
   const lights = states.filter(s => id(s).startsWith('light.'));
-  // WLED erkennt man am Effekt „Percent“ (Fortschrittsbalken) oder am Namen
+  // ESPHome-/WLED-Streifen erkennt man am Effekt „Percent“ (Fortschrittsbalken) oder am Namen
   const light = lights.find(s => Array.isArray(s.attributes?.effect_list) && s.attributes.effect_list.includes('Percent')) || lights.find(s => /wled/.test(text(s)));
   const sensors = states.filter(s => id(s).startsWith('sensor.'));
   const isStatus = (s: any) => /(print_status|druckstatus)$/.test(id(s)) || /(^|\s)(print status|druckstatus)$/.test(String(s.attributes?.friendly_name || '').toLowerCase());
@@ -50,7 +50,7 @@ export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID)
   const dry = sensors
     .filter(s => /(dry|drying|trock)/.test(text(s)) && /(time|zeit|remaining|rest|left)/.test(text(s)) && !/(temp|humid|feucht)/.test(text(s)))
     .map(id);
-  // Regler „Intensität“ desselben WLED-Geräts: number.<name>_intensity (oder deutsch „intensität“)
+  // Regler „Intensität“ desselben Geräts (ESPHome: „Status LED Intensity“): number.<name>_intensity (oder deutsch „intensität“)
   const base = light ? id(light).replace(/^light\./, '') : '';
   const numbers = states.filter(s => id(s).startsWith('number.'));
   const intensity = numbers.find(s => base && id(s) === `number.${base}_intensity`) || numbers.find(s => base && id(s).startsWith(`number.${base}`) && /(intensity|intensit)/.test(text(s)));
@@ -167,7 +167,7 @@ export async function installStatusLed(): Promise<LedInfo> {
       const f = find.found;
       return setInfo(
         false,
-        `In Home Assistant fehlt ${!f.light ? 'der LED-Streifen (WLED-Integration, Gerät „WLED“ hinzufügen)' : 'der Druckstatus (Bambu-Lab-Integration, HACS)'}. Gefunden: LED ${f.light || 'nein'}, Druckstatus ${f.status || 'nein'}.`
+        `In Home Assistant fehlt ${!f.light ? 'der LED-Streifen (ESPHome-Gerät „filament-ams“ mit Status LED oder WLED in Home Assistant hinzufügen)' : 'der Druckstatus (Bambu-Lab-Integration, HACS)'}. Gefunden: LED ${f.light || 'nein'}, Druckstatus ${f.status || 'nein'}.`
       );
     }
     const e = find.entities;
@@ -199,7 +199,7 @@ export async function installStatusLed(): Promise<LedInfo> {
     safeStorage.setItem(ENTITY_KEY, entity);
     safeStorage.setItem(VERSION_KEY, currentVersion());
     await callHaService('automation', 'turn_off', { entity_id: entity });
-    const note = e.intensity && e.effects.includes('Percent') ? '' : ' Ohne Fortschrittsbalken: Effekt „Percent“ oder Regler „Intensität“ fehlt in WLED, der Druck leuchtet dann einfach blau.';
+    const note = e.intensity && e.effects.includes('Percent') ? '' : ' Ohne Fortschrittsbalken: Effekt „Percent“ oder Regler „Intensität“ fehlt am Streifen (ESPHome/WLED), der Druck leuchtet dann einfach blau.';
     return setInfo(true, `Eingerichtet. LED: ${e.light}.${note}`);
   } catch (err: any) {
     return setInfo(false, `Home Assistant meldet (Schritt: ${step}): ${String(err?.message || err)}`);

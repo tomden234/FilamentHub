@@ -4,7 +4,7 @@ import { NumInput } from '../ui/NumInput';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { getLedInfo, getLedJson, installStatusLed, setStatusLed } from '../../utils/statusLed';
 
-/** Status-LED (WLED-Streifen am Drucker): an/aus, Helligkeit, Prüfen. Steht unter Verbindungen, weil es ein Gerät ist. */
+/** Status-LED (LED-Streifen am Drucker, ESPHome oder WLED): an/aus, Helligkeit, Prüfen. Steht unter Verbindungen, weil es ein Gerät ist. */
 export const StatusLedCard: React.FC = () => {
   const [s, update] = useWorkshopSettings();
   const [ledInfo, setLedInfo] = useState(getLedInfo());
@@ -15,7 +15,7 @@ export const StatusLedCard: React.FC = () => {
           on={s.statusLed}
           onChange={v => update({ statusLed: v })}
           label="LED-Streifen zeigt den Druckerstatus"
-          hint="Blau mit Fortschrittsbalken beim Druck, Gelb bei Pause, Grün wenn fertig, Rot blinkend bei Fehler, Orange atmend beim Trocknen, sonst aus. Braucht den WLED-Streifen in Home Assistant (Aufbau: hardware/status-led). Die App legt die Automation selbst an."
+          hint="Blau mit Fortschrittsbalken beim Druck, Gelb bei Pause, Grün wenn fertig, Rot blinkend bei Fehler, Orange atmend beim Trocknen, sonst aus. Braucht den LED-Streifen am ESP32 (ESPHome, gleicher ESP wie die NFC-Leser) oder WLED, in Home Assistant (Aufbau: hardware/status-led). Die App legt die Automation selbst an."
         />
         {s.statusLed && (
           <>

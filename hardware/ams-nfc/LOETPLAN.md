@@ -58,3 +58,14 @@ Leitungen zum ESP32 insgesamt: 15 (GND, 3V3, 4 Bus, 5 SDA, je 2 für Box- und Tr
 2. NTAG vor Leser 1: `slot_1_tag` zeigt die Nummer.
 3. Box-Sensor: `sensor.filament_ams_box_temperatur` und `_feuchte` haben Werte.
 4. Dann Leser 2 bis 5 einzeln dazu, jedes Mal testen.
+
+
+## Optional: Status-LED (WS2812B) am selben ESP32
+
+| Signal | GPIO | Hinweis |
+|---|---|---|
+| DIN (Daten) | D27 (GPIO27) | kurzes Kabel, optional 330 Ω |
+| GND | GND | gemeinsam mit dem 5-V-Netzteil des Streifens |
+| 5V | nicht am ESP32 | eigenes Netzteil 5 V, min. 2 A |
+
+Details: `hardware/status-led/README.md` (Variante A).

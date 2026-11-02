@@ -8,6 +8,12 @@
 #   Trockner: SDA → GPIO33, SCL → GPIO25, VCC → 3V3, GND → GND → sensor.filament_ams_trockner_feuchte (externer Spulentrockner mit der 5. Spule)
 #   Ohne angeschlossenen Sensor läuft alles andere normal weiter (im Log steht dann nur eine Warnung).
 #
+# Optional: Status-LED (WS2812B-Streifen, 5 V) am SELBEN ESP32, zeigt den Druckerstatus (statt eines zweiten ESP32 mit WLED):
+#   Streifen: DIN → GPIO27, GND → GND (gemeinsam mit dem ESP32), 5V → eigenes 5-V-Netzteil (nicht der 3V3-Pin!)
+#   → light.filament_ams_status_led + number.filament_ams_status_led_intensity. Die FilamentHub-App findet beides selbst
+#   (gleiche Effekt-Namen wie WLED: Percent, Solid, Blink, Breathe) und legt die Automation an.
+#   Ohne angeschlossenen Streifen läuft alles andere normal weiter.
+#
 # Pins funktionieren auf ESP32-Boards mit 30 UND 38 Pins (DevKitC / NodeMCU, WROOM-32).
 
 substitutions:
@@ -20,6 +26,8 @@ substitutions:
   # Bambu-Spulen haben MIFARE-Classic-Chips mit 4-Byte-Nummer (11 Zeichen): die werden ignoriert,
   # die liest das AMS selbst und meldet sie an die App.
   own_uid_min: "20"
+  # Anzahl LEDs am Streifen (60 pro Meter oder 144 pro Meter)
+  led_count: "60"
 
 esphome:
   name: ${name}
@@ -218,6 +226,66 @@ script:
     then:
       - delay: ${remove_after}
       - text_sensor.template.publish: { id: slot_5_tag, state: "" }
+
+# Status-LED: ein Streifen am selben ESP32 (GPIO27 ist frei). Die App steuert ihn wie einen WLED-Streifen:
+# Effekte heißen wie bei WLED, damit sie ihn erkennt: "Percent" (Fortschrittsbalken), "Solid", "Blink", "Breathe".
+# Die Länge des Balkens steht im Regler "Status LED Intensity" (0-255 = 0-100 %), den die App aus dem Druckfortschritt setzt.
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: "Status LED"
+    pin: GPIO27
+    num_leds: ${led_count}
+    chipset: WS2812
+    rgb_order: GRB
+    restore_mode: ALWAYS_OFF
+    default_transition_length: 0s
+    effects:
+      # Einfarbig (Pause, Fertig)
+      - addressable_lambda:
+          name: "Solid"
+          update_interval: 1s
+          lambda: |-
+            it.all() = current_color;
+      # Fortschrittsbalken: so viele LEDs an, wie der Regler sagt (mindestens 1)
+      - addressable_lambda:
+          name: "Percent"
+          update_interval: 500ms
+          lambda: |-
+            int n = it.size();
+            int on = (int) roundf(n * id(led_intensity).state / 255.0f);
+            if (on < 1) on = 1;
+            if (on > n) on = n;
+            for (int i = 0; i < n; i++) it[i] = (i < on) ? current_color : Color::BLACK;
+      # Blinken (Fehler): 0,5 s an, 0,5 s aus
+      - addressable_lambda:
+          name: "Blink"
+          update_interval: 500ms
+          lambda: |-
+            static bool on = false;
+            on = !on;
+            it.all() = on ? current_color : Color::BLACK;
+      # Atmen (Trocknung): langsam heller und dunkler, ca. 4 s pro Zug
+      - addressable_lambda:
+          name: "Breathe"
+          update_interval: 40ms
+          lambda: |-
+            float t = (millis() % 4000) / 4000.0f;
+            float b = 0.15f + 0.85f * (0.5f - 0.5f * cosf(t * 6.2831853f));
+            it.all() = current_color * (uint8_t) (255.0f * b);
+
+number:
+  - platform: template
+    id: led_intensity
+    name: "Status LED Intensity"
+    icon: mdi:chart-timeline-variant
+    min_value: 0
+    max_value: 255
+    step: 1
+    initial_value: 128
+    optimistic: true
+    restore_value: true
+    mode: slider
 
 text_sensor:
   - platform: template

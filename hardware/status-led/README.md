@@ -1,6 +1,6 @@
 # Status-LED: LED-Streifen zeigt den Druckerstatus
 
-Ein WS2812B-Streifen (mit WLED auf einem ESP32) leuchtet passend zum Drucker. Die App legt die nötige Automation in Home Assistant selbst an.
+Ein WS2812B-Streifen leuchtet passend zum Drucker. Die App legt die nötige Automation in Home Assistant selbst an.
 
 | Farbe | Bedeutung |
 |---|---|
@@ -10,6 +10,23 @@ Ein WS2812B-Streifen (mit WLED auf einem ESP32) leuchtet passend zum Drucker. Di
 | Rot blinkend (30 Minuten, dann aus) | Fehler |
 | Orange atmend | AMS trocknet (ohne Druck) |
 | Aus | sonst |
+
+## Variante A (empfohlen): am selben ESP32 wie die NFC-Leser (ESPHome)
+
+Kein zweiter ESP32, kein WLED. Der Streifen ist schon in `hardware/ams-nfc/filament-ams.yaml` eingebaut (GPIO27, Substitution `led_count`).
+
+| Von | Nach |
+|---|---|
+| 5-V-Netzteil (min. 2 A) **+** | Streifen **5V** |
+| 5-V-Netzteil **−** | Streifen **GND** und ESP32 **GND** (gemeinsame Masse, wichtig) |
+| ESP32 **GPIO27** | Streifen **DIN** (kurzes Kabel, optional 330 Ω in Reihe) |
+
+- Streifen nie vom 3V3-Pin versorgen.
+- `led_count` in der yaml auf die echte LED-Zahl stellen (60 oder 144), dann ESP32 neu flashen (OTA).
+- In Home Assistant erscheinen `light.filament_ams_status_led` und `number.filament_ams_status_led_intensity`. Die App findet beides selbst: **Werkstatt > Mitteilungen > Status-LED** einschalten.
+- Ab hier gilt alles weitere (Farben, Automation) wie bei WLED. Der Abschnitt „WLED einrichten“ entfällt bei Variante A.
+
+## Variante B: eigener ESP32 mit WLED
 
 ## Teile
 
