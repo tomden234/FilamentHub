@@ -13,6 +13,15 @@ const JSON_KEY = 'filamenthub_ha_led_json';
 const VERSION_KEY = 'filamenthub_ha_led_version';
 /** Hochzählen, wenn sich die Automation ändert: dann wird sie in Home Assistant neu geschrieben */
 const CONFIG_VERSION = '2';
+export type LedColors = { print: string; pause: string; finish: string; failed: string };
+export const DEFAULT_LED_COLORS: LedColors = { print: '#006eff', pause: '#ffbe00', finish: '#00dc46', failed: '#ff0000' };
+export const hexToRgb = (hex: string): [number, number, number] => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  const n = parseInt(m ? m[1] : '000000', 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+export const rgbToHex = (c: [number, number, number]): string => '#' + c.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+const currentColors = (): LedColors => ({ ...DEFAULT_LED_COLORS, ...(getWorkshopSettings().statusLedColors || {}) });
 /** Nach „fertig“ oder „Fehler“ so lange leuchten lassen, dann aus */
 export const LED_HOLD_MIN = 30;
 
@@ -76,7 +85,7 @@ export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID)
 }
 
 /** Die Automation als Home-Assistant-Konfiguration (rein, damit sie testbar ist) */
-export function buildStatusLedConfig(e: LedEntities, brightnessPct: number): Record<string, any> {
+export function buildStatusLedConfig(e: LedEntities, brightnessPct: number, colors: LedColors = DEFAULT_LED_COLORS): Record<string, any> {
   const pick = (name: string) => (e.effects.includes(name) ? name : 'Solid');
   const hasEffects = e.effects.length > 0;
   const on = (rgb: [number, number, number], effect: string) => ({
@@ -105,15 +114,15 @@ export function buildStatusLedConfig(e: LedEntities, brightnessPct: number): Rec
           {
             conditions: [printing],
             sequence: [
-              on([0, 110, 255], pick('Percent')),
+              on(hexToRgb(colors.print), pick('Percent')),
               ...(e.intensity && e.progress && e.effects.includes('Percent')
                 ? [{ service: 'number.set_value', target: { entity_id: e.intensity }, data: { value: percent } }]
                 : [])
             ]
           },
-          { conditions: [{ condition: 'state', entity_id: e.status, state: 'pause' }], sequence: [on([255, 190, 0], 'Solid')] },
-          { conditions: [{ condition: 'state', entity_id: e.status, state: 'finish' }], sequence: [on([0, 220, 70], 'Solid'), ...hold] },
-          { conditions: [{ condition: 'state', entity_id: e.status, state: 'failed' }], sequence: [on([255, 0, 0], pick('Blink')), ...hold] }
+          { conditions: [{ condition: 'state', entity_id: e.status, state: 'pause' }], sequence: [on(hexToRgb(colors.pause), 'Solid')] },
+          { conditions: [{ condition: 'state', entity_id: e.status, state: 'finish' }], sequence: [on(hexToRgb(colors.finish), 'Solid'), ...hold] },
+          { conditions: [{ condition: 'state', entity_id: e.status, state: 'failed' }], sequence: [on(hexToRgb(colors.failed), pick('Blink')), ...hold] }
         ],
         default: [{ service: 'light.turn_off', target: { entity_id: e.light } }]
       }
@@ -146,7 +155,7 @@ function setInfo(ok: boolean, msg: string): LedInfo {
   return i;
 }
 
-const currentVersion = () => `${CONFIG_VERSION}-${getWorkshopSettings().statusLedBrightness}`;
+const currentVersion = () => `${CONFIG_VERSION}-${getWorkshopSettings().statusLedBrightness}-${Object.values(currentColors()).join('')}`;
 
 async function readStates(): Promise<any[]> {
   const res = await haFetch('/api/states');
@@ -173,7 +182,7 @@ export async function installStatusLed(): Promise<LedInfo> {
       await callHaService('automation', 'turn_off', { entity_id: find.automation });
       return setInfo(true, `Automation in Home Assistant gefunden (${find.automation}). LED: ${e.light}.`);
     }
-    const config = buildStatusLedConfig(e, getWorkshopSettings().statusLedBrightness);
+    const config = buildStatusLedConfig(e, getWorkshopSettings().statusLedBrightness, currentColors());
     safeStorage.setItem(JSON_KEY, JSON.stringify(config, null, 2));
     step = 'Automation anlegen';
     let res: Response;
@@ -272,8 +281,10 @@ export interface LedCall {
 }
 
 /** Home-Assistant-Aufrufe für einen Test-Modus (rein, testbar) */
-export function buildLedTestCalls(kit: LedTestKit, mode: LedTestMode, brightnessPct: number, progressPct = 50): LedCall[] {
-  const m = LED_TEST_MODES.find(x => x.mode === mode);
+export function buildLedTestCalls(kit: LedTestKit, mode: LedTestMode, brightnessPct: number, progressPct = 50, colors?: LedColors): LedCall[] {
+  const base = LED_TEST_MODES.find(x => x.mode === mode);
+  const own = colors && (mode === 'print' || mode === 'pause' || mode === 'finish' || mode === 'failed') ? hexToRgb(colors[mode]) : null;
+  const m = base && { ...base, rgb: own || base.rgb };
   if (!m || !m.rgb) return [{ domain: 'light', service: 'turn_off', data: { entity_id: kit.light } }];
   const effect = kit.effects.includes(m.effect) ? m.effect : 'Solid';
   const calls: LedCall[] = [];
@@ -323,7 +334,7 @@ export function describeLedState(state: any): string {
 }
 
 /** Einen Modus an der echten LED zeigen. Die Automation wird dafür kurz abgeschaltet, damit sie nicht dazwischenfunkt. */
-export async function previewStatusLed(mode: LedTestMode, progressPct = 50): Promise<LedTestResult> {
+export async function previewStatusLed(mode: LedTestMode, progressPct = 50, colors: LedColors = currentColors()): Promise<LedTestResult> {
   const { token } = getHaCredentials();
   if (!token) return { ok: false, text: 'Kein Home-Assistant-Token in der App.' };
   try {
@@ -334,7 +345,7 @@ export async function previewStatusLed(mode: LedTestMode, progressPct = 50): Pro
     }
     const auto = safeStorage.getItem(ENTITY_KEY) || '';
     if (auto) await callHaService('automation', 'turn_off', { entity_id: auto });
-    for (const c of buildLedTestCalls(testKit, mode, getWorkshopSettings().statusLedBrightness, progressPct)) {
+    for (const c of buildLedTestCalls(testKit, mode, getWorkshopSettings().statusLedBrightness, progressPct, colors)) {
       const r = await haCall(c);
       if (!r.ok) return r;
     }

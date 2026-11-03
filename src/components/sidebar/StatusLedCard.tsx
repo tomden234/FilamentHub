@@ -4,6 +4,7 @@ import { NumInput } from '../ui/NumInput';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import {
   LED_ORDER_GUIDE,
+  DEFAULT_LED_COLORS,
   LED_TEST_MODES,
   endStatusLedPreview,
   getLedInfo,
@@ -12,6 +13,7 @@ import {
   previewProgress,
   previewStatusLed,
   setStatusLed,
+  type LedColors,
   type LedTestMode
 } from '../../utils/statusLed';
 
@@ -34,14 +36,31 @@ export const StatusLedCard: React.FC = () => {
   useEffect(
     () => () => {
       if (sliderTimer.current) clearTimeout(sliderTimer.current);
+      if (colorTimer.current) clearTimeout(colorTimer.current);
       if (testModeRef.current) void endStatusLedPreview();
     },
     []
   );
 
+  const colors: LedColors = { ...DEFAULT_LED_COLORS, ...(s.statusLedColors || {}) };
+  const colorTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Farbe ändern: sofort fest gespeichert, an der LED live (kurz gebündelt)
+  const setColor = (mode: keyof LedColors, hex: string) => {
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+    const next = { ...colors, [mode]: hex.toLowerCase() };
+    update({ statusLedColors: next });
+    if (colorTimer.current) clearTimeout(colorTimer.current);
+    colorTimer.current = setTimeout(async () => {
+      const r = await previewStatusLed(mode, testPct, next);
+      setTestMsg(r);
+      setTestMode(r.ok ? mode : null);
+    }, 200);
+  };
+
   const runTest = async (mode: LedTestMode, pct = testPct) => {
     setTestBusy(true);
-    const r = await previewStatusLed(mode, pct);
+    const r = await previewStatusLed(mode, pct, colors);
     setTestBusy(false);
     setTestMsg(r);
     setTestMode(r.ok ? (mode === 'off' ? null : mode) : null);
@@ -129,6 +148,51 @@ export const StatusLedCard: React.FC = () => {
 
         <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
           <div>
+            <p className="text-xs font-bold">Farben einstellen</p>
+            <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+              Farbe wählen: die LED zeigt sie sofort live. Wird automatisch fest gespeichert und für den echten Druck übernommen.
+            </p>
+          </div>
+          {([
+            ['print', 'Druck läuft (mit Balken)'],
+            ['pause', 'Pause'],
+            ['finish', 'Fertig'],
+            ['failed', 'Fehler (blinkt)']
+          ] as const).map(([k, label]) => (
+            <div key={k} className="flex items-center gap-2 text-xs font-bold">
+              <span className="flex-1 min-w-0 truncate">{label}</span>
+              <input
+                type="color"
+                value={colors[k]}
+                onChange={e => setColor(k, e.target.value)}
+                className="w-9 h-7 p-0 border rounded cursor-pointer bg-transparent"
+                style={{ borderColor: 'var(--app-border)' }}
+                aria-label={`Farbe für ${label}`}
+              />
+              <input
+                type="text"
+                key={colors[k]}
+                defaultValue={colors[k]}
+                maxLength={7}
+                onChange={e => setColor(k, e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`)}
+                className="w-20 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none"
+                style={inputStyle}
+                aria-label={`Hex-Farbe für ${label}`}
+              />
+              <button
+                onClick={() => setColor(k, DEFAULT_LED_COLORS[k])}
+                className="px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer"
+                style={buttonStyle}
+                title="Standardfarbe"
+              >
+                ↺
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
+          <div>
             <p className="text-xs font-bold">LED testen</p>
             <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
               Zeigt jeden Modus an der echten LED. Während des Tests ist die automatische Anzeige kurz aus.
@@ -148,7 +212,7 @@ export const StatusLedCard: React.FC = () => {
                 >
                   <span
                     className="w-3 h-3 rounded-full shrink-0 border"
-                    style={{ background: m.rgb ? `rgb(${m.rgb[0]},${m.rgb[1]},${m.rgb[2]})` : 'transparent', borderColor: 'var(--app-border)' }}
+                    style={{ background: m.mode === 'print' || m.mode === 'pause' || m.mode === 'finish' || m.mode === 'failed' ? colors[m.mode] : m.rgb ? `rgb(${m.rgb[0]},${m.rgb[1]},${m.rgb[2]})` : 'transparent', borderColor: 'var(--app-border)' }}
                     aria-hidden
                   />
                   <span className="min-w-0 truncate">{m.label}</span>

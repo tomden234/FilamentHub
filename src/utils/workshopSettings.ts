@@ -70,6 +70,8 @@ export interface WorkshopSettings {
   statusLed: boolean;
   /** Helligkeit der Status-LED in Prozent */
   statusLedBrightness: number;
+  /** Farben der Status-LED je Funktion (Hex), live einstellbar und fest gespeichert */
+  statusLedColors: { print: string; pause: string; finish: string; failed: string };
 }
 
 export const WORKSHOP_SETTINGS_KEY = 'filamenthub_workshop_settings';
@@ -109,7 +111,8 @@ export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   dryOffDelayMin: 3,
   nearlyEmptyG: 30,
   statusLed: false,
-  statusLedBrightness: 30
+  statusLedBrightness: 30,
+  statusLedColors: { print: '#006eff', pause: '#ffbe00', finish: '#00dc46', failed: '#ff0000' }
 };
 
 let cache: WorkshopSettings | null = null;
@@ -159,6 +162,10 @@ function sanitize(raw: (Partial<WorkshopSettings> & Record<string, unknown>) | n
   clampNum('dryOffDelayMin', 1, 30);
   clampNum('nearlyEmptyG', 0, 500);
   clampNum('statusLedBrightness', 5, 100);
+  const defC = DEFAULT_WORKSHOP_SETTINGS.statusLedColors;
+  const rawC: any = (s as any).statusLedColors && typeof (s as any).statusLedColors === 'object' ? (s as any).statusLedColors : {};
+  const okHex = (v: any, d: string) => (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : d);
+  s.statusLedColors = { print: okHex(rawC.print, defC.print), pause: okHex(rawC.pause, defC.pause), finish: okHex(rawC.finish, defC.finish), failed: okHex(rawC.failed, defC.failed) };
   return s;
 }
 

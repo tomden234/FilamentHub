@@ -2831,5 +2831,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.194',
+    label: '1.194 (LED-Farbmenü)',
+    releaseDate: '04.11.2026',
+    description: 'Neues Menü „Farben einstellen“ in der Status-LED: für Druck, Pause, Fertig und Fehler eine eigene Farbe wählen. Die LED zeigt sie sofort live, sie wird automatisch fest gespeichert und für den echten Druck übernommen.',
+    features: [
+      '🎨 Farbwähler und Hex-Feld je Funktion (Druck, Pause, Fertig, Fehler)',
+      '⚡ Live: die echte LED ändert sich beim Wählen',
+      '💾 Fest gespeichert, Automation in Home Assistant wird beim Test-Ende automatisch neu geschrieben',
+      '↺ Knopf für die Standardfarbe'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

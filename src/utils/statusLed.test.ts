@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LED_ORDER_GUIDE, buildLedTestCalls, buildStatusLedConfig, describeLedState, findLedEntities, findLedTestKit, ledIntensityValue } from './statusLed';
+import { LED_ORDER_GUIDE, buildLedTestCalls, buildStatusLedConfig, describeLedState, findLedEntities, findLedTestKit, ledIntensityValue, hexToRgb, rgbToHex } from './statusLed';
 
 const states = [
   { entity_id: 'light.wled', attributes: { friendly_name: 'WLED', effect_list: ['Solid', 'Blink', 'Breathe', 'Percent'] } },
@@ -145,5 +145,23 @@ describe('Farbtest und Diagnose', () => {
     expect(describeLedState({ state: 'on', attributes: { effect: 'Solid', rgb_color: [255, 0, 0], brightness: 77 } })).toBe('Gerät meldet: an, Effekt Solid, Farbe 255/0/0, Helligkeit 30 %.');
     expect(describeLedState({ state: 'off', attributes: {} })).toBe('Gerät meldet: off.');
     expect(describeLedState(null)).toBe('Zustand nicht lesbar.');
+  });
+});
+
+describe('LED-Farben einstellbar', () => {
+  it('Hex <-> RGB', () => {
+    expect(hexToRgb('#ff8000')).toEqual([255, 128, 0]);
+    expect(rgbToHex([0, 110, 255])).toBe('#006eff');
+  });
+  it('Automation und Test nutzen die gewählten Farben', () => {
+    const colors = { print: '#010203', pause: '#0a0b0c', finish: '#111213', failed: '#212223' };
+    const e = { light: 'light.l', status: 'sensor.s', progress: 'sensor.p', intensity: 'number.i', effects: ['Solid', 'Percent', 'Blink'] } as any;
+    const txt = JSON.stringify(buildStatusLedConfig(e, 30, colors));
+    expect(txt).toContain('[1,2,3]');
+    expect(txt).toContain('[10,11,12]');
+    expect(txt).toContain('[17,18,19]');
+    expect(txt).toContain('[33,34,35]');
+    const call = buildLedTestCalls({ light: 'light.l', effects: ['Solid'] }, 'pause', 30, 50, colors)[0].data;
+    expect(call.rgb_color).toEqual([10, 11, 12]);
   });
 });
