@@ -2804,5 +2804,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.192',
+    label: '1.192 (YAML mit Datum)',
+    releaseDate: '03.11.2026',
+    description: 'Die ESP32-Datei filament-ams.yaml trägt jetzt oben ihr Erstelldatum mit Uhrzeit und die Revision. So sieht man sofort, ob die geflashte Datei die neueste ist.',
+    features: [
+      '🕒 Erstellt-Zeile ganz oben in filament-ams.yaml (Datum, Uhrzeit, Revision)',
+      '🔁 Wird bei jeder Änderung der YAML aktualisiert'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
