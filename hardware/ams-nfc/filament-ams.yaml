@@ -30,6 +30,9 @@ substitutions:
   led_count: "144"
   # Helligkeitsgrenze 0-1 (Netzteil 5 V 2 A: 0.15 = max ca. 1,3 A bei weiß bei 144 LEDs). Mit stärkerem Netzteil erhöhen.
   led_cap: "0.15"
+  # Farbreihenfolge des Streifens. Passen die Farben nicht (Rot zeigt Grün usw.): GRB, RGB, BRG, RBG, GBR oder BGR probieren.
+  # Üblich: GRB (WS2812B). Zeigt Rot ein Grün: RGB. Zeigt Rot ein Blau: BRG.
+  led_order: "GRB"
 
 esphome:
   name: ${name}
@@ -239,7 +242,7 @@ light:
     pin: GPIO27
     num_leds: ${led_count}
     chipset: WS2812
-    rgb_order: GRB
+    rgb_order: ${led_order}
     restore_mode: ALWAYS_OFF
     default_transition_length: 0s
     effects:

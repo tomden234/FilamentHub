@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildStatusLedConfig, findLedEntities } from './statusLed';
+import { buildLedTestCalls, buildStatusLedConfig, findLedEntities, findLedTestKit, ledIntensityValue } from './statusLed';
 
 const states = [
   { entity_id: 'light.wled', attributes: { friendly_name: 'WLED', effect_list: ['Solid', 'Blink', 'Breathe', 'Percent'] } },
@@ -74,5 +74,52 @@ describe('buildStatusLedConfig', () => {
   });
   it('ist gültiges JSON', () => {
     expect(() => JSON.parse(json)).not.toThrow();
+  });
+});
+
+describe('LED-Test der Modi', () => {
+  const esp = [
+    { entity_id: 'light.filament_ams_status_led', attributes: { friendly_name: 'Filament AMS Status LED', effect_list: ['Solid', 'Percent', 'Blink', 'Breathe'] } },
+    { entity_id: 'number.filament_ams_status_led_intensity', attributes: { friendly_name: 'Filament AMS Status LED Intensity' } }
+  ];
+  it('findet LED und Regler auch ohne Druckstatus', () => {
+    expect(findLedTestKit(esp)).toEqual({
+      light: 'light.filament_ams_status_led',
+      effects: ['Solid', 'Percent', 'Blink', 'Breathe'],
+      intensity: 'number.filament_ams_status_led_intensity'
+    });
+    expect(findLedTestKit([{ entity_id: 'light.wohnzimmer', attributes: {} }])).toBeNull();
+  });
+  it('rechnet Prozent in Reglerwert um', () => {
+    expect(ledIntensityValue(0)).toBe(0);
+    expect(ledIntensityValue(50)).toBe(128);
+    expect(ledIntensityValue(100)).toBe(255);
+    expect(ledIntensityValue(250)).toBe(255);
+    expect(ledIntensityValue(-5)).toBe(0);
+  });
+  it('Druck: erst Balken setzen, dann blau mit Percent', () => {
+    const kit = findLedTestKit(esp)!;
+    const calls = buildLedTestCalls(kit, 'print', 30, 40);
+    expect(calls).toEqual([
+      { domain: 'number', service: 'set_value', data: { entity_id: 'number.filament_ams_status_led_intensity', value: 102 } },
+      { domain: 'light', service: 'turn_on', data: { entity_id: 'light.filament_ams_status_led', brightness_pct: 30, rgb_color: [0, 110, 255], effect: 'Percent' } }
+    ]);
+  });
+  it('Pause, Fertig, Fehler, Trocknen: Farbe und Effekt wie in der Automation', () => {
+    const kit = findLedTestKit(esp)!;
+    const one = (m: any) => buildLedTestCalls(kit, m, 50)[0].data;
+    expect(one('pause')).toMatchObject({ rgb_color: [255, 190, 0], effect: 'Solid' });
+    expect(one('finish')).toMatchObject({ rgb_color: [0, 220, 70], effect: 'Solid' });
+    expect(one('failed')).toMatchObject({ rgb_color: [255, 0, 0], effect: 'Blink' });
+    expect(one('dry')).toMatchObject({ rgb_color: [255, 110, 0], effect: 'Breathe' });
+  });
+  it('Aus schaltet nur die LED aus', () => {
+    const kit = findLedTestKit(esp)!;
+    expect(buildLedTestCalls(kit, 'off', 30)).toEqual([{ domain: 'light', service: 'turn_off', data: { entity_id: 'light.filament_ams_status_led' } }]);
+  });
+  it('ohne Effekte kein Effekt und ohne Regler kein Balken', () => {
+    const calls = buildLedTestCalls({ light: 'light.x', effects: [] }, 'print', 30, 60);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].data).not.toHaveProperty('effect');
   });
 });

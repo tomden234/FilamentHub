@@ -35,11 +35,22 @@ export interface LedFind {
 const id = (s: any) => String(s.entity_id);
 const text = (s: any) => `${id(s)} ${s.attributes?.friendly_name || ''}`.toLowerCase();
 
+/** LED-Streifen suchen: ESPHome-/WLED-Streifen erkennt man am Effekt „Percent“ (Fortschrittsbalken) oder am Namen */
+function pickLedLight(states: any[]): any | undefined {
+  const lights = states.filter(s => id(s).startsWith('light.'));
+  return lights.find(s => Array.isArray(s.attributes?.effect_list) && s.attributes.effect_list.includes('Percent')) || lights.find(s => /wled/.test(text(s)));
+}
+
+/** Regler „Intensität“ desselben Geräts */
+function pickLedIntensity(states: any[], light: any | undefined): any | undefined {
+  const base = light ? id(light).replace(/^light\./, '') : '';
+  const numbers = states.filter(s => id(s).startsWith('number.'));
+  return numbers.find(s => base && id(s) === `number.${base}_intensity`) || numbers.find(s => base && id(s).startsWith(`number.${base}`) && /(intensity|intensit)/.test(text(s)));
+}
+
 /** WLED-Licht, Fortschritts-Regler, Druckstatus, Fortschritt und AMS-Trockenzeit in Home Assistant suchen (rein, ohne Netz) */
 export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID): LedFind {
-  const lights = states.filter(s => id(s).startsWith('light.'));
-  // ESPHome-/WLED-Streifen erkennt man am Effekt „Percent“ (Fortschrittsbalken) oder am Namen
-  const light = lights.find(s => Array.isArray(s.attributes?.effect_list) && s.attributes.effect_list.includes('Percent')) || lights.find(s => /wled/.test(text(s)));
+  const light = pickLedLight(states);
   const sensors = states.filter(s => id(s).startsWith('sensor.'));
   const isStatus = (s: any) => /(print_status|druckstatus)$/.test(id(s)) || /(^|\s)(print status|druckstatus)$/.test(String(s.attributes?.friendly_name || '').toLowerCase());
   const statusSensor = sensors.find(isStatus);
@@ -51,9 +62,7 @@ export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID)
     .filter(s => /(dry|drying|trock)/.test(text(s)) && /(time|zeit|remaining|rest|left)/.test(text(s)) && !/(temp|humid|feucht)/.test(text(s)))
     .map(id);
   // Regler „Intensität“ desselben Geräts (ESPHome: „Status LED Intensity“): number.<name>_intensity (oder deutsch „intensität“)
-  const base = light ? id(light).replace(/^light\./, '') : '';
-  const numbers = states.filter(s => id(s).startsWith('number.'));
-  const intensity = numbers.find(s => base && id(s) === `number.${base}_intensity`) || numbers.find(s => base && id(s).startsWith(`number.${base}`) && /(intensity|intensit)/.test(text(s)));
+  const intensity = pickLedIntensity(states, light);
   const automation = states.find(s => id(s).startsWith('automation.') && s.attributes?.id === automationId)?.entity_id;
   const found = { light: light ? id(light) : undefined, status: statusSensor ? id(statusSensor) : undefined, progress: progress ? id(progress) : undefined, dry };
   if (!light || !statusSensor) return { found, automation };
@@ -221,4 +230,105 @@ export async function setStatusLed(on: boolean): Promise<boolean> {
   // Gleich einmal auslösen, damit die LED sofort den Stand zeigt
   if (on && r.success) await callHaService('automation', 'trigger', { entity_id: entity, skip_condition: true });
   return r.success;
+}
+
+// ---------- Test der Modi (Knöpfe in Werkstatt > Status-LED) ----------
+export type LedTestMode = 'print' | 'pause' | 'finish' | 'failed' | 'dry' | 'off';
+
+export interface LedTestKit {
+  light: string;
+  effects: string[];
+  intensity?: string;
+}
+
+/** Farben und Effekte wie in der Automation (buildStatusLedConfig) */
+export const LED_TEST_MODES: { mode: LedTestMode; label: string; rgb: [number, number, number] | null; effect: string; hint: string }[] = [
+  { mode: 'print', label: 'Druck läuft', rgb: [0, 110, 255], effect: 'Percent', hint: 'Blau mit Fortschrittsbalken' },
+  { mode: 'pause', label: 'Pause', rgb: [255, 190, 0], effect: 'Solid', hint: 'Gelb' },
+  { mode: 'finish', label: 'Fertig', rgb: [0, 220, 70], effect: 'Solid', hint: 'Grün' },
+  { mode: 'failed', label: 'Fehler', rgb: [255, 0, 0], effect: 'Blink', hint: 'Rot blinkend' },
+  { mode: 'dry', label: 'Trocknen', rgb: [255, 110, 0], effect: 'Breathe', hint: 'Orange atmend' },
+  { mode: 'off', label: 'Aus', rgb: null, effect: 'Solid', hint: 'LED aus' }
+];
+
+/** LED und Regler für den Test finden (braucht keinen Druckstatus, rein, ohne Netz) */
+export function findLedTestKit(states: any[]): LedTestKit | null {
+  const light = pickLedLight(states);
+  if (!light) return null;
+  const intensity = pickLedIntensity(states, light);
+  return {
+    light: id(light),
+    effects: Array.isArray(light.attributes?.effect_list) ? light.attributes.effect_list.map(String) : [],
+    intensity: intensity ? id(intensity) : undefined
+  };
+}
+
+/** Druckfortschritt in Prozent → Reglerwert 0-255 */
+export const ledIntensityValue = (pct: number): number => Math.round((Math.max(0, Math.min(100, pct)) * 255) / 100);
+
+export interface LedCall {
+  domain: string;
+  service: string;
+  data: Record<string, any>;
+}
+
+/** Home-Assistant-Aufrufe für einen Test-Modus (rein, testbar) */
+export function buildLedTestCalls(kit: LedTestKit, mode: LedTestMode, brightnessPct: number, progressPct = 50): LedCall[] {
+  const m = LED_TEST_MODES.find(x => x.mode === mode);
+  if (!m || !m.rgb) return [{ domain: 'light', service: 'turn_off', data: { entity_id: kit.light } }];
+  const effect = kit.effects.includes(m.effect) ? m.effect : 'Solid';
+  const calls: LedCall[] = [];
+  // Zuerst den Balken setzen, dann einschalten: kein Aufblitzen mit altem Stand
+  if (mode === 'print' && kit.intensity && kit.effects.includes('Percent')) {
+    calls.push({ domain: 'number', service: 'set_value', data: { entity_id: kit.intensity, value: ledIntensityValue(progressPct) } });
+  }
+  calls.push({
+    domain: 'light',
+    service: 'turn_on',
+    data: { entity_id: kit.light, brightness_pct: brightnessPct, rgb_color: m.rgb, ...(kit.effects.length ? { effect } : {}) }
+  });
+  return calls;
+}
+
+export interface LedTestResult {
+  ok: boolean;
+  text: string;
+}
+
+let testKit: LedTestKit | null = null;
+
+/** Einen Modus an der echten LED zeigen. Die Automation wird dafür kurz abgeschaltet, damit sie nicht dazwischenfunkt. */
+export async function previewStatusLed(mode: LedTestMode, progressPct = 50): Promise<LedTestResult> {
+  const { token } = getHaCredentials();
+  if (!token) return { ok: false, text: 'Kein Home-Assistant-Token in der App.' };
+  try {
+    if (!testKit || mode === 'print') testKit = findLedTestKit(await readStates());
+    if (!testKit) return { ok: false, text: 'Kein LED-Streifen in Home Assistant gefunden (ESPHome „filament-ams“ mit Status LED).' };
+    const auto = safeStorage.getItem(ENTITY_KEY) || '';
+    if (auto) await callHaService('automation', 'turn_off', { entity_id: auto });
+    for (const c of buildLedTestCalls(testKit, mode, getWorkshopSettings().statusLedBrightness, progressPct)) {
+      const r = await callHaService(c.domain, c.service, c.data);
+      if (!r.success) return { ok: false, text: `Home Assistant meldet: ${r.message}` };
+    }
+    const m = LED_TEST_MODES.find(x => x.mode === mode);
+    const bar = mode === 'print' && !(testKit.intensity && testKit.effects.includes('Percent')) ? ' (Ohne Regler „Intensity“ leuchtet der Streifen nur blau, ohne Balken.)' : '';
+    return { ok: true, text: `${m?.label}: ${m?.hint}.${bar}` };
+  } catch (err: any) {
+    return { ok: false, text: `Home Assistant meldet: ${String(err?.message || err)}` };
+  }
+}
+
+/** Nur den Druckfortschritt-Balken ändern (Slider), während „Druck läuft“ gezeigt wird */
+export async function previewProgress(progressPct: number): Promise<boolean> {
+  if (!testKit?.intensity) return false;
+  const r = await callHaService('number', 'set_value', { entity_id: testKit.intensity, value: ledIntensityValue(progressPct) });
+  return r.success;
+}
+
+/** Test beenden: LED aus. Ist „Status-LED“ gewählt, übernimmt die Automation wieder und zeigt den echten Stand. */
+export async function endStatusLedPreview(): Promise<void> {
+  const entity = testKit?.light;
+  testKit = null;
+  if (entity) await callHaService('light', 'turn_off', { entity_id: entity });
+  if (getWorkshopSettings().statusLed) await setStatusLed(true);
 }

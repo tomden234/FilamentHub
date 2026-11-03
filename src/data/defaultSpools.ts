@@ -2744,5 +2744,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.188',
+    label: '1.188 (LED testen & Strom-Grenze)',
+    releaseDate: '03.11.2026',
+    description: 'Die Status-LED läuft jetzt am ESP32. In der App kann man jeden Modus einzeln an der echten LED testen und den Druckfortschritt mit einem Schieber simulieren. Die Firmware begrenzt den Strom, damit ein kleines 5-V-Netzteil reicht, und die Farbreihenfolge des Streifens ist leicht einstellbar.',
+    features: [
+      '🧪 Werkstatt > Status-LED: Test-Knöpfe für Druck, Pause, Fertig, Fehler, Trocknen und Aus',
+      '🎚️ Schieber „Druckfortschritt simulieren“ (0–100 %): blauer Balken wie beim echten Druck',
+      '↩️ „Test beenden“: LED aus, die automatische Anzeige übernimmt wieder',
+      '⚡ Firmware: Strom-Grenze led_cap (0,15 bei 144 LEDs, 0,6 bei 40 LEDs) für 5 V 2 A',
+      '🎨 Firmware: Farbreihenfolge led_order (GRB, RGB, BRG …) in einer Zeile einstellbar'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
