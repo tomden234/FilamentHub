@@ -1,6 +1,6 @@
 // Status-LED: ein WS2812B-Streifen mit WLED (ESP32) zeigt den Druckerstatus. Die App legt dafür in Home Assistant eine
 // Automation an (wie bei „Nach Trocknen aus“) und schaltet sie nur ein, solange „Status-LED“ gewählt ist.
-// Blau mit Fortschrittsbalken = Druck, Gelb = Pause, Grün = fertig, Rot blinkend = Fehler, Orange atmend = AMS trocknet, sonst aus.
+// Blau mit Fortschrittsbalken = Druck, Gelb = Pause, Grün = fertig, Rot blinkend = Fehler, sonst aus. (Trocknen zeigt die LED nicht.)
 import { callHaService, getHaCredentials } from './haClient';
 import { haFetch } from './haAutoOff';
 import { safeStorage } from './safeStorage';
@@ -12,7 +12,7 @@ const INFO_KEY = 'filamenthub_ha_led_info';
 const JSON_KEY = 'filamenthub_ha_led_json';
 const VERSION_KEY = 'filamenthub_ha_led_version';
 /** Hochzählen, wenn sich die Automation ändert: dann wird sie in Home Assistant neu geschrieben */
-const CONFIG_VERSION = '1';
+const CONFIG_VERSION = '2';
 /** Nach „fertig“ oder „Fehler“ so lange leuchten lassen, dann aus */
 export const LED_HOLD_MIN = 30;
 
@@ -22,13 +22,12 @@ export interface LedEntities {
   intensity?: string;
   status: string;
   progress?: string;
-  dry: string[];
 }
 
 export interface LedFind {
   entities?: LedEntities;
   /** Was gefunden wurde, für die Fehlermeldung */
-  found: { light?: string; status?: string; progress?: string; dry: string[] };
+  found: { light?: string; status?: string; progress?: string };
   automation?: string;
 }
 
@@ -48,7 +47,7 @@ function pickLedIntensity(states: any[], light: any | undefined): any | undefine
   return numbers.find(s => base && id(s) === `number.${base}_intensity`) || numbers.find(s => base && id(s).startsWith(`number.${base}`) && /(intensity|intensit)/.test(text(s)));
 }
 
-/** WLED-Licht, Fortschritts-Regler, Druckstatus, Fortschritt und AMS-Trockenzeit in Home Assistant suchen (rein, ohne Netz) */
+/** WLED-Licht, Fortschritts-Regler, Druckstatus und Fortschritt in Home Assistant suchen (rein, ohne Netz) */
 export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID): LedFind {
   const light = pickLedLight(states);
   const sensors = states.filter(s => id(s).startsWith('sensor.'));
@@ -58,13 +57,10 @@ export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID)
   const progress =
     sensors.find(s => prefix && id(s).startsWith(prefix) && /(print_progress|druckfortschritt)$/.test(id(s))) ||
     sensors.find(s => /(print_progress|druckfortschritt)$/.test(id(s)) || /(print progress|druckfortschritt|fortschritt)$/.test(String(s.attributes?.friendly_name || '').toLowerCase()));
-  const dry = sensors
-    .filter(s => /(dry|drying|trock)/.test(text(s)) && /(time|zeit|remaining|rest|left)/.test(text(s)) && !/(temp|humid|feucht)/.test(text(s)))
-    .map(id);
   // Regler „Intensität“ desselben Geräts (ESPHome: „Status LED Intensity“): number.<name>_intensity (oder deutsch „intensität“)
   const intensity = pickLedIntensity(states, light);
   const automation = states.find(s => id(s).startsWith('automation.') && s.attributes?.id === automationId)?.entity_id;
-  const found = { light: light ? id(light) : undefined, status: statusSensor ? id(statusSensor) : undefined, progress: progress ? id(progress) : undefined, dry };
+  const found = { light: light ? id(light) : undefined, status: statusSensor ? id(statusSensor) : undefined, progress: progress ? id(progress) : undefined };
   if (!light || !statusSensor) return { found, automation };
   return {
     found,
@@ -74,8 +70,7 @@ export function findLedEntities(states: any[], automationId = LED_AUTOMATION_ID)
       effects: Array.isArray(light.attributes?.effect_list) ? light.attributes.effect_list.map(String) : [],
       intensity: intensity ? id(intensity) : undefined,
       status: id(statusSensor),
-      progress: progress ? id(progress) : undefined,
-      dry
+      progress: progress ? id(progress) : undefined
     }
   };
 }
@@ -92,22 +87,16 @@ export function buildStatusLedConfig(e: LedEntities, brightnessPct: number): Rec
   const hold = [{ delay: { minutes: LED_HOLD_MIN } }, { service: 'light.turn_off', target: { entity_id: e.light } }];
   const printing = { condition: 'state', entity_id: e.status, state: ['running', 'prepare'] };
   const percent = e.progress ? `{{ ((states('${e.progress}') | float(0)) * 2.55) | round(0) | int }}` : '';
-  const dryAny = e.dry.length ? `{{ [${e.dry.map(d => `states('${d}') | float(0)`).join(', ')}] | max > 0 }}` : '{{ false }}';
   return {
     id: LED_AUTOMATION_ID,
     alias: 'FilamentHub: Status-LED',
     description:
-      'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Status-LED“ gewählt ist. Blau mit Fortschrittsbalken = Druck, Gelb = Pause, Grün = fertig, Rot = Fehler, Orange = AMS trocknet, sonst aus.',
+      'Von der FilamentHub-App angelegt. Wird nur eingeschaltet, wenn „Status-LED“ gewählt ist. Blau mit Fortschrittsbalken = Druck, Gelb = Pause, Grün = fertig, Rot = Fehler, sonst aus.',
     mode: 'restart',
     trigger: [
       { platform: 'homeassistant', event: 'start' },
       { platform: 'state', entity_id: e.status },
       ...(e.progress ? [{ platform: 'state', entity_id: e.progress }] : []),
-      // Trocknung beginnt (Rest-Trockenzeit über 0) oder endet (0): nicht bei jeder Minute dazwischen
-      ...e.dry.flatMap(d => [
-        { platform: 'numeric_state', entity_id: d, above: 0 },
-        { platform: 'numeric_state', entity_id: d, below: 0.01 }
-      ])
     ],
     condition: [],
     action: [
@@ -124,8 +113,7 @@ export function buildStatusLedConfig(e: LedEntities, brightnessPct: number): Rec
           },
           { conditions: [{ condition: 'state', entity_id: e.status, state: 'pause' }], sequence: [on([255, 190, 0], 'Solid')] },
           { conditions: [{ condition: 'state', entity_id: e.status, state: 'finish' }], sequence: [on([0, 220, 70], 'Solid'), ...hold] },
-          { conditions: [{ condition: 'state', entity_id: e.status, state: 'failed' }], sequence: [on([255, 0, 0], pick('Blink')), ...hold] },
-          { conditions: [{ condition: 'template', value_template: dryAny }], sequence: [on([255, 110, 0], pick('Breathe'))] }
+          { conditions: [{ condition: 'state', entity_id: e.status, state: 'failed' }], sequence: [on([255, 0, 0], pick('Blink')), ...hold] }
         ],
         default: [{ service: 'light.turn_off', target: { entity_id: e.light } }]
       }
@@ -233,7 +221,7 @@ export async function setStatusLed(on: boolean): Promise<boolean> {
 }
 
 // ---------- Test der Modi (Knöpfe in Werkstatt > Status-LED) ----------
-export type LedTestMode = 'print' | 'pause' | 'finish' | 'failed' | 'dry' | 'colortest' | 'off';
+export type LedTestMode = 'print' | 'pause' | 'finish' | 'failed' | 'colortest' | 'off';
 
 export interface LedTestKit {
   light: string;
@@ -247,7 +235,6 @@ export const LED_TEST_MODES: { mode: LedTestMode; label: string; rgb: [number, n
   { mode: 'pause', label: 'Pause', rgb: [255, 190, 0], effect: 'Solid', hint: 'Gelb' },
   { mode: 'finish', label: 'Fertig', rgb: [0, 220, 70], effect: 'Solid', hint: 'Grün' },
   { mode: 'failed', label: 'Fehler', rgb: [255, 0, 0], effect: 'Blink', hint: 'Rot blinkend' },
-  { mode: 'dry', label: 'Trocknen', rgb: [255, 110, 0], effect: 'Breathe', hint: 'Orange atmend' },
   { mode: 'colortest', label: 'Farbtest', rgb: [255, 255, 255], effect: 'Farbtest', hint: 'Zeigt nacheinander Rot, Grün, Blau (je 2 s)' },
   { mode: 'off', label: 'Aus', rgb: null, effect: 'Solid', hint: 'LED aus' }
 ];

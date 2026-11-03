@@ -245,6 +245,8 @@ light:
     rgb_order: ${led_order}
     restore_mode: ALWAYS_OFF
     default_transition_length: 0s
+    # Ohne Gamma-Kurve (Standard 2.8 würde bei kleinen Werten die Farben verfälschen, z. B. Bernstein wird Gelbgrün).
+    gamma_correct: 1.0
     effects:
       # Einfarbig (Pause, Fertig)
       - addressable_lambda:

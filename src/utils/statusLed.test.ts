@@ -13,14 +13,13 @@ const states = [
 ];
 
 describe('findLedEntities', () => {
-  it('findet WLED, Regler, Status, Fortschritt und Trockenzeit', () => {
+  it('findet WLED, Regler, Status und Fortschritt', () => {
     const f = findLedEntities(states);
     expect(f.entities).toMatchObject({
       light: 'light.wled',
       intensity: 'number.wled_intensity',
       status: 'sensor.x2d_druckstatus',
-      progress: 'sensor.x2d_druckfortschritt',
-      dry: ['sensor.x2d_ams_2_pro_rest_trockenzeit']
+      progress: 'sensor.x2d_druckfortschritt'
     });
     expect(f.automation).toBe('automation.led');
   });
@@ -49,7 +48,7 @@ describe('buildStatusLedConfig', () => {
   const json = JSON.stringify(cfg);
   it('hat Neustart-Modus und Trigger', () => {
     expect(cfg.mode).toBe('restart');
-    expect(cfg.trigger.length).toBe(1 + 1 + 1 + 2);
+    expect(cfg.trigger.length).toBe(1 + 1 + 1);
   });
   it('Druck: blau mit Percent und Fortschritt', () => {
     const c = cfg.action[0].choose[0].sequence;
@@ -70,7 +69,12 @@ describe('buildStatusLedConfig', () => {
   });
   it('Effekt fehlt in WLED: Solid', () => {
     const c3 = buildStatusLedConfig({ ...e, effects: ['Solid'] }, 30);
-    expect(c3.action[0].choose[4].sequence[0].data.effect).toBe('Solid');
+    expect(c3.action[0].choose[3].sequence[0].data.effect).toBe('Solid');
+  });
+  it('zeigt kein Trocknen: nur Druck, Pause, fertig, Fehler', () => {
+    expect(cfg.action[0].choose).toHaveLength(4);
+    expect(json).not.toContain('Breathe');
+    expect(json).not.toContain('trocken');
   });
   it('ist gültiges JSON', () => {
     expect(() => JSON.parse(json)).not.toThrow();
@@ -105,13 +109,12 @@ describe('LED-Test der Modi', () => {
       { domain: 'light', service: 'turn_on', data: { entity_id: 'light.filament_ams_status_led', brightness_pct: 30, rgb_color: [0, 110, 255], effect: 'Percent' } }
     ]);
   });
-  it('Pause, Fertig, Fehler, Trocknen: Farbe und Effekt wie in der Automation', () => {
+  it('Pause, Fertig, Fehler: Farbe und Effekt wie in der Automation', () => {
     const kit = findLedTestKit(esp)!;
     const one = (m: any) => buildLedTestCalls(kit, m, 50)[0].data;
     expect(one('pause')).toMatchObject({ rgb_color: [255, 190, 0], effect: 'Solid' });
     expect(one('finish')).toMatchObject({ rgb_color: [0, 220, 70], effect: 'Solid' });
     expect(one('failed')).toMatchObject({ rgb_color: [255, 0, 0], effect: 'Blink' });
-    expect(one('dry')).toMatchObject({ rgb_color: [255, 110, 0], effect: 'Breathe' });
   });
   it('Aus schaltet nur die LED aus', () => {
     const kit = findLedTestKit(esp)!;

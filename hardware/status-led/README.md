@@ -8,7 +8,6 @@ Ein WS2812B-Streifen leuchtet passend zum Drucker. Die App legt die nötige Auto
 | Gelb | Pause |
 | Grün (30 Minuten, dann aus) | Druck fertig |
 | Rot blinkend (30 Minuten, dann aus) | Fehler |
-| Orange atmend | AMS trocknet (ohne Druck) |
 | Aus | sonst |
 
 ## Variante A (empfohlen): am selben ESP32 wie die NFC-Leser (ESPHome)

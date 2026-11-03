@@ -2790,5 +2790,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.191',
+    label: '1.191 (LED-Farben echt)',
+    releaseDate: '03.11.2026',
+    description: 'Die LED-Farben waren verfälscht: Pause kam gelbgrün statt bernsteingelb, Fertig blau statt grün. Grund war die Gamma-Kurve von ESPHome, die bei der kleinen Strom-Grenze die Werte zerquetscht. Jetzt ist sie aus, die Farben stimmen. „Trocknen“ ist aus der LED entfernt.',
+    features: [
+      '🎨 Firmware: gamma_correct 1.0, Farben stimmen auch bei kleiner Helligkeit (Pause bernsteingelb, Fertig grün)',
+      '🧹 Trocknen ist keine LED-Anzeige mehr: Test-Knopf und Automation entfernt (Automation wird neu geschrieben)',
+      '🧪 Test: Automation hat nur noch Druck, Pause, Fertig, Fehler'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
