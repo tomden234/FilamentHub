@@ -27,9 +27,9 @@ substitutions:
   # die liest das AMS selbst und meldet sie an die App.
   own_uid_min: "20"
   # Anzahl LEDs am Streifen (60 pro Meter oder 144 pro Meter)
-  led_count: "40"
-  # Helligkeitsgrenze 0-1 (Netzteil 5 V 2 A: 0.6 = max ca. 1,5 A bei weiß bei 40 LEDs). Mit stärkerem Netzteil erhöhen.
-  led_cap: "0.6"
+  led_count: "144"
+  # Helligkeitsgrenze 0-1 (Netzteil 5 V 2 A: 0.15 = max ca. 1,3 A bei weiß bei 144 LEDs). Mit stärkerem Netzteil erhöhen.
+  led_cap: "0.15"
 
 esphome:
   name: ${name}
