@@ -233,7 +233,7 @@ export async function setStatusLed(on: boolean): Promise<boolean> {
 }
 
 // ---------- Test der Modi (Knöpfe in Werkstatt > Status-LED) ----------
-export type LedTestMode = 'print' | 'pause' | 'finish' | 'failed' | 'dry' | 'off';
+export type LedTestMode = 'print' | 'pause' | 'finish' | 'failed' | 'dry' | 'colortest' | 'off';
 
 export interface LedTestKit {
   light: string;
@@ -248,7 +248,19 @@ export const LED_TEST_MODES: { mode: LedTestMode; label: string; rgb: [number, n
   { mode: 'finish', label: 'Fertig', rgb: [0, 220, 70], effect: 'Solid', hint: 'Grün' },
   { mode: 'failed', label: 'Fehler', rgb: [255, 0, 0], effect: 'Blink', hint: 'Rot blinkend' },
   { mode: 'dry', label: 'Trocknen', rgb: [255, 110, 0], effect: 'Breathe', hint: 'Orange atmend' },
+  { mode: 'colortest', label: 'Farbtest', rgb: [255, 255, 255], effect: 'Farbtest', hint: 'Zeigt nacheinander Rot, Grün, Blau (je 2 s)' },
   { mode: 'off', label: 'Aus', rgb: null, effect: 'Solid', hint: 'LED aus' }
+];
+
+/** Farbtest zeigt Rot, Grün, Blau. Was der Streifen wirklich zeigt, sagt, welches led_order in der YAML nötig ist
+ *  (die Firmware sendet GRB: je Streifen-Typ kommt eine feste Reihenfolge heraus). */
+export const LED_ORDER_GUIDE: { seen: string; order: string }[] = [
+  { seen: 'Rot, Grün, Blau', order: 'GRB' },
+  { seen: 'Grün, Rot, Blau', order: 'RGB' },
+  { seen: 'Rot, Blau, Grün', order: 'BRG' },
+  { seen: 'Blau, Rot, Grün', order: 'RBG' },
+  { seen: 'Blau, Grün, Rot', order: 'GBR' },
+  { seen: 'Grün, Blau, Rot', order: 'BGR' }
 ];
 
 /** LED und Regler für den Test finden (braucht keinen Druckstatus, rein, ohne Netz) */
@@ -297,6 +309,28 @@ export interface LedTestResult {
 
 let testKit: LedTestKit | null = null;
 
+/** Service-Aufruf mit genauem Fehlertext (Status und Antwort von Home Assistant), geht bei Browser-Sperre über den eigenen Server */
+async function haCall(c: LedCall): Promise<LedTestResult> {
+  try {
+    const res = await haFetch(`/api/services/${c.domain}/${c.service}`, { method: 'POST', body: JSON.stringify(c.data) });
+    if (res.ok) return { ok: true, text: '' };
+    const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160);
+    return { ok: false, text: `${c.domain}.${c.service} → Home Assistant ${res.status}${body ? `: ${body}` : ''}` };
+  } catch (err: any) {
+    return { ok: false, text: `${c.domain}.${c.service} → nicht erreichbar (${String(err?.message || err)})` };
+  }
+}
+
+/** Was die LED laut Home Assistant gerade tut (rein, testbar) */
+export function describeLedState(state: any): string {
+  if (!state) return 'Zustand nicht lesbar.';
+  const a = state.attributes || {};
+  if (state.state !== 'on') return `Gerät meldet: ${state.state}.`;
+  const rgb = Array.isArray(a.rgb_color) ? `Farbe ${a.rgb_color.join('/')}` : 'Farbe unbekannt';
+  const bri = typeof a.brightness === 'number' ? `Helligkeit ${Math.round((a.brightness / 255) * 100)} %` : 'Helligkeit unbekannt';
+  return `Gerät meldet: an, Effekt ${a.effect || 'keiner'}, ${rgb}, ${bri}.`;
+}
+
 /** Einen Modus an der echten LED zeigen. Die Automation wird dafür kurz abgeschaltet, damit sie nicht dazwischenfunkt. */
 export async function previewStatusLed(mode: LedTestMode, progressPct = 50): Promise<LedTestResult> {
   const { token } = getHaCredentials();
@@ -304,25 +338,36 @@ export async function previewStatusLed(mode: LedTestMode, progressPct = 50): Pro
   try {
     if (!testKit || mode === 'print') testKit = findLedTestKit(await readStates());
     if (!testKit) return { ok: false, text: 'Kein LED-Streifen in Home Assistant gefunden (ESPHome „filament-ams“ mit Status LED).' };
+    if (mode === 'colortest' && !testKit.effects.includes('Farbtest')) {
+      return { ok: false, text: 'Dem ESP32 fehlt der Effekt „Farbtest“. Neue filament-ams.yaml aufspielen (Installieren, Wireless).' };
+    }
     const auto = safeStorage.getItem(ENTITY_KEY) || '';
     if (auto) await callHaService('automation', 'turn_off', { entity_id: auto });
     for (const c of buildLedTestCalls(testKit, mode, getWorkshopSettings().statusLedBrightness, progressPct)) {
-      const r = await callHaService(c.domain, c.service, c.data);
-      if (!r.success) return { ok: false, text: `Home Assistant meldet: ${r.message}` };
+      const r = await haCall(c);
+      if (!r.ok) return r;
     }
     const m = LED_TEST_MODES.find(x => x.mode === mode);
+    if (mode === 'off') return { ok: true, text: 'LED aus.' };
+    let seen = '';
+    try {
+      await new Promise(r => setTimeout(r, 900));
+      const res = await haFetch(`/api/states/${testKit.light}`);
+      if (res.ok) seen = ` ${describeLedState(await res.json())}`;
+    } catch {
+      /* Rückmeldung ist nur Zugabe */
+    }
     const bar = mode === 'print' && !(testKit.intensity && testKit.effects.includes('Percent')) ? ' (Ohne Regler „Intensity“ leuchtet der Streifen nur blau, ohne Balken.)' : '';
-    return { ok: true, text: `${m?.label}: ${m?.hint}.${bar}` };
+    return { ok: true, text: `${m?.label}: ${m?.hint}.${seen}${bar}` };
   } catch (err: any) {
     return { ok: false, text: `Home Assistant meldet: ${String(err?.message || err)}` };
   }
 }
 
 /** Nur den Druckfortschritt-Balken ändern (Slider), während „Druck läuft“ gezeigt wird */
-export async function previewProgress(progressPct: number): Promise<boolean> {
-  if (!testKit?.intensity) return false;
-  const r = await callHaService('number', 'set_value', { entity_id: testKit.intensity, value: ledIntensityValue(progressPct) });
-  return r.success;
+export async function previewProgress(progressPct: number): Promise<LedTestResult> {
+  if (!testKit?.intensity) return { ok: false, text: 'Regler „Status LED Intensity“ nicht gefunden: der Balken lässt sich nicht ändern.' };
+  return haCall({ domain: 'number', service: 'set_value', data: { entity_id: testKit.intensity, value: ledIntensityValue(progressPct) } });
 }
 
 /** Test beenden: LED aus. Ist „Status-LED“ gewählt, übernimmt die Automation wieder und zeigt den echten Stand. */

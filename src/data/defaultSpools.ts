@@ -2760,5 +2760,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.189',
+    label: '1.189 (LED-Farbtest & Fehlertext)',
+    releaseDate: '03.11.2026',
+    description: 'Die Farben des LED-Streifens stimmten nicht und der Schieber meldete nur einen allgemeinen Fehler. Jetzt gibt es einen Farbtest direkt im ESP32 (Rot, Grün, Blau nacheinander), die App sagt, welche Farbreihenfolge in die YAML gehört, und zeigt bei Fehlern den genauen Text von Home Assistant.',
+    features: [
+      '🎨 Neuer Effekt „Farbtest“ im ESP32: zeigt nacheinander Rot, Grün, Blau, unabhängig von Home Assistant',
+      '🧭 App: Auswahl „Welche Farben siehst du?“ nennt die passende Zeile led_order für die YAML',
+      '🔍 Test zeigt, was die LED laut Home Assistant tut (Effekt, Farbe, Helligkeit)',
+      '💬 Fehler nennen den echten Status von Home Assistant statt „Konnte nicht ausführen“'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

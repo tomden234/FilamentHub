@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLedTestCalls, buildStatusLedConfig, findLedEntities, findLedTestKit, ledIntensityValue } from './statusLed';
+import { LED_ORDER_GUIDE, buildLedTestCalls, buildStatusLedConfig, describeLedState, findLedEntities, findLedTestKit, ledIntensityValue } from './statusLed';
 
 const states = [
   { entity_id: 'light.wled', attributes: { friendly_name: 'WLED', effect_list: ['Solid', 'Blink', 'Breathe', 'Percent'] } },
@@ -121,5 +121,26 @@ describe('LED-Test der Modi', () => {
     const calls = buildLedTestCalls({ light: 'light.x', effects: [] }, 'print', 30, 60);
     expect(calls).toHaveLength(1);
     expect(calls[0].data).not.toHaveProperty('effect');
+  });
+});
+
+describe('Farbtest und Diagnose', () => {
+  it('Farbtest nutzt den Effekt Farbtest, sonst Solid', () => {
+    const withEffect = buildLedTestCalls({ light: 'light.x', effects: ['Solid', 'Farbtest'] }, 'colortest', 30);
+    expect(withEffect[0].data).toMatchObject({ effect: 'Farbtest' });
+    const without = buildLedTestCalls({ light: 'light.x', effects: ['Solid'] }, 'colortest', 30);
+    expect(without[0].data).toMatchObject({ effect: 'Solid' });
+  });
+  it('Hilfe für led_order: sechs verschiedene Reihenfolgen, GRB = alles richtig', () => {
+    expect(LED_ORDER_GUIDE).toHaveLength(6);
+    expect(new Set(LED_ORDER_GUIDE.map(g => g.order)).size).toBe(6);
+    expect(new Set(LED_ORDER_GUIDE.map(g => g.seen)).size).toBe(6);
+    expect(LED_ORDER_GUIDE.find(g => g.seen === 'Rot, Grün, Blau')?.order).toBe('GRB');
+    expect(LED_ORDER_GUIDE.find(g => g.seen === 'Grün, Rot, Blau')?.order).toBe('RGB');
+  });
+  it('beschreibt den Zustand der LED', () => {
+    expect(describeLedState({ state: 'on', attributes: { effect: 'Solid', rgb_color: [255, 0, 0], brightness: 77 } })).toBe('Gerät meldet: an, Effekt Solid, Farbe 255/0/0, Helligkeit 30 %.');
+    expect(describeLedState({ state: 'off', attributes: {} })).toBe('Gerät meldet: off.');
+    expect(describeLedState(null)).toBe('Zustand nicht lesbar.');
   });
 });

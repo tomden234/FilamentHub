@@ -3,6 +3,7 @@ import { Toggle, buttonStyle, inputStyle } from '../workshop/ui';
 import { NumInput } from '../ui/NumInput';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import {
+  LED_ORDER_GUIDE,
   LED_TEST_MODES,
   endStatusLedPreview,
   getLedInfo,
@@ -24,6 +25,7 @@ export const StatusLedCard: React.FC = () => {
   const [testPct, setTestPct] = useState(50);
   const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [testBusy, setTestBusy] = useState(false);
+  const [seenOrder, setSeenOrder] = useState('');
   const testModeRef = useRef<LedTestMode | null>(null);
   const sliderTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   testModeRef.current = testMode;
@@ -52,8 +54,8 @@ export const StatusLedCard: React.FC = () => {
     // Kurz warten, damit nicht jeder Zwischenwert an Home Assistant geht
     sliderTimer.current = setTimeout(async () => {
       if (testModeRef.current === 'print') {
-        const ok = await previewProgress(pct);
-        if (!ok) setTestMsg({ ok: false, text: 'Regler „Status LED Intensity“ nicht gefunden: der Balken lässt sich nicht ändern.' });
+        const r = await previewProgress(pct);
+        if (!r.ok) setTestMsg(r);
       } else {
         await runTest('print', pct);
       }
@@ -173,6 +175,32 @@ export const StatusLedCard: React.FC = () => {
               Schieben zeigt blau den Balken wie beim echten Druck.
             </span>
           </label>
+          {testMode === 'colortest' && (
+            <label className="block text-xs font-bold space-y-1">
+              <span>Welche Farben siehst du nacheinander?</span>
+              <select
+                value={seenOrder}
+                onChange={e => setSeenOrder(e.target.value)}
+                className="w-full px-2 py-1.5 rounded-lg border text-xs outline-none"
+                style={inputStyle}
+                aria-label="Farben die der Streifen beim Farbtest zeigt"
+              >
+                <option value="">Bitte wählen …</option>
+                {LED_ORDER_GUIDE.map(g => (
+                  <option key={g.order} value={g.order}>
+                    {g.seen}
+                  </option>
+                ))}
+              </select>
+              {seenOrder && (
+                <span className="block text-[11px] font-normal leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+                  {seenOrder === 'GRB'
+                    ? 'Die Farben stimmen. Nichts zu ändern.'
+                    : `In der filament-ams.yaml oben die Zeile led_order auf "${seenOrder}" ändern (led_order: "${seenOrder}") und neu aufspielen (Installieren, Wireless).`}
+                </span>
+              )}
+            </label>
+          )}
           {(testMode || testMsg) && (
             <div className="flex flex-wrap items-center gap-2">
               {testMode && (
