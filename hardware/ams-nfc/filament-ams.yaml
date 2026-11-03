@@ -27,7 +27,7 @@ substitutions:
   # die liest das AMS selbst und meldet sie an die App.
   own_uid_min: "20"
   # Anzahl LEDs am Streifen (60 pro Meter oder 144 pro Meter)
-  led_count: "60"
+  led_count: "144"
 
 esphome:
   name: ${name}
