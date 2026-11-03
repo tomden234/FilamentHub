@@ -28,6 +28,8 @@ substitutions:
   own_uid_min: "20"
   # Anzahl LEDs am Streifen (60 pro Meter oder 144 pro Meter)
   led_count: "144"
+  # Helligkeitsgrenze 0-1 (Netzteil 5 V 2 A: 0.2 = max ca. 1,7 A bei weiß). Mit stärkerem Netzteil erhöhen.
+  led_cap: "0.2"
 
 esphome:
   name: ${name}
@@ -246,7 +248,7 @@ light:
           name: "Solid"
           update_interval: 1s
           lambda: |-
-            it.all() = current_color;
+            it.all() = current_color * (uint8_t) (255 * ${led_cap});
       # Fortschrittsbalken: so viele LEDs an, wie der Regler sagt (mindestens 1)
       - addressable_lambda:
           name: "Percent"
@@ -256,7 +258,7 @@ light:
             int on = (int) roundf(n * id(led_intensity).state / 255.0f);
             if (on < 1) on = 1;
             if (on > n) on = n;
-            for (int i = 0; i < n; i++) it[i] = (i < on) ? current_color : Color::BLACK;
+            for (int i = 0; i < n; i++) it[i] = (i < on) ? current_color * (uint8_t) (255 * ${led_cap}) : Color::BLACK;
       # Blinken (Fehler): 0,5 s an, 0,5 s aus
       - addressable_lambda:
           name: "Blink"
@@ -264,7 +266,7 @@ light:
           lambda: |-
             static bool on = false;
             on = !on;
-            it.all() = on ? current_color : Color::BLACK;
+            it.all() = on ? current_color * (uint8_t) (255 * ${led_cap}) : Color::BLACK;
       # Atmen (Trocknung): langsam heller und dunkler, ca. 4 s pro Zug
       - addressable_lambda:
           name: "Breathe"
@@ -272,7 +274,7 @@ light:
           lambda: |-
             float t = (millis() % 4000) / 4000.0f;
             float b = 0.15f + 0.85f * (0.5f - 0.5f * cosf(t * 6.2831853f));
-            it.all() = current_color * (uint8_t) (255.0f * b);
+            it.all() = current_color * (uint8_t) (255.0f * ${led_cap} * b);
 
 number:
   - platform: template
