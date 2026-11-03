@@ -13,6 +13,9 @@ const URL = `http://127.0.0.1:${PORT}`;
 let server = null;
 let win = null;
 
+// 1.193: ERR_HTTP2_PROTOCOL_ERROR kommt von Schul-/Firmennetz, Proxy oder Virenscanner, die HTTP/2 stören. HTTP/2 aus -> HTTP/1.1.
+app.commandLine.appendSwitch('disable-http2');
+
 function startServer() {
   const userData = app.getPath('userData');
   const dataDir = path.join(userData, 'data');
@@ -229,6 +232,7 @@ function clearUpdaterCache() {
     /* Cache nicht löschbar: egal */
   }
 }
+const isNetError = e => /ERR_HTTP2|ERR_CONNECTION|ERR_NETWORK|ERR_SSL|ERR_TIMED_OUT|ERR_INTERNET|ERR_PROXY|ERR_TUNNEL|ERR_EMPTY_RESPONSE/i.test(String((e && e.message) || e));
 const isChecksumError = e => /checksum|sha512|sha256/i.test(String((e && e.message) || e));
 
 function setupAutoUpdate() {
@@ -249,9 +253,9 @@ function setupAutoUpdate() {
         if (isChecksumError(e0)) {
           clearUpdaterCache();
           r = await autoUpdater.checkForUpdates();
-        } else if (/latest\.yml|channel|404|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(String((e0 && e0.message) || e0))) {
+        } else if (isNetError(e0) || /latest\.yml|channel|404|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(String((e0 && e0.message) || e0))) {
           // Release wird gerade neu veröffentlicht oder kurzer Netzfehler: nach 6 s noch einmal
-          await new Promise(res => setTimeout(res, 6000));
+          await new Promise(res => setTimeout(res, isNetError(e0) ? 2500 : 6000));
           r = await autoUpdater.checkForUpdates();
         } else {
           throw e0;
@@ -268,7 +272,7 @@ function setupAutoUpdate() {
       const raw = String((e && e.message) || e);
       const s = {
         state: 'error',
-        message: /latest\.yml|channel/i.test(raw) ? 'Neue Version wird gerade veröffentlicht. In 3 Minuten nochmal prüfen.' : raw.slice(0, 160)
+        message: isNetError(e) ? 'Keine stabile Verbindung zu GitHub (Netz/Proxy/Firewall). Anderes WLAN oder Handy-Hotspot probieren, dann nochmal prüfen.' : /latest\.yml|channel/i.test(raw) ? 'Neue Version wird gerade veröffentlicht. In 3 Minuten nochmal prüfen.' : raw.slice(0, 160)
       };
       sendStatus(s);
       return s;
@@ -312,7 +316,9 @@ function setupAutoUpdate() {
   });
   const check = () =>
     autoUpdater.checkForUpdates().catch(e => {
-      if (isChecksumError(e)) {
+      if (isNetError(e)) {
+        setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000);
+      } else if (isChecksumError(e)) {
         clearUpdaterCache();
         autoUpdater.checkForUpdates().catch(() => {});
       }

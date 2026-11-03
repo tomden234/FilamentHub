@@ -2817,5 +2817,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.193',
+    label: '1.193 (Update-Netzfix)',
+    releaseDate: '04.11.2026',
+    description: 'Windows-App: „Nach Update suchen“ brach mit net::ERR_HTTP2_PROTOCOL_ERROR ab. Die App nutzt jetzt HTTP/1.1 statt HTTP/2 und versucht es bei Netzfehlern automatisch nochmal. Dazu gibt es einen verständlichen Hinweis statt des Fehlercodes.',
+    features: [
+      '🌐 HTTP/2 aus: stabiler hinter Schul-, Firmen-Netz, Proxy oder Virenscanner',
+      '🔁 Netzfehler werden automatisch nach kurzer Pause wiederholt (auch bei der Hintergrund-Suche)',
+      '💬 Klarer Hinweis: anderes WLAN oder Handy-Hotspot probieren'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
