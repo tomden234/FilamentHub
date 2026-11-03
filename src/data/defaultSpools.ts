@@ -2775,5 +2775,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.190',
+    label: '1.190 (LED-Befehle kommen an)',
+    releaseDate: '03.11.2026',
+    description: 'Der LED-Test zeigte nur grün und volle Helligkeit, und der Schieber ging nicht. Grund: Die Server-Weiterleitung zu Home Assistant hatte Licht-Farbe, Helligkeit und den Regler gesperrt, nur „Ein/Aus“ kam durch. Jetzt sind genau diese Befehle erlaubt, streng geprüft (nur ein Licht, nur Farbe, Helligkeit, Effekt; nur der Intensity-Regler 0–255).',
+    features: [
+      '🔓 Farbe, Helligkeit und Effekt der Status-LED kommen in der Windows-App und am lokalen Server an',
+      '🎚️ Schieber „Druckfortschritt“ stellt den Intensity-Regler (0–255) wieder ein',
+      '🛡️ Streng geprüft: ein einzelnes Licht, ein einzelner Regler, keine anderen Geräte, keine fremden Felder',
+      '🧪 5 neue Tests für die Weiterleitung, Hinweistext bei „Failed to fetch“'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

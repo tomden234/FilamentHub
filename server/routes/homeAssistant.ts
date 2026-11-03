@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { bambuService } from '../bambuMqtt.js';
 import { loadHaConfig, saveHaConfig, triggerHaAutomation } from '../haConfig.js';
+import { isRawAllowed } from '../haRawAllow.js';
 
 const router = Router();
 
@@ -12,13 +13,8 @@ router.post('/api/homeassistant/trigger-pull-automation', async (req, res) => {
 });
 
 // Begrenzte Weiterleitung an Home Assistant (Browser dürfen Nabu Casa oft nicht direkt ansprechen, der Server schon).
-// Erlaubt sind nur: Zustände lesen, die FilamentHub-Automationen anlegen und Automationen ein-/ausschalten.
-const RAW_ALLOWED = [
-  { method: 'GET', path: /^\/api\/states$/ },
-  { method: 'GET', path: /^\/api\/states\/automation\.filamenthub_[a-z0-9_]+$/ },
-  { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/ },
-  { method: 'POST', path: /^\/api\/services\/automation\/(turn_on|turn_off)$/ }
-];
+// Erlaubt sind nur: Zustände lesen, die FilamentHub-Automationen anlegen, Automationen ein-/ausschalten und die Status-LED
+// (ein Licht mit Farbe/Helligkeit/Effekt, ein Intensity-Regler). Die Regeln stehen in server/haRawAllow.ts.
 router.post('/api/homeassistant/raw', async (req, res) => {
   try {
     const config = loadHaConfig();
@@ -27,7 +23,7 @@ router.post('/api/homeassistant/raw', async (req, res) => {
     const token = String(req.body?.haToken || config.haToken || '');
     if (!url || !token) return res.status(400).json({ success: false, error: 'Home Assistant URL und Token erforderlich.' });
     if (!/^https?:\/\//i.test(url)) return res.status(400).json({ success: false, error: 'Ungültige Adresse.' });
-    if (!RAW_ALLOWED.some(a => a.method === method && a.path.test(String(path)))) {
+    if (!isRawAllowed(String(method), String(path), body)) {
       return res.status(403).json({ success: false, error: 'Diese Anfrage ist nicht erlaubt.' });
     }
     const resp = await fetch(`${url}${path}`, {

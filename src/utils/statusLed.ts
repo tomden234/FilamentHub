@@ -317,7 +317,11 @@ async function haCall(c: LedCall): Promise<LedTestResult> {
     const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160);
     return { ok: false, text: `${c.domain}.${c.service} → Home Assistant ${res.status}${body ? `: ${body}` : ''}` };
   } catch (err: any) {
-    return { ok: false, text: `${c.domain}.${c.service} → nicht erreichbar (${String(err?.message || err)})` };
+    const msg = String(err?.message || err);
+    const hint = /fetch|network|load failed/i.test(msg)
+      ? ' Der Browser darf Home Assistant nicht direkt ansprechen und der Weg über den eigenen Server hat nicht geklappt. Windows-App auf die neueste Version bringen (Verbindungen → Nach Update suchen) oder die App am PC über den lokalen Server öffnen.'
+      : '';
+    return { ok: false, text: `${c.domain}.${c.service} → nicht erreichbar (${msg}).${hint}` };
   }
 }
 
