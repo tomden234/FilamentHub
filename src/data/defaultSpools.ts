@@ -2860,5 +2860,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.196',
+    label: '1.196 (Schneller Build)',
+    releaseDate: '04.11.2026',
+    description: 'Das Windows-Update ist schneller fertig: Electron und der Installer-Builder werden jetzt zwischengespeichert statt bei jedem Build neu geladen. Spart etwa eine Minute pro Update.',
+    features: [
+      '⚡ Windows-Build mit Zwischenspeicher (Electron, NSIS, Builder-Werkzeuge)',
+      '⏱️ Gesamtdauer pro Update etwa 3 statt 4,5 Minuten'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
