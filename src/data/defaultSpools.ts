@@ -2846,5 +2846,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.195',
+    label: '1.195 (Slot schreibt Drucker)',
+    releaseDate: '04.11.2026',
+    description: 'Spule für AMS-Slot 1-4 wählen schreibt jetzt wirklich auf den Drucker (Material, Farbe, Temperatur). Vorher wurde nur in der App gespeichert, der Drucker behielt alte Werte und „Mit Drucker synchronisieren“ holte die falsche Spule zurück. Das Warnzeichen verschwindet, sobald der Drucker bestätigt.',
+    features: [
+      '🧵 Slot 1-4: gewählte Spule wird an den Drucker gesendet und bestätigt (wie bei Extern)',
+      '🔁 Danach frischer Stand vom Drucker, Sync zeigt die richtige Spule',
+      '🏷️ Bambu-Spulen mit Chip werden nicht überschrieben, leerer Slot gibt Hinweis'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

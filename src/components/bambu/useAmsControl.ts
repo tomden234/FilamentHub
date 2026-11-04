@@ -4,7 +4,7 @@ import { printerApi } from '../../api';
 import { addSystemLog } from '../../utils/logService';
 import type { BambuPrinterWidgetProps as ParentProps } from '../BambuPrinterWidget';
 import { paramsFromSpool, sendToSlot } from '../../utils/slotAssign';
-import { mismatch, readExternal, EXTERNAL_SLOT } from '../../utils/amsMatch';
+import { mismatch, readExternal, readTrays, EXTERNAL_SLOT } from '../../utils/amsMatch';
 
 export interface useAmsControlParams {
   spools: ParentProps['spools'];
@@ -114,14 +114,23 @@ export function useAmsControl({ spools, liveState, onApplyDryingCredit, setActio
 
     if (spoolId) {
       const spool = spools.find(s => s.id === spoolId);
-      // Externe Spule (5.): gleich am Drucker setzen, falls dort etwas anderes steht (nur wenn verbunden)
-      if (spool && slotIdx === EXTERNAL_SLOT && liveState?.connected) {
-        const ext = readExternal(liveState.data?.vt_tray);
-        if (!ext || ext.empty || mismatch(spool, ext)) {
-          setActionToast({ text: '🧵 Extern: sende an den Drucker … (kann bis 10 s dauern)', ok: true });
-          void sendToSlot(EXTERNAL_SLOT, paramsFromSpool(spool)).then(r =>
-            setActionToast({ text: r.confirmed ? `🧵 ${r.text}` : `Extern: ${r.text}`, ok: r.confirmed })
-          );
+      // 1.195: Spule am Drucker setzen – für Slot 1-4 UND Extern. Früher nur Extern: der Drucker behielt bei Slot 1-4
+      // die alten Werte und „Mit Drucker synchronisieren“ holte die falsche Spule zurück.
+      if (spool && liveState?.connected) {
+        const hw = slotIdx === EXTERNAL_SLOT ? readExternal(liveState.data?.vt_tray) : readTrays(liveState.data?.ams).find(t => t.slot === slotIdx);
+        const name = slotIdx === EXTERNAL_SLOT ? 'Extern' : `Slot ${slotIdx}`;
+        if (slotIdx !== EXTERNAL_SLOT && hw?.rfid) {
+          setActionToast({ text: `${name}: Bambu-Spule mit Chip, der Drucker liest sie selbst. Nur in der App zugewiesen.`, ok: true });
+        } else if (slotIdx !== EXTERNAL_SLOT && hw?.empty) {
+          setActionToast({ text: `${name} ist laut Drucker leer. Erst Filament einlegen, dann nochmal wählen.`, ok: false });
+        } else if (!hw || hw.empty || mismatch(spool, hw)) {
+          setActionToast({ text: `🧵 ${name}: sende an den Drucker … (kann bis 10 s dauern)`, ok: true });
+          void sendToSlot(slotIdx, paramsFromSpool(spool)).then(r => {
+            setActionToast({ text: r.confirmed ? `🧵 ${r.text}` : `${name}: ${r.text}`, ok: r.confirmed });
+            if (r.confirmed) void printerApi.refresh().then(() => printerApi.status()).then(res => {
+              if (res.ok && res.data?.data) setLiveState(res.data);
+            }).catch(() => {});
+          });
         }
       }
       if (spool) {
