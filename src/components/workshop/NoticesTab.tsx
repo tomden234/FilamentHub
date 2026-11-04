@@ -27,7 +27,11 @@ const PERMISSION_TEXT: Record<NotifyPermission, string> = {
 };
 
 /** Einstellungen: welche Mitteilungen kommen, und ob sie zusätzlich als Benachrichtigung aufs Gerät gehen. */
-export const NoticesTab: React.FC = () => {
+export type NoticeSection = 'print' | 'dry' | 'spools' | 'device' | 'advanced';
+
+/** section gesetzt: nur dieser Bereich (eigene Seite im Menü). Ohne: alles mit Schnellsprung. */
+export const NoticesTab: React.FC<{ section?: NoticeSection }> = ({ section }) => {
+  const show = (id: NoticeSection) => !section || section === id;
   const [s, update] = useWorkshopSettings();
   const hum = useHumidity();
   const [perm, setPerm] = useState<NotifyPermission>(notifyPermission());
@@ -50,7 +54,7 @@ export const NoticesTab: React.FC = () => {
   return (
     <div className="space-y-3">
       {/* Schnellsprung zu den Bereichen */}
-      <nav className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Bereiche">
+      {!section && <nav className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Bereiche">
         {SECTIONS.map(sec => (
           <button
             key={sec.id}
@@ -62,10 +66,10 @@ export const NoticesTab: React.FC = () => {
             {sec.label}
           </button>
         ))}
-      </nav>
+      </nav>}
 
-      <div className="md:columns-2 md:gap-5 [&>section]:mb-4 [&>section]:break-inside-avoid">
-      <Section id="print" icon={Printer} title="Druck" sub="Was beim Drucken gemeldet wird.">
+      <div className={section ? 'space-y-3' : 'md:columns-2 md:gap-5 [&>section]:mb-4 [&>section]:break-inside-avoid'}>
+      {show('print') && <Section id="print" icon={Printer} title="Druck" sub="Was beim Drucken gemeldet wird.">
         <Card>
           <ToggleList>
             <Toggle on={s.alertPrintStart} onChange={v => update({ alertPrintStart: v })} label="Druck gestartet" hint="Auch wenn du über Bambu Studio, Handy oder Display startest." />
@@ -76,9 +80,9 @@ export const NoticesTab: React.FC = () => {
             {s.alertErrors && <Toggle on={s.alertErrorsAll} onChange={v => update({ alertErrorsAll: v })} label="Auch Hinweise und Dialoge melden" hint="Alles, was der Drucker anzeigt: Hinweise, „fortsetzen?“, Düse wechseln, Filament einlegen. Meist zu viel." />}
           </ToggleList>
         </Card>
-      </Section>
+      </Section>}
 
-      <Section id="dry" icon={Waves} title="Trocknen und Feuchte" sub="Trockner, AMS-Feuchte und externe Sensoren.">
+      {show('dry') && <Section id="dry" icon={Waves} title="Trocknen und Feuchte" sub="Trockner, AMS-Feuchte und externe Sensoren.">
         <Card>
           <ToggleList>
             <Toggle on={s.alertDryDone} onChange={v => update({ alertDryDone: v })} label="Trocknung fertig" hint="Mit Dauer, Temperatur und den getrockneten Spulen." />
@@ -178,9 +182,9 @@ export const NoticesTab: React.FC = () => {
           </span>
         </label>
         </Card>
-      </Section>
+      </Section>}
 
-      <Section id="spools" icon={PackageMinus} title="Spulen" sub="Wann eine Spule als fast leer gilt.">
+      {show('spools') && <Section id="spools" icon={PackageMinus} title="Spulen" sub="Wann eine Spule als fast leer gilt.">
         <Card>
           <Toggle on={s.alertLow} onChange={v => update({ alertLow: v })} label="Mitteilung bei fast leerer Spule" hint="Kommt, wenn der Rest unter die Grenze fällt." />
           <Toggle on={s.lowWarning} onChange={v => update({ lowWarning: v })} label="Fast leere Spulen markieren" hint="Banner oben und Abzeichen auf der Karte." />
@@ -213,9 +217,9 @@ export const NoticesTab: React.FC = () => {
           </div>
         )}
         </Card>
-      </Section>
+      </Section>}
 
-      <Section id="device" icon={Smartphone} title="Aufs Handy" sub="Benachrichtigungen, stehende Anzeige und Test.">
+      {show('device') && <Section id="device" icon={Smartphone} title="Aufs Handy" sub="Benachrichtigungen, stehende Anzeige und Test.">
         <Card>
           <Toggle on={s.liveStatus} onChange={v => update({ liveStatus: v })} label="Stehende Mitteilung (Android)" hint="Bleibt oben, solange gedruckt oder getrocknet wird: Balken, Prozent, Restzeit und Uhrzeit, wann es fertig ist. Leise, ohne Ton." />
         <Toggle
@@ -296,9 +300,9 @@ export const NoticesTab: React.FC = () => {
         <p className="text-[11px] leading-snug px-1" style={{ color: 'var(--app-text-muted)' }}>
           Mitteilungen kommen, solange die App läuft oder im Hintergrund offen ist und mit dem Drucker verbunden bleibt. Alle landen im Postfach.
         </p>
-      </Section>
+      </Section>}
 
-      <Section id="advanced" icon={SlidersHorizontal} title="Zeiten und Grenzen" sub="Alles, was die App sonst fest vorgibt.">
+      {show('advanced') && <Section id="advanced" icon={SlidersHorizontal} title="Zeiten und Grenzen" sub="Alles, was die App sonst fest vorgibt.">
         <Card>
           <div className="space-y-2.5">
         {(
@@ -340,7 +344,7 @@ export const NoticesTab: React.FC = () => {
         ))}
           </div>
         </Card>
-      </Section>
+      </Section>}
       </div>
     </div>
   );

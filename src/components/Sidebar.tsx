@@ -23,8 +23,17 @@ import {
   ChevronRight,
   ChevronLeft,
   DatabaseBackup,
-  Bell
+  Bell,
+  BarChart3,
+  QrCode,
+  Lightbulb,
+  Printer,
+  Waves,
+  PackageMinus,
+  SlidersHorizontal
 } from 'lucide-react';
+import { StatusLedCard } from './sidebar/StatusLedCard';
+import { NoticesTab, type NoticeSection } from './workshop/NoticesTab';
 import { useBackLayer } from '../utils/backNav';
 import {
   AppSettings,
@@ -60,6 +69,10 @@ const BambuSettingsModal = lazy(() => import('./BambuSettingsModal').then(m => (
 export interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Vor-Taste der Maus: Menü wieder öffnen */
+  onReopen?: () => void;
+  /** Fenster öffnen: Statistik, Etiketten, Postfach */
+  onOpenWorkshop?: (tab: 'stats' | 'labels' | 'inbox') => void;
   viewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
   spools: Spool[];
@@ -104,6 +117,8 @@ export interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
+  onReopen,
+  onOpenWorkshop,
   onSetViewMode,
   spools,
   onDeductWeight,
@@ -234,6 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [showBambuSettings, setShowBambuSettings] = useState<boolean>(false);
   const [settingsSubTab, setSettingsSubTab] = useState<'themes' | 'presets' | 'connections'>('themes');
+  const [noticeSection, setNoticeSection] = useState<NoticeSection>('print');
 
   // Kurze Rückmeldung unten im Menü (z. B. G-Code vom Drucker geholt)
   const [haActionToast, setHaActionToast] = useState<string | null>(null);
@@ -318,8 +334,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   // Zurück-Taste: erst die Seite im Menü, dann das Menü selbst
-  useBackLayer(isOpen && !docked, onClose, 'menu');
-  useBackLayer((isOpen || docked) && activeTab !== 'home', () => setActiveTab('home'), 'menu-page');
+  useBackLayer(isOpen && !docked, onClose, 'menu', onReopen);
+  // Vor-Taste öffnet genau die Seite wieder, die offen war
+  const pageSnapshot = { tab: activeTab, sub: settingsSubTab, ns: noticeSection };
+  useBackLayer((isOpen || docked) && activeTab !== 'home', () => setActiveTab('home'), 'menu-page', () => {
+    setSettingsSubTab(pageSnapshot.sub);
+    setNoticeSection(pageSnapshot.ns);
+    setActiveTab(pageSnapshot.tab);
+  });
 
   if (!isOpen && !docked) return null;
 
@@ -357,32 +379,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Menü als Liste: jeder Punkt öffnet seine Seite, oben links „Zurück“. App = ohne G-Code-Rechner und Material,
   // Windows-App/Browser = alles (im Browser zusätzlich „Handy“).
+  const notice = (ns: NoticeSection) => () => {
+    setNoticeSection(ns);
+    setActiveTab('notices');
+  };
+  const settings = (sub: 'themes' | 'presets' | 'connections') => () => {
+    setSettingsSubTab(sub);
+    setActiveTab('settings');
+  };
+  // 1.191: Menü neu sortiert, flach (jeder Punkt öffnet direkt seine Seite). Werkstatt aufgelöst: Statistik/Etiketten hier und
+  // oben in der Leiste, Status-LED bei den Geräten, Mitteilungs-Einstellungen in einzelne Seiten aufgeteilt.
   const homeItems: { key: string; icon: React.ComponentType<{ className?: string }>; title: string; sub: string; go: () => void; group: string }[] = [
-    { key: 'ai', group: 'Helfer', icon: Bot, title: 'KI-Assistent', sub: 'Fragen zu deinen Spulen stellen', go: () => setActiveTab('ai') },
-    ...(APP ? [] : [{ key: 'gcode', group: 'Helfer', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Druckkosten berechnen', go: () => setActiveTab('gcode') }]),
-    { key: 'tools', group: 'Daten', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Cloud-Abgleich', go: () => setActiveTab('tools') },
-    { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: () => { setSettingsSubTab('themes'); setActiveTab('settings'); } },
-    { key: 'notices', group: 'Einstellungen', icon: Bell, title: 'Mitteilungen', sub: 'Druck, Trocknen, Feuchte, Spulen, Handy', go: () => onOpenNotices?.() },
-    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material-Einstellungen', sub: 'Trocknung und Leergewichte je Material', go: () => { setSettingsSubTab('presets'); setActiveTab('settings'); } }]),
-    { key: 'connections', group: 'Einstellungen', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud, NFC-Leser', go: () => { setSettingsSubTab('connections'); setActiveTab('settings'); } },
+    { key: 'stats', group: 'Werkzeuge', icon: BarChart3, title: 'Statistik', sub: 'Verbrauch, Drucke, Lager', go: () => onOpenWorkshop?.('stats') },
+    { key: 'labels', group: 'Werkzeuge', icon: QrCode, title: 'Etiketten', sub: 'QR-Etiketten für Spulen drucken', go: () => onOpenWorkshop?.('labels') },
+    ...(APP ? [] : [{ key: 'gcode', group: 'Werkzeuge', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Druckkosten berechnen', go: () => setActiveTab('gcode') }]),
+    { key: 'ai', group: 'Werkzeuge', icon: Bot, title: 'KI-Assistent', sub: 'Fragen zu deinen Spulen stellen', go: () => setActiveTab('ai') },
+    { key: 'inbox', group: 'Mitteilungen', icon: Bell, title: 'Postfach', sub: 'Alle Meldungen ansehen', go: () => onOpenWorkshop?.('inbox') },
+    { key: 'n-print', group: 'Mitteilungen', icon: Printer, title: 'Druck', sub: 'Start, fertig, Fehler, Spulen-Check', go: notice('print') },
+    { key: 'n-dry', group: 'Mitteilungen', icon: Waves, title: 'Trocknen und Feuchte', sub: 'Trockner, Feuchte-Alarm, Sensoren', go: notice('dry') },
+    { key: 'n-spools', group: 'Mitteilungen', icon: PackageMinus, title: 'Fast leere Spulen', sub: 'Grenze und Markierung', go: notice('spools') },
+    { key: 'n-device', group: 'Mitteilungen', icon: Smartphone, title: 'Aufs Handy', sub: 'Benachrichtigungen, Test-Mitteilung', go: notice('device') },
+    { key: 'n-adv', group: 'Mitteilungen', icon: SlidersHorizontal, title: 'Zeiten und Grenzen', sub: 'Wartezeiten und Schwellen', go: notice('advanced') },
+    { key: 'connections', group: 'Geräte', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud, NFC-Leser', go: settings('connections') },
+    { key: 'led', group: 'Geräte', icon: Lightbulb, title: 'Status-LED', sub: 'Farben, Helligkeit, Test', go: () => setActiveTab('led') },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
-    ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Einstellungen', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }])
-  ,
+    ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Geräte', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }]),
+    { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: settings('themes') },
+    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material', sub: 'Trocknung und Leergewichte je Material', go: settings('presets') }]),
+    { key: 'tools', group: 'Einstellungen', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Cloud-Abgleich', go: () => setActiveTab('tools') },
     { key: 'funfacts', group: 'Info', icon: Sparkles, title: 'Fun Facts', sub: 'Echte Zahlen zu Druckzeit, Lager und Code', go: () => setShowFunFacts(true) }
   ];
   const TONES: Record<string, string> = {
-    Helfer: 'text-violet-400 bg-violet-500/15 border-violet-500/30',
-    Daten: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
+    Werkzeuge: 'text-violet-400 bg-violet-500/15 border-violet-500/30',
+    Mitteilungen: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+    'Geräte': 'text-sky-400 bg-sky-500/15 border-sky-500/30',
     Einstellungen: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
-    Info: 'text-amber-400 bg-amber-500/15 border-amber-500/30'
+    Info: 'text-rose-400 bg-rose-500/15 border-rose-500/30'
+  };
+  const NOTICE_TITLES: Record<NoticeSection, string> = {
+    print: 'Mitteilungen: Druck',
+    dry: 'Mitteilungen: Trocknen und Feuchte',
+    spools: 'Mitteilungen: Fast leere Spulen',
+    device: 'Mitteilungen: Aufs Handy',
+    advanced: 'Mitteilungen: Zeiten und Grenzen'
   };
   const pageTitle =
     activeTab === 'ai' ? 'KI-Assistent'
     : activeTab === 'gcode' || activeTab === 'calc' ? 'G-Code und Kosten'
     : activeTab === 'tools' ? 'Sichern und Laden'
     : activeTab === 'connect' ? 'Handy'
+    : activeTab === 'led' ? 'Status-LED'
+    : activeTab === 'notices' ? NOTICE_TITLES[noticeSection]
     : settingsSubTab === 'themes' ? 'Aussehen'
-    : settingsSubTab === 'presets' ? 'Material-Einstellungen'
+    : settingsSubTab === 'presets' ? 'Material'
     : 'Verbindungen';
 
   return (
@@ -640,10 +689,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           {/* START: Menü-Liste in Gruppen */}
           {activeTab === 'home' && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {Array.from(new Set(homeItems.map(i => i.group))).map(group => (
                 <div key={group} className="space-y-1.5">
-                  <div className="fh-eyebrow px-1">{group}</div>
+                  <div className="fh-eyebrow px-1 flex items-center justify-between"><span>{group}</span><span className="opacity-60 font-mono-num">{homeItems.filter(i => i.group === group).length}</span></div>
                   <div className="rounded-xl border overflow-hidden divide-y divide-[var(--app-border)]" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
                     {homeItems
                       .filter(i => i.group === group)
@@ -653,16 +702,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <button
                             key={item.key}
                             onClick={item.go}
-                            className="w-full px-3.5 py-3 flex items-center gap-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition"
+                            className="w-full px-3 py-2.5 flex items-center gap-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] transition"
                           >
                             <span
-                              className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${TONES[item.group] || TONES.Einstellungen}`}
+                              className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${TONES[item.group] || TONES.Einstellungen}`}
                             >
-                              <Icon className="w-[18px] h-[18px]" />
+                              <Icon className="w-4 h-4" />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block text-[13px] font-bold" style={{ color: 'var(--app-text)' }}>{item.title}</span>
-                              <span className="block text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>{item.sub}</span>
+                              <span className="block text-[13px] font-bold leading-tight" style={{ color: 'var(--app-text)' }}>{item.title}</span>
+                              <span className="block text-[11px] leading-snug truncate" style={{ color: 'var(--app-text-muted)' }}>{item.sub}</span>
                             </span>
                             <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--app-text-muted)' }} />
                           </button>
@@ -809,6 +858,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* TAB 4: G-CODE & RECHNER (VEREINT) */}
           {!APP && (activeTab === 'gcode' || activeTab === 'calc') && <GcodeCalcTab handlePullGcodeFromPrinter={handlePullGcodeFromPrinter} printerFetchLoading={printerFetchLoading} handleGcodeFileChange={handleGcodeFileChange} gcodeData={gcodeData} calcSpoolId={calcSpoolId} setCalcSpoolId={setCalcSpoolId} spools={spools} onDeductWeight={onDeductWeight} setCalcPricePerKg={setCalcPricePerKg} calcGrams={calcGrams} setCalcGrams={setCalcGrams} calcPricePerKg={calcPricePerKg} calcPrintHours={calcPrintHours} setCalcPrintHours={setCalcPrintHours} calcPrinterWatts={calcPrinterWatts} setCalcPrinterWatts={setCalcPrinterWatts} filamentCost={filamentCost} powerCost={powerCost} totalCost={totalCost} />}
+
+          {/* Status-LED und Mitteilungs-Einstellungen als eigene Seiten */}
+          {activeTab === 'led' && <StatusLedCard />}
+          {activeTab === 'notices' && <NoticesTab section={noticeSection} />}
 
           {/* TAB 6: TOOLS & BACKUP */}
           {activeTab === 'tools' && <ToolsTab full={!APP} onSyncCloud={onSyncCloud} onExportBackup={onExportBackup} onImportBackup={onImportBackup} onRestoreDefaultSpools={onRestoreDefaultSpools} onClearAllSpools={onClearAllSpools} />}

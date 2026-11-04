@@ -299,7 +299,7 @@ function setupAutoUpdate() {
         buttons: ['Jetzt neu starten', 'Später'],
         defaultId: 0,
         title: 'FilamentHub Update',
-        message: `Version ${info.version} ist bereit.`,
+        message: "Neue Version ist bereit.",
         detail: 'Neu starten, um zu aktualisieren. Sonst wird beim nächsten Beenden aktualisiert.'
       })
       .then(r => {

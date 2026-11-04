@@ -1884,80 +1884,7 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
   },
   {
     id: 'v1.128',
-    label: '1.128 (Neue Spulenliste)',
-    releaseDate: '30.10.2026',
-    description: 'Alle Spulen neu eingetragen nach deinem Diktat (17 neu, Prusa PETG bleibt), mit Beutel- und Silica-Abzug.',
-    features: [
-      '🧵 18 Spulen: Bambu (7), Eono, Geeetech, YXPOLYER PA6-CF, Eryone (2), ELEGOO (2), eSUN, Overture TPU, Prusa PLA und Prusa PETG',
-      '⚖️ Netto = gewogen − Leerspule − Eibos-Beutel (35 g) − Silica (57 g), bei Bambu Hellgrün mit eigener 100-g-Spule',
-      '📦 Original verpackte Bambu-Spulen als „verschweißt“ markiert, Refill ohne Spule mit 0 g Leerspule',
-      '🔢 Aktualisierte Zahlen-FunFacts: 106 Commits und 128 Revisionsstufen'
-    ],
-    spoolsSnapshot: MY_SPOOLS,
-    historySnapshot: [],
-    viewMode: 'simple'
-  },
-  {
-    id: 'v1.129',
-    label: '1.129 (Hellgrün 1 kg)',
-    releaseDate: '30.10.2026',
-    description: 'Bambu Hellgrün ist eine 1-kg-Spule: Startgewicht 1000 g statt 1200 g, Spule steht auf voll.',
-    features: [
-      '🟢 Bambu PLA Basic Hellgrün: Startgewicht 1000 g, Restgewicht 1000 g (voll)',
-      '⚠️ Gewogene 1315 g ergeben rechnerisch mehr als 1 kg: Gewicht von Beutel/Silica prüfen',
-      '🔢 Aktualisierte Zahlen-FunFacts: 107 Commits und 129 Revisionsstufen'
-    ],
-    spoolsSnapshot: MY_SPOOLS,
-    historySnapshot: [],
-    viewMode: 'simple'
-  },
-  {
-    id: 'v1.130',
-    label: '1.130 (Hellgrün leer, +1 Bambu Weiß)',
-    releaseDate: '30.10.2026',
-    description: 'Bambu Hellgrün: alles abgezogen, 1315 g Brutto = 1000 g Netto. Eine weitere Bambu PLA Weiß mit Spule (original verpackt) dazu.',
-    features: [
-      '🟢 Hellgrün (1 kg): Tara gesamt 315 g (Spule 223 + Beutel 35 + Silica 57), beim nächsten Wiegen passt die Rechnung',
-      '⚪ Neu: Bambu PLA Basic Weiß, original verpackt, mit Spule (insgesamt 4 weiße Bambu PLA)',
-      '🔢 Aktualisierte Zahlen-FunFacts: 108 Commits und 130 Revisionsstufen'
-    ],
-    spoolsSnapshot: MY_SPOOLS,
-    historySnapshot: [],
-    viewMode: 'simple'
-  },
-  {
-    id: 'v1.131',
-    label: '1.131 (Bambu Weiß 3 Stück)',
-    releaseDate: '30.10.2026',
-    description: 'Korrektur: nur 3 Bambu PLA Weiß (2 ohne Spule, 1 mit Spule). Hellgrün mit echter Tara 100 + 35 + 57 g.',
-    features: [
-      '⚪ Bambu PLA Basic Weiß: wieder 3 Stück (2 Refill ohne Spule, 1 mit Spule)',
-      '🟢 Hellgrün (1 kg, eigene 100-g-Spule): Tara 100 g + Beutel 35 g + Silica 57 g = 192 g, wird beim Wiegen abgezogen',
-      '⚠️ 1315 g gewogen − 192 g = 1123 g ist mehr als 1 kg: Spule steht auf voll, bitte neu wiegen',
-      '🔢 Aktualisierte Zahlen-FunFacts: 109 Commits und 131 Revisionsstufen'
-    ],
-    spoolsSnapshot: MY_SPOOLS,
-    historySnapshot: [],
-    viewMode: 'simple'
-  },
-  {
-    id: 'v1.132',
-    label: '1.132 (Hellgrün 960 g, Isan zurück)',
-    releaseDate: '30.10.2026',
-    description: 'Bambu Hellgrün auf 960 g gesetzt. Isan PLA Plus Dunkelgrün wieder in der Liste, getrennt von Bambu Dunkelgrün.',
-    features: [
-      '🟢 Bambu PLA Basic Hellgrün: Restgewicht 960 g (Spule 100 g, Beutel 35 g, Silica 57 g bleiben als Tara)',
-      '🌲 Isan PLA Plus Dunkelgrün (alter Stand 740 g) wieder dabei, war im Diktat vergessen worden',
-      '🔀 Zwei Dunkelgrün sind getrennte Spulen: Bambu Lab PLA Basic und Isan PLA Plus, je eigene Nummer und Marke',
-      '🔢 Aktualisierte Zahlen-FunFacts: 110 Commits und 132 Revisionsstufen'
-    ],
-    spoolsSnapshot: MY_SPOOLS,
-    historySnapshot: [],
-    viewMode: 'simple'
-  },
-  {
-    id: 'v1.133',
-    label: '1.133 (Verzögerter Druck startet sicher)',
+    label: '1.128 (Verzögerter Druck startet sicher)',
     releaseDate: '31.10.2026',
     description: 'Druck verzögern: Der pausierte Druck wird jetzt sicher fortgesetzt, auch wenn die Trocknung hängt, die App zu ist oder der Drucker die Startzeit erst später meldet.',
     features: [
@@ -1972,8 +1899,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.134',
-    label: '1.134 (Kamera & AMS neu angeordnet)',
+    id: 'v1.129',
+    label: '1.129 (Kamera & AMS neu angeordnet)',
     releaseDate: '31.10.2026',
     description: 'Kamera ohne Überlappung, flüssiger und mit Groß-Knopf. AMS-Temperatur und Feuchte als saubere Karten.',
     features: [
@@ -1988,8 +1915,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.135',
-    label: '1.135 (Ext. Trockner-Sensor)',
+    id: 'v1.130',
+    label: '1.130 (Ext. Trockner-Sensor)',
     releaseDate: '31.10.2026',
     description: 'Zweiter Sensor sitzt im externen Spulentrockner (5. Spule) statt im Raum: umbenannt und unter dem AMS angezeigt.',
     features: [
@@ -2004,8 +1931,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.136',
-    label: '1.136 (Trocknung bleibt an, Spulen bleiben)',
+    id: 'v1.131',
+    label: '1.131 (Trocknung bleibt an, Spulen bleiben)',
     releaseDate: '31.10.2026',
     description: 'Die App stoppt die Trocknung nicht mehr dauernd und überschreibt deine Spulen-Änderungen nicht mehr mit einem alten Stand.',
     features: [
@@ -2021,8 +1948,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.137',
-    label: '1.137 (Aus nach Druck: 3 Minuten)',
+    id: 'v1.132',
+    label: '1.132 (Aus nach Druck: 3 Minuten)',
     releaseDate: '31.10.2026',
     description: 'Aus nach Druck wartet nicht mehr auf die Düsentemperatur, sondern schaltet 3 Minuten nach Druckende ab.',
     features: [
@@ -2035,8 +1962,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.138',
-    label: '1.138 (Standardfarbe Dunkelgrün)',
+    id: 'v1.133',
+    label: '1.133 (Standardfarbe Dunkelgrün)',
     releaseDate: '31.10.2026',
     description: 'Dunkelgrün ist jetzt bei den Standardfarben dabei (Spule anlegen und AMS-Slot bearbeiten).',
     features: [
@@ -2049,8 +1976,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.139',
-    label: '1.139 (Weniger Push, Open Source)',
+    id: 'v1.134',
+    label: '1.134 (Weniger Push, Open Source)',
     releaseDate: '31.10.2026',
     description: 'Aufs Handy kommt nur noch das Wichtige. Dialoge des Druckers (Düse wechseln, Filament einlegen, „fortsetzen?“) melden wir nicht mehr. Dazu ist das Projekt bereit für Open Source (Lizenz, Anleitung, ohne persönliche Daten).',
     features: [
@@ -2071,8 +1998,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.140',
-    label: '1.140 (Pin-Namen D16/D17)',
+    id: 'v1.135',
+    label: '1.135 (Pin-Namen D16/D17)',
     releaseDate: '31.10.2026',
     description: 'Auf deinem ESP32 gibt es kein „TX2/RX2“: GPIO17 steht als D17 und GPIO16 als D16 auf der Platine. Pläne und Anleitung zeigen jetzt diese Namen.',
     features: [
@@ -2085,8 +2012,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.141',
-    label: '1.141 (Trocknen: Aus & Licht)',
+    id: 'v1.136',
+    label: '1.136 (Trocknen: Aus & Licht)',
     releaseDate: '01.11.2026',
     description: 'Beim Trocknen kann der Drucker danach von selbst ausgehen, das Bauraum-Licht geht aus, wenn nichts gedruckt wird, und die externe Trockenbox hat ihren Sensor in der Trocknen-Ansicht.',
     features: [
@@ -2101,8 +2028,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.142',
-    label: '1.142 (Leser schneller)',
+    id: 'v1.137',
+    label: '1.137 (Leser schneller)',
     releaseDate: '01.11.2026',
     description: 'Die 5 NFC-Leser im AMS fragen 4x schneller nach Tags und funken langsamer, aber stabiler über die Kabel.',
     features: [
@@ -2116,8 +2043,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.143',
-    label: '1.143 (Aus ohne App)',
+    id: 'v1.138',
+    label: '1.138 (Aus ohne App)',
     releaseDate: '01.11.2026',
     description: '„Nach Trocknen ausschalten“ klappt jetzt auch bei geschlossener App: Home Assistant schaltet die Steckdose selbst aus.',
     features: [
@@ -2131,8 +2058,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.144',
-    label: '1.144 (Aus-Status sichtbar)',
+    id: 'v1.139',
+    label: '1.139 (Aus-Status sichtbar)',
     releaseDate: '01.11.2026',
     description: 'Bei „Danach Drucker ausschalten“ siehst du jetzt, ob Home Assistant das Ausschalten übernimmt (ohne offene App). Mit „Prüfen“ richtest du es neu ein.',
     features: [
@@ -2144,8 +2071,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.145',
-    label: '1.145 (HA-Fehler klarer)',
+    id: 'v1.140',
+    label: '1.140 (HA-Fehler klarer)',
     releaseDate: '01.11.2026',
     description: 'Wenn Home Assistant nicht erreichbar ist, zeigt die App jetzt die genutzte Adresse und sagt, was zu prüfen ist.',
     features: [
@@ -2156,8 +2083,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.146',
-    label: '1.146 (HA-Automation kopieren)',
+    id: 'v1.141',
+    label: '1.141 (HA-Automation kopieren)',
     releaseDate: '01.11.2026',
     description: 'Home Assistant ist erreichbar, erlaubt der App aber nicht, Automationen anzulegen. Jetzt gibt es einen Knopf, der die Automation kopiert, du fügst sie einmal in Home Assistant ein.',
     features: [
@@ -2170,8 +2097,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.147',
-    label: '1.147 (HA-Fehler mit Schritt)',
+    id: 'v1.142',
+    label: '1.142 (HA-Fehler mit Schritt)',
     releaseDate: '01.11.2026',
     description: 'Die Meldung zu „Danach Drucker ausschalten“ nennt jetzt den Schritt und den genauen Fehler. Home-Assistant-Anfragen dürfen länger dauern (25 s).',
     features: [
@@ -2183,8 +2110,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.148',
-    label: '1.148 (Windows-App groß)',
+    id: 'v1.143',
+    label: '1.143 (Windows-App groß)',
     releaseDate: '01.11.2026',
     description: 'Die Windows-App startet immer maximiert. Mit F11 schaltest du echten Vollbild an und aus.',
     features: [
@@ -2196,8 +2123,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.149',
-    label: '1.149 (Home Assistant über Server)',
+    id: 'v1.144',
+    label: '1.144 (Home Assistant über Server)',
     releaseDate: '01.11.2026',
     description: 'Die Windows-App erreicht Home Assistant jetzt auch dann, wenn der Browser Nabu Casa direkt sperrt: Anfragen laufen über den eingebauten Server. Damit kann „Nach Trocknen aus“ die Automation selbst anlegen.',
     features: [
@@ -2209,8 +2136,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.150',
-    label: '1.150 (Trockenzeit-Sensor finden)',
+    id: 'v1.145',
+    label: '1.145 (Trockenzeit-Sensor finden)',
     releaseDate: '01.11.2026',
     description: 'Die App sucht den Trockenzeit-Sensor in Home Assistant breiter und zeigt in der Meldung, was sie gefunden hat.',
     features: [
@@ -2222,8 +2149,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.151',
-    label: '1.151 (Deutsche HA-Namen)',
+    id: 'v1.146',
+    label: '1.146 (Deutsche HA-Namen)',
     releaseDate: '01.11.2026',
     description: 'Home Assistant mit deutschen Sensornamen (Druckstatus, Verbleibende Trocknungszeit) wird erkannt. Dafür hat die App den Druckstatus-Sensor nicht gefunden.',
     features: [
@@ -2235,8 +2162,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.152',
-    label: '1.152 (Aus-Timer, dauerhaft)',
+    id: 'v1.147',
+    label: '1.147 (Aus-Timer, dauerhaft)',
     releaseDate: '01.11.2026',
     description: '„Danach Drucker ausschalten“ bleibt jetzt dauerhaft an und gilt für jede Trocknung. Nach dem Ende läuft ein 3-Minuten-Zähler mit Abbrechen-Knopf. Stoppst du die Trocknung von Hand, bleibt der Drucker an.',
     features: [
@@ -2250,8 +2177,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.153',
-    label: '1.153 (Stopp startet Timer)',
+    id: 'v1.148',
+    label: '1.148 (Stopp startet Timer)',
     releaseDate: '01.11.2026',
     description: 'Stoppst du die Trocknung von Hand, startet der 3-Minuten-Zähler und der Drucker geht danach aus (Abbrechen geht). Beginnt in den 3 Minuten ein Druck oder eine neue Trocknung, wird automatisch nichts ausgeschaltet.',
     features: [
@@ -2264,8 +2191,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.154',
-    label: '1.154 (Zähler läuft weiter)',
+    id: 'v1.149',
+    label: '1.149 (Zähler läuft weiter)',
     releaseDate: '01.11.2026',
     description: 'Der 3-Minuten-Zähler läuft auch weiter, wenn du die App schließt und wieder öffnest (z. B. nach 1 Minute zeigt er noch 2 Minuten). Arbeitest du am Drucker (verfahren, Düse wechseln, aufheizen), wird das Ausschalten abgebrochen.',
     features: [
@@ -2278,8 +2205,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.155',
-    label: '1.155 (Stehende Mitteilung)',
+    id: 'v1.150',
+    label: '1.150 (Stehende Mitteilung)',
     releaseDate: '01.11.2026',
     description: 'Android: Solange gedruckt oder getrocknet wird, steht oben eine leise Mitteilung mit Balken, Prozent, Restzeit und der Uhrzeit, wann es fertig ist. Auch der 3-Minuten-Zähler vor dem Ausschalten steht dort.',
     features: [
@@ -2294,8 +2221,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.156',
-    label: '1.156 (Einstellungen & Live)',
+    id: 'v1.151',
+    label: '1.151 (Einstellungen & Live)',
     releaseDate: '01.11.2026',
     description: 'Die stehende Mitteilung steht weiter oben (Android-16-Live-Update) und nutzt die Farbe deiner App. Zahlenfelder lassen sich überall frei tippen. Alle festen Zeiten und Grenzen sind jetzt einstellbar.',
     features: [
@@ -2310,8 +2237,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.157',
-    label: '1.157 (Auto-Prüfen)',
+    id: 'v1.152',
+    label: '1.152 (Auto-Prüfen)',
     releaseDate: '01.11.2026',
     description: 'Home Assistant wird bei jedem App-Start von selbst geprüft und die Automation „Nach Trocknen aus“ eingerichtet. Der Knopf „Prüfen“ ist weg und erscheint nur noch, wenn etwas nicht klappt.',
     features: [
@@ -2323,8 +2250,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.158',
-    label: '1.158 (Warteschlange & Widget)',
+    id: 'v1.153',
+    label: '1.153 (Warteschlange & Widget)',
     releaseDate: '01.11.2026',
     description: 'Neu: Druck-Warteschlange in der Werkstatt (vormerken, Filament-Check, Mitteilung mit dem Nächsten nach jedem Druckende) und ein Homescreen-Widget für Android mit Druck-/Trocknungsstand und AMS-Feuchte.',
     features: [
@@ -2339,8 +2266,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.159',
-    label: '1.159 (Android-Build repariert)',
+    id: 'v1.154',
+    label: '1.154 (Android-Build repariert)',
     releaseDate: '01.11.2026',
     description: 'Der Android-Build von 1.158 schlug fehl (eine Datei war versehentlich leer). Jetzt wieder in Ordnung, mit Warteschlange und Homescreen-Widget.',
     features: [
@@ -2352,8 +2279,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.160',
-    label: '1.160 (Status-LED)',
+    id: 'v1.155',
+    label: '1.155 (Status-LED)',
     releaseDate: '01.11.2026',
     description: 'Ein LED-Streifen am Drucker zeigt den Status: blau mit Fortschrittsbalken beim Druck, grün wenn fertig, rot bei Fehler, orange beim Trocknen.',
     features: [
@@ -2367,8 +2294,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.161',
-    label: '1.161 (Tab-Leiste repariert)',
+    id: 'v1.156',
+    label: '1.156 (Tab-Leiste repariert)',
     releaseDate: '01.11.2026',
     description: 'Die Tabs „Postfach“ und „Einstellungen“ waren oben abgeschnitten. Jetzt voll sichtbar.',
     features: ['🔧 Tab-Leiste in Mitteilungen und Werkstatt wird nicht mehr zusammengedrückt'],
@@ -2377,8 +2304,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.162',
-    label: '1.162 (Cozy-Design)',
+    id: 'v1.157',
+    label: '1.157 (Cozy-Design)',
     releaseDate: '01.11.2026',
     description: 'Neues Design „Cozy“: dunkles Petrol, Creme-Schrift, Messing-Akzent, Serifen-Überschriften, weiche Karten. Zurück jederzeit über Menü > Einstellungen > Design > Klassisch. Einstellungen der Mitteilungen neu sortiert.',
     features: [
@@ -2392,8 +2319,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.163',
-    label: '1.163 (Cozy am PC)',
+    id: 'v1.158',
+    label: '1.158 (Cozy am PC)',
     releaseDate: '01.11.2026',
     description: 'Die Windows-App startet im Cozy-Ton statt Dunkelgrün. Das Cozy-Design kommt mit diesem Update auch in die Windows-App.',
     features: ['🖥️ Windows-App: Fenster-Hintergrund beim Start im Cozy-Petrol', '☕ Cozy-Design aus 1.162 jetzt auch in der Windows-App (nach dem Update)'],
@@ -2402,8 +2329,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.164',
-    label: '1.164 (Ruhiges Design & neues Menü)',
+    id: 'v1.159',
+    label: '1.159 (Ruhiges Design & neues Menü)',
     releaseDate: '02.11.2026',
     description: 'Ruhigere Farben (Cozy dunkel, neu: Sand hell), das linke Menü startet zu und ist eine klare Liste, rechts steht jetzt die Drucker-Leiste mit Warteschlange, Drucken und Logs.',
     features: [
@@ -2417,8 +2344,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.165',
-    label: '1.165 (Drucker rechts & Lila-Design)',
+    id: 'v1.160',
+    label: '1.160 (Drucker rechts & Lila-Design)',
     releaseDate: '02.11.2026',
     description: 'Der Drucker sitzt am PC als lange Leiste rechts, das Menü ist schöner und startet zu, Mitteilungen sind kompakter. Neu: Design Nacht (dunkles Lila), Cozy in Waldgrün. Zurück-Taste und Maus-Tasten gehen im Menü und in Fenstern.',
     features: [
@@ -2433,8 +2360,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.166',
-    label: '1.166 (Customize-Menü & Drucker zurück)',
+    id: 'v1.161',
+    label: '1.161 (Customize-Menü & Drucker zurück)',
     releaseDate: '02.11.2026',
     description: 'Drucker-Leiste rechts ist wieder weg (Drucker steht wieder in der Mitte). Neu: großes Customize-Menü unter Aussehen mit Helligkeit, Farbton, Akzent, Glas, Leuchten, Rundung und Schrift. Mitteilungen sind wieder im Menü.',
     features: [
@@ -2449,8 +2376,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.167',
-    label: '1.167 (Flüssigglas & Farbanteil)',
+    id: 'v1.162',
+    label: '1.162 (Flüssigglas & Farbanteil)',
     releaseDate: '02.11.2026',
     description: 'Neues Design Glas (Flüssigglas wie iOS): durchscheinende Karten mit Unschärfe, Glanzkante und weichen Farbflecken. Neuer Regler Farbanteil: weniger Lila, nur Akzente. Der Hintergrundglanz wird jetzt in allen Designs sichtbar.',
     features: [
@@ -2464,8 +2391,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.168',
-    label: '1.168 (Glas Grün, Lila & Creme)',
+    id: 'v1.163',
+    label: '1.163 (Glas Grün, Lila & Creme)',
     releaseDate: '02.11.2026',
     description: 'Drei fertige Glas-Looks zum Auswählen unter Aussehen: Dunkelgrün, Dunkellila (beide mit Creme-Text und ganz leichten Akzenten) und helles Creme mit Salbeigrün.',
     features: [
@@ -2479,8 +2406,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.169',
-    label: '1.169 (Farben je Design)',
+    id: 'v1.164',
+    label: '1.164 (Farben je Design)',
     releaseDate: '02.11.2026',
     description: 'Die Customize-Regler (Farbanteil, Tönung, Akzent, Glas ...) gelten jetzt nur für das gewählte Design. Grün bleibt grün und Lila bleibt lila, jedes Design merkt sich seine eigenen Werte. Zurücksetzen betrifft nur das aktuelle Design. Das Such-Symbol im Creme-Look ist dunkler.',
     features: [
@@ -2494,8 +2421,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.170',
-    label: '1.170 (Extern-Spule X2D)',
+    id: 'v1.165',
+    label: '1.165 (Extern-Spule X2D)',
     releaseDate: '02.11.2026',
     description: 'Extern-Spule am X2D: Der Drucker meldet zwei externe Plätze (vir_slot). Die App probiert jetzt mehrere Befehlsformen nacheinander, bis der Drucker die Spule übernimmt, und prüft alle externen Plätze. Bei Misserfolg zeigt die Meldung die Antwort des Druckers.',
     features: [
@@ -2508,8 +2435,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.171',
-    label: '1.171 (Extern rechts, schneller)',
+    id: 'v1.166',
+    label: '1.166 (Extern rechts, schneller)',
     releaseDate: '02.11.2026',
     description: 'Extern ist immer die rechte externe Spule (Haupt-Extruder, id 254). Die linke wird nicht mehr angefasst oder angezeigt. Weniger Befehlsformen, dadurch kürzere Wartezeit, und beim Antippen kommt sofort eine Meldung „sende an den Drucker“.',
     features: [
@@ -2522,8 +2449,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.172',
-    label: '1.172 (Extern-Fehler genau)',
+    id: 'v1.167',
+    label: '1.167 (Extern-Fehler genau)',
     releaseDate: '02.11.2026',
     description: 'Wenn der Drucker die Extern-Spule nicht übernimmt, zeigt die Meldung jetzt genau: Version, LAN oder Cloud, welche Befehle probiert wurden, ob der Drucker geantwortet hat und was er über die externen Spulen meldet.',
     features: [
@@ -2535,8 +2462,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.173',
-    label: '1.173 (Extern-Suche & Test-Fix)',
+    id: 'v1.168',
+    label: '1.168 (Extern-Suche & Test-Fix)',
     releaseDate: '02.11.2026',
     description: 'Extern-Fehlermeldung nennt jetzt auch, welche Felder der Drucker für externe Spulen schickt (zur Fehlersuche am X2D). CI-Test repariert (brauchte ein fehlendes Paket).',
     features: [
@@ -2548,8 +2475,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.174',
-    label: '1.174 (Extern lesen & melden)',
+    id: 'v1.169',
+    label: '1.169 (Extern lesen & melden)',
     releaseDate: '02.11.2026',
     description: 'Extern-Spule am X2D: Home Assistant zeigt, dass der Drucker die App-Werte annimmt, die App hat es aber nicht erkannt. Jetzt sucht die App externe Spulen (id 254/255) überall in den Druckerdaten, prüft die Farbe nur wenn gemeldet, und meldet „gesendet“ statt Fehler, wenn der Drucker nichts ablehnt.',
     features: [
@@ -2562,8 +2489,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.175',
-    label: '1.175 (Esc eine Ebene zurück)',
+    id: 'v1.170',
+    label: '1.170 (Esc eine Ebene zurück)',
     releaseDate: '02.11.2026',
     description: 'Die Esc-Taste schließt jetzt immer nur die oberste Ebene, wie die Zurück-Taste: erst Fenster, dann Seite im Menü, dann das Menü. Vorher schloss Esc alles auf einmal.',
     features: [
@@ -2575,8 +2502,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.176',
-    label: '1.176 (Windows-Update repariert)',
+    id: 'v1.171',
+    label: '1.171 (Windows-Update repariert)',
     releaseDate: '02.11.2026',
     description: 'Windows-App: „Nach Update suchen“ meldete „sha512 checksum mismatch“. Die App lädt Updates jetzt immer komplett (kein Teil-Download), leert bei diesem Fehler den Zwischenspeicher und versucht es einmal neu. Wirkt ab dieser Version, die alte App muss einmal per Hand installiert werden.',
     features: [
@@ -2588,8 +2515,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.177',
-    label: '1.177 (Extern 255 & Zurück stabil)',
+    id: 'v1.172',
+    label: '1.172 (Extern 255 & Zurück stabil)',
     releaseDate: '02.11.2026',
     description: 'Extern-Spule: Der X2D meldet deine externe Spule als id 255 (PETG weiß), die App zielte auf 254. Jetzt wird 255 gesetzt, gelesen und bestätigt. Esc und Zurück/Vor: ein hängender Zähler konnte Zurück-Tasten verschlucken, er läuft jetzt nach 0,7 s von selbst ab.',
     features: [
@@ -2601,8 +2528,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.178',
-    label: '1.178 (Extern wie Bambu Studio)',
+    id: 'v1.173',
+    label: '1.173 (Extern wie Bambu Studio)',
     releaseDate: '02.11.2026',
     description: 'Echte Ursache gefunden: Der X2D braucht beim Setzen der externen Spule das Feld slot_id 0 (so macht es Bambu Studio und Home Assistant). Ohne das Feld hängt der X2D und antwortet gar nicht. Jetzt: ams_id 255, tray_id 254, slot_id 0, wie die anderen Programme.',
     features: [
@@ -2614,8 +2541,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.179',
-    label: '1.179 (Aktiver Slot am X2D)',
+    id: 'v1.174',
+    label: '1.174 (Aktiver Slot am X2D)',
     releaseDate: '02.11.2026',
     description: 'Extern-Spule klappt jetzt. Neu: Die App erkennt beim X2D, welcher Platz gerade druckt (pro Düse, wie Home Assistant). Damit wird die externe Spule beim Drucken als aktiv markiert und das Gewicht nach dem Druck von der richtigen Spule abgezogen.',
     features: [
@@ -2628,8 +2555,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.180',
-    label: '1.180 (Ganze Gramm, Extern & Trocknung live)',
+    id: 'v1.175',
+    label: '1.175 (Ganze Gramm, Extern & Trocknung live)',
     releaseDate: '02.11.2026',
     description: 'Gewicht ohne Nachkommastellen (kein 749.9000000000001 g mehr). Die Spule auf Platz 5 heißt jetzt „Extern“ statt „AMS 5“. „Trocknet“ kommt jetzt vom Drucker selbst und nur für AMS-Slots 1-4, nicht mehr aus einer lokalen Merkliste. Die Spulen-Anzeige aktualisiert sich jede Sekunde.',
     features: [
@@ -2643,8 +2570,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.181',
-    label: '1.181 (Trocknen-Optionen)',
+    id: 'v1.176',
+    label: '1.176 (Trocknen-Optionen)',
     releaseDate: '02.11.2026',
     description: 'Im Fenster „Neuer Druck“ gibt es bei „Danach trocknen“ jetzt Einstellungen: Temperatur (45–65 °C), Dauer (2–24 h oder eigene) und „Nach dem Trocknen ausschalten“. Voreingestellt ist der Vorschlag aus deinen Spulen im AMS.',
     features: [
@@ -2658,8 +2585,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.182',
-    label: '1.182 (Status-LED am NFC-ESP)',
+    id: 'v1.177',
+    label: '1.177 (Status-LED am NFC-ESP)',
     releaseDate: '02.11.2026',
     description: 'Der LED-Streifen läuft jetzt am selben ESP32 wie die NFC-Leser (ESPHome, GPIO27). Kein zweiter ESP32 und kein WLED nötig. Fortschrittsbalken, Pause, fertig, Fehler und Trocknen funktionieren wie vorher.',
     features: [
@@ -2674,8 +2601,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.183',
-    label: '1.183 (Status-LED in der Werkstatt)',
+    id: 'v1.178',
+    label: '1.178 (Status-LED in der Werkstatt)',
     releaseDate: '02.11.2026',
     description: 'Alles zur Status-LED hat jetzt einen eigenen Tab „Status-LED“ in der Werkstatt (Werkzeug-Knopf oben). Unter Verbindungen ist sie weg, unter Mitteilungen war sie nie.',
     features: [
@@ -2688,8 +2615,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.184',
-    label: '1.184 (Druck-Meldung beim Öffnen)',
+    id: 'v1.179',
+    label: '1.179 (Druck-Meldung beim Öffnen)',
     releaseDate: '02.11.2026',
     description: 'Öffnest du die App, während ein Druck läuft, kommt jetzt immer eine Meldung „Druck läuft“ mit Auftrag, Fortschritt, Restzeit und Spule. Auch wenn der Druck schon vor Minuten gestartet wurde oder die Start-Meldung schon da war.',
     features: [
@@ -2702,8 +2629,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.185',
-    label: '1.185 (Kamera direkt, Slot-Farbe)',
+    id: 'v1.180',
+    label: '1.180 (Kamera direkt, Slot-Farbe)',
     releaseDate: '02.11.2026',
     description: 'Die Kamera holt sich das Bild jetzt direkt vom Drucker (RTSPS im LAN-Modus), Home Assistant ist nur noch die Reserve. Außerdem zeigt ein AMS-Slot die zugewiesene Spule (z. B. Weiß), nicht mehr die Farbe, die der Drucker meldet.',
     features: [
@@ -2718,8 +2645,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.186',
-    label: '1.186 (Windows-Update-Fix)',
+    id: 'v1.181',
+    label: '1.181 (Windows-Update-Fix)',
     releaseDate: '03.11.2026',
     description: 'Die Windows-App fand keine neuen Versionen mehr, weil die Programm-Versionsnummer seit 1.168 gleich blieb (2.0.181). Jetzt zählt jeder Build automatisch hoch (2.1.x), dann erkennt der Updater jede neue Version.',
     features: [
@@ -2732,8 +2659,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.187',
-    label: '1.187 (Update ohne Lücke)',
+    id: 'v1.182',
+    label: '1.182 (Update ohne Lücke)',
     releaseDate: '03.11.2026',
     description: 'Der Fehler „Cannot find channel latest.yml“ kam, weil die neue Version genau beim Prüfen veröffentlicht wurde. Jetzt bleibt das Release bestehen, und die App probiert es bei so einem Fehler nach 6 Sekunden selbst noch einmal.',
     features: [
@@ -2746,8 +2673,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.188',
-    label: '1.188 (LED testen & Strom-Grenze)',
+    id: 'v1.183',
+    label: '1.183 (LED testen & Strom-Grenze)',
     releaseDate: '03.11.2026',
     description: 'Die Status-LED läuft jetzt am ESP32. In der App kann man jeden Modus einzeln an der echten LED testen und den Druckfortschritt mit einem Schieber simulieren. Die Firmware begrenzt den Strom, damit ein kleines 5-V-Netzteil reicht, und die Farbreihenfolge des Streifens ist leicht einstellbar.',
     features: [
@@ -2762,8 +2689,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.189',
-    label: '1.189 (LED-Farbtest & Fehlertext)',
+    id: 'v1.184',
+    label: '1.184 (LED-Farbtest & Fehlertext)',
     releaseDate: '03.11.2026',
     description: 'Die Farben des LED-Streifens stimmten nicht und der Schieber meldete nur einen allgemeinen Fehler. Jetzt gibt es einen Farbtest direkt im ESP32 (Rot, Grün, Blau nacheinander), die App sagt, welche Farbreihenfolge in die YAML gehört, und zeigt bei Fehlern den genauen Text von Home Assistant.',
     features: [
@@ -2777,8 +2704,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.190',
-    label: '1.190 (LED-Befehle kommen an)',
+    id: 'v1.185',
+    label: '1.185 (LED-Befehle kommen an)',
     releaseDate: '03.11.2026',
     description: 'Der LED-Test zeigte nur grün und volle Helligkeit, und der Schieber ging nicht. Grund: Die Server-Weiterleitung zu Home Assistant hatte Licht-Farbe, Helligkeit und den Regler gesperrt, nur „Ein/Aus“ kam durch. Jetzt sind genau diese Befehle erlaubt, streng geprüft (nur ein Licht, nur Farbe, Helligkeit, Effekt; nur der Intensity-Regler 0–255).',
     features: [
@@ -2792,8 +2719,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.191',
-    label: '1.191 (LED-Farben echt)',
+    id: 'v1.186',
+    label: '1.186 (LED-Farben echt)',
     releaseDate: '03.11.2026',
     description: 'Die LED-Farben waren verfälscht: Pause kam gelbgrün statt bernsteingelb, Fertig blau statt grün. Grund war die Gamma-Kurve von ESPHome, die bei der kleinen Strom-Grenze die Werte zerquetscht. Jetzt ist sie aus, die Farben stimmen. „Trocknen“ ist aus der LED entfernt.',
     features: [
@@ -2806,8 +2733,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.192',
-    label: '1.192 (YAML mit Datum)',
+    id: 'v1.187',
+    label: '1.187 (YAML mit Datum)',
     releaseDate: '03.11.2026',
     description: 'Die ESP32-Datei filament-ams.yaml trägt jetzt oben ihr Erstelldatum mit Uhrzeit und die Revision. So sieht man sofort, ob die geflashte Datei die neueste ist.',
     features: [
@@ -2819,8 +2746,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.193',
-    label: '1.193 (Update-Netzfix)',
+    id: 'v1.188',
+    label: '1.188 (Update-Netzfix)',
     releaseDate: '04.11.2026',
     description: 'Windows-App: „Nach Update suchen“ brach mit net::ERR_HTTP2_PROTOCOL_ERROR ab. Die App nutzt jetzt HTTP/1.1 statt HTTP/2 und versucht es bei Netzfehlern automatisch nochmal. Dazu gibt es einen verständlichen Hinweis statt des Fehlercodes.',
     features: [
@@ -2833,8 +2760,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.194',
-    label: '1.194 (LED-Farbmenü)',
+    id: 'v1.189',
+    label: '1.189 (LED-Farbmenü)',
     releaseDate: '04.11.2026',
     description: 'Neues Menü „Farben einstellen“ in der Status-LED: für Druck, Pause, Fertig und Fehler eine eigene Farbe wählen. Die LED zeigt sie sofort live, sie wird automatisch fest gespeichert und für den echten Druck übernommen.',
     features: [
@@ -2848,8 +2775,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.195',
-    label: '1.195 (Slot schreibt Drucker)',
+    id: 'v1.190',
+    label: '1.190 (Slot schreibt Drucker)',
     releaseDate: '04.11.2026',
     description: 'Spule für AMS-Slot 1-4 wählen schreibt jetzt wirklich auf den Drucker (Material, Farbe, Temperatur). Vorher wurde nur in der App gespeichert, der Drucker behielt alte Werte und „Mit Drucker synchronisieren“ holte die falsche Spule zurück. Das Warnzeichen verschwindet, sobald der Drucker bestätigt.',
     features: [
@@ -2862,13 +2789,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     viewMode: 'simple'
   },
   {
-    id: 'v1.196',
-    label: '1.196 (Build gemessen)',
+    id: 'v1.191',
+    label: '1.191 (Neues Menü)',
     releaseDate: '04.11.2026',
-    description: 'Build-Zeiten gemessen: Windows-Installer braucht etwa 2,5 Minuten, Web etwa 2 Minuten, Handy-APK etwa 2,5 Minuten. Ein Zwischenspeicher für Electron brachte praktisch nichts und wurde wieder entfernt. Schneller geht es nicht, der Installer muss jedes Mal neu gebaut werden.',
+    description: 'Menü neu sortiert und flach: Werkzeuge, Mitteilungen, Geräte, Einstellungen, Info. Die Werkstatt ist aufgelöst, Statistik steht oben in der Leiste, Etiketten im Menü, Status-LED bei den Geräten. Die Mitteilungs-Einstellungen sind in einzelne Seiten aufgeteilt. Esc öffnet und schließt das Menü, die Maus-Tasten Zurück und Vor funktionieren. Die angezeigte Version passt jetzt zur Revision. Revisionen, die nur Spulen-Daten geändert haben, sind raus, die Nummern rücken nach.',
     features: [
-      '⏱️ Messung: Windows ca. 2,5 Min, Web ca. 2 Min, APK ca. 2,5 Min',
-      '🧪 Zwischenspeicher getestet: kein Gewinn, wieder entfernt'
+      '🧭 Menü flach in Gruppen: Werkzeuge, Mitteilungen, Geräte, Einstellungen, Info',
+      '📊 Statistik oben in der Leiste, Etiketten im Menü, Status-LED unter Geräte',
+      '🔔 Mitteilungen aufgeteilt: Druck, Trocknen und Feuchte, Fast leere Spulen, Aufs Handy, Zeiten',
+      '⌨️ Esc öffnet das Menü, wenn nichts offen ist, sonst schließt es eine Ebene',
+      '🖱️ Maus Vor-Taste öffnet das zuletzt Geschlossene wieder (Zurück schließt)',
+      '🔢 Installiert-Anzeige zeigt die Revision (1.191) statt der Build-Nummer',
+      '🧹 Reine Spulen-Revisionen entfernt, Nummern angepasst',
+      '📱 Handy: App/Desktop-Umschalter ausgeblendet, Leiste bleibt kompakt'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],

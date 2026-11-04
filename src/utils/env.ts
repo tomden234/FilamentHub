@@ -23,9 +23,13 @@ export function isAppShell(): boolean {
 /** Versionsnummer dieses Builds (aus package.json, wird beim Bauen eingesetzt) */
 export const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0';
 
-/** Revisionsname zur Anzeige. Intern zählt die Nummer als 2.0.<Revision> (damit Updates von 2.0.1 aus weiter aufwärts erkannt werden),
+/** Build-Nummer (Windows/Android zählen 2.1.<Build> hoch, nur für den Updater) */
+export const APP_BUILD: string = APP_VERSION.split('.').pop() || '';
+
+/** Revisionsname zur Anzeige (1.191 usw., aus dem Revisionsmenü). Intern zählt die Nummer als 2.0.<Revision> (damit Updates von 2.0.1 aus weiter aufwärts erkannt werden),
  *  gezeigt wird 1.<Revision>: 2.0.102 → „1.102“. Die 2 bleibt für ein großes Update frei. */
-export const APP_REVISION: string = APP_VERSION.replace(/^2\.0\.(\d{3,})$/, '1.$1').replace(/\.0$/, '');
+export const APP_REVISION: string =
+  typeof __APP_REVISION__ === 'string' && __APP_REVISION__ ? __APP_REVISION__ : APP_VERSION.replace(/^2\.0\.(\d{3,})$/, '1.$1').replace(/\.0$/, '');
 
 // Windows-App (Electron, Release "desktop-latest")
 export const IS_DESKTOP = typeof navigator !== 'undefined' && /Electron\//.test(navigator.userAgent);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Bell, BellRing, Lightbulb, QrCode, SlidersHorizontal, Wrench, X } from 'lucide-react';
+import { BarChart3, Bell, BellRing, Lightbulb, QrCode, SlidersHorizontal, X } from 'lucide-react';
 import type { Spool } from '../../types/filament';
 import { NoticesTab } from './NoticesTab';
 import { InboxTab } from './InboxTab';
@@ -25,6 +25,8 @@ const WORKSHOP_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType
 export interface WorkshopModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Vor-Taste der Maus: Fenster wieder öffnen */
+  onReopen?: () => void;
   tab: WorkshopTab;
   onTabChange: (tab: WorkshopTab) => void;
   spools: Spool[];
@@ -34,15 +36,18 @@ export interface WorkshopModalProps {
 }
 
 /** Glocke: Mitteilungen mit Einstellungen. Werkzeug-Knopf: Werkstatt (Statistik, Etiketten). */
-export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, tab, onTabChange, spools, labelSpoolId, focusId }) => {
+export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, onReopen, tab, onTabChange, spools, labelSpoolId, focusId }) => {
   const unread = useUnreadCount();
-  useBackLayer(isOpen, onClose, 'workshop');
+  useBackLayer(isOpen, onClose, 'workshop', onReopen);
   if (!isOpen) return null;
   const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue' || tab === 'led';
   // Drucke und Warteschlange stecken jetzt in der Drucker-Leiste rechts; alte Verweise landen bei der Statistik
   if (tab === 'prints' || tab === 'queue') queueMicrotask(() => onTabChange('stats'));
-  const tabs = isWorkshop ? WORKSHOP_TABS : NOTICE_TABS;
-  const HeadIcon = isWorkshop ? Wrench : BellRing;
+  // 1.191: Statistik, Etiketten und Status-LED sind eigene Fenster (aus Menü bzw. Leiste oben), ohne Werkstatt-Reiter
+  const single = isWorkshop ? WORKSHOP_TABS.find(t => t.id === tab) || WORKSHOP_TABS[0] : null;
+  const tabs = isWorkshop ? [] : NOTICE_TABS;
+  const HeadIcon = single ? single.icon : BellRing;
+  const SUBS: Record<string, string> = { stats: 'Verbrauch, Drucke und Lager auf einen Blick', labels: 'QR-Etiketten für deine Spulen drucken', led: 'LED-Streifen am Drucker einstellen und testen' };
 
   return (
     <div
@@ -63,9 +68,9 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
               <HeadIcon className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base tracking-tight">{isWorkshop ? 'Werkstatt' : 'Mitteilungen'}</h3>
+              <h3 className="font-extrabold text-base tracking-tight">{single ? single.label : 'Mitteilungen'}</h3>
               <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
-                {isWorkshop ? 'Statistik, Etiketten und Status-LED' : 'Was passiert ist und welche Meldungen du willst'}
+                {single ? SUBS[single.id] : 'Was passiert ist und welche Meldungen du willst'}
               </p>
             </div>
           </div>
@@ -79,7 +84,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, t
           </button>
         </div>
 
-        {(
+        {tabs.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto px-4 pt-3 pb-1 shrink-0">
           {tabs.map(t => {
             const Icon = t.icon;

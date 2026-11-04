@@ -10,7 +10,7 @@ import {
   ChevronDown,
   Tag,
   FileText,
-  Wrench,
+  BarChart3,
   Bell
 } from 'lucide-react';
 import { ThreeDPrinterIcon } from './ThreeDPrinterIcon';
@@ -144,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Zone 2: App vs. Desktop Toggle & Parameter-Switch (nur im Browser) */}
         {!appShell && (
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           {/* Umschalter zwischen App und Desktop mit kleinen Icons */}
           <div
             className="inline-flex items-center rounded-xl p-0.5 border shadow-inner transition-colors"
@@ -300,11 +300,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* Werkstatt: Etiketten und Helfer */}
+          {/* Statistik: eigenes Fenster (Etiketten und Status-LED sind im Menü) */}
           {onOpenWorkshop && (
             <button
               onClick={onOpenWorkshop}
-              title="Werkstatt: Drucke, Statistik, Etiketten"
+              title="Statistik: Verbrauch, Drucke, Lager"
+              aria-label="Statistik öffnen"
               className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
               style={{
                 backgroundColor: 'var(--app-card-sub)',
@@ -312,8 +313,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 color: 'var(--app-text)'
               }}
             >
-              <Wrench className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden sm:inline text-[11px]">Werkstatt</span>
+              <BarChart3 className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden sm:inline text-[11px]">Statistik</span>
             </button>
           )}
 

@@ -8,6 +8,17 @@ import { fileURLToPath } from 'url';
 
 const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
+/** Neueste Revision (z. B. „1.191“) aus dem Revisionsmenü: die gleiche Nummer zeigen Menü, Update-Knopf und FunFacts */
+function latestRevision(): string {
+  try {
+    const txt = fs.readFileSync(new URL('./src/data/defaultSpools.ts', import.meta.url), 'utf8');
+    const ids = [...txt.matchAll(/id: 'v(1\.\d+)'/g)].map(m => m[1]);
+    return ids[ids.length - 1] || '';
+  } catch {
+    return '';
+  }
+}
+
 // Echte Codezeilen für die Fun Facts, beim Bauen gezählt (TypeScript/React, Server, Android-Plugins)
 function countCodeLines(): number {
   // fileURLToPath statt URL.pathname: unter Windows (Desktop-Build) ergab pathname einen kaputten Pfad („/D:/…“) und damit 0 Zeilen
@@ -42,6 +53,7 @@ export default defineConfig(() => {
     base: process.env.VITE_BASE || '/',
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
+      __APP_REVISION__: JSON.stringify(latestRevision()),
       __CODE_LINES__: JSON.stringify(countCodeLines())
     },
     plugins: [

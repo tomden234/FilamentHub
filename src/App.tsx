@@ -112,7 +112,9 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Offizielle Profile immer aktuell halten (inkl. v1.23 & v1.24) und eigene Snapshots beibehalten
           const officialIds = new Set(INITIAL_VERSION_PROFILES.map(p => p.id));
-          const customProfiles = parsed.filter((p: VersionProfile) => !officialIds.has(p.id) && !LEGACY_REVISION_IDS.includes(p.id));
+          // Alte offizielle Revisionen, die es nach dem Aufräumen (1.191) nicht mehr gibt, fallen raus; eigene Sicherungen bleiben
+          const staleOfficial = (p: VersionProfile) => /^v1\.\d+$/.test(p.id) && /^1\.\d+ \(/.test(String(p.label || ''));
+          const customProfiles = parsed.filter((p: VersionProfile) => !officialIds.has(p.id) && !LEGACY_REVISION_IDS.includes(p.id) && !staleOfficial(p));
           const merged = [...INITIAL_VERSION_PROFILES, ...customProfiles];
           safeStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(merged));
           return merged;
@@ -125,7 +127,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.196';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.191';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -319,11 +321,11 @@ export default function App() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
   useBackLayer(isSpoolModalOpen, () => { setIsSpoolModalOpen(false); setSpoolToEdit(null); setSpoolPrefill(null); }, 'spool');
-  useBackLayer(isHistoryModalOpen, () => setIsHistoryModalOpen(false), 'history');
-  useBackLayer(isAppAndQrOpen, () => setIsAppAndQrOpen(false), 'appqr');
-  useBackLayer(isCameraModalOpen, () => setIsCameraModalOpen(false), 'camera');
+  useBackLayer(isHistoryModalOpen, () => setIsHistoryModalOpen(false), 'history', () => setIsHistoryModalOpen(true));
+  useBackLayer(isAppAndQrOpen, () => setIsAppAndQrOpen(false), 'appqr', () => setIsAppAndQrOpen(true));
+  useBackLayer(isCameraModalOpen, () => setIsCameraModalOpen(false), 'camera', () => setIsCameraModalOpen(true));
   const [isNfcModalOpen, setIsNfcModalOpen] = useState<boolean>(false);
-  useBackLayer(isNfcModalOpen, () => setIsNfcModalOpen(false), 'nfc');
+  useBackLayer(isNfcModalOpen, () => setIsNfcModalOpen(false), 'nfc', () => setIsNfcModalOpen(true));
   const [nfcModalMode, setNfcModalMode] = useState<'read' | 'write' | 'batch' | 'write-direct' | 'inspect'>('batch');
   const [nfcSpoolId, setNfcSpoolId] = useState<string | undefined>(undefined);
   // Tag wurde schon gelesen (Halten am Handy / App-Start durch Tag): Tag-Fenster zeigt direkt diese Spule
@@ -590,7 +592,12 @@ export default function App() {
       if (e.key === 'Escape') {
         // 1.175: Esc schließt immer nur EINE Ebene (Fenster, Menü-Seite, Menü), wie die Zurück-Taste.
         // Fenster mit useEscapeClose sind schon vorher dran gewesen (Capture-Phase).
-        if (!closeTopLayer()) setIsNfcModalOpen(false);
+        // 1.191: ist nichts offen, öffnet Esc das Menü (nicht beim Tippen in ein Feld)
+        if (!closeTopLayer()) {
+          const t = (e.target as HTMLElement)?.tagName;
+          if (isNfcModalOpen) setIsNfcModalOpen(false);
+          else if (t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' && !isDocked) setIsSidebarOpen(true);
+        }
       }
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -1156,6 +1163,8 @@ export default function App() {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        onReopen={() => setIsSidebarOpen(true)}
+        onOpenWorkshop={tab => { if (!isDocked) setIsSidebarOpen(false); setLabelSpoolId(null); setWorkshopTab(tab); setIsWorkshopOpen(true); }}
         onOpenNotices={() => { setIsSidebarOpen(false); setWorkshopTab('notices'); setIsWorkshopOpen(true); }}
         viewMode={viewMode}
         onSetViewMode={handleSetViewMode}
@@ -1321,6 +1330,7 @@ export default function App() {
         <WorkshopModal
           isOpen={isWorkshopOpen}
           onClose={() => setIsWorkshopOpen(false)}
+          onReopen={() => setIsWorkshopOpen(true)}
           tab={workshopTab}
           onTabChange={setWorkshopTab}
           spools={spools}

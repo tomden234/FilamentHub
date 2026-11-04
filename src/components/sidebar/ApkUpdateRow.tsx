@@ -68,7 +68,7 @@ export const ApkUpdateRow: React.FC = () => {
         <span className="min-w-0 flex-1 leading-tight">
           <span className="block text-xs font-extrabold">{bridge?.checkUpdate
               ? upd?.state === 'ready'
-                ? `Jetzt installieren (v${upd.version})`
+                ? 'Jetzt installieren (neue Version)'
                 : upd?.state === 'downloading'
                 ? `Lade Update … ${upd.percent ?? 0} %`
                 : busy || upd?.state === 'checking'
