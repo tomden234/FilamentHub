@@ -2863,12 +2863,12 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
   },
   {
     id: 'v1.196',
-    label: '1.196 (Schneller Build)',
+    label: '1.196 (Build gemessen)',
     releaseDate: '04.11.2026',
-    description: 'Das Windows-Update ist schneller fertig: Electron und der Installer-Builder werden jetzt zwischengespeichert statt bei jedem Build neu geladen. Spart etwa eine Minute pro Update.',
+    description: 'Build-Zeiten gemessen: Windows-Installer braucht etwa 2,5 Minuten, Web etwa 2 Minuten, Handy-APK etwa 2,5 Minuten. Ein Zwischenspeicher für Electron brachte praktisch nichts und wurde wieder entfernt. Schneller geht es nicht, der Installer muss jedes Mal neu gebaut werden.',
     features: [
-      '⚡ Windows-Build mit Zwischenspeicher (Electron, NSIS, Builder-Werkzeuge)',
-      '⏱️ Gesamtdauer pro Update etwa 3 statt 4,5 Minuten'
+      '⏱️ Messung: Windows ca. 2,5 Min, Web ca. 2 Min, APK ca. 2,5 Min',
+      '🧪 Zwischenspeicher getestet: kein Gewinn, wieder entfernt'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
