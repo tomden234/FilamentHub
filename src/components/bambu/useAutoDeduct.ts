@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { printerApi } from '../../api/printerApi';
 import type { Spool } from '../../types/filament';
-import { autoDeductSince, bestSpool, isAutoDeductOn, markDone, readDone } from '../../utils/printUsage';
+import { alreadyDeducted, autoDeductSince, bestSpool, isAutoDeductOn, markDone, readDone, recordDeduct, slotFromTask } from '../../utils/printUsage';
+import { addSystemLog } from '../../utils/logService';
 
 // Zieht den Verbrauch fertiger Drucke automatisch von der Spule ab.
 // Auslöser: Druck wird fertig, App startet, App kommt in den Vordergrund. Es werden nur Aufträge genommen, die nach dem
@@ -45,14 +46,22 @@ export function useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected, g
         for (const task of open) {
           if (cancelled) return;
           const { spools: sp, amsSlots: slots, notify: toast } = latest.current;
+          const endAt = new Date(task.endTime || task.startTime).getTime();
+          // Schon über den LAN-Weg abgezogen (gleicher Druck): nur merken, nicht noch einmal abziehen
+          if (alreadyDeducted(task.title, endAt)) {
+            markDone([task.id]);
+            continue;
+          }
           const perSpool = new Map<string, number>();
           for (const f of task.filaments) {
-            // Slot 254/255 = externe Spule → eigener Eintrag 5 (nicht AMS)
-            const assigned = f.slot === undefined ? undefined : f.slot >= 254 * 4 ? slots[5] : slots[f.slot + 1];
+            // Slot laut Drucker: 1-4 = erstes AMS, 5 = externe Spule. Andere AMS-Einheiten: nur über Material/Farbe.
+            const slot = slotFromTask(f.slot);
+            const assigned = slot ? slots[slot] : undefined;
             const id = assigned && sp.some(s => s.id === assigned) ? assigned : bestSpool(sp, f.material, f.colorHex);
             if (id && f.grams > 0) perSpool.set(id, (perSpool.get(id) || 0) + f.grams);
           }
           markDone([task.id]); // zuerst merken, damit nichts doppelt abgezogen wird
+          recordDeduct(task.title, endAt, 'cloud');
           const parts: string[] = [];
           let n = 0;
           perSpool.forEach((grams, id) => {
@@ -65,6 +74,7 @@ export function useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected, g
           });
           if (parts.length) {
             toast({ text: `Auto-Abzug „${task.title}“: ${parts.join(', ')}`, ok: true });
+            addSystemLog('spule', 'Auto-Abzug (Cloud)', `${task.title}: ${parts.join(', ')}`, 'success');
           }
           // Abzüge nacheinander lassen (jeder braucht den neuen Spulenstand)
           await new Promise(r => setTimeout(r, Math.max(1, n) * 300 + 200));

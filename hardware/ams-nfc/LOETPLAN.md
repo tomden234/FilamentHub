@@ -1,6 +1,6 @@
-# Lötplan: ESP32 + 5 × RC522 + 2 × SHT31-D
+# Lötplan: ESP32 + 5 × RC522 + 2 × SHT31-D + Status-LED
 
-Stand 30.10.2026, passt zu `filament-ams.yaml`. Alles mit **3,3 V**, nie 5 V an RC522 oder Sensoren.
+Stand 04.11.2026 (Gesamtbild: `wiring/6_gesamt_ein_esp.png`), passt zu `filament-ams.yaml`. Alles mit **3,3 V**, nie 5 V an RC522 oder Sensoren.
 
 ## 1. Gemeinsame Leitungen (alle 5 Leser parallel, 4 Stück)
 
@@ -35,6 +35,19 @@ IRQ bleibt bei allen Lesern frei.
 | SDA | grün | D21 (GPIO21) | D33 (GPIO33) |
 
 Beide Sensoren haben Adresse 0x44, deshalb je ein eigener Bus. Beschriftung auf dem Sensor-Board geht vor, falls die Reihenfolge anders ist.
+
+## 3b. Status-LED (WS2812B-Streifen, 5 V)
+
+| Streifen-Pin | Kabel | geht an |
+|---|---|---|
+| +5V | rot | Netzteil 5 V / 2 A **+5V** (nie an 3V3 oder VIN des ESP32) |
+| DIN | grün | ESP32 **D27 (GPIO27)**, optional 330 Ω in die Leitung |
+| GND | weiß/schwarz | Netzteil **GND** und ESP32 **GND** (alle drei verbunden) |
+
+- Am **Anfang** des Streifens anschließen (Pfeile auf dem Streifen zeigen weg vom ESP).
+- ESP32 bleibt per USB versorgt. Nur die Masse ist gemeinsam.
+- LED-Anzahl und Strom-Grenze stehen oben in `filament-ams.yaml`: `led_count` (jetzt 144) und `led_cap` (0.15). Nach dem Kürzen z. B. 40 LEDs: `led_count: "40"`, `led_cap: "0.6"`.
+- Werden die hinteren LEDs gelblich: zusätzlich +5V und GND auch ans Ende des Streifens.
 
 ## 4. Reihenfolge beim Löten
 

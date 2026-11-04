@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Spool } from '../../types/filament';
-import { PENDING_DEDUCT_KEY, rememberJobGrams, type PendingDeduct } from '../../utils/printUsage';
+import { PENDING_DEDUCT_KEY, alreadyDeducted, recordDeduct, rememberJobGrams, type PendingDeduct } from '../../utils/printUsage';
 import { safeStorage } from '../../utils/safeStorage';
 
 // Nach einem Druck: „Spule abziehen?“ Ja/Nein. Spule und Gramm sind vorgewählt, wenn bekannt (Druckdatei, gemerkt, aktiver Slot).
@@ -34,6 +34,12 @@ export const LanDeductPrompt: React.FC<Props> = ({ pending, spools, onDeduct, on
     safeStorage.removeItem(PENDING_DEDUCT_KEY);
     onClose();
   };
+
+  // 1.192: Hat die Cloud diesen Druck inzwischen schon abgezogen, nicht noch einmal fragen
+  useEffect(() => {
+    if (alreadyDeducted(pending.jobName, Date.parse(pending.at))) done();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const set = (i: number, patch: Partial<Row>) => setRows(prev => prev.map((r, k) => (k === i ? { ...r, ...patch } : r)));
 
@@ -117,6 +123,7 @@ export const LanDeductPrompt: React.FC<Props> = ({ pending, spools, onDeduct, on
           <button
             disabled={!ok}
             onClick={() => {
+              recordDeduct(pending.jobName, Date.parse(pending.at), 'lan');
               parsed.forEach((r, i) => setTimeout(() => onDeduct(r.spoolId, r.g), i * 300));
               if (pending.reason !== 'failed') rememberJobGrams(pending.jobName, parsed.reduce((a, r) => a + r.g, 0));
               done();

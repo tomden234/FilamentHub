@@ -1,4 +1,4 @@
-"""EIN Bild: 1 ESP32 mit allen 5 RC522-Lesern UND beiden SHT31-D-Sensoren.
+"""EIN Bild: 1 ESP32 mit allen 5 RC522-Lesern, beiden SHT31-D-Sensoren UND dem Status-LED-Streifen (WS2812B).
 Aufruf: python3 build_gesamt.py  (braucht matplotlib, build_wiring.py liegt daneben)
 Pins müssen zu hardware/ams-nfc/filament-ams.yaml passen.
 """
@@ -10,10 +10,10 @@ S = {"VIN": "#d62828", "GND": "#f08a24", "SCL": "#e0b400", "SDA": "#2a9d4a"}
 
 
 def fig_gesamt():
-    W, H = 1900, 1660
-    fig, ax = fig_ax(W, H, "Alles an EINEM ESP32: 5 × RC522-Leser + 2 × SHT31-D-Sensor",
-                     "Leser: Sammelschienen + je eine CS-Leitung. Sensoren: 3V3 und GND von den Sammelschienen, SDA/SCL je eigene Pins (eigener Bus).")
-    ex, ey, ew, eh = 40, 120, 330, 1330
+    W, H = 1900, 1960
+    fig, ax = fig_ax(W, H, "Alles an EINEM ESP32: 5 × RC522 + 2 × SHT31-D + Status-LED-Streifen",
+                     "Leser: Sammelschienen + je eine CS-Leitung. Sensoren: 3V3/GND von den Schienen, SDA/SCL eigene Pins. LED: Daten an D27, Strom vom 5-V-Netzteil, GND gemeinsam.")
+    ex, ey, ew, eh = 40, 120, 330, 1640
     esp_block(ax, ex, ey, ew, eh, note=False)
     ax.text(ex + ew / 2 - 20, ey + 880, "Pins nach der Beschriftung\nauf der Platine suchen", fontsize=8.5, color="#8fb3d6",
             ha="center", va="center", zorder=5, linespacing=1.3)
@@ -22,10 +22,12 @@ def fig_gesamt():
                 "MISO": ("GPIO19", "D19", 371), "RST": ("GPIO22", "D22", 515), "CS1": ("GPIO5", "D5", 543), "CS2": ("GPIO17", "D17", 571),
                 "CS3": ("GPIO16", "D16", 705), "CS4": ("GPIO4", "D4", 733), "CS5": ("GPIO13", "D13", 761),
                 "BOXSCL": ("GPIO32", "SCL Box", 1165), "BOXSDA": ("GPIO21", "SDA Box", 1200),
-                "TROCKSCL": ("GPIO25", "SCL Trockner", 1340), "TROCKSDA": ("GPIO33", "SDA Trockner", 1368)}
+                "TROCKSCL": ("GPIO25", "SCL Trockner", 1340), "TROCKSDA": ("GPIO33", "SDA Trockner", 1368),
+                "LED": ("GPIO27", "D27 · LED-Daten", 1545)}
     rails = ["3V3", "GND", "SCK", "MOSI", "MISO", "RST"]
     xr = {k: 800 - i * 46 for i, k in enumerate(rails)}
     r_top, r_bot = 140, 1440
+    r_bot_gnd = 1640  # GND-Schiene geht weiter bis zum LED-Streifen
     mtops = [140 + i * 190 for i in range(5)]
     mx, mw, mh = 1210, 380, 170
     names = ["Leser 1", "Leser 2", "Leser 3", "Leser 4", "Leser 5"]
@@ -90,14 +92,53 @@ def fig_gesamt():
             dot(ax, mx, pins[nm], S[nm], r=4.6)
     ax.text(1590, 1112, "Sensor-Kabel: Rot = VIN (von 3V3), Orange = GND (von GND), Gelb = SCL, Grün = SDA", fontsize=9.6, color=SOFT, ha="right", va="center")
 
-    legend(ax, 60, 1480, [("3V3", C["3V3"], "3V3"), ("GND", C["GND"], "GND (Leser)"), ("SCK", C["SCK"], "SCK"), ("MOSI", C["MOSI"], "MOSI"),
+    # --- Status-LED (WS2812B) + 5-V-Netzteil ---
+    LED_R, LED_K, LED_G = "#d62828", "#222222", "#2a9d4a"
+    wire(ax, [(xr["GND"], r_bot), (xr["GND"], r_bot_gnd)], C["GND"], lw=3.4, z=2)
+    lt = 1480
+    bw.rbox(ax, mx, lt, mw, 180, "#6b3fa0", "#2e1a47", lw=2.5)
+    ax.text(mx + mw - 18, lt + 22, "LED-Streifen WS2812B (5 V)", fontsize=12.5, fontweight="bold", color="white", ha="right", va="center", zorder=5)
+    ax.text(mx + mw - 18, lt + 160, "Anfang des Streifens (Pfeil zeigt weg vom ESP)\nHA: light.filament_ams_status_led", fontsize=8.6, color="#e6d8f5",
+            ha="right", va="center", zorder=5, linespacing=1.3)
+    lp = {"GND": lt + 55, "DIN": lt + 85, "5V": lt + 115}
+    for nm, y in lp.items():
+        ax.add_patch(Rectangle((mx - 9, y - 6), 18, 12, fc="#d9a441", ec="#8a6a1f", lw=1, zorder=4))
+        ax.text(mx + 16, y, {"5V": "+5V (rot)", "DIN": "DIN (Daten, grün)", "GND": "GND (weiß/schwarz)"}[nm], fontsize=9.5,
+                fontweight="bold", color="white", va="center", zorder=5)
+    # GND: ESP-GND-Schiene -> Streifen GND
+    wire(ax, [(xr["GND"], lp["GND"]), (mx, lp["GND"])], LED_K, lw=3.0)
+    dot(ax, xr["GND"], lp["GND"], LED_K, r=4.6)
+    dot(ax, mx, lp["GND"], LED_K, r=4.6)
+    ax.text(1000, lp["GND"] - 11, "GND gemeinsam: ESP, Streifen und Netzteil", fontsize=9.3, color=SOFT, ha="center", va="center", zorder=5)
+    # Daten: ESP D27 -> DIN
+    lab, sub, y = esp_rows["LED"]
+    esp_pin(ax, px, y, lab, sub)
+    wire(ax, [(px, y), (470, y), (470, lp["DIN"]), (mx, lp["DIN"])], LED_G, lw=3.0)
+    dot(ax, px, y, LED_G)
+    dot(ax, mx, lp["DIN"], LED_G, r=4.6)
+    ax.text(1000, lp["DIN"] + 12, "D27 → DIN (optional 330 Ω in die Leitung)", fontsize=9.3, color=SOFT, ha="center", va="center", zorder=5)
+    # Netzteil
+    nx, ny, nw, nh = 880, 1710, 260, 100
+    bw.rbox(ax, nx, ny, nw, nh, "#3a3a3a", "#111111", lw=2.5)
+    ax.text(nx + nw / 2, ny + 24, "Netzteil 5 V / 2 A", fontsize=12, fontweight="bold", color="white", ha="center", va="center", zorder=5)
+    ax.text(nx + nw / 2, ny + 50, "(USB-Kabel: rot = +5V, schwarz = GND)", fontsize=8.6, color="#dddddd", ha="center", va="center", zorder=5)
+    ax.text(nx + 30, ny + 78, "GND", fontsize=10, fontweight="bold", color="#cccccc", va="center", zorder=5)
+    ax.text(nx + nw - 30, ny + 78, "+5V", fontsize=10, fontweight="bold", color="#ff8080", ha="right", va="center", zorder=5)
+    # Netzteil-GND an das untere Ende der GND-Schiene
+    wire(ax, [(nx + 50, ny), (nx + 50, 1685), (xr["GND"], 1685), (xr["GND"], r_bot_gnd)], LED_K, lw=3.4)
+    dot(ax, xr["GND"], r_bot_gnd, LED_K, r=4.6)
+    # Netzteil +5V direkt an den Streifen
+    wire(ax, [(nx + nw - 50, ny), (nx + nw - 50, 1685), (1150, 1685), (1150, lp["5V"]), (mx, lp["5V"])], LED_R, lw=3.4)
+    dot(ax, mx, lp["5V"], LED_R, r=4.6)
+    ax.text(mx + mw + 12, lp["5V"], "nie an 3V3\noder VIN!", fontsize=8.8, color="#d62828", fontweight="bold", va="center", zorder=5, linespacing=1.2)
+
+    legend(ax, 60, 1830, [("3V3", C["3V3"], "3V3"), ("GND", C["GND"], "GND (Leser)"), ("SCK", C["SCK"], "SCK"), ("MOSI", C["MOSI"], "MOSI"),
                           ("MISO", C["MISO"], "MISO"), ("RST", C["RST"], "RST (GPIO22)")], per_row=6, dx=165, size=10)
-    ax.text(1080, 1480, "CS1 bis CS5: Violett, Braun, Grau, Pink, Türkis (Vorschlag)", fontsize=9.5, color=SOFT, va="center")
-    warn_box(ax, 40, 1520, 1820, 120,
+    ax.text(1080, 1830, "CS1 bis CS5: Violett, Braun, Grau, Pink, Türkis (Vorschlag)", fontsize=9.5, color=SOFT, va="center")
+    warn_box(ax, 40, 1855, 1820, 95,
              "Wichtig\n"
-             "•  Alles NUR an 3,3 V (nie an 5 V oder VIN des ESP32). IRQ bleibt bei allen Lesern frei.\n"
-             "•  Sammelschienen = Litzen innen verlöten, Lötstellen mit Schrumpfschlauch sichern. Beide Sensoren holen 3V3 und GND von den Schienen.\n"
-             "•  Reihenfolge: Leser 1 + Box-Sensor testen, dann Leser 2 bis 5, zuletzt Trockner-Sensor. Zwischen GND und 3V3 darf kein Durchgang sein.",
+             "•  IRQ bleibt bei allen Lesern frei. Sammelschienen innen verlöten, mit Schrumpfschlauch sichern. Zwischen GND und 3V3 kein Durchgang.\n"
+             "•  Leser/Sensoren NUR an 3,3 V. LED-Streifen NUR am 5-V-Netzteil, GND von Netzteil, Streifen und ESP verbinden. ESP bleibt per USB versorgt.",
              fs=10.2)
     save(fig, "6_gesamt_ein_esp")
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { Spool } from '../types/filament';
 import { readTrays, EXTERNAL_SLOT, baseMaterial, colorDistance, activeSlotFromPrinter } from '../utils/amsMatch';
 import { printerApi } from '../api/printerApi';
-import { bestSpool, isAutoDeductOn, jobKey, readJobGrams, rememberJobGrams, PENDING_DEDUCT_KEY, type PendingDeduct } from '../utils/printUsage';
+import { alreadyDeducted, bestSpool, isAutoDeductOn, jobKey, readJobGrams, recordDeduct, rememberJobGrams, PENDING_DEDUCT_KEY, type PendingDeduct } from '../utils/printUsage';
 import { mainSlot, type PrintSession } from '../utils/printSession';
 import type { PrintEndInfo } from './usePrintWatch';
 import { safeStorage } from '../utils/safeStorage';
@@ -80,6 +80,12 @@ export function useLanDeduct(p: Params) {
     };
 
     const deductNow = (parts: { spoolId: string; grams: number }[], source: string) => {
+      // Schon über die Cloud abgezogen (gleicher Druck): nichts doppelt
+      if (alreadyDeducted(name, Date.now())) {
+        addSystemLog('spule', 'Auto-Abzug übersprungen', `${name}: schon abgezogen (Cloud)`, 'info');
+        return;
+      }
+      recordDeduct(name, Date.now(), 'lan');
       const texts: string[] = [];
       parts.forEach((x, i) => {
         const grams = round1(x.grams);
@@ -106,7 +112,11 @@ export function useLanDeduct(p: Params) {
         const res = await printerApi.jobWeights({ jobName: name });
         const fil = res.ok && res.data?.success ? res.data.filaments : undefined;
         if (!fil || fil.length === 0) return fallback();
-        const candidates = [...trays.filter(t => !t.empty), ...(vtTray?.tray_type ? [{ slot: EXTERNAL_SLOT, type: String(vtTray.tray_type), colorHex: '#' + String(vtTray.tray_color || '888888').slice(0, 6) }] : [])];
+        const all = [...trays.filter(t => !t.empty), ...(vtTray?.tray_type ? [{ slot: EXTERNAL_SLOT, type: String(vtTray.tray_type), colorHex: '#' + String(vtTray.tray_color || '888888').slice(0, 6) }] : [])];
+        // 1.192: Slots, die beim Druck wirklich aktiv waren, zuerst (zwei gleiche Spulen in zwei Slots: die benutzte gewinnt)
+        const used = new Set(Object.keys(session.slots || {}).map(Number));
+        const usedOnly = all.filter(t => used.has(t.slot));
+        const candidates = usedOnly.length ? usedOnly : all;
         const perSpool = new Map<string, number>();
         for (const f of fil) {
           let target = '';

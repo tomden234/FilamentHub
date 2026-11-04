@@ -42,6 +42,51 @@ export function bestSpool(spools: Spool[], material: string, colorHex: string): 
   return best;
 }
 
+// --- 1.192: Ein Druck darf nur EINMAL abgezogen werden, egal ob über die Cloud (Auftragsliste) oder den LAN-Weg (Druckende live).
+// Beide Wege tragen hier Name + Ende ein. Gleicher Name und Ende innerhalb von 45 Minuten = derselbe Druck.
+export const DEDUCT_LOG_KEY = 'bambu_deduct_log';
+const SAME_PRINT_MS = 45 * 60 * 1000;
+
+interface DeductLogEntry {
+  key: string;
+  at: number;
+  via: 'cloud' | 'lan';
+}
+
+function readDeductLog(): DeductLogEntry[] {
+  try {
+    const v = JSON.parse(safeStorage.getItem(DEDUCT_LOG_KEY) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Druck als abgezogen merken */
+export function recordDeduct(name: string, at: number, via: 'cloud' | 'lan'): void {
+  const key = jobKey(name);
+  if (!key) return;
+  const list = readDeductLog().filter(e => Date.now() - e.at < 14 * 86400_000);
+  list.push({ key, at: Number.isFinite(at) ? at : Date.now(), via });
+  safeStorage.setItem(DEDUCT_LOG_KEY, JSON.stringify(list.slice(-100)));
+}
+
+/** Wurde dieser Druck (Name, Ende) schon abgezogen? */
+export function alreadyDeducted(name: string, at: number): boolean {
+  const key = jobKey(name);
+  if (!key) return false;
+  const t = Number.isFinite(at) ? at : Date.now();
+  return readDeductLog().some(e => e.key === key && Math.abs(e.at - t) < SAME_PRINT_MS);
+}
+
+/** AMS-Slot (1-4, 5 = extern) aus Bambus amsId/slotId-Nummer (amsId * 4 + slotId). Andere AMS-Einheiten: null. */
+export function slotFromTask(n: number | undefined): number | null {
+  if (n === undefined || !Number.isFinite(n)) return null;
+  if (n >= 254 * 4) return 5; // externe Spule (amsId 254/255)
+  if (n >= 0 && n <= 3) return n + 1; // erstes AMS
+  return null;
+}
+
 export function isAutoDeductOn(): boolean {
   return safeStorage.getItem(AUTO_KEY) !== 'off';
 }

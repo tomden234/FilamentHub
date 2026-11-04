@@ -2806,5 +2806,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.192',
+    label: '1.192 (Abzug sicher)',
+    releaseDate: '04.11.2026',
+    description: 'Der Verbrauch nach dem Druck wird jetzt sicher nur einmal und von der richtigen Spule abgezogen. Cloud-Weg und LAN-Weg wissen voneinander, ein Druck kann nicht mehr doppelt abgezogen werden. Bei zwei gleichen Spulen zählt der Slot, der wirklich gedruckt hat. Jeder Abzug steht im Protokoll. Dazu der komplette Verdrahtungsplan mit LED-Streifen.',
+    features: [
+      '🔒 Kein doppelter Abzug mehr: Cloud und LAN merken sich jeden Druck (Name + Ende)',
+      '🎯 Bei zwei gleichen Filamenten: Abzug vom Slot, der beim Druck aktiv war',
+      '🧩 Externe Spule und zweite AMS-Einheit sauber erkannt (kein Verwechseln mit Slot 5)',
+      '📝 Jeder Auto-Abzug im Protokoll (Cloud und LAN), zum Nachprüfen',
+      '❔ Nachfrage nach dem Druck verschwindet, wenn schon abgezogen',
+      '🔌 Verdrahtungsplan: ESP32, 5 Leser, 2 Sensoren und LED-Streifen mit Netzteil'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
