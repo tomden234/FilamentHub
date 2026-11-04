@@ -45,6 +45,7 @@ export interface AmsFilamentResponse extends ApiBase {
 export interface PrintTask {
   id: string;
   title: string;
+  jobName?: string;
   status: number;
   startTime: string;
   endTime: string;

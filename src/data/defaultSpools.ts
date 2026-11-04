@@ -2823,5 +2823,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.193',
+    label: '1.193 (Alle Drucke überall)',
+    releaseDate: '04.11.2026',
+    description: 'Die Druckliste fehlte auf manchen Geräten: Jedes Gerät speicherte nur die Drucke, die es selbst gesehen hat. Jetzt wird die Liste zwischen Handy, Windows und Web abgeglichen, Drucke aus der Bambu Cloud werden nachgetragen (auch wenn keine App lief) und doppelte Einträge zusammengefasst. Gelöschte Drucke bleiben gelöscht.',
+    features: [
+      '🔄 Druckliste auf allen Geräten gleich (Cloud-Abgleich, Fotos bleiben auf dem Gerät)',
+      '☁️ Drucke aus der Bambu Cloud nachgetragen, auch wenn die App zu war',
+      '🧹 Doppelte Einträge (gleicher Druck zweimal erkannt) werden zu einem',
+      '🗑️ Gelöschte Drucke kommen nicht von einem anderen Gerät zurück',
+      '⚖️ Auto-Abzug aus der Cloud steht jetzt mit Gramm und Kosten beim Druck'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

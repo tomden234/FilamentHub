@@ -17,6 +17,16 @@ export interface CloudPayload {
   updatedAt?: number;
   spools?: unknown[];
   printHistory?: unknown[];
+  /** Druckliste mit Foto-Infos (ohne Fotos), wird zwischen Geräten vereinigt */
+  printLog?: unknown[];
+  printLogRemoved?: string[];
+}
+
+/** Zwei Drucklisten vereinigen (nach id), damit kein Gerät die Drucke eines anderen überschreibt */
+function unionById(a: unknown, b: unknown): unknown[] {
+  const out = new Map<string, unknown>();
+  for (const list of [a, b]) if (Array.isArray(list)) for (const r of list as any[]) if (r && r.id) out.set(String(r.id), r);
+  return Array.from(out.values()).slice(-400);
 }
 
 /**
@@ -43,7 +53,14 @@ export const cloudSync = {
     const res = await cloudFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...existing, ...payload })
+      body: JSON.stringify({
+        ...existing,
+        ...payload,
+        ...(payload.printLog || existing.printLog ? { printLog: unionById(existing.printLog, payload.printLog) } : {}),
+        ...(payload.printLogRemoved || existing.printLogRemoved
+          ? { printLogRemoved: Array.from(new Set([...((existing.printLogRemoved as string[]) || []), ...(payload.printLogRemoved || [])])).slice(-300) }
+          : {})
+      })
     });
     return res.ok;
   }

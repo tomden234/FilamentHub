@@ -36,13 +36,89 @@ const MAX = 200;
 let cache: PrintRecord[] | null = null;
 const listeners = new Set<() => void>();
 
+const REMOVED_KEY = 'filamenthub_print_log_removed';
+
 function read(): PrintRecord[] {
   try {
     const v = JSON.parse(safeStorage.getItem(KEY) || '[]');
-    return Array.isArray(v) ? v : [];
+    return Array.isArray(v) ? dedupePrintLog(v.filter(isRecord)) : [];
   } catch {
     return [];
   }
+}
+
+function isRecord(r: any): r is PrintRecord {
+  return r && typeof r.id === 'string' && typeof r.name === 'string' && Number.isFinite(Number(r.endMs));
+}
+
+/** Name vergleichbar machen: „Case.gcode.3mf“ = „case“ */
+const nameKey = (n: string) =>
+  String(n || '')
+    .toLowerCase()
+    .replace(/\.(gcode\.3mf|3mf|gcode)$/g, '')
+    .trim();
+
+/** Gleicher Druck? Gleicher Name und Ende nah beieinander */
+export function samePrint(a: { name: string; endMs: number }, b: { name: string; endMs: number }, windowMs = 45 * 60_000): boolean {
+  return nameKey(a.name) === nameKey(b.name) && Math.abs(Number(a.endMs) - Number(b.endMs)) < windowMs;
+}
+
+/** Wie viel ein Eintrag weiß (Verbrauch, Dauer, Foto): der bessere bleibt bei doppelten */
+const richness = (r: PrintRecord) => (r.grams > 0 ? 4 : 0) + (r.durationMin > 0 ? 2 : 0) + (r.hasPhoto ? 1 : 0);
+
+/** 1.193: doppelte Einträge (gleicher Druck zweimal erkannt) zu einem zusammenfassen, neueste zuerst */
+export function dedupePrintLog(list: PrintRecord[]): PrintRecord[] {
+  const out: PrintRecord[] = [];
+  for (const r of [...list].sort((a, b) => b.endMs - a.endMs)) {
+    const i = out.findIndex(x => x.id === r.id || samePrint(x, r, 10 * 60_000));
+    if (i < 0) {
+      out.push(r);
+      continue;
+    }
+    const keep = richness(r) > richness(out[i]) ? r : out[i];
+    const other = keep === r ? out[i] : r;
+    out[i] = {
+      ...keep,
+      durationMin: keep.durationMin || other.durationMin,
+      startMs: keep.startMs || other.startMs,
+      spools: keep.spools.length ? keep.spools : other.spools,
+      grams: keep.grams || other.grams,
+      cost: keep.cost || other.cost
+    };
+  }
+  return out;
+}
+
+function removedIds(): string[] {
+  try {
+    const v = JSON.parse(safeStorage.getItem(REMOVED_KEY) || '[]');
+    return Array.isArray(v) ? v.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Für den Cloud-Abgleich: Einträge (ohne Fotos) und gelöschte IDs */
+export function printLogForCloud(): { printLog: PrintRecord[]; printLogRemoved: string[] } {
+  return { printLog: getPrintLog().map(r => ({ ...r, hasPhoto: false })), printLogRemoved: removedIds() };
+}
+
+/** Einträge eines anderen Geräts übernehmen (Vereinigung). Gibt zurück, ob hier etwas fehlte, das die Cloud nicht hat. */
+export function mergePrintLog(remote: unknown, remoteRemoved: unknown): { changed: boolean; localHasMore: boolean } {
+  const gone = new Set([...removedIds(), ...(Array.isArray(remoteRemoved) ? remoteRemoved.map(String) : [])]);
+  safeStorage.setItem(REMOVED_KEY, JSON.stringify(Array.from(gone).slice(-300)));
+  const local = getPrintLog();
+  const rem: PrintRecord[] = Array.isArray(remote) ? remote.filter(isRecord).map(r => ({ ...r, hasPhoto: false, spools: Array.isArray(r.spools) ? r.spools : [] })) : [];
+  const localHasMore = local.some(l => !gone.has(l.id) && !rem.some(r => r.id === l.id || samePrint(r, l, 10 * 60_000)));
+  const merged = dedupePrintLog([...local, ...rem.filter(r => !local.some(l => l.id === r.id))]).filter(r => !gone.has(r.id));
+  const changed = JSON.stringify(merged.map(r => r.id + r.grams)) !== JSON.stringify(local.map(r => r.id + r.grams));
+  if (changed) save(merged);
+  return { changed, localHasMore };
+}
+
+/** Gibt es diesen Druck schon (gleicher Name, Ende innerhalb von 45 min)? */
+export function findPrint(name: string, endMs: number): PrintRecord | undefined {
+  return getPrintLog().find(r => samePrint(r, { name, endMs }));
 }
 
 export function getPrintLog(): PrintRecord[] {
@@ -61,8 +137,9 @@ function save(list: PrintRecord[]): void {
 
 export function addPrintRecord(r: Omit<PrintRecord, 'spools' | 'grams' | 'cost' | 'hasPhoto'>): void {
   const list = getPrintLog();
-  if (list.some(x => x.id === r.id)) return;
-  save([{ ...r, spools: [], grams: 0, cost: 0, hasPhoto: false }, ...list]);
+  if (removedIds().includes(r.id) || list.some(x => x.id === r.id || samePrint(x, r, 10 * 60_000))) return;
+  save([{ ...r, spools: [], grams: 0, cost: 0, hasPhoto: false }, ...list].sort((a, b) => b.endMs - a.endMs));
+  notifyChange();
 }
 
 /** Verbrauch einem Druck zuordnen (beim Abzug) */
@@ -78,11 +155,25 @@ export function addPrintUsage(printId: string | undefined, spool: Spool | undefi
     : [...r.spools, { id: spool.id, label: `${spool.brand} ${spool.name}`, color: spool.colorHex, grams, cost }];
   const next = { ...r, spools, grams: spools.reduce((a, s) => a + s.grams, 0), cost: spools.reduce((a, s) => a + s.cost, 0) };
   save(list.map(x => (x.id === printId ? next : x)));
+  notifyChange();
 }
 
 export function removePrintRecord(id: string): void {
+  // Gelöscht merken, damit der Abgleich ihn nicht von einem anderen Gerät zurückholt
+  safeStorage.setItem(REMOVED_KEY, JSON.stringify([...removedIds(), id].slice(-300)));
   save(getPrintLog().filter(r => r.id !== id));
+  notifyChange();
   void deletePhoto(id);
+}
+
+/** Druckliste geändert: andere Geräte bald informieren (App.tsx gleicht ab) */
+export const PRINT_LOG_CHANGED = 'filamenthub:printlog-changed';
+function notifyChange(): void {
+  try {
+    window.dispatchEvent(new CustomEvent(PRINT_LOG_CHANGED));
+  } catch {
+    /* ohne Fenster egal */
+  }
 }
 
 function markPhoto(id: string): void {

@@ -175,6 +175,8 @@ export interface BambuTaskFilament {
 export interface BambuTask {
   id: string;
   title: string;
+  /** Auftragsname wie am Drucker (subtask_name), zum Abgleich mit der Druckliste */
+  jobName?: string;
   status: number; // 2 = fertig, 3 = abgebrochen/fehlgeschlagen
   startTime: string;
   endTime: string;
@@ -212,6 +214,7 @@ export async function getRecentTasks(token: string, limit = 15): Promise<{ succe
       return {
         id: String(t.id),
         title: String(t.designTitle || t.title || 'Druckauftrag'),
+        jobName: String(t.title || t.designTitle || ''),
         status: Number(t.status) || 0,
         startTime: String(t.startTime || ''),
         endTime: String(t.endTime || ''),

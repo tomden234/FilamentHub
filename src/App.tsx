@@ -7,6 +7,7 @@ import { normalizeSpools, spoolTara } from './utils/spoolState';
 import { MY_SPOOLS_SEED } from './data/mySpools';
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { storageApi, cloudSync } from './api';
+import { mergePrintLog, printLogForCloud, PRINT_LOG_CHANGED } from './utils/printLog';
 
 import {
   HistoryEntry,
@@ -127,7 +128,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.192';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.193';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -415,7 +416,8 @@ export default function App() {
         const saved = await cloudSync.save(cloudDbUrl, {
           updatedAt: stamp,
           spools: newSpools,
-          printHistory: newHistory
+          printHistory: newHistory,
+          ...printLogForCloud()
         });
         if (saved) {
           setSyncStatus({ label: 'Cloud synchron', ok: true });
@@ -440,6 +442,9 @@ export default function App() {
         const cloud = await cloudSync.load(cloudDbUrl);
         if (cloud.ok) {
           const data = cloud.data;
+          // 1.193: Druckliste immer vereinigen (jedes Gerät sieht alle Drucke, auch die, bei denen es zu war)
+          const pl = mergePrintLog(data?.printLog, data?.printLogRemoved);
+          if (pl.localHasMore) void cloudSync.save(cloudDbUrl, printLogForCloud()).catch(() => {});
           const cloudAt = Number(data?.updatedAt) || 0;
           const localAt = Number(safeStorage.getItem(SPOOLS_AT_KEY)) || 0;
           if (data && Array.isArray(data.spools) && cloudAt > localAt) {
@@ -508,6 +513,20 @@ export default function App() {
       document.removeEventListener('visibilitychange', vis);
     };
   }, []);
+
+  // Neuer oder gelöschter Druck: kurz danach in die Cloud (andere Geräte holen ihn beim nächsten Abgleich)
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const onChange = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => void cloudSync.save(cloudDbUrl, printLogForCloud()).catch(() => {}), 3000);
+    };
+    window.addEventListener(PRINT_LOG_CHANGED, onChange);
+    return () => {
+      if (t) clearTimeout(t);
+      window.removeEventListener(PRINT_LOG_CHANGED, onChange);
+    };
+  }, [cloudDbUrl]);
 
   // Drucker-Zugang und Einstellungen verschlüsselt zwischen den Geräten abgleichen
   useDeviceSync(cloudDbUrl, showToast);

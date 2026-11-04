@@ -3,6 +3,7 @@ import { printerApi } from '../../api/printerApi';
 import type { Spool } from '../../types/filament';
 import { alreadyDeducted, autoDeductSince, bestSpool, isAutoDeductOn, markDone, readDone, recordDeduct, slotFromTask } from '../../utils/printUsage';
 import { addSystemLog } from '../../utils/logService';
+import { addPrintRecord, addPrintUsage, findPrint } from '../../utils/printLog';
 
 // Zieht den Verbrauch fertiger Drucke automatisch von der Spule ab.
 // Auslöser: Druck wird fertig, App startet, App kommt in den Vordergrund. Es werden nur Aufträge genommen, die nach dem
@@ -35,6 +36,24 @@ export function useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected, g
         const since = autoDeductSince();
         const res = await printerApi.tasks(10);
         if (!res.ok || !res.data?.tasks) return;
+        // 1.193: Druckliste aus der Bambu Cloud ergänzen (Drucke, während keine App lief)
+        for (const t of res.data.tasks) {
+          if (t.status !== 2 && t.status !== 3) continue;
+          const endMs = new Date(t.endTime || t.startTime).getTime();
+          const startMs = new Date(t.startTime).getTime();
+          const name = t.jobName || t.title;
+          if (!Number.isFinite(endMs) || findPrint(name, endMs)) continue;
+          addPrintRecord({
+            id: `cloud-${t.id}`,
+            name,
+            startMs: Number.isFinite(startMs) ? startMs : endMs,
+            endMs,
+            state: t.status === 2 ? 'FINISH' : 'FAILED',
+            missed: true,
+            percent: t.status === 2 ? 100 : 0,
+            durationMin: Math.round((t.costTime || 0) / 60)
+          });
+        }
         const done = readDone();
         const open = res.data.tasks
           .filter(t => t.status === 2 && t.filaments.length > 0 && !done.includes(t.id))
@@ -48,7 +67,8 @@ export function useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected, g
           const { spools: sp, amsSlots: slots, notify: toast } = latest.current;
           const endAt = new Date(task.endTime || task.startTime).getTime();
           // Schon über den LAN-Weg abgezogen (gleicher Druck): nur merken, nicht noch einmal abziehen
-          if (alreadyDeducted(task.title, endAt)) {
+          const jobName = task.jobName || task.title;
+          if (alreadyDeducted(jobName, endAt) || alreadyDeducted(task.title, endAt)) {
             markDone([task.id]);
             continue;
           }
@@ -61,13 +81,15 @@ export function useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected, g
             if (id && f.grams > 0) perSpool.set(id, (perSpool.get(id) || 0) + f.grams);
           }
           markDone([task.id]); // zuerst merken, damit nichts doppelt abgezogen wird
-          recordDeduct(task.title, endAt, 'cloud');
+          recordDeduct(jobName, endAt, 'cloud');
+          const recordId = findPrint(jobName, endAt)?.id;
           const parts: string[] = [];
           let n = 0;
           perSpool.forEach((grams, id) => {
             const g = Math.round(grams);
             if (g <= 0) return;
             setTimeout(() => latest.current.onDeductWeight(id, g), n * 300);
+            addPrintUsage(recordId, sp.find(x => x.id === id), g);
             n++;
             const s = sp.find(x => x.id === id);
             parts.push(`${g} g von ${s ? `${s.brand} ${s.name}` : 'Spule'}`);
