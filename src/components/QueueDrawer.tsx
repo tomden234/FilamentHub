@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { piPrinterFiles, piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
@@ -98,7 +98,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     if (r) setItems(r);
   };
 
-  const act = async (action: 'remove' | 'start' | 'refresh', id?: string) => {
+  const act = async (action: 'remove' | 'start' | 'refresh' | 'duplicate', id?: string) => {
     setBusy(true);
     setMsg(null);
     const r = await piQueueAction(action, id ? { id } : {});
@@ -201,9 +201,14 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                   </div>
                   {it.missing.length > 0 && <div className="text-[10px] text-amber-400">Im AMS fehlt: {it.missing.join(', ')}</div>}
                 </div>
-                <button className="p-1.5 rounded-lg cursor-pointer disabled:opacity-30" disabled={busy} onClick={() => void act('remove', it.id)} title="Entfernen" aria-label="Entfernen">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <button className="p-1.5 rounded-lg cursor-pointer disabled:opacity-30 hover:bg-white/10" disabled={busy} onClick={() => void act('duplicate', it.id)} title="Kopieren (noch einmal drucken)" aria-label="Kopieren">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <button className="p-1.5 rounded-lg cursor-pointer disabled:opacity-30 hover:bg-white/10 text-rose-400" disabled={busy} onClick={() => void act('remove', it.id)} title="Löschen" aria-label="Löschen">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))
           )}

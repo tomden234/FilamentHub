@@ -259,6 +259,28 @@ export async function autoScan(force = false): Promise<ScanResult> {
   }
 }
 
+/** Eintrag kopieren: gleiche Datei noch einmal direkt darunter einreihen (mit Titelbild) */
+export function queueDuplicate(id: string): boolean {
+  const list = load();
+  const i = list.findIndex(x => x.id === id);
+  if (i < 0) return false;
+  const nid = crypto.randomBytes(6).toString('hex');
+  let thumb = false;
+  const src = thumbPath(id);
+  if (src) {
+    try {
+      fs.copyFileSync(src, path.join(thumbDir(), `${nid}.png`));
+      thumb = true;
+    } catch {
+      /* ohne Bild */
+    }
+  }
+  list.splice(i + 1, 0, { ...list[i], id: nid, thumb, addedAt: Date.now() });
+  save();
+  void showLeds(0);
+  return true;
+}
+
 export function queueRemove(id: string): boolean {
   const before = load().length;
   items = load().filter(x => x.id !== id);

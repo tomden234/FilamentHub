@@ -3212,5 +3212,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.218',
+    label: '1.218 (Kopieren & Löschen)',
+    releaseDate: '05.11.2026',
+    description: 'Jeder Eintrag in der Warteschlange hat jetzt zwei Knöpfe: Kopieren reiht denselben Druck direkt darunter noch einmal ein (mit Bild), Löschen (rot) nimmt ihn raus (Pi-Add-on 1.3.1).',
+    features: [
+      '📋 Eintrag kopieren: gleicher Druck noch einmal direkt darunter',
+      '🗑️ Löschen-Knopf rot und gut sichtbar'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
