@@ -6,6 +6,7 @@ import { readTrays, mismatch, EXTERNAL_SLOT } from '../utils/amsMatch';
 import { paramsFromSpool, sendToSlot } from '../utils/slotAssign';
 import { addSystemLog } from '../utils/logService';
 import { useWorkshopSettings } from '../utils/workshopSettings';
+import { haFetch } from '../utils/haAutoOff';
 
 // NFC-Leser im AMS (ESPHome, siehe hardware/ams-nfc): liest über Home Assistant, welcher Tag in welchem Slot steckt,
 // und ordnet die passende Spule automatisch zu. Optional werden Material und Farbe an den Drucker geschickt.
@@ -14,6 +15,11 @@ import { useWorkshopSettings } from '../utils/workshopSettings';
 export const normUid = (s: string) => String(s || '').toLowerCase().replace(/[^0-9a-f]/g, '');
 
 const ENTITY_RE = /^sensor\.[a-z0-9_]*ams[a-z0-9_]*slot_?(\d)_tag$/;
+/** Zustand je Leser (ab Firmware 1.200): „OK (Chip 0x92)“, „Keine Verbindung …“ */
+const STATUS_RE = /^sensor\.[a-z0-9_]*ams[a-z0-9_]*_leser_(\d)$/;
+/** Zuletzt gelesener Tag an irgendeinem Leser (auch ignorierte) */
+const LAST_RE = /^sensor\.[a-z0-9_]*ams[a-z0-9_]*_letzter_tag$/;
+const STATUS_MS = 30_000;
 const POLL_MS = 4000;
 const DISCOVER_MS = 5 * 60 * 1000;
 
@@ -24,6 +30,10 @@ export interface NfcReaderState {
   tags: Record<number, string>;
   /** unbekannte Tags je Slot */
   unknown: Record<number, string>;
+  /** Zustand je Leser laut Firmware (leer = alte Firmware) */
+  status: Record<number, string>;
+  /** Zuletzt gelesener Tag (Test) */
+  lastTag: string;
 }
 
 interface Params {
@@ -48,7 +58,7 @@ function findSpoolForUid(uid: string, spools: Spool[]): string {
 
 export function useAmsNfcReaders(p: Params): NfcReaderState & { learn: (slot: number, spoolId: string) => void } {
   const [settings] = useWorkshopSettings();
-  const [state, setState] = useState<NfcReaderState>({ entities: {}, tags: {}, unknown: {} });
+  const [state, setState] = useState<NfcReaderState>({ entities: {}, tags: {}, unknown: {}, status: {}, lastTag: '' });
   const latest = useRef(p);
   latest.current = p;
   const handled = useRef<Record<number, string>>({});
@@ -61,23 +71,51 @@ export function useAmsNfcReaders(p: Params): NfcReaderState & { learn: (slot: nu
     let stop = false;
     let busy = false;
     let entities: Record<number, string> = {};
+    let statusEntities: Record<number, string> = {};
+    let lastEntity = '';
+    let status: Record<number, string> = {};
+    let lastStatus = 0;
     let lastDiscover = 0;
     const lastUid: Record<number, string> = {};
 
-    const discover = async (url: string, headers: Record<string, string>) => {
+    // 1.200: über haFetch (direkt, sonst über den eigenen Server). Vorher blockte der Browser-Schutz (CORS) in der Windows-App
+    // und im Browser die Abfrage still: die App sah dann keinen einzigen Leser.
+    const discover = async () => {
       lastDiscover = Date.now();
       try {
-        const res = await fetch(`${url}/api/states`, { headers, signal: AbortSignal.timeout(10000) });
+        const res = await haFetch('/api/states');
         if (!res.ok) return;
         const all: any[] = await res.json();
         const found: Record<number, string> = {};
+        const st: Record<number, string> = {};
+        lastEntity = '';
         for (const s of all) {
-          const m = String(s?.entity_id || '').match(ENTITY_RE);
-          if (m) found[Number(m[1])] = s.entity_id;
+          const id = String(s?.entity_id || '');
+          const m = id.match(ENTITY_RE);
+          if (m) found[Number(m[1])] = id;
+          const k = id.match(STATUS_RE);
+          if (k) {
+            statusEntities[Number(k[1])] = id;
+            st[Number(k[1])] = String(s?.state || '');
+          }
+          if (LAST_RE.test(id)) lastEntity = id;
         }
         entities = found;
+        status = st;
+        lastStatus = Date.now();
       } catch {
         /* HA nicht erreichbar */
+      }
+    };
+
+    const readState = async (entity: string): Promise<string | null> => {
+      try {
+        const r = await haFetch(`/api/states/${entity}`);
+        if (!r.ok) return null;
+        const st = String((await r.json())?.state || '');
+        return st === 'unknown' || st === 'unavailable' ? '' : st;
+      } catch {
+        return null;
       }
     };
 
@@ -90,32 +128,43 @@ export function useAmsNfcReaders(p: Params): NfcReaderState & { learn: (slot: nu
       if (typeof document !== 'undefined' && document.hidden) return;
       busy = true;
       try {
-        await pollOnce(url, { Authorization: `Bearer ${token}` });
+        await pollOnce();
       } finally {
         busy = false;
       }
     };
 
-    const pollOnce = async (url: string, headers: Record<string, string>) => {
-      if (!Object.keys(entities).length || Date.now() - lastDiscover > DISCOVER_MS) await discover(url, headers);
+    const pollOnce = async () => {
+      // Ohne Leser nur selten neu suchen (alle 60 s), sonst alle 5 Minuten
+      if ((!Object.keys(entities).length && Date.now() - lastDiscover > 60_000) || Date.now() - lastDiscover > DISCOVER_MS) await discover();
       const slots = Object.keys(entities).map(Number);
       if (!slots.length) {
-        setState(s => (Object.keys(s.entities).length ? { entities: {}, tags: {}, unknown: {} } : s));
+        setState(s => (Object.keys(s.entities).length ? { entities: {}, tags: {}, unknown: {}, status: {}, lastTag: '' } : s));
         return;
       }
       const tags: Record<number, string> = {};
-      await Promise.all(
-        slots.map(async slot => {
-          try {
-            const r = await fetch(`${url}/api/states/${entities[slot]}`, { headers, signal: AbortSignal.timeout(8000) });
-            if (!r.ok) return;
-            const st = String((await r.json())?.state || '');
-            tags[slot] = st === 'unknown' || st === 'unavailable' ? '' : st;
-          } catch {
-            /* einzelner Leser offline */
-          }
-        })
-      );
+      let lastTag = '';
+      await Promise.all([
+        ...slots.map(async slot => {
+          const st = await readState(entities[slot]);
+          if (st !== null) tags[slot] = st;
+        }),
+        (async () => {
+          if (lastEntity) lastTag = (await readState(lastEntity)) || '';
+        })(),
+        (async () => {
+          if (Date.now() - lastStatus < STATUS_MS) return;
+          lastStatus = Date.now();
+          const next: Record<number, string> = {};
+          await Promise.all(
+            Object.entries(statusEntities).map(async ([k, id]) => {
+              const st = await readState(id);
+              if (st !== null) next[Number(k)] = st;
+            })
+          );
+          status = { ...status, ...next };
+        })()
+      ]);
       const { spools, amsSlots, handleSetAmsSlot, ams, printerConnected, notify } = latest.current;
       const unknown: Record<number, string> = {};
       const trays = readTrays(ams);
@@ -166,7 +215,7 @@ export function useAmsNfcReaders(p: Params): NfcReaderState & { learn: (slot: nu
           });
         }
       }
-      setState({ entities: { ...entities }, tags, unknown });
+      setState({ entities: { ...entities }, tags, unknown, status: { ...status }, lastTag });
     };
 
     void poll();

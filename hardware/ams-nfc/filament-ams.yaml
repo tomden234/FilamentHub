@@ -1,4 +1,4 @@
-# Erstellt: 05.11.2026 14:00 Uhr (Revision 1.199)
+# Erstellt: 05.11.2026 15:00 Uhr (Revision 1.200)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -33,6 +33,8 @@ substitutions:
   # Bambu-Spulen haben MIFARE-Classic-Chips mit 4-Byte-Nummer (11 Zeichen): die werden ignoriert,
   # die liest das AMS selbst und meldet sie an die App.
   own_uid_min: "20"
+  # Empfangs-Verstärkung der RC522 (RFCfgReg): 0x70 = Maximum 48 dB (liest weiter, empfohlen bei billigen Modulen), 0x48 = Standard 33 dB
+  rfid_gain: "0x70"
   # Anzahl LEDs am Streifen (60 pro Meter oder 144 pro Meter)
   led_count: "144"
   # Helligkeitsgrenze 0-1 (Netzteil 5 V 2 A: 0.15 = max ca. 1,3 A bei weiß bei 144 LEDs). Mit stärkerem Netzteil erhöhen.
@@ -58,8 +60,22 @@ esp32:
   framework:
     type: arduino
 
+# DEBUG, damit im ESPHome-Protokoll jeder gelesene Tag erscheint („Found new tag …“ / „fremder Tag ignoriert“).
+# Laute Bereiche bleiben auf INFO.
 logger:
-  level: INFO
+  level: DEBUG
+  logs:
+    sensor: INFO
+    text_sensor: INFO
+    light: INFO
+    number: INFO
+    binary_sensor: INFO
+    sht3xd: INFO
+    i2c: INFO
+    wifi_signal: INFO
+    internal_temperature: INFO
+    api.service: INFO
+    esp32_rmt_led_strip: INFO
 
 api:
   encryption:
@@ -92,6 +108,16 @@ i2c:
     frequency: 50kHz
     scan: true
 
+# RST aller 5 Leser (GPIO22) dauerhaft HIGH: Leser sind wach, nichts „schwebt“.
+# (Vorher war GPIO22 nur Reset-Pin von Leser 1 und blieb danach oft offen/schwebend = Leser konnten in den Stromspar-Modus fallen.)
+# Wird beim Start vor den Lesern eingeschaltet (Hardware-Priorität) = sauberer Hard-Reset aller Leser.
+switch:
+  - platform: gpio
+    id: rfid_rst
+    pin: GPIO22
+    restore_mode: ALWAYS_ON
+    internal: true
+
 # Gemeinsamer SPI-Bus (VSPI) für alle 5 Leser
 spi:
   clk_pin: GPIO18
@@ -104,7 +130,6 @@ spi:
 rc522_spi:
   - id: reader_1
     cs_pin: GPIO5
-    reset_pin: GPIO22
     update_interval: 250ms
     data_rate: 1MHz
     on_tag:
@@ -115,9 +140,12 @@ rc522_spi:
             then:
               - script.stop: clear_1
               - text_sensor.template.publish: { id: slot_1_tag, state: !lambda "return x;" }
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 1: " + x;' }
             else:
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 1: " + x + " (ignoriert, kein NTAG)";' }
               - logger.log:
-                  format: "Slot 1: fremder Tag %s ignoriert (Bambu-RFID?)"
+                  level: INFO
+                  format: "Slot 1: fremder Tag %s ignoriert (kein 7-Byte-NTAG, z. B. Bambu-RFID)"
                   args: ["x.c_str()"]
     on_tag_removed:
       then:
@@ -138,9 +166,12 @@ rc522_spi:
             then:
               - script.stop: clear_2
               - text_sensor.template.publish: { id: slot_2_tag, state: !lambda "return x;" }
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 2: " + x;' }
             else:
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 2: " + x + " (ignoriert, kein NTAG)";' }
               - logger.log:
-                  format: "Slot 2: fremder Tag %s ignoriert (Bambu-RFID?)"
+                  level: INFO
+                  format: "Slot 2: fremder Tag %s ignoriert (kein 7-Byte-NTAG, z. B. Bambu-RFID)"
                   args: ["x.c_str()"]
     on_tag_removed:
       then:
@@ -161,9 +192,12 @@ rc522_spi:
             then:
               - script.stop: clear_3
               - text_sensor.template.publish: { id: slot_3_tag, state: !lambda "return x;" }
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 3: " + x;' }
             else:
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 3: " + x + " (ignoriert, kein NTAG)";' }
               - logger.log:
-                  format: "Slot 3: fremder Tag %s ignoriert (Bambu-RFID?)"
+                  level: INFO
+                  format: "Slot 3: fremder Tag %s ignoriert (kein 7-Byte-NTAG, z. B. Bambu-RFID)"
                   args: ["x.c_str()"]
     on_tag_removed:
       then:
@@ -184,9 +218,12 @@ rc522_spi:
             then:
               - script.stop: clear_4
               - text_sensor.template.publish: { id: slot_4_tag, state: !lambda "return x;" }
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 4: " + x;' }
             else:
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 4: " + x + " (ignoriert, kein NTAG)";' }
               - logger.log:
-                  format: "Slot 4: fremder Tag %s ignoriert (Bambu-RFID?)"
+                  level: INFO
+                  format: "Slot 4: fremder Tag %s ignoriert (kein 7-Byte-NTAG, z. B. Bambu-RFID)"
                   args: ["x.c_str()"]
     on_tag_removed:
       then:
@@ -207,9 +244,12 @@ rc522_spi:
             then:
               - script.stop: clear_5
               - text_sensor.template.publish: { id: slot_5_tag, state: !lambda "return x;" }
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 5: " + x;' }
             else:
+              - text_sensor.template.publish: { id: last_tag, state: !lambda 'return "Leser 5: " + x + " (ignoriert, kein NTAG)";' }
               - logger.log:
-                  format: "Slot 5: fremder Tag %s ignoriert (Bambu-RFID?)"
+                  level: INFO
+                  format: "Slot 5: fremder Tag %s ignoriert (kein 7-Byte-NTAG, z. B. Bambu-RFID)"
                   args: ["x.c_str()"]
     on_tag_removed:
       then:
@@ -218,6 +258,38 @@ rc522_spi:
               lambda: "return x.size() >= ${own_uid_min};"
             then:
               - script.execute: clear_5
+
+# Alle 10 s: Chip-Version jedes Lesers abfragen (zeigt, ob SPI-Kabel und Strom stimmen) und die Verstärkung setzen
+# (ein Leser-Neustart setzt sie zurück). 0x91/0x92 = echter MFRC522, 0x88/0xB2/0x12 = Nachbau (geht auch), 0x00/0xFF = keine Verbindung.
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          // Zugriff auf die Register des Lesers (die ESPHome-Klasse bietet das nicht öffentlich an)
+          struct Peek : public esphome::rc522::RC522 {
+            uint8_t version() { return this->pcd_read_register(VERSION_REG); }
+            uint8_t gain() { return this->pcd_read_register(RF_CFG_REG); }
+            void set_gain(uint8_t v) { this->pcd_write_register(RF_CFG_REG, v); }
+          };
+          esphome::rc522::RC522 *readers[5] = {id(reader_1), id(reader_2), id(reader_3), id(reader_4), id(reader_5)};
+          esphome::text_sensor::TextSensor *out[5] = {id(reader_1_state), id(reader_2_state), id(reader_3_state), id(reader_4_state), id(reader_5_state)};
+          const uint8_t want = ${rfid_gain};
+          for (int i = 0; i < 5; i++) {
+            char buf[64];
+            if (readers[i]->is_failed()) {
+              snprintf(buf, sizeof(buf), "Fehler beim Start (Kabel/Strom pruefen)");
+            } else {
+              Peek *p = static_cast<Peek *>(readers[i]);
+              uint8_t v = p->version();
+              if (v == 0x00 || v == 0xFF) {
+                snprintf(buf, sizeof(buf), "Keine Verbindung (0x%02X): SDA/SCK/MOSI/MISO/3V3 pruefen", v);
+              } else {
+                if ((p->gain() & 0x70) != (want & 0x70)) p->set_gain(want);
+                snprintf(buf, sizeof(buf), "OK (Chip 0x%02X)", v);
+              }
+            }
+            if (out[i]->state != buf) out[i]->publish_state(buf);
+          }
 
 # Slot erst nach "remove_after" als leer melden (Spule dreht sich beim Drucken)
 script:
@@ -383,6 +455,37 @@ binary_sensor:
       - delayed_off: 40ms
 
 text_sensor:
+  # Zum Testen: zuletzt gelesener Tag an irgendeinem Leser (auch ignorierte)
+  - platform: template
+    id: last_tag
+    name: "Letzter Tag"
+    icon: mdi:nfc-search-variant
+  # Zustand je Leser: OK (Chip-Version), „keine Verbindung“ (SPI-Kabel/Strom) oder „Fehler“
+  - platform: template
+    id: reader_1_state
+    name: "Leser 1"
+    icon: mdi:nfc
+    entity_category: diagnostic
+  - platform: template
+    id: reader_2_state
+    name: "Leser 2"
+    icon: mdi:nfc
+    entity_category: diagnostic
+  - platform: template
+    id: reader_3_state
+    name: "Leser 3"
+    icon: mdi:nfc
+    entity_category: diagnostic
+  - platform: template
+    id: reader_4_state
+    name: "Leser 4"
+    icon: mdi:nfc
+    entity_category: diagnostic
+  - platform: template
+    id: reader_5_state
+    name: "Leser 5"
+    icon: mdi:nfc
+    entity_category: diagnostic
   - platform: template
     id: slot_1_tag
     name: "Slot 1 Tag"

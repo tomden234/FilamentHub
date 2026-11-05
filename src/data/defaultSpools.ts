@@ -2943,5 +2943,23 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.200',
+    label: '1.200 (NFC-Leser Fix)',
+    releaseDate: '05.11.2026',
+    description: 'Alle 5 NFC-Leser gründlich geprüft. Firmware: Reset-Leitung (GPIO22) bleibt jetzt dauerhaft an statt zu schweben, maximale Empfangs-Verstärkung, jeder gelesene Tag steht im Protokoll, und jeder Leser meldet seinen Zustand an Home Assistant. App: Die Leser-Abfrage lief in der Windows-App und im Browser still ins Leere (Browser-Schutz), jetzt geht sie über den eigenen Server. Neue Leser-Anzeige mit Zustand und letztem Tag.',
+    features: [
+      '🔌 GPIO22 (RST aller Leser) dauerhaft HIGH: keine schlafenden Leser mehr',
+      '📶 Empfangs-Verstärkung auf Maximum (48 dB): Tags werden weiter gelesen',
+      '🩺 „Leser 1-5“ in Home Assistant: OK mit Chip-Version oder „Keine Verbindung“ (zeigt sofort Kabel- oder Stromfehler)',
+      '🏷️ „Letzter Tag“: zeigt jeden gelesenen Tag, auch ignorierte (4-Byte-Tags)',
+      '📜 Protokoll auf DEBUG: jeder Tag steht im ESPHome-Protokoll',
+      '🛠️ App: NFC-Abfrage über haFetch (direkt, sonst über den eigenen Server), lief vorher in Windows-App/Browser still ins Leere',
+      '🔍 App: Tipp auf „NFC-Leser“ zeigt jeden Slot mit Zustand, Tag und zuletzt gelesenem Tag'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -56,7 +56,7 @@ export interface PrinterExpandedPanelProps {
   amsDryHours: any;
   setAmsDryTemp: any;
   handleToggleAmsDrying: (...args: any[]) => any;
-  nfcInfo?: { readers: number; unknown: number[] };
+  nfcInfo?: { readers: number; unknown: number[]; tags?: Record<number, string>; status?: Record<number, string>; lastTag?: string };
   dryLoading: any;
   /** Ein Druck läuft (auch vorbereiten/pausiert) */
   printActive?: boolean;

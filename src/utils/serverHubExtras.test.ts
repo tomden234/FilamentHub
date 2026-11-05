@@ -121,3 +121,14 @@ describe('Stillstand', () => {
     expect(stalled(0, T)).toBe(false);
   });
 });
+
+describe('NFC-Leser über die Weiterleitung', () => {
+  it('lässt nur AMS-Sensoren lesen', async () => {
+    const { isRawAllowed } = await import('../../server/haRawAllow');
+    expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_slot_1_tag', undefined)).toBe(true);
+    expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_leser_3', undefined)).toBe(true);
+    expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_letzter_tag', undefined)).toBe(true);
+    expect(isRawAllowed('GET', '/api/states/sensor.wohnzimmer_temperatur', undefined)).toBe(false);
+    expect(isRawAllowed('GET', '/api/states/lock.haustuer', undefined)).toBe(false);
+  });
+});

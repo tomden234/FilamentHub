@@ -30,6 +30,21 @@ Gilt für ESP32-Boards mit 30 und mit 38 Pins (WROOM-32, DevKitC / NodeMCU).
 - Gemeinsame Leitungen sternförmig oder als Kette verlöten, Lötstellen mit Schrumpfschlauch sichern.
 - Erst **einen** Leser anschließen und testen, dann die anderen dazu.
 
+## Fehlersuche: Leser erkennt nichts (ab Revision 1.200)
+
+In Home Assistant (Gerät **Filament AMS**) und in der App (Tipp auf „NFC-Leser“) steht je Leser ein Zustand:
+
+| Zustand | Bedeutung | Was tun |
+|---|---|---|
+| `OK (Chip 0x92)` (oder 0x91, 0x88, 0xB2, 0x12) | Leser spricht mit dem ESP | Tag 1–2 cm mittig vor die Antenne halten, „Letzter Tag“ muss sich ändern |
+| `Keine Verbindung (0x00)` / `(0xFF)` | ESP hört den Leser nicht | SDA (CS) des Lesers, SCK, MOSI, MISO, 3V3 und GND prüfen. MISO/MOSI vertauscht ist der häufigste Fehler |
+| `Fehler beim Start` | Leser antwortete beim Start nicht | wie oben, dann ESP neu starten |
+| alle 5 `Keine Verbindung` | gemeinsame Leitung kaputt | SCK D18, MOSI D23, MISO D19, 3V3, GND |
+
+- **„Letzter Tag“** zeigt jeden gelesenen Tag, auch ignorierte. Steht dort „(ignoriert, kein NTAG)“, ist es ein 4-Byte-Tag: in der YAML `own_uid_min: "11"` setzen.
+- **Strom:** 5 Leser + ESP an einem USB-Anschluss am PC reicht manchmal nicht. Besser ein 5-V-Netzteil mit mind. 1 A am ESP.
+- **Protokoll:** ESPHome → Filament AMS → Protokoll. Jeder Tag erscheint als `Found new tag '04-…'`.
+
 ## Feuchte-Sensor (optional, SHT31-D)
 
 Ein kleiner I2C-Sensor misst Luftfeuchte und Temperatur, z. B. in der Filament-Lagerbox. Die App meldet sich, wenn die Feuchte über der Grenze liegt (Mitteilungen → Einstellungen → Luftfeuchte, Standard 25 %, AMS automatisch trocknen ab 30 %).

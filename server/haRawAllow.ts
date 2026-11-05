@@ -32,6 +32,8 @@ const RAW_ALLOWED: { method: string; path: RegExp; body?: (b: unknown) => boolea
   { method: 'GET', path: /^\/api\/states$/ },
   { method: 'GET', path: /^\/api\/states\/automation\.filamenthub_[a-z0-9_]+$/ },
   { method: 'GET', path: /^\/api\/states\/(light|number)\.[a-z0-9_]+$/ },
+  // NFC-Leser im AMS (ESPHome „Filament AMS“): Tag je Slot, Leser-Zustand, letzter Tag. Nur Sensoren mit „ams“ im Namen.
+  { method: 'GET', path: /^\/api\/states\/sensor\.[a-z0-9_]*ams[a-z0-9_]*$/ },
   // Verlauf der Druck-Sensoren (Druckverlauf ohne App): nur Sensoren, höchstens 8, nur diese Zusätze
   { method: 'GET', path: /^\/api\/history\/period\/[0-9A-Za-z%.\-]+\?filter_entity_id=sensor\.[a-z0-9_]+(,sensor\.[a-z0-9_]+){0,7}(&(minimal_response|no_attributes|significant_changes_only=[01]|end_time=[0-9A-Za-z%.\-]+))*$/ },
   { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/ },

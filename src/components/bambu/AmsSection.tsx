@@ -36,7 +36,7 @@ export interface AmsSectionProps {
   setAmsDryTemp: ParentProps['setAmsDryTemp'];
   handleToggleAmsDrying: ParentProps['handleToggleAmsDrying'];
   dryLoading: ParentProps['dryLoading'];
-  nfcInfo?: { readers: number; unknown: number[] };
+  nfcInfo?: { readers: number; unknown: number[]; tags?: Record<number, string>; status?: Record<number, string>; lastTag?: string };
 }
 
 // Gemessen: Box-Sensor (ESP32 über Home Assistant) und AMS selbst, alles in °C
@@ -150,6 +150,8 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
   dryLoading,
   nfcInfo
 }) => {
+  const [nfcDiag, setNfcDiag] = React.useState(false);
+  const nfcBad = nfcInfo?.status ? Object.values(nfcInfo.status).filter(v => v && !v.startsWith('OK')).length : 0;
   const dryOff = useDryOff();
   const [haInfo, setHaInfo] = useState(getHaDryOffInfo());
   const [haBusy, setHaBusy] = useState(false);
@@ -219,18 +221,44 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                   <span>Mit Drucker synchronisieren</span>
                 </button>
                 {nfcInfo && nfcInfo.readers > 0 && (
-                  <span
-                    className="px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1"
-                    style={{ borderColor: 'var(--app-accent)', color: 'var(--app-accent-text)', backgroundColor: 'var(--app-accent-sub)' }}
-                    title="NFC-Leser im AMS ordnen Spulen automatisch zu"
+                  <button
+                    type="button"
+                    onClick={() => setNfcDiag(v => !v)}
+                    className="px-2 py-0.5 rounded-lg border text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                    style={{ borderColor: nfcBad ? '#f43f5e' : 'var(--app-accent)', color: nfcBad ? '#f43f5e' : 'var(--app-accent-text)', backgroundColor: 'var(--app-accent-sub)' }}
+                    title="NFC-Leser im AMS: tippen für den Zustand jedes Lesers"
                   >
                     <Nfc className="w-3 h-3" />
                     NFC-Leser: {nfcInfo.readers}
+                    {nfcBad ? ` · ${nfcBad} Fehler` : ''}
                     {nfcInfo.unknown.length > 0 ? ` · ${nfcInfo.unknown.length} unbekannt` : ''}
-                  </span>
+                  </button>
                 )}
               </div>
             </div>
+
+            {nfcDiag && nfcInfo && (
+              <div className="rounded-xl border p-2 space-y-1 text-[11px]" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-card-sub)' }}>
+                {[1, 2, 3, 4, 5].map(n => {
+                  const st = nfcInfo.status?.[n];
+                  const tag = nfcInfo.tags?.[n];
+                  const ok = !st || st.startsWith('OK');
+                  return (
+                    <div key={n} className="flex items-center gap-2">
+                      <span className="w-14 font-bold shrink-0">{n === 5 ? 'Extern' : `Slot ${n}`}</span>
+                      <span className={`shrink-0 ${ok ? 'text-emerald-400' : 'text-rose-400'}`}>{st ? (ok ? '✓' : '✗') : '·'}</span>
+                      <span className="truncate" style={{ color: 'var(--app-text-muted)' }}>
+                        {st || 'Zustand unbekannt (Firmware 1.200 aufspielen)'}
+                        {tag ? ` · Tag ${tag}` : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="pt-1" style={{ color: 'var(--app-text-muted)' }}>
+                  Zuletzt gelesen: <strong style={{ color: 'var(--app-text)' }}>{nfcInfo.lastTag || '– noch nichts (Tag 1-2 cm vor einen Leser halten)'}</strong>
+                </div>
+              </div>
+            )}
 
             {/* 4 AMS-Slots: nur Slot, Farbe, Hersteller und Material. Tippen = Spule wählen, Tag-Symbol = Tag lesen. */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">

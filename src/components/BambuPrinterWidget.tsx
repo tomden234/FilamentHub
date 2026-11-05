@@ -221,7 +221,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     bambuRfid.learn(slot, spoolId); // Bambu-Spule (RFID vom AMS) ebenso
     handleSetAmsSlot(slot, spoolId);
   };
-  const nfcInfo = { readers: Object.keys(nfcReaders.entities).length, unknown: Object.keys(nfcReaders.unknown).map(Number) };
+  const nfcInfo = { readers: Object.keys(nfcReaders.entities).length, unknown: Object.keys(nfcReaders.unknown).map(Number), tags: nfcReaders.tags, status: nfcReaders.status, lastTag: nfcReaders.lastTag };
 
   useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected: Boolean(liveState.connected || liveState.hasToken), gcodeState: liveState.data.gcode_state, notify: setActionToast });
 
