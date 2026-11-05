@@ -25,7 +25,7 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
 };
 
 /** Streifen am rechten Rand wie „DRUCKER“: öffnet/schließt die Warteschlange. Offen sitzt er an der Kante des Fachs. */
-export const QUEUE_PANEL_W = 'min(88vw, 22rem)';
+export const QUEUE_PANEL_W = 'min(72vw, 18rem)';
 
 const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => {
   const druckerOpen = useDruckerOpen();

@@ -3170,5 +3170,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.215',
+    label: '1.215 (Warteschlange schmaler)',
+    releaseDate: '05.11.2026',
+    description: 'Das Warteschlangen-Fach ist schmaler. Am Handy bleibt mehr vom Inhalt sichtbar und die Streifen „WARTESCHLANGE“ und „DRUCKER“ überlappen nichts mehr.',
+    features: [
+      '↔️ Warteschlangen-Fach schmaler (max. 72 % der Breite, höchstens 18 rem)',
+      '👀 Mehr Inhalt bleibt neben dem Fach sichtbar'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
