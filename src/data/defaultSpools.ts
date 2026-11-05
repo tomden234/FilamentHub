@@ -3193,7 +3193,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     features: [
       '🔄 Aktualisieren-Knopf im Warteschlangen-Fach (sucht sofort neue Dateien, zeigt Ergebnis)',
       '📄 Neu gesendete Datei mit gleichem Namen kommt wieder in die Warteschlange',
-      '🛟 Hängender Scan wird nach 60 s freigegeben (Zeitlimit 40 s)'
+      '🛟 Hängender Scan wird nach 60 s freigegeben (Zeitlimit 40 s)',
+      '➕ „Datei vom Drucker vormerken“ direkt im Fach: jede Datei von Hand vormerken, auch bei gleichem Namen'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],

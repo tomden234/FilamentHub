@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GripVertical, ListOrdered, Play, RefreshCw, Trash2, X } from 'lucide-react';
+import { GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
-import { piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem } from '../utils/recorderServer';
+import { piPrinterFiles, piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
 
@@ -73,6 +73,8 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [files, setFiles] = useState<PrinterFile[] | null>(null);
+  const [filesBusy, setFilesBusy] = useState(false);
 
   const count = items ? items.length : 0;
   // Esc und Zurück schließen das Fach (wie die anderen Fenster: immer nur eine Ebene)
@@ -102,6 +104,22 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     const r = await piQueueAction(action, id ? { id } : {});
     if (r.items) setItems(r.items);
     if (r.text || !r.ok) setMsg({ ok: r.ok, text: r.text || 'Fehler' });
+    setBusy(false);
+  };
+
+  const loadFiles = async () => {
+    setFilesBusy(true);
+    const r = await piPrinterFiles();
+    setFiles(r.files);
+    if (r.error) setMsg({ ok: false, text: r.error });
+    setFilesBusy(false);
+  };
+  const addFile = async (f: PrinterFile) => {
+    setBusy(true);
+    setMsg(null);
+    const r = await piQueueAction('add', { path: f.path });
+    if (r.items.length) setItems(r.items);
+    setMsg({ ok: r.ok, text: r.ok ? `„${f.name.replace(/\.gcode\.3mf$|\.3mf$/i, '')}“ vorgemerkt.` : r.text || 'Fehler' });
     setBusy(false);
   };
 
@@ -192,6 +210,41 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
         </div>
 
         <div className="p-3 pb-24 border-t space-y-2" style={{ borderColor: 'var(--app-border)' }}>
+          <button
+            type="button"
+            disabled={filesBusy}
+            onClick={() => void loadFiles()}
+            className="w-full py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer flex items-center justify-center gap-1.5"
+            style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+          >
+            {filesBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            Datei vom Drucker vormerken
+          </button>
+          {files && (
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {files.length === 0 && (
+                <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
+                  Keine .3mf-Dateien gefunden.
+                </p>
+              )}
+              {files.map(f => (
+                <button
+                  key={f.path}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void addFile(f)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border text-[11px] text-left cursor-pointer disabled:opacity-40"
+                  style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+                >
+                  <Plus className="w-3 h-3 shrink-0" />
+                  <span className="truncate flex-1">{f.name.replace(/\.gcode\.3mf$|\.3mf$/i, '')}</span>
+                  <span className="shrink-0" style={{ color: 'var(--app-text-muted)' }}>
+                    {f.time ? new Date(f.time).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           {msg && <p className={`text-[11px] ${msg.ok ? 'text-emerald-400' : 'text-rose-400'}`}>{msg.text}</p>}
           <button
             disabled={busy || items.length === 0}
