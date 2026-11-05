@@ -1,24 +1,34 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, Smartphone, ToggleRight, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, Smartphone, ToggleRight, XCircle } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
 import { findAmsDevice, ids, judgeReader, judgeTag, readEntity, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
 import { useNfcTags } from '../../utils/nfcRead';
 import { StatusLedCard } from './StatusLedCard';
 
-// Testmenü: alles am AMS-ESP Schritt für Schritt prüfen (Verbindung, NFC-Leser, Tag, Taster + Warteschlangen-LEDs, Status-LED, Feuchte).
+// Testmenü: alles am AMS-ESP Schritt für Schritt prüfen (Verbindung, NFC-Leser, Tag, Taster + Warteschlangen-LEDs, Status-LED; Feuchte steckt bei 1). Fünf aufklappbare Punkte, es ist immer nur einer offen.
 // Liest live über Home Assistant (alle 2 Sekunden), solange das Menü offen ist.
 
 const WANT_FW = '1.202';
 
-const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
-  <div className="rounded-2xl border p-3 space-y-2" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-card)' }}>
-    <div className="flex items-center gap-2 text-xs font-extrabold" style={{ color: 'var(--app-text)' }}>
-      {icon}
-      <span>{title}</span>
+const Section: React.FC<{ id: string; open: string | null; onToggle: (id: string) => void; icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ id, open, onToggle, icon, title, children }) => {
+  const isOpen = open === id;
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-card)' }}>
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        aria-expanded={isOpen}
+        className="w-full flex items-center gap-2 p-3 text-xs font-extrabold cursor-pointer text-left"
+        style={{ color: 'var(--app-text)' }}
+      >
+        {icon}
+        <span className="flex-1">{title}</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--app-text-muted)' }} />
+      </button>
+      {isOpen && <div className="px-3 pb-3 space-y-2">{children}</div>}
     </div>
-    {children}
-  </div>
-);
+  );
+};
 
 const Mark: React.FC<{ v: 'ok' | 'bad' | 'unknown' }> = ({ v }) =>
   v === 'ok' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : v === 'bad' ? <XCircle className="w-4 h-4 text-rose-400 shrink-0" /> : <CircleHelp className="w-4 h-4 shrink-0" style={{ color: 'var(--app-text-muted)' }} />;
@@ -38,6 +48,8 @@ export const TestTab: React.FC = () => {
   const [findErr, setFindErr] = useState('');
   const [searching, setSearching] = useState(true);
   const [st, setSt] = useState<Record<string, EntityState | null>>({});
+  const [open, setOpen] = useState<string | null>(null);
+  const toggle = (id: string) => setOpen(o => (o === id ? null : id));
   const [queueN, setQueueN] = useState(7);
   const [queueBusy, setQueueBusy] = useState(false);
   const [queueMsg, setQueueMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -138,7 +150,7 @@ export const TestTab: React.FC = () => {
   return (
     <div className="space-y-3">
       {/* 1. Verbindung */}
-      <Section icon={<Cpu className="w-4 h-4 text-sky-400" />} title="1. AMS-ESP und Firmware">
+      <Section id="s1" open={open} onToggle={toggle} icon={<Cpu className="w-4 h-4 text-sky-400" />} title="1. AMS-ESP und Firmware">
         {searching ? (
           <div className="flex items-center gap-2 text-[11px]" style={muted}>
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Suche den ESP in Home Assistant …
@@ -171,11 +183,33 @@ export const TestTab: React.FC = () => {
             )}
           </div>
         )}
+        {base && (
+          <div className="space-y-1">
+            <div className="text-[11px] font-bold">Feuchte-Sensoren</div>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+            {[
+              ['Box', e!.boxHum],
+              ['Trockner', e!.dryerHum]
+            ].map(([label, id]) => {
+              const v = val(id);
+              const ok = v && v !== 'unknown' && v !== 'unavailable';
+              return (
+                <div key={id} className="flex items-center gap-2 rounded-xl border p-2" style={{ borderColor: 'var(--app-border)' }}>
+                  <Mark v={ok ? 'ok' : 'unknown'} />
+                  <span>
+                    {label}: <strong>{ok ? `${Math.round(Number(v))} %` : 'kein Wert'}</strong>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          </div>
+        )}
       </Section>
 
       {/* 2. NFC-Leser */}
       {base && (
-        <Section icon={<Nfc className="w-4 h-4 text-emerald-400" />} title="2. NFC-Leser (live)">
+        <Section id="s2" open={open} onToggle={toggle} icon={<Nfc className="w-4 h-4 text-emerald-400" />} title="2. NFC-Leser (live)">
           <div className="space-y-1 text-[11px]">
             {[1, 2, 3, 4, 5].map(n => {
               const rs = val(e!.reader(n));
@@ -208,7 +242,7 @@ export const TestTab: React.FC = () => {
       )}
 
       {/* 3. Tag mit dem Handy prüfen */}
-      <Section icon={<Smartphone className="w-4 h-4 text-violet-400" />} title="3. Tag mit dem Handy prüfen">
+      <Section id="s3" open={open} onToggle={toggle} icon={<Smartphone className="w-4 h-4 text-violet-400" />} title="3. Tag mit dem Handy prüfen">
         {nfc.supported ? (
           <>
             <p className="text-[11px] leading-snug" style={muted}>
@@ -240,7 +274,7 @@ export const TestTab: React.FC = () => {
 
       {/* 4. Taster + Warteschlange */}
       {base && (
-        <Section icon={<ToggleRight className="w-4 h-4 text-orange-400" />} title="4. Taster und Warteschlangen-LEDs">
+        <Section id="s4" open={open} onToggle={toggle} icon={<ToggleRight className="w-4 h-4 text-orange-400" />} title="4. Taster und Warteschlangen-LEDs">
           {!hasTestSwitch ? (
             <p className="text-[11px] text-amber-300">Braucht Firmware {WANT_FW} auf dem ESP (siehe 1.).</p>
           ) : (
@@ -289,31 +323,8 @@ export const TestTab: React.FC = () => {
         </Section>
       )}
 
-      {/* 5. Feuchte */}
-      {base && (
-        <Section icon={<CircleHelp className="w-4 h-4 text-cyan-400" />} title="5. Feuchte-Sensoren">
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            {[
-              ['Box', e!.boxHum],
-              ['Trockner', e!.dryerHum]
-            ].map(([label, id]) => {
-              const v = val(id);
-              const ok = v && v !== 'unknown' && v !== 'unavailable';
-              return (
-                <div key={id} className="flex items-center gap-2 rounded-xl border p-2" style={{ borderColor: 'var(--app-border)' }}>
-                  <Mark v={ok ? 'ok' : 'unknown'} />
-                  <span>
-                    {label}: <strong>{ok ? `${Math.round(Number(v))} %` : 'kein Wert'}</strong>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </Section>
-      )}
-
       {/* 6. Status-LED */}
-      <Section icon={<Lightbulb className="w-4 h-4 text-yellow-400" />} title="6. Status-LED-Streifen">
+      <Section id="s5" open={open} onToggle={toggle} icon={<Lightbulb className="w-4 h-4 text-yellow-400" />} title="5. Status-LED-Streifen">
         <StatusLedCard />
       </Section>
     </div>

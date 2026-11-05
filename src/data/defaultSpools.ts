@@ -2994,5 +2994,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.203',
+    label: '1.203 (Testmenü aufgeräumt)',
+    releaseDate: '05.11.2026',
+    description: 'Testmenü ist übersichtlich: 5 aufklappbare Unterpunkte, es ist immer nur einer offen. Der extra Menüpunkt „Status-LED“ ist weg, die Status-LED steckt jetzt im Testmenü.',
+    features: [
+      '🧪 Testmenü: 5 Unterpunkte zum Aufklappen (ESP und Firmware, NFC-Leser, Tag, Taster, Status-LED)',
+      '🧹 Menüpunkt „Status-LED“ entfernt, steht jetzt im Testmenü',
+      '💧 Feuchte-Sensoren stehen unter „ESP und Firmware“'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
