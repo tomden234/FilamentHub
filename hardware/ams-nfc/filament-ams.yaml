@@ -1,4 +1,4 @@
-# Erstellt: 05.11.2026 15:00 Uhr (Revision 1.200)
+# Erstellt: 05.11.2026 17:30 Uhr (Revision 1.201)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -16,8 +16,12 @@
 #   Ohne angeschlossenen Streifen läuft alles andere normal weiter.
 #
 # Optional: Warteschlange am Drucker (Revision 1.199):
-#   Taster „Platte frei“: ein Bein → GPIO26, anderes Bein → GND (kein Widerstand nötig, der ESP hat einen eingebauten)
-#   → binary_sensor.filament_ams_platte_frei. Drücken = Platte ist leer, der Pi startet den nächsten Druck der Warteschlange.
+#   Taster „Platte frei“ (19-mm-Metalltaster mit Leuchtring): C (Common) → GND, NO → GPIO26, NC frei lassen
+#   (kein Widerstand nötig, der ESP hat einen eingebauten) → binary_sensor.filament_ams_platte_frei.
+#   Drücken = Platte ist leer, der Pi startet den nächsten Druck der Warteschlange.
+#   Rastet der Taster ein (bleibt unten): button_latching: "true" setzen.
+#   Leuchtring (nur bei 3-6-V- oder 5-V-Version, NICHT bei 12/24 V): + → GPIO2, − → GND.
+#   Leuchtet, wenn ein Druck wartet; blinkt schnell = nicht gestartet. (GPIO2 ist auch die blaue LED auf dem ESP.)
 #   Streifen „Warteschlange“ (10 LEDs, Rest vom Status-Streifen): DIN → GPIO14, GND → GND, 5V → gleiches 5-V-Netzteil
 #   Eine blaue LED je wartendem Druck. Grün = startet. Rot blinkend = nicht gestartet (Drucker druckt noch, Material fehlt, Drucker aus).
 #
@@ -44,6 +48,8 @@ substitutions:
   led_order: "GRB"
   # Anzahl LEDs am Warteschlangen-Streifen (GPIO14)
   queue_led_count: "10"
+  # Taster: "false" = federt zurück (Standard), "true" = rastet ein (jedes Umschalten zählt als Drücken)
+  button_latching: "false"
 
 esphome:
   name: ${name}
@@ -259,9 +265,25 @@ rc522_spi:
             then:
               - script.execute: clear_5
 
+# Leuchtring des Tasters (GPIO2): an = Druck wartet, schnelles Blinken = nicht gestartet, aus = nichts in der Warteschlange
+output:
+  - platform: gpio
+    id: button_led
+    pin: GPIO2
+
 # Alle 10 s: Chip-Version jedes Lesers abfragen (zeigt, ob SPI-Kabel und Strom stimmen) und die Verstärkung setzen
 # (ein Leser-Neustart setzt sie zurück). 0x91/0x92 = echter MFRC522, 0x88/0xB2/0x12 = Nachbau (geht auch), 0x00/0xFF = keine Verbindung.
 interval:
+  - interval: 200ms
+    then:
+      - lambda: |-
+          int mode = (int) id(queue_mode).state;
+          int count = (int) id(queue_count).state;
+          bool on;
+          if (mode == 1) on = (millis() / 200) % 2 == 0;
+          else if (mode == 2) on = true;
+          else on = count > 0;
+          if (on) id(button_led).turn_on(); else id(button_led).turn_off();
   - interval: 10s
     then:
       - lambda: |-
@@ -293,6 +315,12 @@ interval:
 
 # Slot erst nach "remove_after" als leer melden (Spule dreht sich beim Drucken)
 script:
+  - id: plate_pulse
+    mode: single
+    then:
+      - binary_sensor.template.publish: { id: plate_free, state: true }
+      - delay: 500ms
+      - binary_sensor.template.publish: { id: plate_free, state: false }
   - id: clear_1
     mode: restart
     then:
@@ -440,10 +468,10 @@ number:
     mode: slider
 
 binary_sensor:
-  # Taster „Platte frei“ (GPIO26 → GND). Der Pi hört darauf und startet den nächsten Druck.
+  # Taster selbst (GPIO26 → GND), nur intern. Jedes Drücken wird zu einem kurzen Impuls „Platte frei“.
   - platform: gpio
-    name: "Platte frei"
-    icon: mdi:gesture-tap-button
+    id: button_raw
+    internal: true
     pin:
       number: GPIO26
       mode:
@@ -453,6 +481,19 @@ binary_sensor:
     filters:
       - delayed_on: 40ms
       - delayed_off: 40ms
+    on_press:
+      - script.execute: plate_pulse
+    on_release:
+      - if:
+          condition:
+            lambda: 'return ${button_latching};'
+          then:
+            - script.execute: plate_pulse
+  # Für Home Assistant und den Pi: 0,5 s „an“ je Drücken (egal ob der Taster federt oder einrastet)
+  - platform: template
+    id: plate_free
+    name: "Platte frei"
+    icon: mdi:gesture-tap-button
 
 text_sensor:
   # Zum Testen: zuletzt gelesener Tag an irgendeinem Leser (auch ignorierte)

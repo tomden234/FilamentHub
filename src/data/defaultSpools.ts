@@ -2961,5 +2961,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.201',
+    label: '1.201 (Taster mit Leuchtring)',
+    releaseDate: '05.11.2026',
+    description: 'Der 19-mm-Metalltaster „Platte frei“ ist eingeplant: Schalter an GPIO26, Leuchtring an GPIO2. Der Ring leuchtet, wenn ein Druck wartet, und blinkt schnell, wenn nichts gestartet wurde. Federnde und einrastende Taster gehen beide.',
+    features: [
+      '🔘 Taster: C → GND, NO → GPIO26. Jedes Drücken = kurzer Impuls „Platte frei“ (kein Doppelstart)',
+      '💡 Leuchtring (3-6 V / 5 V): + → GPIO2, − → GND. An = Druck wartet, schnell blinken = nicht gestartet',
+      '🔁 Einrastender Taster: button_latching "true" setzen, dann zählt jedes Umschalten',
+      '✅ Firmware mit ESPHome 2026.10.2 kompiliert'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
