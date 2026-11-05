@@ -2,11 +2,20 @@
 // Alle Aufrufe über haFetch (direkt, sonst über den eigenen Server mit enger Freigabe).
 import { haFetch } from './haAutoOff';
 
+export interface AmsEntity {
+  id: string;
+  state: string;
+  /** Anzeigename in Home Assistant */
+  name: string;
+  deviceClass: string;
+  unit: string;
+}
+
 export interface AmsDevice {
   /** z. B. „filament_ams“ (aus sensor.filament_ams_slot_1_tag) */
   base: string;
   /** Alle Entitäten des Geräts (Name beginnt mit „<Art>.<base>_“) */
-  entities: string[];
+  entities: AmsEntity[];
 }
 
 /** Gerät finden: Präfix der Slot-Sensoren */
@@ -18,7 +27,15 @@ export async function findAmsDevice(): Promise<AmsDevice | null> {
     const m = String(s?.entity_id || '').match(/^sensor\.([a-z0-9_]*ams[a-z0-9_]*)_slot_?1_tag$/);
     if (m) {
       const base = m[1];
-      const entities = all.map(x => String(x?.entity_id || '')).filter(id => id.includes(`.${base}_`));
+      const entities: AmsEntity[] = all
+        .filter(x => String(x?.entity_id || '').includes(`.${base}_`))
+        .map(x => ({
+          id: String(x.entity_id),
+          state: String(x.state ?? ''),
+          name: String(x.attributes?.friendly_name || ''),
+          deviceClass: String(x.attributes?.device_class || ''),
+          unit: String(x.attributes?.unit_of_measurement || '')
+        }));
       return { base, entities };
     }
   }
@@ -44,17 +61,27 @@ export async function readEntity(id: string): Promise<EntityState | null> {
   }
 }
 
-export const ids = (base: string, entities: string[] = []) => {
+export const ids = (base: string, entities: AmsEntity[] = []) => {
   const d = defaultIds(base);
-  // Namen aus Home Assistant bevorzugen (z. B. mit „_2“ am Ende oder anderer Schreibweise)
-  const pick = (dom: string, re: RegExp, fallback: string) => entities.find(id => id.startsWith(`${dom}.${base}_`) && re.test(id.slice(dom.length + 1 + base.length + 1))) || fallback;
+  const sensors = entities.filter(x => x.id.startsWith('sensor.'));
+  const text = (x: AmsEntity) => `${x.id} ${x.name}`.toLowerCase();
+  // Firmware: Sensor, dessen Wert wie eine Revision aussieht („1.202“), sonst nach Name
+  const fw = sensors.find(x => !x.deviceClass && !x.unit && /^\d\.\d{2,3}$/.test(x.state.trim())) || sensors.find(x => /firmware|fw_?rev/.test(text(x)));
+  const byClass = (cls: string, unit: string) => sensors.filter(x => (x.deviceClass === cls || x.unit === unit) && !/esp32|internal|intern/.test(text(x)));
+  const pickRoom = (list: AmsEntity[], word: RegExp, other: RegExp) => list.find(x => word.test(text(x))) || (list.length === 2 ? list.find(x => !other.test(text(x))) : undefined);
+  const hums = byClass('humidity', '%');
+  const temps = byClass('temperature', '°C');
+  const box = /box/;
+  const dry = /trockner|dryer|drying/;
   return {
     ...d,
-    firmware: pick('sensor', /^(firmware|fw_?rev\w*)(_\d+)?$/, d.firmware),
-    boxHum: pick('sensor', /^box_(feuchte|luftfeuchte\w*|humidity)(_\d+)?$/, d.boxHum),
-    boxTemp: pick('sensor', /^box_temp\w*?(_\d+)?$/, d.boxTemp),
-    dryerHum: pick('sensor', /^trockner_(feuchte|luftfeuchte\w*|humidity)(_\d+)?$/, d.dryerHum),
-    dryerTemp: pick('sensor', /^trockner_temp\w*?(_\d+)?$/, d.dryerTemp)
+    firmware: fw?.id || d.firmware,
+    queueTest: entities.find(x => x.id.startsWith('switch.') && /warteschlange_test/.test(x.id))?.id || d.queueTest,
+    queue: entities.find(x => x.id.startsWith('number.') && /warteschlange$/.test(x.id))?.id || d.queue,
+    boxHum: pickRoom(hums, box, dry)?.id || d.boxHum,
+    boxTemp: pickRoom(temps, box, dry)?.id || d.boxTemp,
+    dryerHum: pickRoom(hums, dry, box)?.id || d.dryerHum,
+    dryerTemp: pickRoom(temps, dry, box)?.id || d.dryerTemp
   };
 };
 

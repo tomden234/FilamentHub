@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, RefreshCw, Smartphone, ToggleRight, XCircle } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
-import { findAmsDevice, ids, judgeReader, judgeTag, readEntity, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
+import { findAmsDevice, ids, type AmsEntity, judgeReader, judgeTag, readEntity, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
 import { useNfcTags } from '../../utils/nfcRead';
 import { StatusLedCard } from './StatusLedCard';
 
@@ -45,7 +45,7 @@ const ago = (t: number) => {
 
 export const TestTab: React.FC = () => {
   const [base, setBase] = useState<string | null>(null);
-  const [entities, setEntities] = useState<string[]>([]);
+  const [entities, setEntities] = useState<AmsEntity[]>([]);
   const [tickNo, setTickNo] = useState(0);
   const [findErr, setFindErr] = useState('');
   const [searching, setSearching] = useState(true);
@@ -113,7 +113,7 @@ export const TestTab: React.FC = () => {
   const fwOk = fw && fw !== 'unknown' && fw !== 'unavailable';
   const espOnline = e ? st[e.wifi]?.available !== false && st[e.ip]?.available !== false && Object.keys(st).length > 0 : false;
   const testOn = val(e?.queueTest) === 'on';
-  const hasTestSwitch = e ? st[e.queueTest] !== null && st[e.queueTest] !== undefined : false;
+  const hasTestSwitch = e ? (st[e.queueTest] !== null && st[e.queueTest] !== undefined) || entities.some(x => x.id === e.queueTest) : false;
   // Der Testschalter gibt es erst ab 1.202: ist er da, ist die Firmware neu genug (auch wenn der Firmware-Sensor in HA anders heißt)
   const fwNew = (fwOk && fw === WANT_FW) || hasTestSwitch;
 
@@ -229,6 +229,20 @@ export const TestTab: React.FC = () => {
               })}
             </div>
           </div>
+        )}
+        {base && (
+          <details className="text-[11px]">
+            <summary className="cursor-pointer font-bold" style={muted}>
+              Was Home Assistant vom ESP sieht ({entities.length} Werte)
+            </summary>
+            <ul className="mt-1 space-y-0.5 break-all" style={muted}>
+              {entities.map(x => (
+                <li key={x.id}>
+                  {x.id.replace(`${base}_`, '')}: <strong style={{ color: 'var(--app-text)' }}>{x.state.length > 40 ? `${x.state.slice(0, 40)}…` : x.state}</strong>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </Section>
 

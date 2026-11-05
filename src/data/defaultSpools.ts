@@ -3023,5 +3023,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.205',
+    label: '1.205 (Testmenü findet Werte)',
+    releaseDate: '05.11.2026',
+    description: 'Testmenü sucht Firmware, Feuchte, Temperatur und Testschalter jetzt selbst unter allen Werten des ESP in Home Assistant (nach Typ und Einheit, nicht nur nach festem Namen). Neu: Liste „Was Home Assistant vom ESP sieht“ zur Fehlersuche.',
+    features: [
+      '🔎 Firmware wird am Wert erkannt (z. B. 1.202), egal wie der Sensor heißt',
+      '💧 Feuchte und Temperatur von Box und Trockner werden nach Typ gefunden',
+      '📋 Aufklappbare Liste aller ESP-Werte in Home Assistant im Testmenü (Punkt 1)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
