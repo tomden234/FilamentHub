@@ -124,7 +124,7 @@ const FTP_MODES: { port: number; secure: boolean | 'implicit'; label: string }[]
 let ftpModeIdx = 0;
 
 async function ftp(ip: string, code: string): Promise<Client> {
-  let lastErr: unknown = null;
+  const errs: string[] = [];
   // Zuletzt funktionierende Art zuerst, dann der Rest
   const order = [ftpModeIdx, ...FTP_MODES.map((_, i) => i).filter(i => i !== ftpModeIdx)];
   for (const i of order) {
@@ -137,11 +137,11 @@ async function ftp(ip: string, code: string): Promise<Client> {
       return client;
     } catch (e) {
       client.close();
-      lastErr = e;
+      errs.push(`${m.label}: ${(e as Error)?.message || e}`);
     }
   }
-  const msg = (lastErr as Error)?.message || String(lastErr);
-  throw new Error(`FTP zum Drucker ${ip} nicht möglich (alle Arten probiert: ${FTP_MODES.map(m => m.label).join(', ')}): ${msg}`);
+  throw new Error(`FTP zum Drucker ${ip} nicht möglich → ${errs.join(' | ')}`);
+} nicht möglich (alle Arten probiert: ${FTP_MODES.map(m => m.label).join(', ')}): ${msg}`);
 }
 
 /** Alle .3mf-Dateien auf dem Drucker (neueste zuerst), für die Warteschlange */
