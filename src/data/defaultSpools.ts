@@ -3081,5 +3081,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.209',
+    label: '1.209 (Warteschlangen-Fach)',
+    releaseDate: '05.11.2026',
+    description: 'Neues Fach rechts mit der Warteschlange vom Pi (Knopf oben mit Zähler): Titelbild, Name, Anzahl Filamente, Material und Farben. Zeilen per Ziehen verschieben. Die dauerhafte Android-Anzeige „Bleibt für Meldungen mit dem Drucker verbunden“ ist weg, solange der Pi die Meldungen schickt.',
+    features: [
+      '📋 Warteschlangen-Fach rechts: Bild, Name, Filament-Anzahl, Material, Farben, Gramm',
+      '↕️ Reihenfolge per Ziehen ändern (wird auf dem Pi gespeichert)',
+      '▶️ „Nächsten starten“ und Entfernen direkt im Fach',
+      '🖼️ Titelbild der Platte kommt aus der .3mf-Datei',
+      '🔕 Dauerhafte Anzeige „Bleibt für Meldungen verbunden“ wird nicht mehr gezeigt, wenn der Pi die Meldungen aufs Handy schickt',
+      '🖥️ Pi-Server 1.2.4'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

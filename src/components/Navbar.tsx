@@ -11,7 +11,8 @@ import {
   Tag,
   FileText,
   BarChart3,
-  Bell
+  Bell,
+  ListOrdered
 } from 'lucide-react';
 import { ThreeDPrinterIcon } from './ThreeDPrinterIcon';
 import { ViewMode, VersionProfile } from '../types/filament';
@@ -51,6 +52,9 @@ interface NavbarProps {
   onOpenCamera: () => void;
   onOpenPWAInstall: () => void;
   onOpenConnectPrinter?: () => void;
+  /** Warteschlange vom Pi (null = kein Pi mit Hub: Knopf bleibt weg) */
+  queueCount?: number | null;
+  onOpenQueue?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -71,7 +75,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNfc,
   activeVersionId = 'v1.61',
   onOpenCamera,
-  onOpenConnectPrinter
+  onOpenConnectPrinter,
+  queueCount,
+  onOpenQueue
 }) => {
   // Installierte Web-App oder Android-App: Browser-Hilfen (Umschalter, Webseite öffnen, QR) sind dort überflüssig
   const appShell = isAppShell();
@@ -299,6 +305,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             )}
           </button>
+
+          {/* Warteschlange vom Pi: Fach rechts */}
+          {onOpenQueue && queueCount !== null && queueCount !== undefined && (
+            <button
+              onClick={onOpenQueue}
+              title="Warteschlange: nächste Drucke"
+              aria-label={`Warteschlange öffnen (${queueCount})`}
+              className="relative inline-flex items-center gap-1 px-2 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
+              style={{ backgroundColor: 'var(--app-card-sub)', borderColor: queueCount > 0 ? 'var(--app-accent)' : 'var(--app-border)', color: 'var(--app-text)' }}
+            >
+              <ListOrdered className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-mono-num text-[11px]">{queueCount}</span>
+            </button>
+          )}
 
           {/* Statistik: eigenes Fenster (Etiketten und Status-LED sind im Menü) */}
           {onOpenWorkshop && (

@@ -11,6 +11,8 @@ import { resolveAms } from '../../src/utils/amsEntities.js';
 
 export interface QueueItem {
   id: string;
+  /** Titelbild der Platte vorhanden (Datei queue-thumbs/<id>.png) */
+  thumb?: boolean;
   path: string;
   name: string;
   plate: number;
@@ -25,6 +27,29 @@ export interface QueuePort {
 }
 
 const file = () => path.join(dataDir, 'hub-queue.json');
+const thumbDir = () => path.join(dataDir, 'queue-thumbs');
+export const thumbPath = (id: string): string | null => {
+  if (!/^[0-9a-f]{12}$/.test(id)) return null;
+  const p = path.join(thumbDir(), `${id}.png`);
+  return fs.existsSync(p) ? p : null;
+};
+function saveThumb(id: string, bytes: Uint8Array | null): boolean {
+  if (!bytes || bytes.length < 100 || bytes.length > 2_000_000) return false;
+  try {
+    fs.mkdirSync(thumbDir(), { recursive: true });
+    fs.writeFileSync(path.join(thumbDir(), `${id}.png`), bytes);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function dropThumb(id: string): void {
+  try {
+    fs.rmSync(path.join(thumbDir(), `${id}.png`), { force: true });
+  } catch {
+    /* egal */
+  }
+}
 let items: QueueItem[] | null = null;
 /** Schon gesehene Dateien („Pfad|Größe|Zeit“): nur neue kommen automatisch in die Warteschlange. null = noch nie gescannt. */
 let seen: Set<string> | null = null;
@@ -101,8 +126,10 @@ export async function queueAdd(filePath: string, plate = 1): Promise<QueueItem &
   if (!/^\/[\w .\-()/äöüÄÖÜß+&,]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
   const r = await readJobFile(lan.ip, lan.code, filePath, plate);
   if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
+  const id = crypto.randomBytes(6).toString('hex');
   const it: QueueItem = {
-    id: crypto.randomBytes(6).toString('hex'),
+    id,
+    thumb: saveThumb(id, r.thumb),
     path: filePath,
     name: path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''),
     plate: r.plate,
@@ -176,9 +203,28 @@ export async function autoScan(): Promise<void> {
 export function queueRemove(id: string): boolean {
   const before = load().length;
   items = load().filter(x => x.id !== id);
+  if (items.length < before) dropThumb(id);
   save();
   void showLeds(0);
   return items.length < before;
+}
+
+/** Neue Reihenfolge übernehmen (Ziehen in der App): nur bekannte IDs, nichts geht verloren */
+export function queueReorder(order: string[]): void {
+  const list = load();
+  const byId = new Map(list.map(x => [x.id, x]));
+  const next: QueueItem[] = [];
+  for (const id of order) {
+    const it = byId.get(id);
+    if (it) {
+      next.push(it);
+      byId.delete(id);
+    }
+  }
+  next.push(...byId.values());
+  items = next;
+  save();
+  void showLeds(0);
 }
 
 export function queueMove(id: string, dir: -1 | 1): void {
@@ -229,6 +275,7 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
     }
     await port!.startProject({ path: it.path, plate: it.plate, name: it.name, amsMapping: m!.amsMapping, amsMapping2: m!.amsMapping2, useAms: true });
     items = list.slice(1);
+    dropThumb(it.id);
     save();
     await showLeds(2);
     const rest = items.length ? ` Noch ${items.length} in der Warteschlange.` : '';

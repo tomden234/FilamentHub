@@ -31,6 +31,8 @@ import { MobileAppBar } from './components/app/MobileAppBar';
 import { OpenInAppBanner } from './components/OpenInAppBanner';
 import { Navbar, DeviceMode } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import { QueueDrawer } from './components/QueueDrawer';
+import { usePiQueue } from './hooks/usePiQueue';
 import { useBackLayer, closeTopLayer } from './utils/backNav';
 
 
@@ -129,7 +131,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.208';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.209';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -384,6 +386,9 @@ export default function App() {
   // Erinnerung: Trocknen fällig, AMS-Trocknung fertig
   useDryingReminders({ spools, showToast });
   useKeepAlive();
+  // Warteschlange vom Pi (Fach rechts + Zähler oben)
+  const [queueOpen, setQueueOpen] = useState(false);
+  const piQueueState = usePiQueue(true);
 
   // Zentraler Einstellungs-Hub (Material-Trocknungszeiten, Hersteller-Tara, Eibos-Beutel)
   const { appSettings, handleUpdateMaterialPreset, handleResetMaterialPreset, handleUpdateBrandPreset, handleResetBrandPreset, handleUpdateEibosBagTara, handleUpdateCardSize, handleResetAllSettings } = useAppSettings({ showToast });
@@ -1275,8 +1280,12 @@ export default function App() {
       {/* QR-Etikett im Handy-Browser gescannt: Knopf „In der App öffnen“ */}
       <OpenInAppBanner />
 
+      <QueueDrawer open={queueOpen} onClose={() => setQueueOpen(false)} items={piQueueState.items} setItems={piQueueState.setItems} />
+
       {/* Top Navbar */}
       <Navbar
+        queueCount={piQueueState.items ? piQueueState.items.length : null}
+        onOpenQueue={() => setQueueOpen(v => !v)}
         onOpenMenu={() => (canDock ? setDockPref(v => !v) : setIsSidebarOpen(true))}
         menuDocked={isDocked}
         deviceMode={deviceMode}

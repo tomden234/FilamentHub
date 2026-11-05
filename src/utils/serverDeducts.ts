@@ -143,6 +143,12 @@ export function hubDeductActive(): boolean {
   return Boolean(h && h.deduct && Date.now() - h.at < FRESH_MS);
 }
 
+/** Pi schickt die Meldungen aufs Handy (über die Home-Assistant-App): der Hintergrund-Dienst der Android-App ist dann unnötig */
+export function hubPushActive(): boolean {
+  const h = getHubInfo();
+  return Boolean(h && h.enabled && h.ha && Date.now() - h.at < FRESH_MS);
+}
+
 /** Server schaltet die Steckdose (Aus nach Druck / Trocknen): die App schaltet dann nicht zusätzlich */
 export function hubPowerActive(): boolean {
   const h = getHubInfo();

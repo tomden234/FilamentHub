@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { backupNow, energyWeeks, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
-import { autoAddOn, printerFiles, queueAdd, queueList, queueMove, queueRemove, setAutoAdd, startNext } from '../hub/queue.js';
+import { autoAddOn, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -93,6 +93,18 @@ router.post('/api/hub/queue/add', async (req, res) => {
 router.post('/api/hub/queue/remove', (req, res) => {
   queueRemove(String(req.body?.id || ''));
   res.json({ success: true, items: queueList() });
+});
+
+router.post('/api/hub/queue/reorder', (req, res) => {
+  queueReorder(Array.isArray(req.body?.ids) ? req.body.ids.map(String) : []);
+  res.json({ success: true, items: queueList() });
+});
+
+router.get('/api/hub/queue/thumb/:id', (req, res) => {
+  const p = thumbPath(String(req.params.id || ''));
+  if (!p) return res.status(404).end();
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.type('png').sendFile(p);
 });
 
 router.post('/api/hub/queue/move', (req, res) => {

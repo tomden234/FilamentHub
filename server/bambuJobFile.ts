@@ -50,6 +50,14 @@ export function parseSliceInfo(xml: string, plate = 1): { plate: number; filamen
   return { plate: idxOf(blk) || plate, filaments };
 }
 
+/** Titelbild der Platte (Metadata/plate_N.png) aus einer .3mf */
+export function thumbFromThreeMf(data: Uint8Array, plate = 1): Uint8Array | null {
+  const want = `metadata/plate_${Math.max(1, plate)}.png`;
+  const files = unzipSync(data, { filter: f => f.name.toLowerCase() === want || f.name.toLowerCase() === 'metadata/plate_1.png' });
+  const key = Object.keys(files).find(k => k.toLowerCase() === want) || Object.keys(files).find(k => k.toLowerCase() === 'metadata/plate_1.png');
+  return key ? files[key] : null;
+}
+
 /** Aus den Bytes einer .3mf das Gewicht lesen */
 export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number; filaments: JobFilament[] } | null {
   const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') });
@@ -145,7 +153,7 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
 }
 
 /** Filament je Platte aus einer Datei auf dem Drucker */
-export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[] } | null> {
+export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; thumb: Uint8Array | null } | null> {
   const client = await ftp(ip, code);
   try {
     const chunks: Buffer[] = [];
@@ -156,7 +164,16 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
       }
     });
     await client.downloadTo(sink, path);
-    return weightsFromThreeMf(new Uint8Array(Buffer.concat(chunks)), plate);
+    const bytes = new Uint8Array(Buffer.concat(chunks));
+    const w = weightsFromThreeMf(bytes, plate);
+    if (!w) return null;
+    let thumb: Uint8Array | null = null;
+    try {
+      thumb = thumbFromThreeMf(bytes, w.plate);
+    } catch {
+      /* ohne Bild */
+    }
+    return { ...w, thumb };
   } finally {
     client.close();
   }

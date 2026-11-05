@@ -358,6 +358,7 @@ export interface PiQueueItem {
   mapping: string[];
   missing: string[];
   addedAt: number;
+  thumb?: boolean;
 }
 
 export interface PrinterFile {
@@ -372,6 +373,35 @@ export async function piQueue(): Promise<{ items: PiQueueItem[]; auto: boolean }
   try {
     const j = await get('/api/hub/queue');
     return { items: Array.isArray(j?.items) ? j.items : [], auto: j?.auto !== false };
+  } catch {
+    return null;
+  }
+}
+
+/** Neue Reihenfolge an den Pi schicken (Ziehen in der App) */
+export async function piQueueReorder(ids: string[]): Promise<PiQueueItem[] | null> {
+  try {
+    const j = await get('/api/hub/queue/reorder', { method: 'POST', body: { ids }, timeoutMs: 20000 });
+    return Array.isArray(j?.items) ? j.items : null;
+  } catch {
+    return null;
+  }
+}
+
+const thumbCache = new Map<string, string>();
+/** Titelbild eines Warteschlangen-Eintrags als Bild-Adresse (mit Schlüssel geholt, daher als Blob) */
+export async function piQueueThumb(id: string): Promise<string | null> {
+  const hit = thumbCache.get(id);
+  if (hit) return hit;
+  const b = base();
+  if (b === null) return null;
+  try {
+    const key = getServerKey();
+    const res = await fetch(`${b}/api/hub/queue/thumb/${id}`, { headers: key ? { 'x-api-key': key } : {}, signal: AbortSignal.timeout(15000) });
+    if (!res.ok) return null;
+    const url = URL.createObjectURL(await res.blob());
+    thumbCache.set(id, url);
+    return url;
   } catch {
     return null;
   }
