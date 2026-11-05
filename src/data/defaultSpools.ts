@@ -2873,5 +2873,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.196',
+    label: '1.196 (Fenster bleibt offen)',
+    releaseDate: '05.11.2026',
+    description: 'Fenster schlossen sich, wenn man die Maus im Fenster drückte, zum Beispiel beim Markieren einer IP, und außerhalb losließ. Jetzt zählt nur ein Klick, der auf dem Hintergrund beginnt und endet. Das gilt für alle Fenster der App gleichzeitig.',
+    features: [
+      '🪟 Markieren im Fenster und Loslassen außerhalb schließt nichts mehr (Drucker-Verbindung, Spule, NFC und alle anderen)',
+      '🖱️ Normale Klicks auf den Hintergrund schließen weiter wie gewohnt',
+      '🧪 6 neue Tests für die Klick-Regel'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

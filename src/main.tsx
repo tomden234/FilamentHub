@@ -8,9 +8,13 @@ import { applySystemBars } from './utils/systemBars';
 import { installNativeNfc } from './utils/nativeNfc';
 import { startLiveUpdate } from './utils/liveUpdate';
 import { applyThemeStyle } from './utils/themeStyle';
+import { installBackdropGuard } from './utils/backdropGuard';
 
 // Design-Stil (Klassisch / Cozy) vor dem ersten Zeichnen setzen, damit nichts aufblitzt
 applyThemeStyle();
+
+// Fenster schließen nicht, wenn die Maus im Fenster gedrückt und außerhalb losgelassen wird (IP markieren)
+installBackdropGuard();
 
 // Android-App: NFC über das native Plugin (Web NFC gibt es in der WebView nicht)
 installNativeNfc();
