@@ -1079,6 +1079,70 @@ export abstract class BambuMqttCore {
     });
   }
 
+  /** Druckfehler quittieren (z. B. „Objekt auf dem Druckbett erkannt“) und fortsetzen – wie „Weiter“ am Drucker oder in Bambu Handy */
+  public async resumeAfterError(code: number): Promise<{ success: boolean; message: string }> {
+    if (!this.client || !this.connected || !this.serialNumber) throw new Error('Drucker ist nicht verbunden.');
+    const reqTopic = `device/${this.serialNumber}/request`;
+    if (code) {
+      this.client.publish(
+        reqTopic,
+        JSON.stringify({ print: { sequence_id: String(Date.now()), command: 'clean_print_error', subtask_id: String((this.printData as any).subtask_id || '0'), print_error: code } })
+      );
+      await new Promise(r => setTimeout(r, 800));
+    }
+    return this.sendCommand('resume');
+  }
+
+  /**
+   * Druck einer .3mf-Datei starten, die schon auf dem Drucker liegt (Speicherkarte), mit fester AMS-Zuordnung.
+   * amsMapping: je Filament der Datei (Index = Filament-Nummer − 1) der Platz im AMS (amsId*4+slot, 254 = extern, -1 = unbenutzt).
+   */
+  public async startProjectFile(p: {
+    path: string;
+    plate: number;
+    name: string;
+    amsMapping: number[];
+    amsMapping2: { ams_id: number; slot_id: number }[];
+    useAms: boolean;
+  }): Promise<{ success: boolean; message: string }> {
+    if (!this.client || !this.connected || !this.serialNumber) throw new Error('Drucker ist nicht verbunden.');
+    const sdPath = p.path.startsWith('/sdcard') ? p.path : `/sdcard${p.path.startsWith('/') ? '' : '/'}${p.path}`;
+    const payload = {
+      print: {
+        sequence_id: String(Date.now()),
+        command: 'project_file',
+        param: `Metadata/plate_${Math.max(1, Math.round(p.plate) || 1)}.gcode`,
+        url: `file://${sdPath}`,
+        file: baseName(p.path),
+        subtask_name: p.name,
+        md5: '',
+        project_id: '0',
+        profile_id: '0',
+        task_id: '0',
+        subtask_id: '0',
+        timelapse: false,
+        bed_type: 'auto',
+        bed_leveling: true,
+        bed_levelling: true,
+        flow_cali: true,
+        vibration_cali: true,
+        layer_inspect: true,
+        use_ams: p.useAms,
+        ams_mapping: p.amsMapping,
+        ams_mapping2: p.amsMapping2
+      }
+    };
+    const reqTopic = `device/${this.serialNumber}/request`;
+    await new Promise<void>((resolve, reject) =>
+      this.client!.publish(reqTopic, JSON.stringify(payload), { qos: 1 }, (err: any) => (err ? reject(new Error(err.message || String(err))) : resolve()))
+    );
+    this.printData.gcode_state = 'PREPARE';
+    this.printData.subtask_name = p.name;
+    this.notifyChange();
+    this.schedulePushall(1500);
+    return { success: true, message: `„${p.name}“ gestartet.` };
+  }
+
   // --- Sicherheitsnetz für „Druck verzögern“ ---
   // Die App setzt einen pausierten Druck zur gewählten Zeit selbst fort. War die App dann zu oder schlief das Handy,
   // setzt der Drucker-Kern (läuft auf dem Server bzw. im Android-Dienst) den Druck 90 Sekunden später von selbst fort.

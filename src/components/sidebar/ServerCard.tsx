@@ -10,6 +10,10 @@ import {
   saveServer,
   serverBackupNow,
   testServerPush,
+  espSyncNow,
+  getHubSettings,
+  saveHubSettings,
+  weeklyReportNow,
   type ServerBackup
 } from '../../utils/recorderServer';
 import { getHubInfo } from '../../utils/serverDeducts';
@@ -30,7 +34,9 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
   const info = getHaSyncInfo();
   const [hub, setHub] = useState(getHubInfo());
   const [hubMsg, setHubMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [hubBusy, setHubBusy] = useState<'' | 'push' | 'backup'>('');
+  const [hubBusy, setHubBusy] = useState<'' | 'push' | 'backup' | 'report' | 'esp'>('');
+  const [hs, setHs] = useState(getHubSettings());
+  const setSetting = (patch: Partial<typeof hs>) => setHs(saveHubSettings(patch));
   const [backups, setBackups] = useState<ServerBackup[]>([]);
 
   const loadBackups = async () => setBackups(await listServerBackups());
@@ -71,7 +77,22 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
     setHubBusy('');
   };
 
+  const doReport = async () => {
+    setHubBusy('report');
+    setHubMsg(await weeklyReportNow());
+    setHubBusy('');
+  };
+
+  const doEsp = async () => {
+    setHubBusy('esp');
+    setHubMsg(await espSyncNow());
+    setHubBusy('');
+  };
+
   const yes = (v: boolean | undefined) => (v ? '✅' : '—');
+  const ew = hub?.energyWeek;
+  const esp = hub?.esp;
+  const smallBtn = 'flex-1 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer flex items-center justify-center gap-1.5';
 
   return (
     <div className="space-y-3">
@@ -127,7 +148,60 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
               Jetzt sichern
             </button>
           </div>
-          {hubMsg && <p className={`text-[11px] leading-snug ${hubMsg.ok ? 'text-emerald-400' : 'text-amber-300'}`}>{hubMsg.text}</p>}
+          <div className="flex gap-2">
+            <button type="button" onClick={doReport} disabled={!!hubBusy} className={smallBtn} style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
+              {hubBusy === 'report' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Wochenbericht jetzt
+            </button>
+            <button type="button" onClick={doEsp} disabled={!!hubBusy} className={smallBtn} style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
+              {hubBusy === 'esp' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              ESP-Update prüfen
+            </button>
+          </div>
+          {hubMsg && <p className={`text-[11px] leading-snug whitespace-pre-line ${hubMsg.ok ? 'text-emerald-400' : 'text-amber-300'}`}>{hubMsg.text}</p>}
+          {ew && (
+            <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
+              ⚡ Strom diese Woche: {(ew.totalWh / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} kWh ·{' '}
+              {ew.cost.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+            </p>
+          )}
+          {esp && <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>🔧 ESP: {esp.text}</p>}
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <label className="space-y-0.5">
+              <span className="font-bold" style={{ color: 'var(--app-text)' }}>
+                Strom €/kWh
+              </span>
+              <input
+                className={inputCls}
+                style={inputStyle}
+                inputMode="decimal"
+                defaultValue={String(hs.kwhPrice).replace('.', ',')}
+                onBlur={e => {
+                  const v = Number(e.target.value.replace(',', '.'));
+                  if (v >= 0 && v < 5) setSetting({ kwhPrice: v });
+                }}
+              />
+            </label>
+            <label className="space-y-0.5">
+              <span className="font-bold" style={{ color: 'var(--app-text)' }}>
+                Leise ab
+              </span>
+              <input className={inputCls} style={inputStyle} type="number" min={0} max={23} value={hs.quietFrom} onChange={e => setSetting({ quietFrom: Math.max(0, Math.min(23, Number(e.target.value) || 0)) })} />
+            </label>
+            <label className="space-y-0.5">
+              <span className="font-bold" style={{ color: 'var(--app-text)' }}>
+                bis Uhr
+              </span>
+              <input className={inputCls} style={inputStyle} type="number" min={0} max={23} value={hs.quietTo} onChange={e => setSetting({ quietTo: Math.max(0, Math.min(23, Number(e.target.value) || 0)) })} />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 text-[11px] cursor-pointer" style={{ color: 'var(--app-text)' }}>
+            <input type="checkbox" checked={hs.materialGuard} onChange={e => setSetting({ materialGuard: e.target.checked })} />
+            Material-Wächter: Druck anhalten, wenn ein Material im AMS fehlt
+          </label>
+          <p className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+            Strompreis vorbelegt: 0,35 € (Nürnberg, Nov. 2026: Grundversorgung 38,6 ct, günstige Tarife ca. 33 ct). Pushes in der Ruhezeit kommen lautlos.
+          </p>
           {backups.length > 0 && (
             <div className="space-y-1">
               <div className="text-[11px] font-bold" style={{ color: 'var(--app-text)' }}>

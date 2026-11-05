@@ -2921,5 +2921,27 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.199',
+    label: '1.199 (Warteschlange & Fernbedienung)',
+    releaseDate: '05.11.2026',
+    description: 'Der Pi bekommt eine Warteschlange mit Taster „Platte frei“ und LED-Streifen am AMS-ESP. Hält der Drucker an (Objekt auf dem Bett, KI-Fehlererkennung, falsches Material), kommt ein Push mit Foto und den Knöpfen Weiter/Abbrechen. Dazu Strom je Woche, Wochenbericht, Ruhezeit, „Drucker antwortet nicht“, ESP-Update übers WLAN und die App direkt vom Pi.',
+    features: [
+      '🟦 Warteschlange auf dem Pi: Dateien vom Drucker vormerken, Taster „Platte frei“ (GPIO26) startet den nächsten, 10 LEDs (GPIO14) zeigen, wie viele warten',
+      '⏸️ Drucker wartet (z. B. Objekt auf dem Bett): Push mit Foto, „Weiter“ oder „Abbrechen“ direkt in der Meldung',
+      '🐌 Druck hängt 30 Minuten ohne Fortschritt: Push mit Foto und Knöpfen',
+      '🛑 Material-Wächter: fehlt ein Material der Datei im AMS, hält der Pi gleich am Anfang an',
+      '⚡ Strom der Drucker-Steckdose je Woche (kWh und Euro, 0,35 €/kWh vorbelegt) in der Statistik',
+      '📊 Wochenbericht jeden Sonntag 18 Uhr per Push: Drucke, Gramm, Filament-Euro, Strom, fast leere Spulen',
+      '🌙 Ruhezeit 22-7 Uhr: Pushes kommen lautlos',
+      '📡 Push, wenn der Drucker während eines Drucks 2 Minuten nicht antwortet',
+      '🔧 ESP-Update übers WLAN: Pi legt die neue YAML in ESPHome ab (eigene Werte bleiben), nur noch „Installieren“ drücken',
+      '🌐 App direkt vom Pi: http://<Pi>:3000 und Knopf „Web-UI öffnen“ in Home Assistant',
+      '🧪 11 neue Tests'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

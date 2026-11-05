@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { backupNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig } from '../hub/hub.js';
+import { backupNow, energyWeeks, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
+import { printerFiles, queueAdd, queueList, queueMove, queueRemove, startNext } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -48,6 +49,55 @@ router.get('/api/recorder/photo', (req, res) => {
   if (!jpeg) return res.status(404).json({ success: false, error: 'kein Foto' });
   res.setHeader('Cache-Control', 'private, max-age=86400');
   res.type('image/jpeg').send(jpeg);
+});
+
+router.get('/api/hub/energy', (_req, res) => {
+  res.json({ success: true, weeks: energyWeeks(), kwhPrice: getHubConfig().kwhPrice });
+});
+
+router.post('/api/hub/report-now', async (_req, res) => {
+  res.json({ success: true, report: await weeklyReportNow() });
+});
+
+router.post('/api/hub/esp-sync', async (_req, res) => {
+  const r = await espSyncNow();
+  res.json({ success: r.info.ok, ...r });
+});
+
+// --- Warteschlange ---
+router.get('/api/hub/queue', (_req, res) => {
+  res.json({ success: true, items: queueList() });
+});
+
+router.get('/api/hub/printer-files', async (_req, res) => {
+  try {
+    res.json({ success: true, files: await printerFiles() });
+  } catch (e: any) {
+    res.json({ success: false, error: String(e?.message || e) });
+  }
+});
+
+router.post('/api/hub/queue/add', async (req, res) => {
+  try {
+    res.json({ success: true, item: await queueAdd(String(req.body?.path || ''), Number(req.body?.plate) || 1), items: queueList() });
+  } catch (e: any) {
+    res.json({ success: false, error: String(e?.message || e) });
+  }
+});
+
+router.post('/api/hub/queue/remove', (req, res) => {
+  queueRemove(String(req.body?.id || ''));
+  res.json({ success: true, items: queueList() });
+});
+
+router.post('/api/hub/queue/move', (req, res) => {
+  queueMove(String(req.body?.id || ''), Number(req.body?.dir) < 0 ? -1 : 1);
+  res.json({ success: true, items: queueList() });
+});
+
+router.post('/api/hub/queue/start', async (_req, res) => {
+  const r = await startNext('App');
+  res.json({ success: r.ok, text: r.text, items: queueList() });
 });
 
 export default router;

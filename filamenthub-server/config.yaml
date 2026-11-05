@@ -1,5 +1,5 @@
 name: FilamentHub Server
-version: "1.1.0"
+version: "1.2.0"
 slug: filamenthub_server
 description: Zeichnet jeden Druck deines Bambu-Druckers rund um die Uhr auf, auch ohne offene App.
 url: https://github.com/tomden234/filament-website-google-ai
@@ -11,6 +11,11 @@ startup: application
 boot: auto
 init: false
 homeassistant_api: true
+# Zugriff auf den Home-Assistant-Ordner: ESP-YAML für ESPHome (esphome/) und Fotos für Push-Meldungen (www/filamenthub/)
+map:
+  - homeassistant_config:rw
+# Knopf „Web-UI öffnen“ in Home Assistant: die App direkt vom Pi
+webui: http://[HOST]:[PORT:3000]
 ports:
   3000/tcp: 3000
 ports_description:

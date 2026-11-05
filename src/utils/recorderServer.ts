@@ -2,7 +2,7 @@
 import { safeStorage } from './safeStorage';
 import { IS_NATIVE, IS_STATIC } from './env';
 import type { HaPrint } from './haPrintHistory';
-import { saveHubInfo } from './serverDeducts';
+import { getHubInfo as getHubInfoLite, saveHubInfo } from './serverDeducts';
 import { STORAGE_KEY_CLOUD_URL } from './storageKeys';
 import { getGistToken } from './gistStore';
 import { isAutoDeductOn, readJobGrams } from './printUsage';
@@ -23,6 +23,9 @@ export function normalizeServerUrl(v: string): string {
 }
 
 export const getServerUrl = (): string => safeStorage.getItem(URL_KEY) || '';
+
+/** Gibt es einen Server zum Fragen? (eingetragener Pi oder die App kommt selbst vom Pi / aus der Windows-App) */
+export const hasServer = (): boolean => base() !== null;
 export const getServerKey = (): string => safeStorage.getItem(KEY_KEY) || '';
 
 export function saveServer(url: string, key: string): void {
@@ -158,13 +161,39 @@ export function hubConfigPayload() {
     cameraEntity: ha.cameraEntity || '',
     deduct: isAutoDeductOn(),
     lowWeightG: ws.lowWarning ? ws.lowWeightG : 0,
-    dryOffDelayMin: ws.dryOffDelayMin
+    dryOffDelayMin: ws.dryOffDelayMin,
+    ...getHubSettings()
   };
+}
+
+// --- Einstellungen nur für den Pi (Strompreis, Ruhezeit, Material-Wächter) ---
+const HUB_SETTINGS_KEY = 'filamenthub_hub_settings';
+export interface HubSettings {
+  kwhPrice: number;
+  quietFrom: number;
+  quietTo: number;
+  materialGuard: boolean;
+}
+/** Strompreis: Durchschnitt Nürnberg Nov. 2026 (Grundversorgung 38,6 ct, günstige Tarife ca. 33 ct) */
+export const DEFAULT_HUB_SETTINGS: HubSettings = { kwhPrice: 0.35, quietFrom: 22, quietTo: 7, materialGuard: true };
+export function getHubSettings(): HubSettings {
+  try {
+    return { ...DEFAULT_HUB_SETTINGS, ...(JSON.parse(safeStorage.getItem(HUB_SETTINGS_KEY) || '{}') || {}) };
+  } catch {
+    return { ...DEFAULT_HUB_SETTINGS };
+  }
+}
+export function saveHubSettings(s: Partial<HubSettings>): HubSettings {
+  const next = { ...getHubSettings(), ...s };
+  safeStorage.setItem(HUB_SETTINGS_KEY, JSON.stringify(next));
+  void pushHubConfig().catch(() => undefined);
+  return next;
 }
 
 /** Einstellungen an den Pi schicken (nur wenn sich etwas geändert hat, außer force) */
 export async function pushHubConfig(force = false): Promise<boolean> {
-  if (!getServerUrl()) return false;
+  // Nur an einen Pi mit Hub (nicht an den Server in der Windows-App)
+  if (!hasServer() || !getHubInfoLite()?.enabled) return false;
   const payload = hubConfigPayload();
   const sig = JSON.stringify(payload);
   if (!force && safeStorage.getItem(HUB_SENT_KEY) === sig) return true;
@@ -177,7 +206,7 @@ export async function pushHubConfig(force = false): Promise<boolean> {
 
 /** „Aus nach Druck“ / „Aus nach Trocknen“ an den Pi melden */
 export async function pushHubPower(power: { autoOff?: { armed: boolean; jobName?: string; armedAt?: number }; dryOff?: { armed: boolean; armedAt?: number } }): Promise<boolean> {
-  if (!getServerUrl()) return false;
+  if (!hasServer() || !getHubInfoLite()?.enabled) return false;
   try {
     const j = await get('/api/hub/power', { method: 'POST', body: power });
     return Boolean(j?.success);
@@ -188,6 +217,7 @@ export async function pushHubPower(power: { autoOff?: { armed: boolean; jobName?
 
 /** Verzögerter Druck: auch der Pi setzt fort (Sicherheitsnetz, wenn alle Apps zu sind) */
 export async function delayResumeOnServer(resumeAt: number): Promise<boolean> {
+  // Ohne eingetragenen Pi macht das schon usePrintPlan über den eigenen Server
   if (!getServerUrl()) return false;
   try {
     const j = await get('/api/printer/delay-resume', { method: 'POST', body: { resumeAt } });
@@ -199,7 +229,7 @@ export async function delayResumeOnServer(resumeAt: number): Promise<boolean> {
 
 /** Frage „Spule abziehen?“ beantwortet: andere Geräte fragen nicht mehr */
 export async function resolveOnServer(id: string): Promise<void> {
-  if (!getServerUrl() || !id) return;
+  if (!hasServer() || !id) return;
   try {
     await get('/api/hub/resolve', { method: 'POST', body: { id } });
   } catch {
@@ -209,8 +239,8 @@ export async function resolveOnServer(id: string): Promise<void> {
 
 /** Foto vom Druckende, das der Pi gemacht hat */
 export async function fetchServerPhoto(id: string): Promise<Blob | null> {
-  const b = getServerUrl();
-  if (!b) return null;
+  const b = base();
+  if (b === null || !getHubInfoLite()?.enabled) return null;
   try {
     const key = getServerKey();
     const res = await fetch(`${b}/api/recorder/photo?id=${encodeURIComponent(id)}`, { headers: key ? { 'x-api-key': key } : {}, signal: AbortSignal.timeout(10000) });
@@ -260,8 +290,8 @@ export async function serverBackupNow(): Promise<ServerCheck> {
 
 /** Sicherung herunterladen (als Datei) */
 export async function downloadServerBackup(name: string): Promise<boolean> {
-  const b = getServerUrl();
-  if (!b) return false;
+  const b = base();
+  if (b === null) return false;
   try {
     const key = getServerKey();
     const res = await fetch(`${b}/api/hub/backup?name=${encodeURIComponent(name)}`, { headers: key ? { 'x-api-key': key } : {}, signal: AbortSignal.timeout(20000) });
@@ -277,5 +307,90 @@ export async function downloadServerBackup(name: string): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+// ---------- Strom, Wochenbericht, ESP-Update ----------
+
+export interface EnergyWeekInfo {
+  week: string;
+  totalWh: number;
+  printWh: number;
+  cost: number;
+}
+
+export async function fetchEnergyWeeks(): Promise<EnergyWeekInfo[]> {
+  if (!hasServer() || !getHubInfoLite()?.enabled) return [];
+  try {
+    const j = await get('/api/hub/energy');
+    return Array.isArray(j?.weeks) ? j.weeks : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function weeklyReportNow(): Promise<ServerCheck> {
+  try {
+    const j = await get('/api/hub/report-now', { method: 'POST', body: {}, timeoutMs: 30000 });
+    return j?.report ? { ok: true, text: `${j.report.title}\n${j.report.text}` } : { ok: false, text: 'Kein Bericht' };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e) };
+  }
+}
+
+export async function espSyncNow(): Promise<ServerCheck> {
+  try {
+    const j = await get('/api/hub/esp-sync', { method: 'POST', body: {}, timeoutMs: 30000 });
+    return { ok: Boolean(j?.success), text: String(j?.info?.text || 'unbekannt') + (j?.changed ? ' → In Home Assistant: ESPHome → Filament AMS → Installieren → Drahtlos.' : '') };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e) };
+  }
+}
+
+// ---------- Warteschlange auf dem Pi ----------
+
+export interface PiQueueItem {
+  id: string;
+  path: string;
+  name: string;
+  plate: number;
+  filaments: { id: number; type: string; colorHex: string; grams: number }[];
+  mapping: string[];
+  missing: string[];
+  addedAt: number;
+}
+
+export interface PrinterFile {
+  path: string;
+  name: string;
+  size: number;
+  time: number;
+}
+
+export async function piQueue(): Promise<PiQueueItem[] | null> {
+  if (!hasServer() || !getHubInfoLite()?.enabled) return null;
+  try {
+    const j = await get('/api/hub/queue');
+    return Array.isArray(j?.items) ? j.items : [];
+  } catch {
+    return null;
+  }
+}
+
+export async function piPrinterFiles(): Promise<{ files: PrinterFile[]; error?: string }> {
+  try {
+    const j = await get('/api/hub/printer-files', { timeoutMs: 40000 });
+    return j?.success ? { files: j.files || [] } : { files: [], error: j?.error || 'Fehler' };
+  } catch (e: any) {
+    return { files: [], error: String(e?.message || e) };
+  }
+}
+
+export async function piQueueAction(action: 'add' | 'remove' | 'move' | 'start', body: Record<string, unknown> = {}): Promise<{ ok: boolean; text?: string; items: PiQueueItem[] }> {
+  try {
+    const j = await get(`/api/hub/queue/${action}`, { method: 'POST', body, timeoutMs: 60000 });
+    return { ok: Boolean(j?.success), text: j?.text || j?.error, items: Array.isArray(j?.items) ? j.items : [] };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e), items: [] };
   }
 }

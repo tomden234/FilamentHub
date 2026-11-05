@@ -28,7 +28,7 @@ describe('Pi-Server: Abzug im Ablauf', () => {
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'Content-Type': 'application/json' } });
     });
     const hub = await import('../../server/hub/hub');
-    hub.attachPrinter({ getStatus: () => ({ connected: false }), getLanAccess: () => null, stopDrying: async () => false });
+    hub.attachPrinter({ getStatus: () => ({ connected: false }), getLanAccess: () => null, stopDrying: async () => false, command: async () => undefined, resumeAfterError: async () => undefined, delayedResume: () => 0, startProject: async () => undefined });
     hub.updateHubConfig({ cloudUrl: 'https://api.npoint.io/abc123', amsSlots: { '1': 'a' }, jobGrams: { benchy: 20 } });
     const T = Date.now();
     const rec = { id: 'benchy|s1', name: 'Benchy.gcode.3mf', startMs: T - 3600_000, endMs: T, state: 'FINISH' as const, percent: 100, slots: { '1': 3000 } };

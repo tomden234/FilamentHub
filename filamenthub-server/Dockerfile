@@ -1,4 +1,4 @@
-# FilamentHub Server als Home-Assistant-App: holt beim Bauen den neuesten Code von GitHub und startet nur den Server (ohne Oberfläche).
+# FilamentHub Server als Home-Assistant-App: holt beim Bauen den neuesten Code von GitHub, baut Server und Oberfläche (App direkt vom Pi).
 FROM node:22-alpine
 
 RUN apk add --no-cache git ffmpeg tzdata
@@ -11,6 +11,7 @@ ADD https://api.github.com/repos/tomden234/filament-website-google-ai/git/refs/h
 RUN git clone --depth 1 --branch main https://github.com/tomden234/filament-website-google-ai . \
  && npm ci --ignore-scripts --no-audit --no-fund \
  && npm run build:server \
+ && npm run build \
  && rm -rf /root/.npm
 
 COPY start.mjs /start.mjs

@@ -4,6 +4,7 @@ import type { Spool } from '../../types/filament';
 import { addToQueue, checkQueueItem, loadedSpools, moveInQueue, removeFromQueue, useQueue } from '../../utils/printQueue';
 import { NumInput } from '../ui/NumInput';
 import { Card } from './ui';
+import { PiQueueCard } from './PiQueueCard';
 
 // Druck-Warteschlange: Aufträge vormerken, Filament-Check, nach jedem Druckende kommt eine Mitteilung mit dem Nächsten.
 
@@ -25,6 +26,7 @@ export const QueueTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
 
   return (
     <div className="space-y-3">
+      <PiQueueCard />
       <Card>
         <div className="flex items-center gap-2 text-xs font-extrabold">
           <ListOrdered className="w-4 h-4 text-emerald-400" />

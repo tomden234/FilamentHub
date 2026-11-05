@@ -1,4 +1,4 @@
-# Erstellt: 03.11.2026 23:58 Uhr (Revision 1.192)
+# Erstellt: 05.11.2026 14:00 Uhr (Revision 1.199)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -14,6 +14,12 @@
 #   → light.filament_ams_status_led + number.filament_ams_status_led_intensity. Die FilamentHub-App findet beides selbst
 #   (gleiche Effekt-Namen wie WLED: Percent, Solid, Blink, Breathe) und legt die Automation an.
 #   Ohne angeschlossenen Streifen läuft alles andere normal weiter.
+#
+# Optional: Warteschlange am Drucker (Revision 1.199):
+#   Taster „Platte frei“: ein Bein → GPIO26, anderes Bein → GND (kein Widerstand nötig, der ESP hat einen eingebauten)
+#   → binary_sensor.filament_ams_platte_frei. Drücken = Platte ist leer, der Pi startet den nächsten Druck der Warteschlange.
+#   Streifen „Warteschlange“ (10 LEDs, Rest vom Status-Streifen): DIN → GPIO14, GND → GND, 5V → gleiches 5-V-Netzteil
+#   Eine blaue LED je wartendem Druck. Grün = startet. Rot blinkend = nicht gestartet (Drucker druckt noch, Material fehlt, Drucker aus).
 #
 # Pins funktionieren auf ESP32-Boards mit 30 UND 38 Pins (DevKitC / NodeMCU, WROOM-32).
 
@@ -34,10 +40,18 @@ substitutions:
   # Farbreihenfolge des Streifens. Passen die Farben nicht (Rot zeigt Grün usw.): GRB, RGB, BRG, RBG, GBR oder BGR probieren.
   # Üblich: GRB (WS2812B). Zeigt Rot ein Grün: RGB. Zeigt Rot ein Blau: BRG.
   led_order: "GRB"
+  # Anzahl LEDs am Warteschlangen-Streifen (GPIO14)
+  queue_led_count: "10"
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      - light.turn_on:
+          id: queue_led
+          effect: "Warteschlange"
 
 esp32:
   board: esp32dev
@@ -290,7 +304,57 @@ light:
             float b = 0.15f + 0.85f * (0.5f - 0.5f * cosf(t * 6.2831853f));
             it.all() = current_color * (uint8_t) (255.0f * ${led_cap} * b);
 
+  # Warteschlange: so viele LEDs wie Drucke warten (Zahl setzt der Pi). Modus 1 = rot blinken, 2 = grün (startet).
+  - platform: esp32_rmt_led_strip
+    id: queue_led
+    name: "Warteschlange LED"
+    pin: GPIO14
+    num_leds: ${queue_led_count}
+    chipset: WS2812
+    rgb_order: ${led_order}
+    restore_mode: ALWAYS_ON
+    default_transition_length: 0s
+    gamma_correct: 1.0
+    effects:
+      - addressable_lambda:
+          name: "Warteschlange"
+          update_interval: 100ms
+          lambda: |-
+            int n = it.size();
+            int count = (int) id(queue_count).state;
+            int mode = (int) id(queue_mode).state;
+            uint8_t cap = (uint8_t) (255 * ${led_cap});
+            if (mode == 1) {
+              bool on = (millis() / 300) % 2 == 0;
+              it.all() = on ? Color(255, 0, 0) * cap : Color::BLACK;
+            } else if (mode == 2) {
+              it.all() = Color(0, 255, 0) * cap;
+            } else {
+              for (int i = 0; i < n; i++) it[i] = (i < count) ? Color(0, 90, 255) * cap : Color::BLACK;
+            }
+
 number:
+  - platform: template
+    id: queue_count
+    name: "Warteschlange"
+    icon: mdi:tray-full
+    min_value: 0
+    max_value: 10
+    step: 1
+    initial_value: 0
+    optimistic: true
+    restore_value: true
+    mode: box
+  - platform: template
+    id: queue_mode
+    name: "Warteschlange Modus"
+    icon: mdi:traffic-light
+    min_value: 0
+    max_value: 2
+    step: 1
+    initial_value: 0
+    optimistic: true
+    mode: box
   - platform: template
     id: led_intensity
     name: "Status LED Intensity"
@@ -302,6 +366,21 @@ number:
     optimistic: true
     restore_value: true
     mode: slider
+
+binary_sensor:
+  # Taster „Platte frei“ (GPIO26 → GND). Der Pi hört darauf und startet den nächsten Druck.
+  - platform: gpio
+    name: "Platte frei"
+    icon: mdi:gesture-tap-button
+    pin:
+      number: GPIO26
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on: 40ms
+      - delayed_off: 40ms
 
 text_sensor:
   - platform: template

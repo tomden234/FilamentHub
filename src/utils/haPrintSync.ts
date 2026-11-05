@@ -92,9 +92,9 @@ export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promi
   // Quellen: FilamentHub Server (genau, rund um die Uhr) zuerst, dann der Verlauf von Home Assistant
   const lists: HaPrint[][] = [];
   const errors: string[] = [];
+  const srv = await fetchServerPrints(now);
   // Einstellungen an den Pi (Cloud-Zugang, Slots …), damit er ohne App abziehen und schalten kann
   await pushHubConfig().catch(() => undefined);
-  const srv = await fetchServerPrints(now);
   if (srv.prints) lists.push(srv.prints);
   else if (srv.error && srv.configured) errors.push(srv.error);
   if (getHaCredentials().token) {

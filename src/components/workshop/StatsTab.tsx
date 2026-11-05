@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Zap } from 'lucide-react';
+import { fetchEnergyWeeks, type EnergyWeekInfo } from '../../utils/recorderServer';
 import { BarChart3, CalendarDays, Palette, Printer, Wallet } from 'lucide-react';
 import { monthlyUse, successRate, weeklyPrints } from '../../utils/printStats';
 import type { HistoryEntry, Spool } from '../../types/filament';
@@ -120,6 +122,12 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
   const maxWeek = Math.max(1, ...stats.weeks.map(w => w.grams));
   const maxColor = Math.max(1, ...stats.topColors.map(c => c.grams));
   const maxPrints = Math.max(1, ...stats.printWeeks.map(w => w.done + w.failed));
+  // Strom je Woche (misst der Pi über die Steckdose)
+  const [energy, setEnergy] = useState<EnergyWeekInfo[]>([]);
+  useEffect(() => {
+    void fetchEnergyWeeks().then(setEnergy);
+  }, []);
+  const maxEnergy = Math.max(1, ...energy.map(e => e.totalWh));
   const maxMonth = Math.max(0.01, ...stats.months.map(m => m.cost));
 
   return (
@@ -163,6 +171,32 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
           Gramm je Woche (ab Montag).
         </p>
       </Card>
+
+      {energy.length > 0 && (
+        <Card>
+          <div className="flex items-center gap-2 text-xs font-extrabold">
+            <Zap className="w-4 h-4 text-yellow-400" />
+            <span>Strom je Woche (Steckdose)</span>
+          </div>
+          <div className="space-y-1.5">
+            {energy.slice(-8).map(e => (
+              <div key={e.week} className="flex items-center gap-2 text-[11px]">
+                <span className="w-12 font-bold">{e.week.slice(8, 10)}.{e.week.slice(5, 7)}.</span>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--app-border)' }}>
+                  <div className="h-full rounded-full bg-yellow-400" style={{ width: `${(e.totalWh / maxEnergy) * 100}%` }} />
+                </div>
+                <span className="font-mono-num w-16 text-right">{(e.totalWh / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} kWh</span>
+                <span className="font-mono-num w-14 text-right" style={{ color: 'var(--app-text-muted)' }}>
+                  {euro(e.cost)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+            Alles, was die Drucker-Steckdose zieht (Drucken, Trocknen, Standby). Woche ab Montag. Strompreis in Verbindungen → FilamentHub Server.
+          </p>
+        </Card>
+      )}
 
       <Card>
         <div className="flex items-center gap-2 text-xs font-extrabold">

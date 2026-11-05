@@ -27,6 +27,14 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - **Warnung**, wenn ein Druck viel länger dauert als gewohnt, und **Spulen-Check** beim Start.
 - **Sicherung** jede Nacht (Spulen, Verlauf, Druckliste), 30 Tage, in der App herunterladbar.
 
+## Neu in 1.2.0
+
+- **Warteschlange**: In der App (Werkstatt → Warteschlange) Dateien vom Drucker vormerken. Taster „Platte frei“ am AMS-ESP (GPIO26 → GND) startet den nächsten Druck, 10 LEDs (GPIO14) zeigen, wie viele warten.
+- **Drucker wartet**: Push mit Foto und den Knöpfen „Weiter“ / „Abbrechen“ (Home-Assistant-App auf dem Handy).
+- **Strom** der Drucker-Steckdose je Woche, **Wochenbericht** sonntags 18 Uhr, **Ruhezeit** (lautlos), **Drucker antwortet nicht**.
+- **ESP-Update übers WLAN**: Mit der ESPHome-App in Home Assistant legt der Server die neueste AMS-YAML in den ESPHome-Ordner (eigene Werte bleiben). Dann nur „Installieren“ → „Drahtlos“.
+- **App direkt vom Pi**: Knopf „Web-UI öffnen“ oder `http://<IP des Pi>:3000`. Über http geht im Browser der verschlüsselte Geräte-Sync nicht; Handy- und Windows-App sind davon nicht betroffen.
+
 ## Hinweise
 
 - Drucker, die der Server nicht sieht (Pi aus oder Drucker aus), kann er nicht aufzeichnen. Ein Druck, der beim Neustart des Pi läuft, wird danach weiter verfolgt.

@@ -112,3 +112,52 @@ export async function fetchJobWeights(opts: { ip: string; code: string; jobName:
     client.close();
   }
 }
+
+async function ftp(ip: string, code: string): Promise<Client> {
+  const client = new Client(20000);
+  await client.access({ host: ip, port: 990, user: 'bblp', password: code, secure: 'implicit', secureOptions: { rejectUnauthorized: false } });
+  return client;
+}
+
+/** Alle .3mf-Dateien auf dem Drucker (neueste zuerst), für die Warteschlange */
+export async function listJobFiles(ip: string, code: string): Promise<{ path: string; name: string; size: number; time: number }[]> {
+  const client = await ftp(ip, code);
+  try {
+    const out: { path: string; name: string; size: number; time: number }[] = [];
+    for (const dir of DIRS) {
+      let list;
+      try {
+        list = await client.list(dir);
+      } catch {
+        continue;
+      }
+      for (const f of list) {
+        if (!f.isFile || !/\.3mf$/i.test(f.name)) continue;
+        const p = (dir === '/' ? '' : dir) + '/' + f.name;
+        if (out.some(x => x.path === p)) continue;
+        out.push({ path: p, name: f.name, size: f.size, time: f.modifiedAt ? f.modifiedAt.getTime() : 0 });
+      }
+    }
+    return out.sort((a, b) => b.time - a.time).slice(0, 100);
+  } finally {
+    client.close();
+  }
+}
+
+/** Filament je Platte aus einer Datei auf dem Drucker */
+export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[] } | null> {
+  const client = await ftp(ip, code);
+  try {
+    const chunks: Buffer[] = [];
+    const sink = new Writable({
+      write(chunk, _enc, cb) {
+        chunks.push(Buffer.from(chunk));
+        cb();
+      }
+    });
+    await client.downloadTo(sink, path);
+    return weightsFromThreeMf(new Uint8Array(Buffer.concat(chunks)), plate);
+  } finally {
+    client.close();
+  }
+}

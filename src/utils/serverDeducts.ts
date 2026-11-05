@@ -107,6 +107,8 @@ export interface HubInfo {
   lastPush?: { at: number; ok: boolean; text: string } | null;
   backups?: number;
   lastBackup?: string;
+  energyWeek?: { week: string; totalWh: number; printWh: number; cost: number } | null;
+  esp?: { ok: boolean; text: string; revision: string } | null;
   at: number;
 }
 
@@ -121,6 +123,8 @@ export function saveHubInfo(h: any): void {
     lastPush: h.lastPush || null,
     backups: Number(h.backups) || 0,
     lastBackup: String(h.lastBackup || ''),
+    energyWeek: h.energyWeek || null,
+    esp: h.esp || null,
     at: Date.now()
   };
   safeStorage.setItem(HUB_KEY, JSON.stringify(info));
@@ -136,13 +140,13 @@ const FRESH_MS = 3 * 3600_000;
 /** Server zieht ab (zuletzt vor < 3 h bestätigt): die App zieht dann nicht selbst ab, sondern wartet auf den Server */
 export function hubDeductActive(): boolean {
   const h = getHubInfo();
-  return Boolean(h && h.deduct && Date.now() - h.at < FRESH_MS && safeStorage.getItem('filamenthub_server_url'));
+  return Boolean(h && h.deduct && Date.now() - h.at < FRESH_MS);
 }
 
 /** Server schaltet die Steckdose (Aus nach Druck / Trocknen): die App schaltet dann nicht zusätzlich */
 export function hubPowerActive(): boolean {
   const h = getHubInfo();
-  return Boolean(h && h.power && Date.now() - h.at < FRESH_MS && safeStorage.getItem('filamenthub_server_url'));
+  return Boolean(h && h.power && Date.now() - h.at < FRESH_MS);
 }
 
 // --- Steckdose: Die App überlässt das Ausschalten dem Pi nur, wenn er den aktuellen Schalter-Stand sicher bekommen hat ---

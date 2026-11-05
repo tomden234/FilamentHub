@@ -18,7 +18,11 @@ import { readExternal, readTrays, activeSlotFromPrinter } from '../../src/utils/
 import { dryOffAction } from '../../src/utils/dryAutoOff.js';
 import { applyDeduction, deductedIn, expectedMinutes, planParts, shortages, tooLong, type Part, type TrayLite } from './deductPlan.js';
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
-import { haAvailable, haCameraJpeg, haPush, haState, haSwitch } from './ha.js';
+import { haAvailable, haCameraJpeg, haListen, haPowerW, haPush, haState, haSwitch, type PushOptions } from './ha.js';
+import { addEnergy, allTrays, inQuietHours, missingMaterials, stalled, weekKey, weeklyReport, type EnergyWeek } from './hubLogic.js';
+import { attachQueue, onHaEvent as queueEvent, refreshLeds, type QueuePort } from './queue.js';
+import { espInfo as espInfoFn, publishImage, syncEspYaml } from './esphome.js';
+import { rootDir } from '../paths.js';
 
 export const hubEnabled = (): boolean => process.env.FILAMENTHUB_HUB === '1';
 
@@ -38,6 +42,13 @@ export interface HubConfig {
   push: { done: boolean; failed: boolean; warn: boolean; low: boolean };
   autoOff: { armed: boolean; jobName: string; armedAt: number };
   dryOff: { armed: boolean; armedAt: number };
+  /** Strompreis €/kWh */
+  kwhPrice: number;
+  /** Ruhezeit: Push lautlos von … bis … Uhr */
+  quietFrom: number;
+  quietTo: number;
+  /** Material fehlt im AMS → Druck pausieren */
+  materialGuard: boolean;
   updatedAt: number;
 }
 
@@ -54,6 +65,10 @@ const DEFAULT_CFG: HubConfig = {
   push: { done: true, failed: true, warn: true, low: true },
   autoOff: { armed: false, jobName: '', armedAt: 0 },
   dryOff: { armed: false, armedAt: 0 },
+  kwhPrice: 0.35,
+  quietFrom: 22,
+  quietTo: 7,
+  materialGuard: true,
   updatedAt: 0
 };
 
@@ -110,6 +125,10 @@ export function updateHubConfig(body: any): HubConfig {
   set('deduct', bool(body?.deduct));
   set('lowWeightG', num(body?.lowWeightG, 0, 1000));
   set('dryOffDelayMin', num(body?.dryOffDelayMin, 1, 60));
+  set('kwhPrice', num(body?.kwhPrice, 0, 5));
+  set('quietFrom', num(body?.quietFrom, 0, 23));
+  set('quietTo', num(body?.quietTo, 0, 23));
+  set('materialGuard', bool(body?.materialGuard));
   if (body?.push && typeof body.push === 'object') {
     c.push = { ...c.push };
     for (const k of ['done', 'failed', 'warn', 'low'] as const) if (typeof body.push[k] === 'boolean') c.push[k] = body.push[k];
@@ -167,6 +186,8 @@ export interface PrintMeta {
   parts?: Part[];
   photo: boolean;
   pushed: boolean;
+  /** Strom für diesen Druck (Wh) */
+  energyWh?: number;
   /** Fächer beim Druckende (für den Abzug) */
   trays?: TrayLite[];
   resolved?: boolean;
@@ -182,6 +203,12 @@ interface HubState {
   warned: boolean;
   expectedMin: number;
   pausedMs: number;
+  /** Strom je Woche (Montag = Schlüssel) */
+  energy: Record<string, EnergyWeek>;
+  /** Woche, für die der Bericht schon kam */
+  lastReportWeek: string;
+  /** Energie des laufenden Drucks (Wh) */
+  printWh: number;
 }
 
 let st: HubState | null = null;
@@ -189,9 +216,9 @@ function state(): HubState {
   if (st) return st;
   try {
     const raw = JSON.parse(fs.readFileSync(stateFile(), 'utf-8'));
-    st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0, ...raw };
+    st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0, energy: {}, lastReportWeek: '', printWh: 0, ...raw };
   } catch {
-    st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0 };
+    st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0, energy: {}, lastReportWeek: '', printWh: 0 };
   }
   return st!;
 }
@@ -218,14 +245,24 @@ export function resolvePrint(id: string): boolean {
 
 // ---------- Drucker-Zugang (wird von bambuMqtt eingesteckt, kein Kreis-Import) ----------
 
-export interface PrinterPort {
-  getStatus: () => { connected: boolean; receivingData?: boolean; data?: any };
-  getLanAccess: () => { ip: string; code: string } | null;
+export interface PrinterPort extends QueuePort {
   stopDrying: () => Promise<boolean>;
+  command: (cmd: 'pause' | 'resume' | 'stop') => Promise<unknown>;
+  resumeAfterError: (code: number) => Promise<unknown>;
+  /** Verzögerter Druck geplant (dann ist eine Pause gewollt) */
+  delayedResume: () => number;
 }
 let port: PrinterPort | null = null;
 export function attachPrinter(p: PrinterPort): void {
   port = p;
+  attachQueue(p, (title, text) => push('done', title, text, { tag: 'queue' }));
+  if (hubEnabled()) {
+    haListen(ev => {
+      queueEvent(ev);
+      onAction(ev);
+    });
+    setTimeout(() => refreshLeds(), 20_000);
+  }
 }
 
 // ---------- Hilfen ----------
@@ -237,10 +274,14 @@ export const deductActive = () => hubEnabled() && getHubConfig().deduct && cloud
 export const powerActive = () => hubEnabled() && haAvailable();
 
 let lastPush: { at: number; ok: boolean; text: string } | null = null;
-export async function push(kind: keyof HubConfig['push'] | 'test', title: string, message: string, tag?: string): Promise<boolean> {
+export async function push(kind: keyof HubConfig['push'] | 'test', title: string, message: string, opts: PushOptions | string = {}): Promise<boolean> {
   if (!hubEnabled() || !haAvailable()) return false;
   if (kind !== 'test' && !getHubConfig().push[kind]) return false;
-  const r = await haPush(process.env.NOTIFY_SERVICE || '', title, message, tag);
+  const o: PushOptions = typeof opts === 'string' ? { tag: opts } : { ...opts };
+  // Ruhezeit: trotzdem schicken, aber lautlos
+  const c = getHubConfig();
+  if (inQuietHours(new Date().getHours(), c.quietFrom, c.quietTo)) o.silent = true;
+  const r = await haPush(process.env.NOTIFY_SERVICE || '', title, message, o);
   lastPush = { at: Date.now(), ok: r.ok, text: r.ok ? `an ${r.sent.join(', ')}` : 'kein Handy mit der Home-Assistant-App gefunden' };
   console.log(`[Hub] Push „${title}“: ${lastPush.text}`);
   return r.ok;
@@ -268,6 +309,25 @@ export function readPhoto(id: string): Buffer | null {
   }
 }
 
+let lastJpeg: Buffer | null = null;
+
+/** Aktuelles Kamerabild für eine Push-Meldung (/local/… über Home Assistant) */
+async function snapshotForPush(): Promise<string | undefined> {
+  let jpeg: Buffer | null = null;
+  const lan = port?.getLanAccess();
+  if (lan) {
+    try {
+      const r = await getPrinterFrame(lan.ip, lan.code);
+      if (r.ok) jpeg = r.jpeg;
+    } catch {
+      /* dann HA */
+    }
+  }
+  if (!jpeg && getHubConfig().cameraEntity) jpeg = await haCameraJpeg(getHubConfig().cameraEntity);
+  if (!jpeg) return undefined;
+  return publishImage(jpeg, `${crypto.randomBytes(8).toString('hex')}.jpg`) || undefined;
+}
+
 async function takePhoto(id: string): Promise<boolean> {
   let jpeg: Buffer | null = null;
   const lan = port?.getLanAccess();
@@ -282,6 +342,7 @@ async function takePhoto(id: string): Promise<boolean> {
   const cam = getHubConfig().cameraEntity;
   if (!jpeg && cam) jpeg = await haCameraJpeg(cam);
   if (!jpeg) return false;
+  lastJpeg = jpeg;
   try {
     fs.mkdirSync(photoDir(), { recursive: true });
     fs.writeFileSync(photoFile(id), jpeg);
@@ -316,7 +377,8 @@ export function onPrintEnd(rec: RecordedPrint, data: any): void {
   if (!hubEnabled()) return;
   const s = state();
   if (s.prints[rec.id]) return; // schon bearbeitet
-  s.prints[rec.id] = { deduct: deductActive() ? 'pending' : 'off', tries: 0, lastTry: 0, photo: false, pushed: false, trays: traysOf(data), at: Date.now() };
+  s.prints[rec.id] = { deduct: deductActive() ? 'pending' : 'off', tries: 0, lastTry: 0, photo: false, pushed: false, trays: traysOf(data), energyWh: Math.round(s.printWh), at: Date.now() };
+  s.printWh = 0;
   saveState();
   void handleEnd(rec);
 }
@@ -340,11 +402,12 @@ async function pushEnd(rec: RecordedPrint): Promise<void> {
   m.pushed = true;
   saveState();
   const dur = durText((rec.endMs - rec.startMs) / 60000);
+  const image = m.photo && lastJpeg ? publishImage(lastJpeg, `${crypto.randomBytes(8).toString('hex')}.jpg`) || undefined : undefined;
   if (rec.state === 'FINISH') {
     const extra = m.deduct === 'done' && m.texts?.length ? `\nAbgezogen: ${m.texts.join(', ')}` : m.deduct === 'ask' ? '\nBitte in der App bestätigen: Spule abziehen?' : '';
-    await push('done', '✅ Druck fertig', `${rec.name} · ${dur}${extra}`, `print-${rec.id}`);
+    await push('done', '✅ Druck fertig', `${rec.name} · ${dur}${extra}`, { tag: `print-${rec.id}`, image });
   } else {
-    await push('failed', '❌ Druck abgebrochen', `${rec.name} bei ${rec.percent} % · ${dur}\nIn der App: Spule anteilig abziehen?`, `print-${rec.id}`);
+    await push('failed', '❌ Druck abgebrochen', `${rec.name} bei ${rec.percent} % · ${dur}\nIn der App: Spule anteilig abziehen?`, { tag: `print-${rec.id}`, image });
   }
 }
 
@@ -454,10 +517,15 @@ export async function tick(now = Date.now()): Promise<void> {
     const dt = rt.lastTick ? Math.min(120_000, now - rt.lastTick) : 0;
     rt.lastTick = now;
     await retryDeducts(now);
+    await energyTick(gs, now, dt);
+    await goneWatch(live, now);
+    if (live) await errorWatch(gs, d, now);
     if (live) await watchPrint(gs, d, now, dt);
     await autoOff(gs, d, live, now);
     await dryOff(gs, d, live, now);
     await dailyBackup(now);
+    await weeklyTick(now);
+    await espTick(now);
   } catch (e) {
     console.warn('[Hub] Takt-Fehler:', (e as Error)?.message || e);
   } finally {
@@ -522,9 +590,9 @@ async function watchPrint(gs: string, d: any, now: number, dt: number): Promise<
   if (!s.startChecked && gs === 'RUNNING') {
     s.startChecked = true;
     saveState();
-    if (cloudReady(access())) {
+    {
       try {
-        const [filaments, doc] = await Promise.all([jobWeights(open.name), loadDoc(access())]);
+        const [filaments, doc] = await Promise.all([jobWeights(open.name), cloudReady(access()) ? loadDoc(access()).catch(() => ({})) : Promise.resolve({} as any)]);
         const left = Math.max(0, 1 - (Number(d.mc_percent) || 0) / 100);
         const probs = shortages({
           filaments,
@@ -536,10 +604,27 @@ async function watchPrint(gs: string, d: any, now: number, dt: number): Promise<
           left
         });
         if (probs.length) await push('warn', '⚠️ Filament reicht evtl. nicht', `${open.name}\n${probs.join('\n')}`, 'spool-check');
+        // Material-Wächter: fehlt ein Material der Datei im ganzen AMS? Dann gleich am Anfang anhalten
+        const missing = filaments && getHubConfig().materialGuard && elapsedMin < 10 ? missingMaterials(filaments, allTrays(d.ams, d.vt_tray)) : [];
+        if (missing.length && port) {
+          xt.ownPauseAt = Date.now();
+          await port.command('pause').catch(() => undefined);
+          await askToContinue('🛑 Falsches Material', `${open.name} braucht ${missing.join(', ')}, das steckt nicht im AMS. Druck angehalten.`, 0);
+        }
       } catch (e) {
         console.warn('[Hub] Spulen-Check:', (e as Error)?.message || e);
       }
     }
+  }
+
+  // Hängt der Druck? (Fortschritt und Schicht 30 Minuten gleich)
+  const progKey = `${d.mc_percent}|${d.layer_num}`;
+  if (progKey !== xt.progKey || gs !== 'RUNNING') {
+    xt.progKey = progKey;
+    xt.progAt = now;
+  } else if (stalled(xt.progAt, now) && xt.stallWarned !== key) {
+    xt.stallWarned = key;
+    await askToContinue('🐌 Druck hängt?', `${open.name}: seit 30 Minuten kein Fortschritt (${d.mc_percent} %, Schicht ${d.layer_num}).`, 0);
   }
 
   // 7. Dauert viel länger als gewohnt?
@@ -619,6 +704,184 @@ async function dryOff(gs: string, d: any, live: boolean, now: number): Promise<v
   }
 }
 
+// ---------- Strom, Drucker weg, Fehler mit Knöpfen, Wochenbericht, ESP-Update ----------
+
+const xt = { goneSince: 0, goneWarned: false, errKey: '', action: null as null | { nonce: string; code: number; at: number }, ownPauseAt: 0, progKey: '', progAt: 0, stallWarned: '', lastEsp: 0, espNotified: '' };
+
+async function energyTick(gs: string, now: number, dt: number): Promise<void> {
+  if (!haAvailable() || !dt) return;
+  const w = await haPowerW(getHubConfig().switchEntity);
+  if (w === null) return;
+  const printing = ['RUNNING', 'PREPARE', 'PAUSE'].includes(gs);
+  const s = state();
+  s.energy = addEnergy(s.energy || {}, now, w, dt, printing);
+  if (printing && dt <= 5 * 60_000) s.printWh = (s.printWh || 0) + (w * dt) / 3600_000;
+  saveState();
+}
+
+async function goneWatch(live: boolean, now: number): Promise<void> {
+  const open = printRecorder.status().open;
+  if (live || !open) {
+    xt.goneSince = 0;
+    xt.goneWarned = false;
+    return;
+  }
+  if (!xt.goneSince) xt.goneSince = now;
+  if (!xt.goneWarned && now - xt.goneSince >= 2 * 60_000) {
+    xt.goneWarned = true;
+    await push('warn', '📡 Drucker antwortet nicht', `Seit 2 Minuten keine Daten vom Drucker, obwohl „${open.name}“ lief (${open.percent} %). Strom, WLAN oder Absturz?`, { tag: 'printer-gone' });
+  }
+}
+
+let hmsTable: { e: Record<string, string>; h: Record<string, string> } | null = null;
+function errorText(code: number, hms: any[]): string {
+  try {
+    if (!hmsTable) hmsTable = JSON.parse(fs.readFileSync(path.join(rootDir, 'public', 'hms_de.json'), 'utf-8'));
+  } catch {
+    hmsTable = { e: {}, h: {} };
+  }
+  const hex = (n: number) => (n >>> 0).toString(16).toUpperCase().padStart(8, '0');
+  if (code) {
+    const t = hmsTable!.e?.[hex(code)];
+    if (t) return t;
+  }
+  for (const h of hms || []) {
+    const k = hex(Number(h?.attr)) + hex(Number(h?.code));
+    if (hmsTable!.h?.[k]) return hmsTable!.h[k];
+  }
+  return code ? `Fehler ${hex(code).slice(0, 4)}_${hex(code).slice(4)}` : 'Der Drucker hat angehalten.';
+}
+
+/** Drucker hält an (z. B. Objekt auf dem Bett, KI-Fehlererkennung, Spaghetti): Push mit Foto und Knöpfen „Weiter“ / „Abbrechen“ */
+async function errorWatch(gs: string, d: any, now: number): Promise<void> {
+  const code = Number(d.print_error) || 0;
+  // Nur ernste HMS-Meldungen (Stufe 1-2), keine Hinweise
+  const hms: any[] = (Array.isArray(d.hms) ? d.hms : []).filter((h: any) => {
+    const lvl = Math.floor((Number(h?.code) >>> 0) / 0x10000);
+    return lvl >= 1 && lvl <= 2;
+  });
+  const paused = gs === 'PAUSE';
+  if (!paused || (!code && !hms.length) || port?.delayedResume()) {
+    if (gs === 'RUNNING' || gs === 'IDLE' || gs === 'FINISH') xt.errKey = '';
+    return;
+  }
+  if (now - xt.ownPauseAt < 3 * 60_000) return; // Material-Wächter hat selbst pausiert und schon gemeldet
+  const key = `${state().openKey}|${code}|${hms.map(h => `${h?.attr}:${h?.code}`).join(',')}`;
+  if (key === xt.errKey) return;
+  xt.errKey = key;
+  await askToContinue('⏸️ Drucker wartet', `${d.subtask_name || 'Druck'}: ${errorText(code, hms)}`, code);
+}
+
+async function askToContinue(title: string, text: string, code: number): Promise<void> {
+  const nonce = crypto.randomBytes(5).toString('hex');
+  xt.action = { nonce, code, at: Date.now() };
+  const image = await snapshotForPush();
+  await push('warn', title, `${text}\nWeiter = am Drucker bestätigen.`, {
+    tag: 'printer-wait',
+    image,
+    actions: [
+      { action: `FH_RESUME_${nonce}`, title: '▶️ Weiter' },
+      { action: `FH_STOP_${nonce}`, title: '⏹️ Abbrechen' }
+    ]
+  });
+}
+
+/** Knopf in der Push-Meldung gedrückt */
+function onAction(ev: { event_type: string; data: any }): void {
+  if (ev.event_type !== 'mobile_app_notification_action') return;
+  const m = String(ev.data?.action || '').match(/^FH_(RESUME|STOP)_([0-9a-f]+)$/);
+  const a = xt.action;
+  if (!m || !a || m[2] !== a.nonce || Date.now() - a.at > 6 * 3600_000) return;
+  xt.action = null;
+  void (async () => {
+    const gs = String(port?.getStatus().data?.gcode_state || '');
+    if (gs !== 'PAUSE') return void push('warn', 'Nichts zu tun', 'Der Drucker wartet nicht mehr.', { tag: 'printer-wait' });
+    try {
+      if (m[1] === 'RESUME') {
+        await port!.resumeAfterError(a.code);
+        await push('done', '▶️ Weiter', 'Der Druck läuft weiter.', { tag: 'printer-wait' });
+      } else {
+        await port!.command('stop');
+        await push('done', '⏹️ Abgebrochen', 'Der Druck wurde abgebrochen.', { tag: 'printer-wait' });
+      }
+    } catch (e) {
+      await push('warn', 'Hat nicht geklappt', `${(e as Error)?.message || e}. Bitte am Drucker bestätigen.`, { tag: 'printer-wait' });
+    }
+  })();
+}
+
+async function weeklyTick(now: number): Promise<void> {
+  const d = new Date(now);
+  const s = state();
+  if (d.getDay() !== 0 || d.getHours() < 18 || s.lastReportWeek === weekKey(now)) return;
+  s.lastReportWeek = weekKey(now);
+  saveState();
+  let doc: any = {};
+  try {
+    if (cloudReady(access())) doc = await loadDoc(access());
+  } catch {
+    doc = {};
+  }
+  const c = getHubConfig();
+  const r = weeklyReport({
+    now,
+    prints: printRecorder.list(),
+    history: Array.isArray(doc?.printHistory) ? doc.printHistory : [],
+    spools: Array.isArray(doc?.spools) ? doc.spools : [],
+    energy: s.energy?.[weekKey(now)],
+    kwhPrice: c.kwhPrice,
+    lowWeightG: c.lowWeightG
+  });
+  await push('done', r.title, r.text, { tag: 'weekly' });
+}
+
+async function espTick(now: number): Promise<void> {
+  if (now - xt.lastEsp < 6 * 3600_000) return;
+  xt.lastEsp = now;
+  const r = await syncEspYaml();
+  if (r.changed && r.info.revision && r.info.revision !== xt.espNotified) {
+    xt.espNotified = r.info.revision;
+    await push('warn', '🔧 ESP-Update bereit', `Neue AMS-ESP-Fassung (Revision ${r.info.revision}). Home Assistant → ESPHome → Filament AMS → Installieren → Drahtlos.`, { tag: 'esp-update' });
+  }
+}
+
+/** Sofort prüfen (Knopf in der App) */
+export async function espSyncNow() {
+  xt.lastEsp = Date.now();
+  return syncEspYaml();
+}
+
+export function energyWeeks(): { week: string; totalWh: number; printWh: number; cost: number }[] {
+  const e = state().energy || {};
+  const price = getHubConfig().kwhPrice;
+  return Object.keys(e)
+    .sort()
+    .slice(-12)
+    .map(k => ({ week: k, totalWh: Math.round(e[k].totalWh), printWh: Math.round(e[k].printWh), cost: Math.round((e[k].totalWh / 1000) * price * 100) / 100 }));
+}
+
+export async function weeklyReportNow(): Promise<{ title: string; text: string }> {
+  let doc: any = {};
+  try {
+    if (cloudReady(access())) doc = await loadDoc(access());
+  } catch {
+    doc = {};
+  }
+  const c = getHubConfig();
+  const now = Date.now();
+  const r = weeklyReport({
+    now,
+    prints: printRecorder.list(),
+    history: Array.isArray(doc?.printHistory) ? doc.printHistory : [],
+    spools: Array.isArray(doc?.spools) ? doc.spools : [],
+    energy: state().energy?.[weekKey(now)],
+    kwhPrice: c.kwhPrice,
+    lowWeightG: c.lowWeightG
+  });
+  await push('test', r.title, r.text, { tag: 'weekly' });
+  return r;
+}
+
 // ---------- 10. Sicherung ----------
 
 const dayOf = (t: number) => {
@@ -679,6 +942,11 @@ export function readBackup(name: string): string | null {
 
 // ---------- Status für die Apps ----------
 
+function espInfoSafe() {
+  const i = espInfoFn();
+  return i ? { ok: i.ok, text: i.text, revision: i.revision } : null;
+}
+
 export function hubStatus() {
   const c = getHubConfig();
   const b = listBackups();
@@ -693,7 +961,13 @@ export function hubStatus() {
     lastPush,
     backups: b.length,
     lastBackup: b[0]?.name || '',
-    configAt: c.updatedAt
+    configAt: c.updatedAt,
+    kwhPrice: c.kwhPrice,
+    quietFrom: c.quietFrom,
+    quietTo: c.quietTo,
+    materialGuard: c.materialGuard,
+    energyWeek: energyWeeks().slice(-1)[0] || null,
+    esp: espInfoSafe()
   };
 }
 

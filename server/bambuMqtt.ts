@@ -127,7 +127,11 @@ attachPrinter({
     } catch {
       return false;
     }
-  }
+  },
+  command: cmd => bambuService.sendCommand(cmd),
+  resumeAfterError: code => bambuService.resumeAfterError(code),
+  delayedResume: () => bambuService.getDelayedResume(),
+  startProject: p => bambuService.startProjectFile(p)
 });
 if (hubEnabled()) {
   setInterval(() => void hubTick(), 30_000).unref();
