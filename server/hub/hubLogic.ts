@@ -179,6 +179,8 @@ export function readSubstitutions(yaml: string): Record<string, string> {
   return out;
 }
 
+const NEVER_KEEP = new Set(['fw_revision']);
+
 /** Neue YAML mit den eigenen Werten aus der alten (z. B. led_count, led_cap) */
 export function mergeEspYaml(newYaml: string, oldYaml: string): string {
   const keep = readSubstitutions(oldYaml);
@@ -188,7 +190,8 @@ export function mergeEspYaml(newYaml: string, oldYaml: string): string {
   for (let i = start + 1; i < lines.length; i++) {
     if (/^\S/.test(lines[i])) break;
     const m = lines[i].match(/^( {2})([A-Za-z0-9_]+):\s*(.*?)\s*$/);
-    if (m && keep[m[2]] !== undefined) lines[i] = `${m[1]}${m[2]}: ${keep[m[2]]}`;
+    // Revision kommt immer aus der neuen Fassung (sonst zeigt die App eine alte Nummer)
+    if (m && keep[m[2]] !== undefined && !NEVER_KEEP.has(m[2])) lines[i] = `${m[1]}${m[2]}: ${keep[m[2]]}`;
   }
   return lines.join('\n');
 }

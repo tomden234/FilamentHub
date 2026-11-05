@@ -32,6 +32,7 @@ import {
   PackageMinus,
   SlidersHorizontal
 } from 'lucide-react';
+import { TestTab } from './sidebar/TestTab';
 import { StatusLedCard } from './sidebar/StatusLedCard';
 import { NoticesTab, type NoticeSection } from './workshop/NoticesTab';
 import { useBackLayer } from '../utils/backNav';
@@ -402,6 +403,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { key: 'n-adv', group: 'Mitteilungen', icon: SlidersHorizontal, title: 'Zeiten und Grenzen', sub: 'Wartezeiten und Schwellen', go: notice('advanced') },
     { key: 'connections', group: 'Geräte', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud, NFC-Leser', go: settings('connections') },
     { key: 'led', group: 'Geräte', icon: Lightbulb, title: 'Status-LED', sub: 'Farben, Helligkeit, Test', go: () => setActiveTab('led') },
+    { key: 'test', group: 'Geräte', icon: FlaskConical, title: 'Testmenü', sub: 'NFC-Leser, Tag, Taster, LEDs, Feuchte prüfen', go: () => setActiveTab('test') },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
     ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Geräte', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }]),
     { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: settings('themes') },
@@ -429,6 +431,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     : activeTab === 'tools' ? 'Sichern und Laden'
     : activeTab === 'connect' ? 'Handy'
     : activeTab === 'led' ? 'Status-LED'
+    : activeTab === 'test' ? 'Testmenü'
     : activeTab === 'notices' ? NOTICE_TITLES[noticeSection]
     : settingsSubTab === 'themes' ? 'Aussehen'
     : settingsSubTab === 'presets' ? 'Material'
@@ -861,6 +864,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Status-LED und Mitteilungs-Einstellungen als eigene Seiten */}
           {activeTab === 'led' && <StatusLedCard />}
+          {activeTab === 'test' && <TestTab />}
           {activeTab === 'notices' && <NoticesTab section={noticeSection} />}
 
           {/* TAB 6: TOOLS & BACKUP */}

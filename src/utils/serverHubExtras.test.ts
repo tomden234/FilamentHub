@@ -106,6 +106,9 @@ describe('ESP-YAML übers WLAN', () => {
     expect(readSubstitutions(out).led_count).toBe('"40"');
     expect(readSubstitutions(out).led_cap).toBe('"0.6"');
     expect(out.startsWith('# Neu')).toBe(true);
+    // Revision nie aus der alten Datei
+    const old2 = repoYaml.replace(/fw_revision: "[\d.]+"/, 'fw_revision: "1.100"');
+    expect(readSubstitutions(mergeEspYaml(repoYaml, old2)).fw_revision).toBe(readSubstitutions(repoYaml).fw_revision);
   });
   it('Revision aus Zeile 1, Taster und Warteschlange drin', () => {
     expect(yamlRevision(repoYaml)).toMatch(/^1\.\d+$/);
@@ -130,5 +133,18 @@ describe('NFC-Leser über die Weiterleitung', () => {
     expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_letzter_tag', undefined)).toBe(true);
     expect(isRawAllowed('GET', '/api/states/sensor.wohnzimmer_temperatur', undefined)).toBe(false);
     expect(isRawAllowed('GET', '/api/states/lock.haustuer', undefined)).toBe(false);
+  });
+});
+
+describe('Testmenü über die Weiterleitung', () => {
+  it('Warteschlange setzen und Test-Schalter, sonst nichts', async () => {
+    const { isRawAllowed } = await import('../../server/haRawAllow');
+    expect(isRawAllowed('POST', '/api/services/number/set_value', { entity_id: 'number.filament_ams_warteschlange', value: 7 })).toBe(true);
+    expect(isRawAllowed('POST', '/api/services/number/set_value', { entity_id: 'number.filament_ams_warteschlange', value: 11 })).toBe(false);
+    expect(isRawAllowed('POST', '/api/services/number/set_value', { entity_id: 'number.heizung_soll', value: 5 })).toBe(false);
+    expect(isRawAllowed('POST', '/api/services/switch/turn_on', { entity_id: 'switch.filament_ams_warteschlange_test' })).toBe(true);
+    expect(isRawAllowed('POST', '/api/services/switch/turn_on', { entity_id: 'switch.3d_drucker_steckdose' })).toBe(false);
+    expect(isRawAllowed('GET', '/api/states/binary_sensor.filament_ams_platte_frei', undefined)).toBe(true);
+    expect(isRawAllowed('GET', '/api/states/switch.filament_ams_warteschlange_test', undefined)).toBe(true);
   });
 });

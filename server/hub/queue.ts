@@ -169,7 +169,8 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
 /** Taster am ESP gedrückt? (Ereignis aus Home Assistant) */
 export function onHaEvent(ev: { event_type: string; data: any }): void {
   if (ev.event_type !== 'state_changed' || ev.data?.entity_id !== BUTTON_ENTITY) return;
-  if (ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state === 'off') void startNext('Taster');
+  // Auch der erste Druck nach einem ESP-Neustart zählt (alter Zustand dann „unknown“/„unavailable“)
+  if (ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on') void startNext('Taster');
 }
 
 /** Beim Start: LEDs auf den aktuellen Stand bringen */

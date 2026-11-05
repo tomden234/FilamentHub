@@ -2976,5 +2976,23 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.202',
+    label: '1.202 (Testmenü)',
+    releaseDate: '05.11.2026',
+    description: 'Neues Testmenü (Menü → Geräte → Testmenü): AMS-ESP und Firmware, alle 5 NFC-Leser live mit Zustand und zuletzt gelesenem Tag, Tag mit dem Handy prüfen (liest der Leser ihn?), Taster-Test mit Warteschlangen-LEDs (z. B. 7 LEDs, jedes Drücken eine weniger, ohne Druckstart), Feuchte-Sensoren und Status-LED.',
+    features: [
+      '🧪 Testmenü mit 6 Bereichen, liest alle 2 Sekunden live über Home Assistant',
+      '🏷️ Tag am Handy prüfen: zeigt Nummer und Typ, sagt ob die AMS-Leser ihn lesen (7-Byte-NTAG)',
+      '🔘 Taster-Test: LED-Zahl wählen, jedes Drücken eine weniger (kurz grün), kein Druckstart; beim Beenden kommt die echte Zahl zurück',
+      '🔧 Firmware 1.202: Sensor „Firmware“, Schalter „Warteschlange Test“, klare Startwerte statt „Unbekannt“',
+      '🐛 Erster Tasterdruck nach ESP-Neustart wurde vom Pi übersehen: behoben',
+      '🐛 ESP-Update übers WLAN behielt die alte Revisionsnummer: behoben',
+      '🖥️ Pi-Server 1.2.1'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

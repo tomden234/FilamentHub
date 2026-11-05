@@ -1,4 +1,4 @@
-# Erstellt: 05.11.2026 17:30 Uhr (Revision 1.201)
+# Erstellt: 05.11.2026 17:45 Uhr (Revision 1.202)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -50,6 +50,14 @@ substitutions:
   queue_led_count: "10"
   # Taster: "false" = federt zurück (Standard), "true" = rastet ein (jedes Umschalten zählt als Drücken)
   button_latching: "false"
+  # Stand dieser Datei (zeigt die App im Testmenü, damit man sieht, ob die neue Firmware drauf ist)
+  fw_revision: "1.202"
+
+# Merker für den Test der Warteschlange (Zahl vor dem Test)
+globals:
+  - id: queue_before_test
+    type: float
+    initial_value: '0'
 
 esphome:
   name: ${name}
@@ -60,6 +68,14 @@ esphome:
       - light.turn_on:
           id: queue_led
           effect: "Warteschlange"
+      # Klare Startwerte statt „Unbekannt“ in Home Assistant (leer = kein Tag)
+      - binary_sensor.template.publish: { id: plate_free, state: false }
+      - text_sensor.template.publish: { id: last_tag, state: "noch kein Tag gelesen" }
+      - text_sensor.template.publish: { id: slot_1_tag, state: "" }
+      - text_sensor.template.publish: { id: slot_2_tag, state: "" }
+      - text_sensor.template.publish: { id: slot_3_tag, state: "" }
+      - text_sensor.template.publish: { id: slot_4_tag, state: "" }
+      - text_sensor.template.publish: { id: slot_5_tag, state: "" }
 
 esp32:
   board: esp32dev
@@ -114,10 +130,27 @@ i2c:
     frequency: 50kHz
     scan: true
 
-# RST aller 5 Leser (GPIO22) dauerhaft HIGH: Leser sind wach, nichts „schwebt“.
-# (Vorher war GPIO22 nur Reset-Pin von Leser 1 und blieb danach oft offen/schwebend = Leser konnten in den Stromspar-Modus fallen.)
-# Wird beim Start vor den Lesern eingeschaltet (Hardware-Priorität) = sauberer Hard-Reset aller Leser.
+# Test der Warteschlange (Testmenü der App): an = Taster zählt nur die LEDs runter, es startet kein Druck.
+# Aus = alte Zahl kommt zurück.
 switch:
+  - platform: template
+    id: queue_test
+    name: "Warteschlange Test"
+    icon: mdi:test-tube
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    entity_category: config
+    turn_on_action:
+      - lambda: 'id(queue_before_test) = id(queue_count).state;'
+    turn_off_action:
+      - number.set:
+          id: queue_count
+          value: !lambda 'return id(queue_before_test);'
+      - number.set: { id: queue_mode, value: 0 }
+
+  # RST aller 5 Leser (GPIO22) dauerhaft HIGH: Leser sind wach, nichts „schwebt“.
+  # (Vorher war GPIO22 nur Reset-Pin von Leser 1 und blieb danach oft offen = Leser konnten in den Stromspar-Modus fallen.)
+  # Wird beim Start vor den Lesern eingeschaltet (Hardware-Priorität) = sauberer Hard-Reset aller Leser.
   - platform: gpio
     id: rfid_rst
     pin: GPIO22
@@ -315,6 +348,22 @@ interval:
 
 # Slot erst nach "remove_after" als leer melden (Spule dreht sich beim Drucken)
 script:
+  # Taster gedrückt: im Test eine LED weniger (der Pi merkt nichts), sonst Impuls „Platte frei“ an den Pi
+  - id: button_pressed
+    mode: single
+    then:
+      - if:
+          condition:
+            switch.is_on: queue_test
+          then:
+            - number.set:
+                id: queue_count
+                value: !lambda 'return id(queue_count).state > 0 ? id(queue_count).state - 1 : 0;'
+            - number.set: { id: queue_mode, value: 2 }
+            - delay: 300ms
+            - number.set: { id: queue_mode, value: 0 }
+          else:
+            - script.execute: plate_pulse
   - id: plate_pulse
     mode: single
     then:
@@ -482,13 +531,13 @@ binary_sensor:
       - delayed_on: 40ms
       - delayed_off: 40ms
     on_press:
-      - script.execute: plate_pulse
+      - script.execute: button_pressed
     on_release:
       - if:
           condition:
             lambda: 'return ${button_latching};'
           then:
-            - script.execute: plate_pulse
+            - script.execute: button_pressed
   # Für Home Assistant und den Pi: 0,5 s „an“ je Drücken (egal ob der Taster federt oder einrastet)
   - platform: template
     id: plate_free
@@ -496,6 +545,14 @@ binary_sensor:
     icon: mdi:gesture-tap-button
 
 text_sensor:
+  # Stand der Firmware (Revision), fürs Testmenü der App
+  - platform: template
+    id: fw_rev
+    name: "Firmware"
+    icon: mdi:chip
+    entity_category: diagnostic
+    lambda: 'return {"${fw_revision}"};'
+    update_interval: 10min
   # Zum Testen: zuletzt gelesener Tag an irgendeinem Leser (auch ignorierte)
   - platform: template
     id: last_tag
