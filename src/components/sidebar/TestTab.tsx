@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, Smartphone, ToggleRight, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, RefreshCw, Smartphone, ToggleRight, XCircle } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
 import { findAmsDevice, ids, judgeReader, judgeTag, readEntity, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
 import { useNfcTags } from '../../utils/nfcRead';
@@ -45,9 +45,12 @@ const ago = (t: number) => {
 
 export const TestTab: React.FC = () => {
   const [base, setBase] = useState<string | null>(null);
+  const [entities, setEntities] = useState<string[]>([]);
+  const [tickNo, setTickNo] = useState(0);
   const [findErr, setFindErr] = useState('');
   const [searching, setSearching] = useState(true);
   const [st, setSt] = useState<Record<string, EntityState | null>>({});
+  const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (id: string) => setOpen(o => (o === id ? null : id));
   const [queueN, setQueueN] = useState(7);
@@ -64,6 +67,8 @@ export const TestTab: React.FC = () => {
     try {
       const d = await findAmsDevice();
       setBase(d?.base || null);
+      setEntities(d?.entities || []);
+      setTickNo(n => n + 1);
       if (!d) setFindErr('Kein AMS-ESP in Home Assistant gefunden (Sensor „Slot 1 Tag“ fehlt). Ist der ESP in Home Assistant eingebunden?');
     } catch (e: any) {
       setFindErr(`Home Assistant nicht erreichbar: ${e?.message || e}`);
@@ -80,8 +85,8 @@ export const TestTab: React.FC = () => {
   useEffect(() => {
     live.current = true;
     if (!base) return;
-    const e = ids(base);
-    const list = [e.firmware, e.ip, e.wifi, e.lastTag, e.queue, e.queueTest, e.button, e.boxHum, e.dryerHum, ...[1, 2, 3, 4, 5].flatMap(n => [e.slot(n), e.reader(n)])];
+    const e = ids(base, entities);
+    const list = [e.firmware, e.ip, e.wifi, e.lastTag, e.queue, e.queueTest, e.button, e.boxHum, e.boxTemp, e.dryerHum, e.dryerTemp, ...[1, 2, 3, 4, 5].flatMap(n => [e.slot(n), e.reader(n)])];
     let busy = false;
     const tick = async () => {
       if (busy || !live.current) return;
@@ -97,18 +102,31 @@ export const TestTab: React.FC = () => {
       live.current = false;
       clearInterval(iv);
     };
-  }, [base]);
+  }, [base, entities]);
 
   // Tag mit dem Handy lesen (Android-App / Chrome auf Android)
   const nfc = useNfcTags([], r => setPhoneTag(r.serialNumber || ''), true);
 
-  const e = base ? ids(base) : null;
+  const e = base ? ids(base, entities) : null;
   const val = (id?: string) => (id ? st[id]?.state : undefined);
   const fw = val(e?.firmware);
   const fwOk = fw && fw !== 'unknown' && fw !== 'unavailable';
   const espOnline = e ? st[e.wifi]?.available !== false && st[e.ip]?.available !== false && Object.keys(st).length > 0 : false;
   const testOn = val(e?.queueTest) === 'on';
   const hasTestSwitch = e ? st[e.queueTest] !== null && st[e.queueTest] !== undefined : false;
+  // Der Testschalter gibt es erst ab 1.202: ist er da, ist die Firmware neu genug (auch wenn der Firmware-Sensor in HA anders heißt)
+  const fwNew = (fwOk && fw === WANT_FW) || hasTestSwitch;
+
+  const refresh = async () => {
+    setRefreshing(true);
+    await find();
+    setRefreshing(false);
+  };
+  const RefreshBtn = (
+    <button className={btn} style={btnStyle} disabled={refreshing || searching} onClick={() => void refresh()}>
+      <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> ESP aktualisieren
+    </button>
+  );
 
   const startQueueTest = async () => {
     if (!base) return;
@@ -172,10 +190,10 @@ export const TestTab: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Mark v={fwOk && fw === WANT_FW ? 'ok' : 'bad'} />
-              <span>Firmware: {fwOk ? fw : 'alt (vor 1.200)'}</span>
+              <Mark v={fwNew ? 'ok' : 'bad'} />
+              <span>Firmware: {fwOk ? fw : hasTestSwitch ? `${WANT_FW} (am Testschalter erkannt)` : 'alt (vor 1.200)'}</span>
             </div>
-            {!(fwOk && fw === WANT_FW) && (
+            {!fwNew && (
               <p className="leading-snug text-amber-300">
                 Bitte zuerst Firmware {WANT_FW} aufspielen: Home Assistant → ESPHome → Filament AMS → Bearbeiten → Inhalt von filament-ams.yaml einfügen → Speichern → Installieren → Drahtlos. Ohne sie gibt es keine Leser-Zustände und keinen
                 Taster-Test.
@@ -183,26 +201,33 @@ export const TestTab: React.FC = () => {
             )}
           </div>
         )}
+        {base && RefreshBtn}
         {base && (
           <div className="space-y-1">
-            <div className="text-[11px] font-bold">Feuchte-Sensoren</div>
+            <div className="text-[11px] font-bold">Temperatur und Feuchte</div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
-            {[
-              ['Box', e!.boxHum],
-              ['Trockner', e!.dryerHum]
-            ].map(([label, id]) => {
-              const v = val(id);
-              const ok = v && v !== 'unknown' && v !== 'unavailable';
-              return (
-                <div key={id} className="flex items-center gap-2 rounded-xl border p-2" style={{ borderColor: 'var(--app-border)' }}>
-                  <Mark v={ok ? 'ok' : 'unknown'} />
-                  <span>
-                    {label}: <strong>{ok ? `${Math.round(Number(v))} %` : 'kein Wert'}</strong>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+              {[
+                ['Box', e!.boxTemp, e!.boxHum],
+                ['Trockner', e!.dryerTemp, e!.dryerHum]
+              ].map(([label, tId, hId]) => {
+                const num = (id: string) => {
+                  const v = val(id);
+                  return v && v !== 'unknown' && v !== 'unavailable' && Number.isFinite(Number(v)) ? Number(v) : null;
+                };
+                const t = num(tId);
+                const h = num(hId);
+                const ok = t !== null || h !== null;
+                return (
+                  <div key={label} className="flex items-center gap-2 rounded-xl border p-2" style={{ borderColor: 'var(--app-border)' }}>
+                    <Mark v={ok ? 'ok' : 'unknown'} />
+                    <span>
+                      {label}:{' '}
+                      <strong>{ok ? `${t !== null ? `${t.toLocaleString('de-DE', { maximumFractionDigits: 1 })} °C` : '– °C'} · ${h !== null ? `${Math.round(h)} %` : '– %'}` : 'kein Wert'}</strong>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </Section>
@@ -275,8 +300,9 @@ export const TestTab: React.FC = () => {
       {/* 4. Taster + Warteschlange */}
       {base && (
         <Section id="s4" open={open} onToggle={toggle} icon={<ToggleRight className="w-4 h-4 text-orange-400" />} title="4. Taster und Warteschlangen-LEDs">
+          {RefreshBtn}
           {!hasTestSwitch ? (
-            <p className="text-[11px] text-amber-300">Braucht Firmware {WANT_FW} auf dem ESP (siehe 1.).</p>
+            <p className="text-[11px] text-amber-300">Braucht Firmware {WANT_FW} auf dem ESP (siehe 1.). Schon aufgespielt? Dann oben „ESP aktualisieren“ drücken.</p>
           ) : (
             <>
               <div className="flex items-center gap-2 text-[11px]">

@@ -5,6 +5,8 @@ import { haFetch } from './haAutoOff';
 export interface AmsDevice {
   /** z. B. „filament_ams“ (aus sensor.filament_ams_slot_1_tag) */
   base: string;
+  /** Alle Entitäten des Geräts (Name beginnt mit „<Art>.<base>_“) */
+  entities: string[];
 }
 
 /** Gerät finden: Präfix der Slot-Sensoren */
@@ -14,7 +16,11 @@ export async function findAmsDevice(): Promise<AmsDevice | null> {
   const all: any[] = await res.json();
   for (const s of all) {
     const m = String(s?.entity_id || '').match(/^sensor\.([a-z0-9_]*ams[a-z0-9_]*)_slot_?1_tag$/);
-    if (m) return { base: m[1] };
+    if (m) {
+      const base = m[1];
+      const entities = all.map(x => String(x?.entity_id || '')).filter(id => id.includes(`.${base}_`));
+      return { base, entities };
+    }
   }
   return null;
 }
@@ -38,7 +44,21 @@ export async function readEntity(id: string): Promise<EntityState | null> {
   }
 }
 
-export const ids = (base: string) => ({
+export const ids = (base: string, entities: string[] = []) => {
+  const d = defaultIds(base);
+  // Namen aus Home Assistant bevorzugen (z. B. mit „_2“ am Ende oder anderer Schreibweise)
+  const pick = (dom: string, re: RegExp, fallback: string) => entities.find(id => id.startsWith(`${dom}.${base}_`) && re.test(id.slice(dom.length + 1 + base.length + 1))) || fallback;
+  return {
+    ...d,
+    firmware: pick('sensor', /^(firmware|fw_?rev\w*)(_\d+)?$/, d.firmware),
+    boxHum: pick('sensor', /^box_(feuchte|luftfeuchte\w*|humidity)(_\d+)?$/, d.boxHum),
+    boxTemp: pick('sensor', /^box_temp\w*?(_\d+)?$/, d.boxTemp),
+    dryerHum: pick('sensor', /^trockner_(feuchte|luftfeuchte\w*|humidity)(_\d+)?$/, d.dryerHum),
+    dryerTemp: pick('sensor', /^trockner_temp\w*?(_\d+)?$/, d.dryerTemp)
+  };
+};
+
+const defaultIds = (base: string) => ({
   slot: (n: number) => `sensor.${base}_slot_${n}_tag`,
   reader: (n: number) => `sensor.${base}_leser_${n}`,
   lastTag: `sensor.${base}_letzter_tag`,
@@ -49,6 +69,8 @@ export const ids = (base: string) => ({
   queueTest: `switch.${base}_warteschlange_test`,
   button: `binary_sensor.${base}_platte_frei`,
   boxHum: `sensor.${base}_box_feuchte`,
+  boxTemp: `sensor.${base}_box_temperatur`,
+  dryerTemp: `sensor.${base}_trockner_temperatur`,
   dryerHum: `sensor.${base}_trockner_feuchte`
 });
 

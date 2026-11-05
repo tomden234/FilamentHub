@@ -3008,5 +3008,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.204',
+    label: '1.204 (Testmenü Aktualisieren)',
+    releaseDate: '05.11.2026',
+    description: 'Testmenü: Knopf „ESP aktualisieren“ bei ESP/Firmware und bei Taster. Temperatur und Feuchte von Box und Trockner. Firmware wird auch erkannt, wenn der Firmware-Sensor in Home Assistant anders heißt.',
+    features: [
+      '🔄 Knopf „ESP aktualisieren“ in Punkt 1 und Punkt 4: sucht die ESP-Werte in Home Assistant neu',
+      '🌡️ Box und Trockner zeigen Temperatur und Feuchte',
+      '🔧 Firmware gilt als neu, sobald der Testschalter da ist (kein falsches „alt“ mehr)',
+      '🔎 Sensornamen werden in Home Assistant gesucht, auch mit „_2“ am Ende'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
