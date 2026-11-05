@@ -11,6 +11,10 @@ import {
   type SavedBambuConfig
 } from '../src/utils/bambu/BambuMqttCore.js';
 
+import { printRecorder } from './printRecorder.js';
+import { parseStartMs } from '../src/utils/printSession.js';
+import { activeSlotFromPrinter } from '../src/utils/amsMatch.js';
+
 export type { BambuPrinterData, BambuPrinterStatusResponse } from '../src/utils/bambu/BambuMqttCore.js';
 
 class BambuMqttService extends BambuMqttCore {
@@ -74,7 +78,28 @@ class BambuMqttService extends BambuMqttCore {
     });
   }
 
+  /** Druck-Rekorder füttern: bei jeder Änderung und alle 30 s (damit „Leerlauf nach Druck“ auch ohne neue Meldung erkannt wird) */
+  private recorderTick = setInterval(() => this.feedRecorder(), 30_000).unref();
+
+  private feedRecorder(): void {
+    try {
+      const st = this.getStatus();
+      const d: any = st.data || {};
+      printRecorder.feed({
+        connected: Boolean(st.connected && st.receivingData !== false),
+        state: d.gcode_state,
+        name: d.subtask_name,
+        startMs: parseStartMs(d.gcode_start_time),
+        percent: Number(d.mc_percent) || 0,
+        slot: activeSlotFromPrinter(d.ams)
+      });
+    } catch (e) {
+      console.warn('[Rekorder] Fehler:', (e as Error)?.message || e);
+    }
+  }
+
   protected notifyChange(): void {
+    this.feedRecorder();
     const payload = `data: ${JSON.stringify(this.getStatus())}\n\n`;
     for (const client of this.sseClients) {
       try {

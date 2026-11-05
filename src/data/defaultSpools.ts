@@ -2856,5 +2856,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.195',
+    label: '1.195 (Pi-Server)',
+    releaseDate: '05.11.2026',
+    description: 'Neues Home-Assistant-Add-on „FilamentHub Server“: Es läuft rund um die Uhr auf dem Pi, hört am Drucker mit (LAN-Modus) und speichert jeden Druck mit Name, Start, Ende, fertig oder abgebrochen und benutztem Slot. Die App holt die Liste und zieht von der richtigen Spule ab, auch wenn beim Druck keine App offen war. Installation über die Repository-Adresse im App-Store von Home Assistant, Eingabe von Drucker-IP, Seriennummer und Zugangscode, fertig.',
+    features: [
+      '🖥️ Add-on „FilamentHub Server“ für den Pi (Repository hinzufügen, installieren, Daten eintragen, starten)',
+      '📼 Rekorder: jeder Druck mit Name, Zeit, Ergebnis und Slot wird dauerhaft gespeichert (überlebt Neustart)',
+      '🔌 Neue Zeile „FilamentHub Server“ in Verbindungen: Adresse eintragen, Prüfen zeigt Drucker und Anzahl Drucke',
+      '🤝 Server und Home Assistant als Quellen zusammengeführt, nichts doppelt',
+      '🔑 Optional API-Key, Lebenszeichen für den Watchdog, Zugangscode bleibt auf dem Pi (nicht im Git)',
+      '🧪 13 neue Tests (Rekorder, Zusammenführen, Adresse)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

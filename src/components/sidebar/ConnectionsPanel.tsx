@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Cloud, Nfc, Smartphone, ChevronDown, Settings2 } from 'lucide-react';
+import { Home, Cloud, Nfc, Smartphone, ChevronDown, Settings2, Server } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
 import { IS_DESKTOP, IS_NATIVE, IS_STATIC, isAppShell } from '../../utils/env';
 import { isGistUrl } from '../../utils/gistStore';
@@ -8,6 +8,8 @@ import { getSyncPass } from '../../utils/deviceSync';
 import { CloudStoreCard } from './CloudStoreCard';
 import { DeviceSyncCard } from './DeviceSyncCard';
 import { HomeAssistantCard } from './HomeAssistantCard';
+import { ServerCard } from './ServerCard';
+import { getServerUrl } from '../../utils/recorderServer';
 import { Toggle } from '../workshop/ui';
 import { ThreeDPrinterIcon } from '../ThreeDPrinterIcon';
 import { usePrinterLive, isPrinterConfigured, isPrinterLan } from '../../utils/printerLive';
@@ -154,6 +156,10 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
 
       <Row id="ha" open={open} setOpen={setOpen} icon={Home} tone="text-sky-400 bg-sky-500/15 border-sky-500/30" title="Home Assistant" status={haOk ? 'Eingerichtet · Kamera, Steckdose, NFC-Leser' : ha.url?.trim() && !ha.token ? 'Token fehlt' : 'Nicht eingerichtet'} level={haOk ? 'ok' : 'warn'}>
         <HomeAssistantCard onSaved={() => setRev(r => r + 1)} />
+      </Row>
+
+      <Row id="server" open={open} setOpen={setOpen} icon={Server} tone="text-amber-400 bg-amber-500/15 border-amber-500/30" title="FilamentHub Server (Pi)" status={getServerUrl() ? `Adresse: ${getServerUrl().replace(/^https?:\/\//, '')}` : 'Nicht eingerichtet · zeichnet Drucke rund um die Uhr auf'} level={getServerUrl() ? 'ok' : 'off'}>
+        <ServerCard onSaved={() => setRev(r => r + 1)} />
       </Row>
 
       <Row id="sync" open={open} setOpen={setOpen} icon={Cloud} tone="text-violet-400 bg-violet-500/15 border-violet-500/30" title="Cloud & Geräte-Sync" status={syncStatus} level={gist ? 'ok' : 'warn'}>

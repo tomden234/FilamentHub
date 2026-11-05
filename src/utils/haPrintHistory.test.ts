@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extractPrints, findHistorySensors, normStatus, parseHistory, slotFromTrayText, valueAt } from './haPrintHistory';
+import { extractPrints, findHistorySensors, mergePrintSources, normStatus, parseHistory, slotFromTrayText, valueAt, type HaPrint } from './haPrintHistory';
+import { normalizeServerUrl } from './recorderServer';
 import { isRawAllowed } from '../../server/haRawAllow';
 
 const T0 = Date.parse('2026-11-04T10:00:00Z');
@@ -138,5 +139,35 @@ describe('Weiterleitung: Verlauf lesen ist eng begrenzt', () => {
     expect(isRawAllowed('POST', ok, {})).toBe(false);
     const nine = Array.from({ length: 9 }, (_, i) => `sensor.s${i}`).join(',');
     expect(isRawAllowed('GET', `/api/history/period/2026-11-01?filter_entity_id=${nine}`, undefined)).toBe(false);
+  });
+});
+
+describe('Quellen zusammenführen', () => {
+  const mk = (over: Partial<HaPrint>): HaPrint => ({ name: 'Benchy.gcode.3mf', startMs: min(0), endMs: min(60), state: 'FINISH', percent: 100, slots: {}, trayRaw: '', ...over });
+  it('gleicher Druck aus Server und Home Assistant wird einer, Server gewinnt, Lücken füllt die andere Quelle', () => {
+    const server = [mk({ slots: { '2': 3000 } })];
+    const ha = [mk({ name: 'benchy', endMs: min(63), trayRaw: 'AMS 1 Slot 2' })];
+    const out = mergePrintSources([server, ha]);
+    expect(out).toHaveLength(1);
+    expect(out[0].endMs).toBe(min(60));
+    expect(out[0].slots).toEqual({ '2': 3000 });
+    expect(out[0].trayRaw).toBe('AMS 1 Slot 2');
+  });
+  it('Slots aus der zweiten Quelle, wenn die erste keine hat', () => {
+    const out = mergePrintSources([[mk({})], [mk({ slots: { '3': 100 } })]]);
+    expect(out[0].slots).toEqual({ '3': 100 });
+  });
+  it('verschiedene Drucke bleiben getrennt, älteste zuerst', () => {
+    const out = mergePrintSources([[mk({ name: 'B', endMs: min(200) })], [mk({ name: 'A', endMs: min(100) }), mk({ name: 'B', endMs: min(500) })]]);
+    expect(out.map(p => p.name + p.endMs)).toEqual([`A${min(100)}`, `B${min(200)}`, `B${min(500)}`]);
+  });
+});
+
+describe('Server-Adresse', () => {
+  it('ergänzt http und Port 3000', () => {
+    expect(normalizeServerUrl('192.168.68.10')).toBe('http://192.168.68.10:3000');
+    expect(normalizeServerUrl(' http://pi.local:3000/ ')).toBe('http://pi.local:3000');
+    expect(normalizeServerUrl('https://pi.example.org')).toBe('https://pi.example.org');
+    expect(normalizeServerUrl('')).toBe('');
   });
 });

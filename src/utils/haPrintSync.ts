@@ -7,7 +7,8 @@ import { addSystemLog } from './logService';
 import { addPrintRecord, findPrint, getPrintLog } from './printLog';
 import { PENDING_DEDUCT_KEY } from './printUsage';
 import { isPrintDone, makePrintId, markPrintDone, type PrintSession } from './printSession';
-import { extractPrints, findHistorySensors, parseHistory, type HaPrint, type HistorySensors } from './haPrintHistory';
+import { extractPrints, findHistorySensors, mergePrintSources, parseHistory, type HaPrint, type HistorySensors } from './haPrintHistory';
+import { fetchServerPrints } from './recorderServer';
 
 const SENSORS_KEY = 'filamenthub_ha_hist_sensors';
 const FIRST_KEY = 'filamenthub_ha_hist_first';
@@ -86,16 +87,26 @@ export type HaEndHandler = (session: PrintSession, info: { state: 'FINISH' | 'FA
  * Gewicht bekannt und Druck fertig = automatisch, sonst kurze Frage „Spule abziehen?“.
  */
 export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promise<HaSyncInfo> {
-  if (!getHaCredentials().token) return setInfo({ at: now, ok: false, text: 'Kein Home-Assistant-Token in der App.', added: 0 });
   const first = firstRun();
-  let prints: HaPrint[];
-  try {
-    const r = await fetchHaPrints(now);
-    if (!r.sensors) return setInfo({ at: now, ok: false, text: 'Kein Druckstatus-Sensor in Home Assistant gefunden (Bambu-Lab-Integration nötig).', added: 0 });
-    prints = r.prints;
-  } catch (e: any) {
-    return setInfo({ at: now, ok: false, text: `Verlauf nicht lesbar: ${String(e?.message || e)}`, added: 0 });
+  // Quellen: FilamentHub Server (genau, rund um die Uhr) zuerst, dann der Verlauf von Home Assistant
+  const lists: HaPrint[][] = [];
+  const errors: string[] = [];
+  const srv = await fetchServerPrints(now);
+  if (srv.prints) lists.push(srv.prints);
+  else if (srv.error && srv.configured) errors.push(srv.error);
+  if (getHaCredentials().token) {
+    try {
+      const r = await fetchHaPrints(now);
+      if (r.sensors) lists.push(r.prints);
+      else errors.push('Kein Druckstatus-Sensor in Home Assistant gefunden (Bambu-Lab-Integration nötig).');
+    } catch (e: any) {
+      errors.push(`Home Assistant: ${String(e?.message || e)}`);
+    }
   }
+  if (!lists.length) {
+    return setInfo({ at: now, ok: false, text: errors.join(' ') || 'Weder FilamentHub Server noch Home Assistant eingerichtet.', added: 0 });
+  }
+  const prints = mergePrintSources(lists);
 
   let added = 0;
   let askedFailed = false;

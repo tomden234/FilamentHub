@@ -172,3 +172,28 @@ export function findHistorySensors(states: any[]): HistorySensors {
     start: pick(/_(start_time|startzeit)$/)
   };
 }
+
+const keyOf = (n: string) =>
+  String(n || '')
+    .toLowerCase()
+    .replace(/\.(gcode\.3mf|3mf|gcode)$/g, '')
+    .trim();
+
+/** Drucke aus mehreren Quellen zusammenführen (gleicher Name, Ende nah beieinander = ein Druck). Die erste Quelle gewinnt, fehlende Angaben kommen aus den anderen. */
+export function mergePrintSources(lists: HaPrint[][], windowMs = 10 * 60_000): HaPrint[] {
+  const out: HaPrint[] = [];
+  for (const list of lists) {
+    for (const p of list) {
+      const i = out.findIndex(x => keyOf(x.name) === keyOf(p.name) && Math.abs(x.endMs - p.endMs) < windowMs);
+      if (i < 0) {
+        out.push({ ...p, slots: { ...p.slots } });
+        continue;
+      }
+      const keep = out[i];
+      if (!Object.keys(keep.slots).length && Object.keys(p.slots).length) keep.slots = { ...p.slots };
+      if (!keep.trayRaw && p.trayRaw) keep.trayRaw = p.trayRaw;
+      if (keep.state === 'FAILED' && !keep.percent && p.percent) keep.percent = p.percent;
+    }
+  }
+  return out.sort((a, b) => a.endMs - b.endMs);
+}
