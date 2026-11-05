@@ -132,7 +132,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.211';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.212';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -1274,13 +1274,14 @@ export default function App() {
         onToggleDock={() => setDockPref(false)}
       />
 
+      {/* Warteschlange vom Pi: Spalte rechts neben dem Inhalt (Kind der Hauptzeile, nicht des Inhalts) */}
+      <QueueDrawer items={piQueueState.items} setItems={piQueueState.setItems} />
+
       <div className="flex-1 min-w-0 flex flex-col">
       {/* Hinweis auf neue App-Version (nur Android-App) */}
       <UpdateBanner />
       {/* QR-Etikett im Handy-Browser gescannt: Knopf „In der App öffnen“ */}
       <OpenInAppBanner />
-
-      <QueueDrawer items={piQueueState.items} setItems={piQueueState.setItems} />
 
       {/* Top Navbar */}
       <Navbar

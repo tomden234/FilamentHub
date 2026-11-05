@@ -25,6 +25,7 @@ import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logServic
 import { safeStorage } from '../utils/safeStorage';
 import { useBackLayer } from '../utils/backNav';
 import { useQueueDock } from '../utils/queueDock';
+import { QUEUE_PANEL_W } from './QueueDrawer';
 
 interface RightLogDrawerProps {
   onOpenPrinterSettings?: () => void;
@@ -245,19 +246,21 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-50 transition-opacity animate-fadeIn cursor-pointer"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+          className="fixed inset-y-0 left-0 z-50 transition-opacity animate-fadeIn cursor-pointer"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', right: queuePanelOpen ? QUEUE_PANEL_W : 0 }}
         />
       )}
 
       {/* 3. AUSGEKLAPPTES LOG-DRAWER PANEL – IM ORIGINALEN AKTIVEN THEME */}
       <div
-        className={`fixed right-0 top-0 bottom-0 h-full z-50 w-full sm:w-[420px] shadow-2xl flex flex-col transform transition-transform duration-300 ease-out border-l`}
+        className={`fixed top-0 bottom-0 h-full z-50 w-full sm:w-[420px] shadow-2xl flex flex-col transform transition-all duration-300 ease-out border-l`}
         style={{
+          right: queuePanelOpen ? QUEUE_PANEL_W : 0,
           backgroundColor: 'var(--app-card)',
           borderColor: 'var(--app-border)',
           color: 'var(--app-text)',
-          transform: isOpen ? 'translateX(0)' : 'translateX(100%)'
+          // zu: ganz aus dem Bild (auch hinter dem Warteschlangen-Fach weg)
+          transform: isOpen ? 'translateX(0)' : `translateX(calc(100% + ${QUEUE_PANEL_W}))`
         }}
       >
         {/* DRAWER HEADER */}

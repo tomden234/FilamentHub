@@ -3128,5 +3128,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.212',
+    label: '1.212 (Warteschlange bündig)',
+    releaseDate: '05.11.2026',
+    description: 'Die Warteschlange sitzt jetzt sauber als eigene Spalte rechts neben den Kacheln: nichts überlappt, nichts wird abgedunkelt. Beide Streifen (WARTESCHLANGE und DRUCKER) bleiben immer am selben Rand und gleiten gemeinsam. Das Fach hat oben ein X, schließt mit Esc und gleitet weich auf und zu. Das Drucker-Fach öffnet sich neben der Warteschlange statt darüber.',
+    features: [
+      '📐 Warteschlange als feste Spalte rechts neben dem Inhalt, bündig, ohne Überlappung',
+      '↔️ Beide Streifen bleiben am gleichen Rand und bewegen sich gemeinsam (kein Springen mehr)',
+      '❎ Schließen mit X, Esc oder Klick auf den Streifen',
+      '🖨️ Drucker-Fach öffnet sich links neben der Warteschlange, die Warteschlange wird nicht abgedunkelt',
+      '🐛 Kopfzeile mit X war unter der Leiste versteckt: behoben'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GripVertical, ListOrdered, Play, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useQueueDock } from '../utils/queueDock';
+import { useBackLayer } from '../utils/backNav';
 import { piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
@@ -24,10 +25,12 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
 };
 
 /** Streifen am rechten Rand wie „DRUCKER“: öffnet/schließt die Warteschlange. Offen sitzt er an der Kante des Fachs. */
+export const QUEUE_PANEL_W = 'min(88vw, 22rem)';
+
 const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => (
   <div
-    className="fixed z-40 select-none transition-all duration-300"
-    style={{ right: open ? 'min(88vw, 22rem)' : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
+    className="fixed z-[56] select-none transition-all duration-300"
+    style={{ right: open ? QUEUE_PANEL_W : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
   >
     <button
       onClick={toggleQueueDock}
@@ -68,9 +71,10 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const count = items ? items.length : 0;
+  // Esc und Zurück schließen das Fach (wie die anderen Fenster: immer nur eine Ebene)
+  useBackLayer(open && items !== null, () => setQueueDock(false), 'queue-dock');
   if (items === null) return null;
-  const count = items.length;
-  if (!open) return <QueueEdgeTab count={count} open={false} />;
 
   const drop = async (targetId: string) => {
     const from = dragId;
@@ -102,10 +106,16 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
 
   return (
     <>
-      {/* Fach rechts: schiebt nichts weg, kein Abdunkeln, schließt nur mit dem Streifen oder dem X (bleibt auch beim Arbeiten woanders offen) */}
+      {/* Fach rechts, bündig am Inhalt: am PC feste Spalte neben den Kacheln (nichts liegt übereinander, nichts wird abgedunkelt),
+          am Handy ein Fach über dem Inhalt. Gleitet auf und zu, Escape oder X oder der Streifen schließen es. */}
+      <div
+        className="order-last shrink-0 overflow-hidden transition-[width] duration-300 ease-out fixed inset-y-0 right-0 z-[55] lg:static lg:z-auto lg:self-start lg:sticky lg:top-0 lg:h-screen"
+        style={{ width: open ? QUEUE_PANEL_W : 0 }}
+        aria-hidden={!open}
+      >
       <aside
-        className="fixed z-30 top-0 right-0 h-full w-[min(88vw,22rem)] flex flex-col border-l shadow-2xl"
-        style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+        className="h-full flex flex-col border-l"
+        style={{ width: QUEUE_PANEL_W, backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
         aria-label="Warteschlange"
       >
         <div className="flex items-center gap-2 px-3 py-3 border-b" style={{ borderColor: 'var(--app-border)' }}>
@@ -176,7 +186,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
           )}
         </div>
 
-        <div className="p-3 border-t space-y-2" style={{ borderColor: 'var(--app-border)' }}>
+        <div className="p-3 pb-24 border-t space-y-2" style={{ borderColor: 'var(--app-border)' }}>
           {msg && <p className={`text-[11px] ${msg.ok ? 'text-emerald-400' : 'text-rose-400'}`}>{msg.text}</p>}
           <button
             disabled={busy || items.length === 0}
@@ -190,7 +200,8 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
           </p>
         </div>
       </aside>
-      <QueueEdgeTab count={count} open />
+      </div>
+      <QueueEdgeTab count={count} open={open} />
     </>
   );
 };
