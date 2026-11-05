@@ -3173,12 +3173,13 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
   },
   {
     id: 'v1.215',
-    label: '1.215 (Warteschlange schmaler)',
+    label: '1.215 (Warteschlange schmaler, Streifen bündig)',
     releaseDate: '05.11.2026',
     description: 'Das Warteschlangen-Fach ist schmaler. Am Handy bleibt mehr vom Inhalt sichtbar und die Streifen „WARTESCHLANGE“ und „DRUCKER“ überlappen nichts mehr.',
     features: [
       '↔️ Warteschlangen-Fach schmaler (max. 72 % der Breite, höchstens 18 rem)',
-      '👀 Mehr Inhalt bleibt neben dem Fach sichtbar'
+      '👀 Mehr Inhalt bleibt neben dem Fach sichtbar',
+      '📍 Drucker-Streifen sitzt jetzt wieder genau an der Kante des Fachs'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],

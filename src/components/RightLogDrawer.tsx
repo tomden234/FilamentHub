@@ -196,7 +196,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
         className={`fixed top-1/2 -translate-y-1/2 z-40 transition-all duration-300 select-none ${
           isOpen ? 'translate-x-full pointer-events-none opacity-0' : 'translate-x-0'
         }`}
-        style={{ right: queuePanelOpen ? 'min(88vw, 22rem)' : 0 }}
+        style={{ right: queuePanelOpen ? QUEUE_PANEL_W : 0 }}
       >
         <button
           onClick={handleToggle}
