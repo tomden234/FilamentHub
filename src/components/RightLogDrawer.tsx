@@ -25,7 +25,7 @@ import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logServic
 import { safeStorage } from '../utils/safeStorage';
 import { useBackLayer } from '../utils/backNav';
 import { getHubInfo } from '../utils/serverDeducts';
-import { setQueueDock } from '../utils/queueDock';
+import { setQueueDock, useQueueDock } from '../utils/queueDock';
 
 interface RightLogDrawerProps {
   onOpenPrinterSettings?: () => void;
@@ -42,6 +42,8 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   logsOnly = false
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  // Angedocktes Warteschlangen-Fach: der Streifen rückt daneben (am PC) bzw. nach oben (Handy), statt darüber zu liegen
+  const queueDocked = useQueueDock() && Boolean(getHubInfo()?.enabled);
   const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>(getHubInfo()?.enabled ? 'prints' : 'queue');
   const panelTab = logsOnly ? 'logs' : panelTabState;
   useBackLayer(isOpen, () => setIsOpen(false), 'log-drawer');
@@ -183,8 +185,10 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
     <>
       {/* 1. DER ZENTIMETERLANGE STREIFEN AM RECHTEN BILDSCHIRMRAND */}
       <div
-        className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 transition-transform duration-300 select-none ${
-          isOpen ? 'translate-x-full pointer-events-none' : 'translate-x-0'
+        className={`fixed top-1/2 -translate-y-1/2 z-40 transition-all duration-300 select-none ${
+          queueDocked ? 'right-0 lg:right-[22rem] top-[28%] lg:top-1/2' : 'right-0'
+        } ${
+          isOpen ? 'translate-x-full pointer-events-none opacity-0' : 'translate-x-0'
         }`}
       >
         <button
