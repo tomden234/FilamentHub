@@ -160,8 +160,10 @@ const baseOf = (n: string) => n.replace(/\.gcode\.3mf$|\.3mf$/i, '').toLowerCase
  * Der erste Durchlauf merkt sich nur, was schon da ist. Eine Datei, die gerade gedruckt wird („Drucken“ statt „Senden“), kommt nicht in die Warteschlange.
  */
 let scanning = false;
+let scanBlockedUntil = 0;
 export async function autoScan(): Promise<void> {
   load();
+  if (Date.now() < scanBlockedUntil) return;
   const lan = port?.getLanAccess();
   const st = port?.getStatus();
   if (!autoOn || scanning || !lan || !st?.connected) return;
@@ -194,7 +196,8 @@ export async function autoScan(): Promise<void> {
     }
     save();
   } catch (e) {
-    console.warn('[Warteschlange] Scan fehlgeschlagen:', (e as Error)?.message || e);
+    scanBlockedUntil = Date.now() + 90_000; // nach Fehler 90 s Pause, damit der Drucker seine Sitzungen freigeben kann
+    console.warn('[Warteschlange] Scan fehlgeschlagen (nächster Versuch in 90 s):', (e as Error)?.message || e);
   } finally {
     scanning = false;
   }

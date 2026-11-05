@@ -110,7 +110,7 @@ export async function fetchJobWeights(opts: { ip: string; code: string; jobName:
   } catch (e: any) {
     return { error: `FTP zum Drucker fehlgeschlagen: ${e?.message || e}` };
   } finally {
-    client?.close();
+    await closeFtp(client);
   }
 }
 
@@ -122,6 +122,17 @@ const FTP_MODES: { port: number; secure: boolean | 'implicit'; label: string }[]
   { port: 21, secure: false, label: '21 unverschlüsselt' }
 ];
 let ftpModeIdx = 0;
+
+/** Sitzung mit QUIT beenden, sonst hält der Drucker sie noch lange offen und lehnt bald alles mit „421 too many connections“ ab */
+async function closeFtp(client: Client | null): Promise<void> {
+  if (!client) return;
+  try {
+    await Promise.race([client.sendIgnoringError('QUIT'), new Promise(r => setTimeout(r, 1500))]);
+  } catch {
+    /* egal */
+  }
+  client.close();
+}
 
 async function ftp(ip: string, code: string): Promise<Client> {
   const errs: string[] = [];
@@ -137,7 +148,9 @@ async function ftp(ip: string, code: string): Promise<Client> {
       return client;
     } catch (e) {
       client.close();
-      errs.push(`${m.label}: ${(e as Error)?.message || e}`);
+      const em = (e as Error)?.message || String(e);
+      errs.push(`${m.label}: ${em}`);
+      if (/\b421\b|too many connections/i.test(em)) break; // Drucker voll: nicht noch mehr Verbindungen aufmachen
     }
   }
   throw new Error(`FTP zum Drucker ${ip} nicht möglich → ${errs.join(' | ')}`);
@@ -164,7 +177,7 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
     }
     return out.sort((a, b) => b.time - a.time).slice(0, 100);
   } finally {
-    client.close();
+    await closeFtp(client);
   }
 }
 
@@ -191,6 +204,6 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
     }
     return { ...w, thumb };
   } finally {
-    client.close();
+    await closeFtp(client);
   }
 }
