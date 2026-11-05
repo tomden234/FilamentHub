@@ -3144,5 +3144,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.213',
+    label: '1.213 (Drucker ersetzt Warteschlange)',
+    releaseDate: '05.11.2026',
+    description: 'Rechts ist immer nur ein Fach offen: Öffnest du „DRUCKER“, geht die Warteschlange zu und das Drucker-Fach nimmt ihren Platz ein. Klickst du wieder auf „WARTESCHLANGE“, kommt sie zurück und das Drucker-Fach schließt sich. Der Warteschlangen-Streifen sitzt dabei immer an der Kante des offenen Fachs.',
+    features: [
+      '🔀 Drucker-Fach und Warteschlange ersetzen sich gegenseitig (nie nebeneinander)',
+      '↔️ Warteschlangen-Streifen bleibt an der Kante des offenen Fachs und ist immer klickbar'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

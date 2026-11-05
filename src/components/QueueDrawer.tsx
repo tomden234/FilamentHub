@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GripVertical, ListOrdered, Play, Trash2, X } from 'lucide-react';
-import { setQueueDock, toggleQueueDock, useQueueDock } from '../utils/queueDock';
+import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem } from '../utils/recorderServer';
 
@@ -27,10 +27,12 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
 /** Streifen am rechten Rand wie „DRUCKER“: öffnet/schließt die Warteschlange. Offen sitzt er an der Kante des Fachs. */
 export const QUEUE_PANEL_W = 'min(88vw, 22rem)';
 
-const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => (
+const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => {
+  const druckerOpen = useDruckerOpen();
+  return (
   <div
     className="fixed z-[56] select-none transition-all duration-300"
-    style={{ right: open ? QUEUE_PANEL_W : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
+    style={{ right: druckerOpen ? 'min(100vw, 420px)' : open ? QUEUE_PANEL_W : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
   >
     <button
       onClick={toggleQueueDock}
@@ -60,7 +62,8 @@ const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open 
       </div>
     </button>
   </div>
-);
+  );
+};
 
 export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void }> = ({ items, setItems }) => {
   const open = useQueueDock();

@@ -23,3 +23,22 @@ export function useQueueDock(): boolean {
     () => false
   );
 }
+
+// Drucker-Fach offen? (Der Warteschlangen-Streifen rückt dann an dessen Kante)
+let drucker = false;
+const dsubs = new Set<() => void>();
+export function setDruckerOpen(v: boolean): void {
+  if (drucker === v) return;
+  drucker = v;
+  dsubs.forEach(f => f());
+}
+export function useDruckerOpen(): boolean {
+  return useSyncExternalStore(
+    cb => {
+      dsubs.add(cb);
+      return () => dsubs.delete(cb);
+    },
+    () => drucker,
+    () => false
+  );
+}

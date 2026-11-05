@@ -24,7 +24,7 @@ import { LogCategory, SystemLogEntry, Spool } from '../types/filament';
 import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logService';
 import { safeStorage } from '../utils/safeStorage';
 import { useBackLayer } from '../utils/backNav';
-import { useQueueDock } from '../utils/queueDock';
+import { setDruckerOpen, setQueueDock, useQueueDock } from '../utils/queueDock';
 import { QUEUE_PANEL_W } from './QueueDrawer';
 
 interface RightLogDrawerProps {
@@ -44,6 +44,14 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   // Warteschlangen-Fach offen: der Drucker-Streifen rückt neben dessen Kante, statt darüber zu liegen
   const queuePanelOpen = useQueueDock();
+  // Immer nur eines von beiden rechts: Drucker auf → Warteschlange zu; Warteschlange auf → Drucker zu
+  useEffect(() => {
+    if (isOpen) setQueueDock(false);
+    setDruckerOpen(isOpen);
+  }, [isOpen]);
+  useEffect(() => {
+    if (queuePanelOpen) setIsOpen(false);
+  }, [queuePanelOpen]);
   const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>('queue');
   const panelTab = logsOnly ? 'logs' : panelTabState;
   useBackLayer(isOpen, () => setIsOpen(false), 'log-drawer');
