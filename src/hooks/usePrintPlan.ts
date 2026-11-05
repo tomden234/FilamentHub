@@ -6,6 +6,7 @@ import { jobKey } from '../utils/printUsage';
 import { ACTIVE_STATES, parseStartMs } from '../utils/printSession';
 import { clearPrintPlan, getPrintPlan, setPrintPlan, usePrintPlan } from '../utils/printPlan';
 import { samePlanJob, splitId } from '../utils/printPlanJob';
+import { delayResumeOnServer } from '../utils/recorderServer';
 
 // Druck-Planer (siehe utils/printPlan.ts):
 //  - Neuer Druck (Start oder noch ganz am Anfang) → Fenster „Was soll mit dem Druck passieren?“ (state ask)
@@ -90,6 +91,12 @@ export function usePrintPlanRunner(p: Params) {
       /* nächster Wechsel sendet erneut */
     });
   }, [plan.state, plan.resumeAt, p.connected]);
+
+  // --- Auch der Pi-Server setzt fort (läuft rund um die Uhr, auch wenn alle Apps zu sind) ---
+  useEffect(() => {
+    const at = plan.state === 'delayed' ? plan.resumeAt : 0;
+    void delayResumeOnServer(at);
+  }, [plan.state, plan.resumeAt]);
 
   // --- Pausieren, Trocknung merken, zur Zeit fortsetzen ---
   useEffect(() => {

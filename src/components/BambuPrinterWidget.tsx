@@ -47,6 +47,7 @@ import { setPrinterLive, type PrinterLevel } from '../utils/printerLive';
 import { useLanDeduct } from '../hooks/useLanDeduct';
 import { usePrintWatch } from '../hooks/usePrintWatch';
 import { useHaPrintHistory } from '../hooks/useHaPrintHistory';
+import { useHubBridge } from '../hooks/useHubBridge';
 import { useAutoPowerOff } from '../hooks/useAutoPowerOff';
 import { useDryAutoOff } from '../hooks/useDryAutoOff';
 import { armDryOff, disarmDryOff } from '../utils/dryAutoOff';
@@ -248,6 +249,8 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   });
 
   // 1.194: Drucke, die ohne offene App liefen, aus dem Verlauf von Home Assistant nachtragen und abziehen (auch bei ausgeschaltetem Drucker)
+  // Pi-Server (Hub): Schalter und Einstellungen melden, damit er ohne App ausschaltet und abzieht
+  useHubBridge();
   useHaPrintHistory({
     gcodeState: liveState.data.gcode_state,
     onEnd: (session, info) => lanDeduct.handleEnd(session, info, { force: true })

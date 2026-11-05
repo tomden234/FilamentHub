@@ -5,6 +5,7 @@ import { addSystemLog } from '../utils/logService';
 import { disarmAutoOff, useAutoOff } from '../utils/autoPowerOff';
 import { ACTIVE_STATES } from '../utils/printSession';
 import { jobKey } from '../utils/printUsage';
+import { hubHandlesPower, powerSig } from '../utils/serverDeducts';
 
 // „Nach dem Druck ausschalten“: Wenn der Drucker „fertig“ meldet, schaltet die App nach 3 Minuten die Steckdose über Home Assistant aus.
 // Die Düsentemperatur zählt nicht mehr (fester Zeitwert).
@@ -92,6 +93,8 @@ export function useAutoPowerOff(p: Params) {
     const tick = async () => {
       const since = finishSince.current;
       if (since === null || busy.current) return;
+      // Der Pi-Server übernimmt Trocknung-Stopp und Ausschalten (auch wenn die App zu ist): nicht doppelt
+      if (hubHandlesPower(powerSig('auto', auto.armed, auto.armedAt))) return;
       const waited = Date.now() - since;
       // Vergessener Schalter von einem alten Druck: nicht mehr beachten (sonst würde er später deine Trocknung stoppen)
       if (Date.now() - auto.armedAt > STALE_ARM_MS) {

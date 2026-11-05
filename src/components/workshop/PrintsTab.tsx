@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Camera, CheckCircle2, Clock, ImageOff, Trash2, XCircle } from 'lucide-react';
-import { loadPhoto, removePrintRecord, usePrintLog, type PrintRecord } from '../../utils/printLog';
+import { loadPhoto, removePrintRecord, savePhoto, usePrintLog, type PrintRecord } from '../../utils/printLog';
+import { fetchServerPhoto, getServerUrl } from '../../utils/recorderServer';
 import { Card, buttonStyle } from './ui';
 
 // Druck-Verlauf mit Foto: jeder Druck mit Kamerabild vom Ende, Dauer, Verbrauch und Kosten.
@@ -9,8 +10,19 @@ const fmtDate = (ms: number) => new Date(ms).toLocaleString('de-DE', { day: '2-d
 const fmtDur = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`);
 const euro = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
+/** Fotos, die beim Pi-Server schon gesucht wurden (nicht dauernd neu fragen) */
+const askedServer = new Set<string>();
+
 const Photo: React.FC<{ id: string; has: boolean; onOpen: (url: string) => void }> = ({ id, has, onOpen }) => {
   const [url, setUrl] = useState<string | null>(null);
+  // Kein Foto auf diesem Gerät: der Pi-Server hat evtl. eins am Druckende gemacht
+  useEffect(() => {
+    if (has || askedServer.has(id) || !getServerUrl()) return;
+    askedServer.add(id);
+    void fetchServerPhoto(id).then(b => {
+      if (b) void savePhoto(id, b);
+    });
+  }, [id, has]);
   useEffect(() => {
     if (!has) return;
     let u: string | null = null;

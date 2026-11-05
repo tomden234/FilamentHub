@@ -12,6 +12,7 @@ import {
 } from '../src/utils/bambu/BambuMqttCore.js';
 
 import { printRecorder } from './printRecorder.js';
+import { attachPrinter, onPrintEnd, tick as hubTick, hubEnabled } from './hub/hub.js';
 import { parseStartMs } from '../src/utils/printSession.js';
 import { activeSlotFromPrinter } from '../src/utils/amsMatch.js';
 
@@ -85,7 +86,7 @@ class BambuMqttService extends BambuMqttCore {
     try {
       const st = this.getStatus();
       const d: any = st.data || {};
-      printRecorder.feed({
+      const done = printRecorder.feed({
         connected: Boolean(st.connected && st.receivingData !== false),
         state: d.gcode_state,
         name: d.subtask_name,
@@ -93,6 +94,7 @@ class BambuMqttService extends BambuMqttCore {
         percent: Number(d.mc_percent) || 0,
         slot: activeSlotFromPrinter(d.ams)
       });
+      if (done) onPrintEnd(done, d);
     } catch (e) {
       console.warn('[Rekorder] Fehler:', (e as Error)?.message || e);
     }
@@ -113,3 +115,21 @@ class BambuMqttService extends BambuMqttCore {
 
 export const bambuService = new BambuMqttService();
 bambuService.init();
+
+// Hub (nur im Home-Assistant-Add-on): Push, Foto, Abzug, Auto-Aus, Warnungen, Sicherung
+attachPrinter({
+  getStatus: () => bambuService.getStatus() as any,
+  getLanAccess: () => bambuService.getLanAccess(),
+  stopDrying: async () => {
+    try {
+      await bambuService.setAmsDrying({ mode: 0 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+});
+if (hubEnabled()) {
+  setInterval(() => void hubTick(), 30_000).unref();
+  console.log('[Hub] aktiv: Push, Foto, Abzug, Auto-Aus, Warnungen, Sicherung');
+}

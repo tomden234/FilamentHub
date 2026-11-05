@@ -30,6 +30,10 @@ const env = {
   HOST: '0.0.0.0',
   NODE_ENV: 'production',
   FILAMENT_DATA_DIR: '/data',
+  // Hub an: Push, Foto, Abzug, Auto-Aus, Warnungen, Sicherung (nur hier, nie in der Windows-App, sonst würde doppelt abgezogen)
+  FILAMENTHUB_HUB: '1',
+  NOTIFY_SERVICE: String(o.notify_service || '').trim(),
+  TZ: process.env.TZ || 'Europe/Berlin',
   // Handy-App, Windows-App und Webseite dürfen den Server ansprechen
   CORS_ORIGIN: 'https://tomden234.github.io,https://localhost,capacitor://localhost,http://localhost,http://localhost:3000,http://127.0.0.1:38517,http://localhost:38517,app://.'
 };

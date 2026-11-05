@@ -37,6 +37,7 @@ import { useBackLayer, closeTopLayer } from './utils/backNav';
 import { HistoryModal } from './components/HistoryModal';
 import { RightLogDrawer } from './components/RightLogDrawer';
 import { addSystemLog } from './utils/logService';
+import { cleanServerDeducts, getAppliedServerDeducts, reconcileServerDeducts, rememberServerDeducts } from './utils/serverDeducts';
 import { EditUsedModal } from './components/app/EditUsedModal';
 import { MobileAppView } from './components/app/MobileAppView';
 import { DesktopDashboard } from './components/app/DesktopDashboard';
@@ -128,7 +129,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.197';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.198';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -447,20 +448,51 @@ export default function App() {
           if (pl.localHasMore) void cloudSync.save(cloudDbUrl, printLogForCloud()).catch(() => {});
           const cloudAt = Number(data?.updatedAt) || 0;
           const localAt = Number(safeStorage.getItem(SPOOLS_AT_KEY)) || 0;
+          // Abzüge des Pi-Servers: genau einmal übernehmen (auch wenn ein Gerät inzwischen einen alten Stand zurückgeschrieben hat)
+          const sds = cleanServerDeducts((data as any)?.serverDeducts);
+          const reconcile = (sp: Spool[], hist: HistoryEntry[]) => {
+            const r = reconcileServerDeducts(sp, hist, sds, getAppliedServerDeducts());
+            rememberServerDeducts(sds, r.applied);
+            if (r.changed) {
+              addSystemLog('spule', 'Abzug vom Pi-Server übernommen', r.texts.join(', '), 'success');
+              showToast(`Pi-Server hat abgezogen: ${r.texts.join(', ')}`);
+            }
+            return r;
+          };
           if (data && Array.isArray(data.spools) && cloudAt > localAt) {
             // Cloud ist neuer (z. B. am anderen Gerät geändert, auch „alles gelöscht“): übernehmen
             const cloudSpools = normalizeSpools(data.spools as Spool[]);
-            setSpools(cloudSpools);
-            if (Array.isArray(data.printHistory)) setPrintHistory(data.printHistory as HistoryEntry[]);
-            safeStorage.setItem(STORAGE_KEY_SPOOLS, JSON.stringify(cloudSpools));
+            const cloudHistory = Array.isArray(data.printHistory) ? (data.printHistory as HistoryEntry[]) : latestData.current.history;
+            const r = reconcile(cloudSpools, cloudHistory);
+            setSpools(r.spools);
+            setPrintHistory(r.history);
+            safeStorage.setItem(STORAGE_KEY_SPOOLS, JSON.stringify(r.spools));
+            safeStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(r.history));
             safeStorage.setItem(SPOOLS_AT_KEY, String(cloudAt));
             setSyncStatus({ label: 'Cloud synchron', ok: true });
-            if (notify) showToast('Erfolgreich mit Cloud synchronisiert!');
+            if (r.changed) {
+              setIsSyncing(false);
+              await persistState(r.spools, r.history);
+            } else if (notify) showToast('Erfolgreich mit Cloud synchronisiert!');
           } else if (data && Array.isArray(data.spools) && cloudAt === localAt) {
-            setSyncStatus({ label: 'Cloud synchron', ok: true });
-            if (notify) showToast('Schon synchron.');
+            const r = reconcile(latestData.current.spools, latestData.current.history);
+            if (r.changed) {
+              setSpools(r.spools);
+              setPrintHistory(r.history);
+              setIsSyncing(false);
+              await persistState(r.spools, r.history);
+            } else {
+              setSyncStatus({ label: 'Cloud synchron', ok: true });
+              if (notify) showToast('Schon synchron.');
+            }
           } else {
-            await persistState(latestData.current.spools, latestData.current.history);
+            const r = reconcile(latestData.current.spools, latestData.current.history);
+            if (r.changed) {
+              setSpools(r.spools);
+              setPrintHistory(r.history);
+            }
+            setIsSyncing(false);
+            await persistState(r.spools, r.history);
           }
         }
       } catch {

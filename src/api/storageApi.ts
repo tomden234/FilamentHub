@@ -25,7 +25,15 @@ export interface CloudPayload {
 /** Zwei Drucklisten vereinigen (nach id), damit kein Gerät die Drucke eines anderen überschreibt */
 function unionById(a: unknown, b: unknown): unknown[] {
   const out = new Map<string, unknown>();
-  for (const list of [a, b]) if (Array.isArray(list)) for (const r of list as any[]) if (r && r.id) out.set(String(r.id), r);
+  for (const list of [a, b])
+    if (Array.isArray(list))
+      for (const r of list as any[]) {
+        if (!r || !r.id) continue;
+        const prev: any = out.get(String(r.id));
+        // Gleicher Druck: Eintrag mit Verbrauch (z. B. vom Pi-Server) nicht durch einen ohne überschreiben
+        if (prev && Number(prev.grams) > 0 && !(Number(r.grams) > 0)) continue;
+        out.set(String(r.id), r);
+      }
   return Array.from(out.values()).slice(-400);
 }
 

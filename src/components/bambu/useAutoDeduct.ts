@@ -4,6 +4,7 @@ import type { Spool } from '../../types/filament';
 import { alreadyDeducted, autoDeductSince, bestSpool, isAutoDeductOn, markDone, readDone, recordDeduct, slotFromTask } from '../../utils/printUsage';
 import { addSystemLog } from '../../utils/logService';
 import { addPrintRecord, addPrintUsage, findPrint } from '../../utils/printLog';
+import { hubDeductActive, printAlreadyDeducted } from '../../utils/serverDeducts';
 
 // Zieht den Verbrauch fertiger Drucke automatisch von der Spule ab.
 // Auslöser: Druck wird fertig, App startet, App kommt in den Vordergrund. Es werden nur Aufträge genommen, die nach dem
@@ -68,7 +69,7 @@ export function useAutoDeduct({ spools, amsSlots, onDeductWeight, isConnected, g
           const endAt = new Date(task.endTime || task.startTime).getTime();
           // Schon über den LAN-Weg abgezogen (gleicher Druck): nur merken, nicht noch einmal abziehen
           const jobName = task.jobName || task.title;
-          if (alreadyDeducted(jobName, endAt) || alreadyDeducted(task.title, endAt)) {
+          if (hubDeductActive() || alreadyDeducted(jobName, endAt) || alreadyDeducted(task.title, endAt) || printAlreadyDeducted(undefined, jobName, endAt)) {
             markDone([task.id]);
             continue;
           }

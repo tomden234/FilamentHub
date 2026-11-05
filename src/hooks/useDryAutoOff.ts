@@ -4,6 +4,7 @@ import { raiseAlert } from '../utils/alerts';
 import { addSystemLog } from '../utils/logService';
 import { dryOffAction, dryOffSettleMs, setDryEndedAt, useDryOff } from '../utils/dryAutoOff';
 import { getHaDryOffRun } from '../utils/haDryOff';
+import { hubHandlesPower, powerSig } from '../utils/serverDeducts';
 
 // „Nach Trocknen ausschalten“: Ist die AMS-Trocknung zu Ende (und kein Druck), geht nach 3 Minuten die Steckdose über Home Assistant aus.
 //  - gilt nur, wenn die Trocknung nach dem Wählen wirklich gelaufen ist
@@ -102,6 +103,8 @@ export function useDryAutoOff(p: Params) {
           finish('Drucker bleibt an', 'Nach dem Trocknen hat ein Druck begonnen. Der Drucker bleibt an (nur dieses Mal).', false);
           return;
         case 'switch-off': {
+          // Der Pi-Server schaltet (läuft rund um die Uhr): nicht doppelt. Ist die Steckdose aus, meldet „cancel-socket-off“ es hier.
+          if (hubHandlesPower(powerSig('dry', state.armed, state.armedAt))) return;
           busy.current = true;
           try {
             const res = await toggleHaSwitch('off');

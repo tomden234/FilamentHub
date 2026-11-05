@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { Spool } from '../../types/filament';
-import { PENDING_DEDUCT_KEY, alreadyDeducted, recordDeduct, rememberJobGrams, type PendingDeduct } from '../../utils/printUsage';
+import { PENDING_DEDUCT_KEY, recordDeduct, rememberJobGrams, type PendingDeduct } from '../../utils/printUsage';
 import { safeStorage } from '../../utils/safeStorage';
+import { printAlreadyDeducted } from '../../utils/serverDeducts';
+import { resolveOnServer } from '../../utils/recorderServer';
 
 // Nach einem Druck: „Spule abziehen?“ Ja/Nein. Spule und Gramm sind vorgewählt, wenn bekannt (Druckdatei, gemerkt, aktiver Slot).
 // Kommt auch, wenn der Druck nicht über die App gestartet wurde oder die App beim Druckende zu war.
@@ -32,12 +34,14 @@ export const LanDeductPrompt: React.FC<Props> = ({ pending, spools, onDeduct, on
 
   const done = () => {
     safeStorage.removeItem(PENDING_DEDUCT_KEY);
+    // Beantwortet: andere Geräte fragen diesen Druck nicht mehr (Pi-Server merkt es sich)
+    if (pending.printId) void resolveOnServer(pending.printId);
     onClose();
   };
 
   // 1.192: Hat die Cloud diesen Druck inzwischen schon abgezogen, nicht noch einmal fragen
   useEffect(() => {
-    if (alreadyDeducted(pending.jobName, Date.parse(pending.at))) done();
+    if (printAlreadyDeducted(pending.printId, pending.jobName, Date.parse(pending.at))) done();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -123,6 +127,8 @@ export const LanDeductPrompt: React.FC<Props> = ({ pending, spools, onDeduct, on
           <button
             disabled={!ok}
             onClick={() => {
+              // Inzwischen auf einem anderen Gerät oder vom Pi abgezogen: nicht doppelt
+              if (printAlreadyDeducted(pending.printId, pending.jobName, Date.parse(pending.at))) return done();
               recordDeduct(pending.jobName, Date.parse(pending.at), 'lan');
               parsed.forEach((r, i) => setTimeout(() => onDeduct(r.spoolId, r.g), i * 300));
               if (pending.reason !== 'failed') rememberJobGrams(pending.jobName, parsed.reduce((a, r) => a + r.g, 0));

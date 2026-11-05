@@ -2900,5 +2900,26 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.198',
+    label: '1.198 (Pi macht alles)',
+    releaseDate: '05.11.2026',
+    description: 'Der FilamentHub Server auf dem Pi übernimmt jetzt rund um die Uhr, was vorher eine offene App brauchte: Push aufs Handy, Foto am Druckende, Abzug der Gramm (genau einmal), Aus nach Druck und Trocknen, verzögerter Druck, Warnungen, Spulen-Check beim Start und eine Sicherung jede Nacht. Dazu mehr Statistik.',
+    features: [
+      '📲 Push über die Home-Assistant-App: Druck fertig, abgebrochen, Spule fast leer, Drucker aus (Test-Push in den Verbindungen)',
+      '📷 Foto am Druckende macht der Pi, die Druckliste holt es sich',
+      '⚖️ Abzug direkt auf dem Pi in die Cloud, ohne offene App. Genau einmal: Pi und Apps prüfen Druckliste und Server-Abzüge, gleichzeitige Versuche sind gesperrt',
+      '🔌 Aus nach Druck und Aus nach Trocknen schaltet der Pi (die App schaltet dann nicht zusätzlich)',
+      '⏸️ Verzögerter Druck: auch der Pi setzt zur Zeit fort',
+      '⏰ Warnung, wenn ein Druck viel länger dauert als gewohnt',
+      '🧵 Beim Druckstart: Meldung, wenn das Filament nicht reicht',
+      '💾 Jede Nacht Sicherung von Spulen, Verlauf und Druckliste auf dem Pi (30 Tage, herunterladbar)',
+      '📊 Statistik: Drucke je Woche, Kosten je Monat, Erfolgsquote',
+      '🧪 19 neue Tests (Abzug genau einmal, Übernahme in der App, Warnungen, Statistik)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

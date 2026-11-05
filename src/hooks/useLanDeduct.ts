@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { Spool } from '../types/filament';
 import { readTrays, EXTERNAL_SLOT, baseMaterial, colorDistance, activeSlotFromPrinter } from '../utils/amsMatch';
 import { printerApi } from '../api/printerApi';
-import { alreadyDeducted, bestSpool, isAutoDeductOn, jobKey, readJobGrams, recordDeduct, rememberJobGrams, PENDING_DEDUCT_KEY, type PendingDeduct } from '../utils/printUsage';
+import { bestSpool, isAutoDeductOn, jobKey, readJobGrams, recordDeduct, rememberJobGrams, PENDING_DEDUCT_KEY, type PendingDeduct } from '../utils/printUsage';
 import { mainSlot, type PrintSession } from '../utils/printSession';
 import type { PrintEndInfo } from './usePrintWatch';
 import { safeStorage } from '../utils/safeStorage';
 import { addSystemLog } from '../utils/logService';
+import { hubDeductActive, printAlreadyDeducted } from '../utils/serverDeducts';
 
 // Abzug im LAN-Modus (ohne Bambu Cloud), ausgelöst von usePrintWatch am Ende jedes Drucks:
 //  - Ende live gesehen + Gewicht bekannt (Druckdatei per FTPS in der Windows-App oder gemerkt) → automatisch abziehen
@@ -53,6 +54,15 @@ export function useLanDeduct(p: Params) {
     if ((!enabled && !opts?.force) || !isAutoDeductOn()) return;
     const endAt = info.endMs || Date.now(); // echtes Druckende (bei nachgetragenen Drucken nicht „jetzt“)
     const name = session.name || 'Druckauftrag';
+    // Der Pi-Server zieht ab (läuft rund um die Uhr): die App wartet auf ihn. Fragen kommen über den Abgleich, falls nötig.
+    if (!opts?.force && hubDeductActive()) {
+      addSystemLog('spule', 'Abzug macht der Pi-Server', `${name}: die App zieht nicht selbst ab (nur einmal abziehen)`, 'info');
+      return;
+    }
+    if (printAlreadyDeducted(session.id, name, endAt)) {
+      addSystemLog('spule', 'Abzug übersprungen', `${name}: schon abgezogen`, 'info');
+      return;
+    }
     const slot = mainSlot(session) ?? activeSlotFromPrinter(ams);
 
     const trays = readTrays(ams);
@@ -82,8 +92,8 @@ export function useLanDeduct(p: Params) {
     };
 
     const deductNow = (parts: { spoolId: string; grams: number }[], source: string) => {
-      // Schon über die Cloud abgezogen (gleicher Druck): nichts doppelt
-      if (alreadyDeducted(name, endAt)) {
+      // Schon abgezogen (Cloud, Pi-Server oder anderes Gerät): nichts doppelt
+      if (printAlreadyDeducted(session.id, name, endAt)) {
         addSystemLog('spule', 'Auto-Abzug übersprungen', `${name}: schon abgezogen (Cloud)`, 'info');
         return;
       }

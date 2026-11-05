@@ -12,6 +12,7 @@ import homeAssistantRoutes from './server/routes/homeAssistant.js';
 import haTelemetryRoutes from './server/routes/haTelemetry.js';
 import gitRoutes from './server/routes/git.js';
 import recorderRoutes from './server/routes/recorder.js';
+import hubRoutes from './server/routes/hub.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use(homeAssistantRoutes);
 app.use(haTelemetryRoutes);
 app.use(gitRoutes);
 app.use(recorderRoutes);
+app.use(hubRoutes);
 
 // Lebenszeichen für den Watchdog der Home-Assistant-App (ohne API-Key, verrät nichts)
 app.get('/healthz', (_req, res) => res.json({ ok: true }));

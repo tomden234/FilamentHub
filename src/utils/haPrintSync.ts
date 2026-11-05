@@ -8,7 +8,8 @@ import { addPrintRecord, findPrint, getPrintLog } from './printLog';
 import { PENDING_DEDUCT_KEY } from './printUsage';
 import { isPrintDone, makePrintId, markPrintDone, type PrintSession } from './printSession';
 import { extractPrints, findHistorySensors, mergePrintSources, parseHistory, type HaPrint, type HistorySensors } from './haPrintHistory';
-import { fetchServerPrints } from './recorderServer';
+import { fetchServerPrints, pushHubConfig, type ServerDeductState } from './recorderServer';
+import { printAlreadyDeducted } from './serverDeducts';
 
 const SENSORS_KEY = 'filamenthub_ha_hist_sensors';
 const FIRST_KEY = 'filamenthub_ha_hist_first';
@@ -91,6 +92,8 @@ export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promi
   // Quellen: FilamentHub Server (genau, rund um die Uhr) zuerst, dann der Verlauf von Home Assistant
   const lists: HaPrint[][] = [];
   const errors: string[] = [];
+  // Einstellungen an den Pi (Cloud-Zugang, Slots …), damit er ohne App abziehen und schalten kann
+  await pushHubConfig().catch(() => undefined);
   const srv = await fetchServerPrints(now);
   if (srv.prints) lists.push(srv.prints);
   else if (srv.error && srv.configured) errors.push(srv.error);
@@ -112,13 +115,16 @@ export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promi
   let askedFailed = false;
   // Neueste zuerst durchsehen: bei Abbrüchen wird nur der neueste erfragt
   const todo = prints.filter(p => now - p.endMs >= MIN_AGE_MS).sort((a, b) => b.endMs - a.endMs);
-  const fresh: { p: HaPrint; id: string }[] = [];
+  const fresh: { p: HaPrint; id: string; st?: ServerDeductState; resolved?: boolean }[] = [];
   for (const p of todo) {
+    const st = (p as { deduct?: ServerDeductState }).deduct;
+    // Der Pi zieht gerade ab: nichts anfassen, nächster Lauf (sonst doppelt)
+    if (st === 'pending' || st === 'working') continue;
     const id = makePrintId(p.name, p.startMs, 0);
     if (isPrintDone(id) || getPrintLog().some(r => r.id === id) || findPrint(p.name, p.endMs)) continue;
-    fresh.push({ p, id });
+    fresh.push({ p, id, st, resolved: Boolean((p as { resolved?: boolean }).resolved) });
   }
-  for (const { p, id } of fresh.reverse()) {
+  for (const { p, id, st, resolved } of fresh.reverse()) {
     // Es wartet schon eine Frage „Spule abziehen?“: nichts überschreiben, nächster Lauf macht weiter
     if (safeStorage.getItem(PENDING_DEDUCT_KEY)) break;
     addPrintRecord({
@@ -135,6 +141,9 @@ export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promi
     added++;
     addSystemLog('spule', 'Druck aus Home Assistant nachgetragen', `${p.name}: ${p.state === 'FINISH' ? 'fertig' : 'abgebrochen'}${p.trayRaw ? `, Fach laut HA „${p.trayRaw}“` : ''}`, 'info');
     if (p.endMs < first - BACKFILL_MS) continue; // zu alt für einen Abzug, nur in die Liste
+    // Der Pi hat schon abgezogen (oder es war schon abgezogen) bzw. ein anderes Gerät hat die Frage beantwortet: nur in die Liste
+    if (st === 'done' || st === 'skip' || (st === 'ask' && resolved)) continue;
+    if (printAlreadyDeducted(id, p.name, p.endMs)) continue;
     if (p.state === 'FAILED') {
       if (askedFailed) continue;
       askedFailed = true;

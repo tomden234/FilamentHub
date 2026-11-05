@@ -1,5 +1,5 @@
 name: FilamentHub Server
-version: "1.0.1"
+version: "1.1.0"
 slug: filamenthub_server
 description: Zeichnet jeden Druck deines Bambu-Druckers rund um die Uhr auf, auch ohne offene App.
 url: https://github.com/tomden234/filament-website-google-ai
@@ -10,6 +10,7 @@ arch:
 startup: application
 boot: auto
 init: false
+homeassistant_api: true
 ports:
   3000/tcp: 3000
 ports_description:
@@ -19,9 +20,11 @@ options:
   serial: ""
   access_code: ""
   api_key: ""
+  notify_service: ""
 schema:
   printer_ip: str
   serial: str
   access_code: password
   api_key: password?
+  notify_service: str?
 watchdog: http://[HOST]:[PORT:3000]/healthz

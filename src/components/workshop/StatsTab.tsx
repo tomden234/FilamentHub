@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { BarChart3, Palette, Printer, Wallet } from 'lucide-react';
+import { BarChart3, CalendarDays, Palette, Printer, Wallet } from 'lucide-react';
+import { monthlyUse, successRate, weeklyPrints } from '../../utils/printStats';
 import type { HistoryEntry, Spool } from '../../types/filament';
 import { STORAGE_KEY_HISTORY } from '../../utils/storageKeys';
 import { safeStorage } from '../../utils/safeStorage';
@@ -108,11 +109,18 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
     const priciest = withUse.reduce<(typeof prints)[number] | null>((a, p) => (!a || p.cost > a.cost ? p : a), null);
     const hours = prints.reduce((a, p) => a + (p.durationMin || 0), 0) / 60;
 
-    return { week, month, total, weeks, topColors, topMats, prints: prints.length, done: done.length, avgGrams, avgCost, priciest, hours, hasData: hist.length > 0 };
+    // 1.198: Drucke je Woche, Kosten je Monat, Erfolgsquote
+    const printWeeks = weeklyPrints(prints, Date.now());
+    const months = monthlyUse(hist, priceOf, Date.now());
+    const rate = successRate(prints);
+
+    return { week, month, total, weeks, topColors, topMats, prints: prints.length, done: done.length, avgGrams, avgCost, priciest, hours, hasData: hist.length > 0, printWeeks, months, rate };
   }, [spools, prints]);
 
   const maxWeek = Math.max(1, ...stats.weeks.map(w => w.grams));
   const maxColor = Math.max(1, ...stats.topColors.map(c => c.grams));
+  const maxPrints = Math.max(1, ...stats.printWeeks.map(w => w.done + w.failed));
+  const maxMonth = Math.max(0.01, ...stats.months.map(m => m.cost));
 
   return (
     <div className="space-y-3">
@@ -158,6 +166,27 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
 
       <Card>
         <div className="flex items-center gap-2 text-xs font-extrabold">
+          <CalendarDays className="w-4 h-4 text-sky-400" />
+          <span>Kosten je Monat</span>
+        </div>
+        <div className="space-y-1.5">
+          {stats.months.map(m => (
+            <div key={m.start} className="flex items-center gap-2 text-[11px]">
+              <span className="w-14 font-bold">{new Date(m.start).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' })}</span>
+              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--app-border)' }}>
+                <div className="h-full rounded-full bg-sky-400" style={{ width: `${(m.cost / maxMonth) * 100}%` }} />
+              </div>
+              <span className="font-mono-num w-16 text-right">{euro(m.cost)}</span>
+              <span className="font-mono-num w-14 text-right" style={{ color: 'var(--app-text-muted)' }}>
+                {g(m.grams)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-2 text-xs font-extrabold">
           <Palette className="w-4 h-4 text-pink-400" />
           <span>Meistgenutzt (90 Tage)</span>
         </div>
@@ -196,8 +225,32 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
         <div className="grid grid-cols-3 gap-2">
           <Tile label="Drucke" value={String(stats.prints)} sub={stats.prints ? `${stats.done} fertig` : undefined} />
           <Tile label="Ø je Druck" value={stats.avgGrams ? g(stats.avgGrams) : '–'} sub={stats.avgCost ? euro(stats.avgCost) : undefined} />
-          <Tile label="Druckzeit" value={`${stats.hours.toLocaleString('de-DE', { maximumFractionDigits: 1 })} h`} />
+          <Tile label="Druckzeit" value={`${stats.hours.toLocaleString('de-DE', { maximumFractionDigits: 1 })} h`} sub={stats.rate !== null ? `${stats.rate} % geschafft` : undefined} />
         </div>
+        <div className="text-[11px] font-bold pt-1">Drucke je Woche</div>
+        <div className="flex items-end gap-1.5 h-20">
+          {stats.printWeeks.map(w => {
+            const n = w.done + w.failed;
+            const label = new Date(w.start).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+            return (
+              <div key={w.start} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${label}: ${w.done} fertig, ${w.failed} abgebrochen`}>
+                <span className="text-[9px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
+                  {n || ''}
+                </span>
+                <div className="w-full rounded-t-md overflow-hidden flex flex-col justify-end" style={{ height: `${(n / maxPrints) * 100}%`, minHeight: n ? 4 : 2, backgroundColor: n ? 'transparent' : 'var(--app-border)' }}>
+                  {w.failed > 0 && <div className="w-full bg-rose-400" style={{ height: `${(w.failed / Math.max(1, n)) * 100}%` }} />}
+                  {w.done > 0 && <div className="w-full bg-orange-400" style={{ height: `${(w.done / Math.max(1, n)) * 100}%` }} />}
+                </div>
+                <span className="text-[9px]" style={{ color: 'var(--app-text-muted)' }}>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+          Orange = fertig, rot = abgebrochen.
+        </p>
         {stats.priciest && (
           <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
             Teuerster Druck: <strong style={{ color: 'var(--app-text)' }}>{stats.priciest.name}</strong> ({g(stats.priciest.grams)}, {euro(stats.priciest.cost)})

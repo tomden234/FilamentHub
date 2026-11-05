@@ -83,7 +83,8 @@ export function dedupePrintLog(list: PrintRecord[]): PrintRecord[] {
       startMs: keep.startMs || other.startMs,
       spools: keep.spools.length ? keep.spools : other.spools,
       grams: keep.grams || other.grams,
-      cost: keep.cost || other.cost
+      cost: keep.cost || other.cost,
+      hasPhoto: keep.hasPhoto || other.hasPhoto
     };
   }
   return out;
@@ -110,7 +111,8 @@ export function mergePrintLog(remote: unknown, remoteRemoved: unknown): { change
   const local = getPrintLog();
   const rem: PrintRecord[] = Array.isArray(remote) ? remote.filter(isRecord).map(r => ({ ...r, hasPhoto: false, spools: Array.isArray(r.spools) ? r.spools : [] })) : [];
   const localHasMore = local.some(l => !gone.has(l.id) && !rem.some(r => r.id === l.id || samePrint(r, l, 10 * 60_000)));
-  const merged = dedupePrintLog([...local, ...rem.filter(r => !local.some(l => l.id === r.id))]).filter(r => !gone.has(r.id));
+  // Gleiche Kennung: der Eintrag mit mehr Wissen gewinnt (z. B. Gramm vom Pi-Server), Foto-Merker bleibt
+  const merged = dedupePrintLog([...local, ...rem]).filter(r => !gone.has(r.id));
   const changed = JSON.stringify(merged.map(r => r.id + r.grams)) !== JSON.stringify(local.map(r => r.id + r.grams));
   if (changed) save(merged);
   return { changed, localHasMore };
