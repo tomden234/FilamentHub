@@ -207,3 +207,16 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
     await closeFtp(client);
   }
 }
+
+/** Datei auf dem Drucker umbenennen (im selben Ordner). Gibt den neuen Pfad zurück. */
+export async function renameJobFile(ip: string, code: string, filePath: string, newName: string): Promise<string> {
+  const client = await ftp(ip, code);
+  try {
+    const dir = filePath.slice(0, filePath.lastIndexOf('/')) || '';
+    const to = `${dir}/${newName}`;
+    await client.rename(filePath, to);
+    return to;
+  } finally {
+    await closeFtp(client);
+  }
+}

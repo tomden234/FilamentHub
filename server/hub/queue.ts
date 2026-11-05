@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { dataDir } from '../paths.js';
-import { listJobFiles, readJobFile, type JobFilament } from '../bambuJobFile.js';
+import { listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayLabel, type Mapping } from './hubLogic.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
@@ -196,7 +196,7 @@ export async function autoScan(force = false): Promise<ScanResult> {
       return quiet(`Erster Abgleich: ${files.length} Dateien auf dem Drucker gemerkt. Neue Dateien kommen jetzt automatisch.`);
     }
     const known = seen;
-    const fresh = files.filter(f => !known.has(fileKey(f)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name));
+    const fresh = files.filter(f => !known.has(fileKey(f)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name) && !/^fh_[0-9a-f]{12}\.gcode\.3mf$/i.test(f.name)); // fh_… = von uns umbenannt
     if (!fresh.length) return quiet(`Nichts Neues (${files.length} Dateien auf dem Drucker geprüft)`);
     const d: any = st.data || {};
     const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(String(d.gcode_state || ''));
@@ -299,6 +299,17 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
       await showLeds(1);
       if (source === 'Taster' && list.length) await notify('⛔ Nicht gestartet', `${it?.name || ''}: ${fail}`);
       return { ok: false, text: fail };
+    }
+    // Der Drucker lehnt den Start mit „Nicht unterstützter Dateipfad oder Name“ (0500-4002) ab, wenn der Name Klammern, Leerzeichen,
+    // Umlaute oder Sonderzeichen hat. Dann die Datei auf dem Drucker einmal auf einen sicheren Namen umbenennen.
+    const lan = port!.getLanAccess();
+    if (lan && !/^[A-Za-z0-9_.\-]+$/.test(path.posix.basename(it.path))) {
+      try {
+        it.path = await renameJobFile(lan.ip, lan.code, it.path, `fh_${it.id}.gcode.3mf`);
+        save();
+      } catch (e) {
+        console.warn('[Warteschlange] Umbenennen auf dem Drucker fehlgeschlagen:', (e as Error)?.message || e);
+      }
     }
     await port!.startProject({ path: it.path, plate: it.plate, name: it.name, amsMapping: m!.amsMapping, amsMapping2: m!.amsMapping2, useAms: true });
     items = list.slice(1);
