@@ -31,7 +31,7 @@ const env = {
   NODE_ENV: 'production',
   FILAMENT_DATA_DIR: '/data',
   // Handy-App, Windows-App und Webseite dürfen den Server ansprechen
-  CORS_ORIGIN: 'https://tomden234.github.io,https://localhost,capacitor://localhost,http://localhost,http://localhost:3000,app://.'
+  CORS_ORIGIN: 'https://tomden234.github.io,https://localhost,capacitor://localhost,http://localhost,http://localhost:3000,http://127.0.0.1:38517,http://localhost:38517,app://.'
 };
 if (o.api_key) env.APP_API_KEY = String(o.api_key);
 

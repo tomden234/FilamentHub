@@ -2887,5 +2887,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.197',
+    label: '1.197 (Windows findet Pi-Server)',
+    releaseDate: '05.11.2026',
+    description: 'Die Windows-App konnte den Pi-Server nicht erreichen, weil der Server ihre Adresse nicht erlaubte. Jetzt ist sie erlaubt. Der Server im Home Assistant braucht dafür ein Update (Version 1.0.1).',
+    features: [
+      '🖥️ Windows-App darf den FilamentHub Server auf dem Pi abfragen („Prüfen“ zeigt jetzt „erreichbar“)',
+      '🔧 Pi-Server auf Version 1.0.1 angehoben, damit Home Assistant das Update anbietet'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
