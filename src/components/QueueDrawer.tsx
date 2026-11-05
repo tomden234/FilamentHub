@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GripVertical, ListOrdered, Play, Trash2, X } from 'lucide-react';
+import { setQueueDock, useQueueDock } from '../utils/queueDock';
 import { piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
@@ -22,7 +23,9 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
   );
 };
 
-export const QueueDrawer: React.FC<{ open: boolean; onClose: () => void; items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void }> = ({ open, onClose, items, setItems }) => {
+export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void }> = ({ items, setItems }) => {
+  const open = useQueueDock();
+  const onClose = () => setQueueDock(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,9 +64,9 @@ export const QueueDrawer: React.FC<{ open: boolean; onClose: () => void; items: 
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/30 sm:bg-transparent" onClick={onClose} aria-hidden />
+      {/* Angedockt: am PC als feste Spalte rechts (schiebt den Inhalt zur Seite), am Handy unten. Kein Abdunkeln, schließt nie von selbst. */}
       <aside
-        className="fixed z-[61] top-0 right-0 h-full w-[min(92vw,22rem)] flex flex-col border-l shadow-2xl"
+        className="order-last fixed z-30 bottom-0 inset-x-0 h-[42vh] border-t flex flex-col lg:static lg:inset-auto lg:z-auto lg:h-screen lg:sticky lg:top-0 lg:w-[22rem] lg:shrink-0 lg:border-t-0 lg:border-l"
         style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
         aria-label="Warteschlange"
       >

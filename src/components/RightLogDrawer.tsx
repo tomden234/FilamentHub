@@ -24,6 +24,8 @@ import { LogCategory, SystemLogEntry, Spool } from '../types/filament';
 import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logService';
 import { safeStorage } from '../utils/safeStorage';
 import { useBackLayer } from '../utils/backNav';
+import { getHubInfo } from '../utils/serverDeducts';
+import { setQueueDock } from '../utils/queueDock';
 
 interface RightLogDrawerProps {
   onOpenPrinterSettings?: () => void;
@@ -40,7 +42,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   logsOnly = false
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>('queue');
+  const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>(getHubInfo()?.enabled ? 'prints' : 'queue');
   const panelTab = logsOnly ? 'logs' : panelTabState;
   useBackLayer(isOpen, () => setIsOpen(false), 'log-drawer');
   const [logs, setLogs] = useState<SystemLogEntry[]>(() => getSystemLogs());
@@ -349,7 +351,15 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
             return (
               <button
                 key={t.id}
-                onClick={() => setPanelTab(t.id)}
+                onClick={() => {
+                  // Mit Pi-Hub: „Warteschlange“ öffnet das angedockte Fach (bleibt offen, nichts wird abgedunkelt)
+                  if (t.id === 'queue' && getHubInfo()?.enabled) {
+                    setQueueDock(true);
+                    setIsOpen(false);
+                    return;
+                  }
+                  setPanelTab(t.id);
+                }}
                 className="px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
                 style={{
                   backgroundColor: active ? 'var(--app-accent)' : 'var(--app-card-sub)',

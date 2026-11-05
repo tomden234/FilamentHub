@@ -3098,5 +3098,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.210',
+    label: '1.210 (Warteschlange angedockt)',
+    releaseDate: '05.11.2026',
+    description: 'Die Warteschlange ist jetzt ein angedocktes Fach: am PC eine feste Spalte rechts (schiebt die Kacheln zur Seite), am Handy eine Leiste unten. Nichts wird abgedunkelt, und sie schließt sich nie von selbst, auch nicht beim Arbeiten woanders. Auf- und Zuklappen im Drucker-Fach über „Warteschlange“ oder mit dem Knopf oben. Der Zustand bleibt gespeichert.',
+    features: [
+      '📌 Warteschlange bleibt offen, ohne Abdunkeln und ohne Schließen beim Klicken woanders',
+      '🖥️ PC: feste Spalte rechts; 📱 Handy: Leiste unten',
+      '🖨️ Drucker-Fach → „Warteschlange“ öffnet das angedockte Fach (mit Pi-Server)',
+      '💾 Offen/zu bleibt gemerkt'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
