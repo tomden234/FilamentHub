@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { backupNow, energyWeeks, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
-import { printerFiles, queueAdd, queueList, queueMove, queueRemove, startNext } from '../hub/queue.js';
+import { autoAddOn, printerFiles, queueAdd, queueList, queueMove, queueRemove, setAutoAdd, startNext } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -66,7 +66,12 @@ router.post('/api/hub/esp-sync', async (_req, res) => {
 
 // --- Warteschlange ---
 router.get('/api/hub/queue', (_req, res) => {
-  res.json({ success: true, items: queueList() });
+  res.json({ success: true, items: queueList(), auto: autoAddOn() });
+});
+
+router.post('/api/hub/queue/auto', (req, res) => {
+  setAutoAdd(Boolean(req.body?.on));
+  res.json({ success: true, items: queueList(), auto: autoAddOn() });
 });
 
 router.get('/api/hub/printer-files', async (_req, res) => {

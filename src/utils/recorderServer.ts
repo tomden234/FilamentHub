@@ -367,13 +367,22 @@ export interface PrinterFile {
   time: number;
 }
 
-export async function piQueue(): Promise<PiQueueItem[] | null> {
+export async function piQueue(): Promise<{ items: PiQueueItem[]; auto: boolean } | null> {
   if (!hasServer() || !getHubInfoLite()?.enabled) return null;
   try {
     const j = await get('/api/hub/queue');
-    return Array.isArray(j?.items) ? j.items : [];
+    return { items: Array.isArray(j?.items) ? j.items : [], auto: j?.auto !== false };
   } catch {
     return null;
+  }
+}
+
+export async function piQueueAuto(on: boolean): Promise<boolean> {
+  try {
+    const j = await get('/api/hub/queue/auto', { method: 'POST', body: { on }, timeoutMs: 20000 });
+    return j?.auto !== false;
+  } catch {
+    return !on;
   }
 }
 

@@ -26,6 +26,9 @@ export interface QueuePort {
 
 const file = () => path.join(dataDir, 'hub-queue.json');
 let items: QueueItem[] | null = null;
+/** Schon gesehene Dateien („Pfad|Größe|Zeit“): nur neue kommen automatisch in die Warteschlange. null = noch nie gescannt. */
+let seen: Set<string> | null = null;
+let autoOn = true;
 let port: QueuePort | null = null;
 let notify: (title: string, text: string) => Promise<unknown> = async () => undefined;
 
@@ -57,6 +60,8 @@ function load(): QueueItem[] {
   try {
     const v = JSON.parse(fs.readFileSync(file(), 'utf-8'));
     items = Array.isArray(v?.items) ? v.items : [];
+    seen = Array.isArray(v?.seen) ? new Set<string>(v.seen) : null;
+    autoOn = v?.auto !== false;
   } catch {
     items = [];
   }
@@ -65,7 +70,7 @@ function load(): QueueItem[] {
 
 function save(): void {
   try {
-    fs.writeFileSync(file(), JSON.stringify({ items: load() }), 'utf-8');
+    fs.writeFileSync(file(), JSON.stringify({ items: load(), seen: seen ? Array.from(seen).slice(-500) : undefined, auto: autoOn }), 'utf-8');
   } catch (e) {
     console.warn('[Warteschlange] Speichern fehlgeschlagen:', (e as Error)?.message || e);
   }
@@ -109,6 +114,63 @@ export async function queueAdd(filePath: string, plate = 1): Promise<QueueItem &
   void showLeds(0);
   const m = currentMapping(it);
   return { ...it, mapping: m.lines, missing: m.missing };
+}
+
+export const autoAddOn = (): boolean => (load(), autoOn);
+export function setAutoAdd(on: boolean): void {
+  load();
+  autoOn = on;
+  // Beim Einschalten alles Vorhandene als „gesehen“ merken, sonst käme der ganze Altbestand in die Warteschlange
+  if (on) seen = null;
+  save();
+}
+
+const fileKey = (f: { path: string; size: number; time: number }) => `${f.path}|${f.size}|${f.time}`;
+const baseOf = (n: string) => n.replace(/\.gcode\.3mf$|\.3mf$/i, '').toLowerCase();
+
+/**
+ * Neue Dateien auf dem Drucker (Bambu Studio „Senden“) selbst in die Warteschlange stellen.
+ * Der erste Durchlauf merkt sich nur, was schon da ist. Eine Datei, die gerade gedruckt wird („Drucken“ statt „Senden“), kommt nicht in die Warteschlange.
+ */
+let scanning = false;
+export async function autoScan(): Promise<void> {
+  load();
+  const lan = port?.getLanAccess();
+  const st = port?.getStatus();
+  if (!autoOn || scanning || !lan || !st?.connected) return;
+  scanning = true;
+  try {
+    const files = await listJobFiles(lan.ip, lan.code);
+    if (seen === null) {
+      seen = new Set(files.map(fileKey));
+      save();
+      return;
+    }
+    const known = seen;
+    const fresh = files.filter(f => !known.has(fileKey(f)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name));
+    if (!fresh.length) return;
+    const d: any = st.data || {};
+    const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(String(d.gcode_state || ''));
+    const nowName = `${d.subtask_name || ''} ${d.gcode_file || ''}`.toLowerCase();
+    // Älteste zuerst, damit die Reihenfolge stimmt
+    for (const f of fresh.sort((a, b) => a.time - b.time)) {
+      known.add(fileKey(f));
+      if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
+      if (load().some(x => x.path === f.path)) continue; // schon vorgemerkt
+      try {
+        const it = await queueAdd(f.path, 1);
+        await notify('➕ In der Warteschlange', `${it.name} (automatisch aus Bambu Studio)\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}`);
+        console.log(`[Warteschlange] automatisch vorgemerkt: ${it.name}`);
+      } catch (e) {
+        console.warn('[Warteschlange] Auto-Vormerken fehlgeschlagen:', (e as Error)?.message || e);
+      }
+    }
+    save();
+  } catch (e) {
+    console.warn('[Warteschlange] Scan fehlgeschlagen:', (e as Error)?.message || e);
+  } finally {
+    scanning = false;
+  }
 }
 
 export function queueRemove(id: string): boolean {

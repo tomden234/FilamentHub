@@ -3065,5 +3065,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.208',
+    label: '1.208 (Auto-Warteschlange)',
+    releaseDate: '05.11.2026',
+    description: 'In Bambu Studio nur noch „Senden“ drücken: der Pi sieht die neue Datei auf dem Drucker und stellt sie nach wenigen Sekunden selbst in die Warteschlange (mit Push-Meldung). Ein-/Ausschalter in der Warteschlangen-Karte.',
+    features: [
+      '➕ Neue Dateien aus Bambu Studio („Senden“) kommen automatisch in die Warteschlange',
+      '🔔 Push: „In der Warteschlange“ mit AMS-Zuordnung und Warnung, wenn Material fehlt',
+      '🛡️ Beim ersten Mal wird nur gemerkt, was schon da ist (kein Altbestand); gerade laufender Druck wird nicht doppelt vorgemerkt',
+      '🔘 Schalter „Neue Dateien automatisch vormerken“ in der Karte',
+      '🖥️ Pi-Server 1.2.3'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

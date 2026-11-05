@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, Loader2, Play, Plus, RefreshCw, Server, Trash2 } from 'lucide-react';
-import { piPrinterFiles, piQueue, piQueueAction, type PiQueueItem, type PrinterFile } from '../../utils/recorderServer';
+import { piPrinterFiles, piQueue, piQueueAction, piQueueAuto, type PiQueueItem, type PrinterFile } from '../../utils/recorderServer';
 import { Card } from './ui';
 
 // Warteschlange auf dem Pi: Dateien, die schon auf dem Drucker liegen (aus Bambu Studio „Senden“), vormerken.
@@ -12,7 +12,12 @@ export const PiQueueCard: React.FC = () => {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const reload = async () => setItems(await piQueue());
+  const [auto, setAuto] = useState(true);
+  const reload = async () => {
+    const q = await piQueue();
+    setItems(q ? q.items : null);
+    if (q) setAuto(q.auto);
+  };
   useEffect(() => {
     void reload();
     // 1.207: alle 2 s (vorher 20 s), damit ein Tasterdruck sofort in der Liste ankommt. Im versteckten Tab nicht.
@@ -56,9 +61,20 @@ export const PiQueueCard: React.FC = () => {
         <span>Warteschlange auf dem Pi ({items.length})</span>
       </div>
       <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-        In Bambu Studio „Senden“ (nicht „Drucken“), dann hier die Datei vormerken. Platte leer machen, Taster „Platte frei“ am AMS drücken: der nächste Druck startet.
+        In Bambu Studio „Senden“ (nicht „Drucken“): die Datei kommt nach wenigen Sekunden von selbst in die Warteschlange. Platte leer machen, Taster „Platte frei“ am AMS drücken: der nächste Druck startet.
         Die LEDs zeigen, wie viele warten.
       </p>
+      <label className="flex items-center gap-2 text-[11px] font-bold cursor-pointer">
+        <input
+          type="checkbox"
+          checked={auto}
+          onChange={async e => {
+            setAuto(e.target.checked);
+            setAuto(await piQueueAuto(e.target.checked));
+          }}
+        />
+        Neue Dateien automatisch vormerken
+      </label>
 
       {items.length > 0 && (
         <div className="space-y-1.5">

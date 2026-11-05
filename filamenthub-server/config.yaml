@@ -1,5 +1,5 @@
 name: FilamentHub Server
-version: "1.2.2"
+version: "1.2.3"
 slug: filamenthub_server
 description: Zeichnet jeden Druck deines Bambu-Druckers rund um die Uhr auf, auch ohne offene App.
 url: https://github.com/tomden234/filament-website-google-ai

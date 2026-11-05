@@ -20,7 +20,7 @@ import { applyDeduction, deductedIn, expectedMinutes, planParts, shortages, tooL
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { haAvailable, haCameraJpeg, haListen, haPowerW, haPush, haState, haSwitch, type PushOptions } from './ha.js';
 import { addEnergy, allTrays, inQuietHours, missingMaterials, stalled, weekKey, weeklyReport, type EnergyWeek } from './hubLogic.js';
-import { attachQueue, onHaEvent as queueEvent, refreshLeds, type QueuePort } from './queue.js';
+import { attachQueue, autoScan, onHaEvent as queueEvent, refreshLeds, type QueuePort } from './queue.js';
 import { espInfo as espInfoFn, publishImage, syncEspYaml } from './esphome.js';
 import { rootDir } from '../paths.js';
 
@@ -262,6 +262,8 @@ export function attachPrinter(p: PrinterPort): void {
       onAction(ev);
     });
     setTimeout(() => refreshLeds(), 20_000);
+    // Neue Dateien aus Bambu Studio alle 5 s suchen (eigener Takt; autoScan lässt sich nicht doppelt starten)
+    setInterval(() => void autoScan(), 5000).unref();
   }
 }
 
