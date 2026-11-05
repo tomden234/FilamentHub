@@ -2839,5 +2839,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.194',
+    label: '1.194 (Drucke aus Home Assistant)',
+    releaseDate: '05.11.2026',
+    description: 'Drucke, die liefen, während keine App offen war, werden jetzt aus dem Verlauf von Home Assistant nachgetragen. Home Assistant läuft Tag und Nacht und kennt Status, Auftragsname und aktives Fach der X2D. Die App holt den Verlauf der letzten 7 Tage, ergänzt fehlende Drucke in der Druckliste und zieht vom richtigen Slot ab. Das klappt auch, wenn der Drucker nach dem Druck schon aus ist.',
+    features: [
+      '🏠 Druckverlauf der letzten 7 Tage aus Home Assistant (Status, Name, aktives Fach)',
+      '➕ Fehlende Drucke kommen in die Druckliste, nichts doppelt (Live, Cloud und Home Assistant kennen sich)',
+      '⚖️ Abzug von der richtigen Spule: Fertig + Gewicht bekannt = automatisch, sonst kurze Frage',
+      '❌ Abgebrochene Drucke: Frage mit Gramm nach Fortschritt (nur der neueste)',
+      '⏱️ Prüfung beim Start, beim Öffnen, alle 10 Minuten und kurz nach Druckende',
+      '🔒 Server-Weiterleitung liest nur Sensor-Verlauf (höchstens 8 Sensoren), nichts anderes'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

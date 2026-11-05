@@ -47,9 +47,11 @@ export function useLanDeduct(p: Params) {
   }, [p.enabled]);
 
   /** Am Druckende aufrufen (von usePrintWatch) */
-  const handleEnd = useCallback((session: PrintSession, info: PrintEndInfo) => {
+  // opts.force: auch ohne LAN-Verbindung (Druck aus dem Home-Assistant-Verlauf, Drucker oft schon aus)
+  const handleEnd = useCallback((session: PrintSession, info: PrintEndInfo, opts?: { force?: boolean }) => {
     const { enabled, spools, amsSlots, ams, vtTray, notify, onPending } = latest.current;
-    if (!enabled || !isAutoDeductOn()) return;
+    if ((!enabled && !opts?.force) || !isAutoDeductOn()) return;
+    const endAt = info.endMs || Date.now(); // echtes Druckende (bei nachgetragenen Drucken nicht „jetzt“)
     const name = session.name || 'Druckauftrag';
     const slot = mainSlot(session) ?? activeSlotFromPrinter(ams);
 
@@ -69,7 +71,7 @@ export function useLanDeduct(p: Params) {
         spoolId,
         material,
         colorHex,
-        at: new Date().toISOString(),
+        at: new Date(endAt).toISOString(),
         reason: failed ? 'failed' : info.missed ? 'missed' : 'unknown',
         printId: session.id,
         percent: failed ? Math.round(session.lastPercent || 0) : undefined,
@@ -81,11 +83,11 @@ export function useLanDeduct(p: Params) {
 
     const deductNow = (parts: { spoolId: string; grams: number }[], source: string) => {
       // Schon über die Cloud abgezogen (gleicher Druck): nichts doppelt
-      if (alreadyDeducted(name, Date.now())) {
+      if (alreadyDeducted(name, endAt)) {
         addSystemLog('spule', 'Auto-Abzug übersprungen', `${name}: schon abgezogen (Cloud)`, 'info');
         return;
       }
-      recordDeduct(name, Date.now(), 'lan');
+      recordDeduct(name, endAt, 'lan');
       const texts: string[] = [];
       parts.forEach((x, i) => {
         const grams = round1(x.grams);

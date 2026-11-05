@@ -46,6 +46,7 @@ import { usePrinterAlerts } from '../hooks/usePrinterAlerts';
 import { setPrinterLive, type PrinterLevel } from '../utils/printerLive';
 import { useLanDeduct } from '../hooks/useLanDeduct';
 import { usePrintWatch } from '../hooks/usePrintWatch';
+import { useHaPrintHistory } from '../hooks/useHaPrintHistory';
 import { useAutoPowerOff } from '../hooks/useAutoPowerOff';
 import { useDryAutoOff } from '../hooks/useDryAutoOff';
 import { armDryOff, disarmDryOff } from '../utils/dryAutoOff';
@@ -244,6 +245,12 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     onDeductForPrint: deductForPrint,
     notify: setActionToast,
     onPending: setPendingDeduct
+  });
+
+  // 1.194: Drucke, die ohne offene App liefen, aus dem Verlauf von Home Assistant nachtragen und abziehen (auch bei ausgeschaltetem Drucker)
+  useHaPrintHistory({
+    gcodeState: liveState.data.gcode_state,
+    onEnd: (session, info) => lanDeduct.handleEnd(session, info, { force: true })
   });
 
   // Aktuelle Daten für verzögerte Prüfungen (Spulen-Check kurz nach dem Start)

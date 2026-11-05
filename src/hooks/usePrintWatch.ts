@@ -22,6 +22,8 @@ import {
 export interface PrintEndInfo {
   state: 'FINISH' | 'FAILED';
   missed: boolean;
+  /** Echtes Ende (ms), wenn es nicht „jetzt“ ist (Druck aus dem Home-Assistant-Verlauf nachgetragen) */
+  endMs?: number;
 }
 
 interface Params {
