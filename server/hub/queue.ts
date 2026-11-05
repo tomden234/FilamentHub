@@ -6,7 +6,8 @@ import crypto from 'crypto';
 import { dataDir } from '../paths.js';
 import { listJobFiles, readJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayLabel, type Mapping } from './hubLogic.js';
-import { haAvailable, haSetNumber } from './ha.js';
+import { haAvailable, haSetNumber, haStates } from './ha.js';
+import { resolveAms } from '../../src/utils/amsEntities.js';
 
 export interface QueueItem {
   id: string;
@@ -28,10 +29,23 @@ let items: QueueItem[] | null = null;
 let port: QueuePort | null = null;
 let notify: (title: string, text: string) => Promise<unknown> = async () => undefined;
 
-/** Namen der ESPHome-Regler (Gerät „Filament AMS“) */
+/** Übliche Namen der ESPHome-Regler (Gerät „Filament AMS“). Die echten werden in Home Assistant gesucht (resolveAms). */
 export const QUEUE_COUNT_ENTITY = 'number.filament_ams_warteschlange';
 export const QUEUE_MODE_ENTITY = 'number.filament_ams_warteschlange_modus';
 export const BUTTON_ENTITY = 'binary_sensor.filament_ams_platte_frei';
+
+const found = { count: QUEUE_COUNT_ENTITY, mode: QUEUE_MODE_ENTITY, button: BUTTON_ENTITY, at: 0 };
+/** Echte IDs suchen (höchstens alle 5 Minuten): Home Assistant behält alte IDs, wenn das Gerät früher anders hieß */
+async function resolveIds(force = false): Promise<void> {
+  if (!force && Date.now() - found.at < 5 * 60_000) return;
+  found.at = Date.now();
+  const states = await haStates();
+  const dev = states ? resolveAms(states) : null;
+  if (!dev) return;
+  found.count = dev.roles.queue || QUEUE_COUNT_ENTITY;
+  found.mode = dev.roles.queueMode || QUEUE_MODE_ENTITY;
+  found.button = dev.roles.button || BUTTON_ENTITY;
+}
 
 export function attachQueue(p: QueuePort, n: (title: string, text: string) => Promise<unknown>): void {
   port = p;
@@ -119,10 +133,11 @@ let modeTimer: ReturnType<typeof setTimeout> | null = null;
 /** LEDs: Anzahl + Modus (0 = normal, 1 = rot blinken, 2 = grün = startet). Modus 1/2 geht nach 6 s zurück. */
 async function showLeds(mode: 0 | 1 | 2): Promise<void> {
   if (!haAvailable()) return;
-  await haSetNumber(QUEUE_COUNT_ENTITY, Math.min(10, load().length));
-  await haSetNumber(QUEUE_MODE_ENTITY, mode);
+  await resolveIds();
+  await haSetNumber(found.count, Math.min(10, load().length));
+  await haSetNumber(found.mode, mode);
   if (modeTimer) clearTimeout(modeTimer);
-  if (mode) modeTimer = setTimeout(() => void haSetNumber(QUEUE_MODE_ENTITY, 0), 6000);
+  if (mode) modeTimer = setTimeout(() => void haSetNumber(found.mode, 0), 6000);
 }
 
 let starting = false;
@@ -168,14 +183,14 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
 
 /** Taster am ESP gedrückt? (Ereignis aus Home Assistant) */
 export function onHaEvent(ev: { event_type: string; data: any }): void {
-  if (ev.event_type !== 'state_changed' || ev.data?.entity_id !== BUTTON_ENTITY) return;
+  if (ev.event_type !== 'state_changed' || ev.data?.entity_id !== found.button) return;
   // Auch der erste Druck nach einem ESP-Neustart zählt (alter Zustand dann „unknown“/„unavailable“)
   if (ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on') void startNext('Taster');
 }
 
 /** Beim Start: LEDs auf den aktuellen Stand bringen */
 export function refreshLeds(): void {
-  void showLeds(0);
+  void resolveIds(true).then(() => showLeds(0));
 }
 
 export { trayLabel };

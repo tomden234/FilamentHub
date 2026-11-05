@@ -39,6 +39,18 @@ export async function haState(entity: string): Promise<string | null> {
   }
 }
 
+/** Alle Zustände (für die Suche nach den ESP-Werten) */
+export async function haStates(): Promise<any[] | null> {
+  try {
+    const r = await call('/states');
+    if (!r.ok) return null;
+    const j = await r.json();
+    return Array.isArray(j) ? j : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function haService(domain: string, service: string, data: Record<string, unknown>): Promise<boolean> {
   try {
     const r = await call(`/services/${domain}/${service}`, { method: 'POST', body: data });

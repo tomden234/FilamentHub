@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, RefreshCw, Smartphone, ToggleRight, XCircle } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
-import { findAmsDevice, ids, type AmsEntity, judgeReader, judgeTag, readEntity, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
+import { findAmsDevice, ids, type AmsDevice, judgeReader, judgeTag, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
 import { useNfcTags } from '../../utils/nfcRead';
 import { StatusLedCard } from './StatusLedCard';
 
@@ -44,12 +44,9 @@ const ago = (t: number) => {
 };
 
 export const TestTab: React.FC = () => {
-  const [base, setBase] = useState<string | null>(null);
-  const [entities, setEntities] = useState<AmsEntity[]>([]);
-  const [tickNo, setTickNo] = useState(0);
+  const [dev, setDev] = useState<AmsDevice | null>(null);
   const [findErr, setFindErr] = useState('');
   const [searching, setSearching] = useState(true);
-  const [st, setSt] = useState<Record<string, EntityState | null>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const toggle = (id: string) => setOpen(o => (o === id ? null : id));
@@ -58,17 +55,16 @@ export const TestTab: React.FC = () => {
   const [queueMsg, setQueueMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [phoneTag, setPhoneTag] = useState<string>('');
   const hasHa = Boolean(getHaCredentials().token);
-  const live = useRef(true);
+  const base = dev?.base || null;
+  const entities = dev?.entities || [];
 
-  // Gerät suchen
+  // Gerät suchen (ganze Liste aus Home Assistant: ein Abruf, findet auch Werte mit anderem ID-Anfang)
   const find = useCallback(async () => {
     setSearching(true);
     setFindErr('');
     try {
       const d = await findAmsDevice();
-      setBase(d?.base || null);
-      setEntities(d?.entities || []);
-      setTickNo(n => n + 1);
+      setDev(d);
       if (!d) setFindErr('Kein AMS-ESP in Home Assistant gefunden (Sensor „Slot 1 Tag“ fehlt). Ist der ESP in Home Assistant eingebunden?');
     } catch (e: any) {
       setFindErr(`Home Assistant nicht erreichbar: ${e?.message || e}`);
@@ -81,39 +77,47 @@ export const TestTab: React.FC = () => {
     else setSearching(false);
   }, [hasHa, find]);
 
-  // Live lesen, solange offen
+  // Live lesen, solange offen (alle 2,5 s die Liste neu holen)
+  const hasDev = Boolean(base);
   useEffect(() => {
-    live.current = true;
-    if (!base) return;
-    const e = ids(base, entities);
-    const list = [e.firmware, e.ip, e.wifi, e.lastTag, e.queue, e.queueTest, e.button, e.boxHum, e.boxTemp, e.dryerHum, e.dryerTemp, ...[1, 2, 3, 4, 5].flatMap(n => [e.slot(n), e.reader(n)])];
+    if (!hasDev) return;
+    let alive = true;
     let busy = false;
     const tick = async () => {
-      if (busy || !live.current) return;
+      if (busy || !alive) return;
       busy = true;
-      const out: Record<string, EntityState | null> = {};
-      await Promise.all(list.map(async id => (out[id] = await readEntity(id))));
-      if (live.current) setSt(out);
-      busy = false;
+      try {
+        const d = await findAmsDevice();
+        if (alive && d) setDev(d);
+      } catch {
+        /* kurz nicht erreichbar */
+      } finally {
+        busy = false;
+      }
     };
-    void tick();
-    const iv = setInterval(() => void tick(), 2000);
+    const iv = setInterval(() => void tick(), 2500);
     return () => {
-      live.current = false;
+      alive = false;
       clearInterval(iv);
     };
-  }, [base, entities]);
+  }, [hasDev]);
+
+  const st = useMemo(() => {
+    const out: Record<string, EntityState> = {};
+    for (const x of entities) out[x.id] = { state: x.state, changed: x.changed, available: x.state !== 'unavailable' };
+    return out;
+  }, [entities]);
 
   // Tag mit dem Handy lesen (Android-App / Chrome auf Android)
   const nfc = useNfcTags([], r => setPhoneTag(r.serialNumber || ''), true);
 
-  const e = base ? ids(base, entities) : null;
+  const e = base ? ids(base, dev?.roles) : null;
   const val = (id?: string) => (id ? st[id]?.state : undefined);
   const fw = val(e?.firmware);
   const fwOk = fw && fw !== 'unknown' && fw !== 'unavailable';
-  const espOnline = e ? st[e.wifi]?.available !== false && st[e.ip]?.available !== false && Object.keys(st).length > 0 : false;
+  const espOnline = e ? st[e.wifi]?.available !== false && st[e.ip]?.available !== false && entities.length > 0 : false;
   const testOn = val(e?.queueTest) === 'on';
-  const hasTestSwitch = e ? (st[e.queueTest] !== null && st[e.queueTest] !== undefined) || entities.some(x => x.id === e.queueTest) : false;
+  const hasTestSwitch = Boolean(dev?.roles.queueTest);
   // Der Testschalter gibt es erst ab 1.202: ist er da, ist die Firmware neu genug (auch wenn der Firmware-Sensor in HA anders heißt)
   const fwNew = (fwOk && fw === WANT_FW) || hasTestSwitch;
 
@@ -129,29 +133,29 @@ export const TestTab: React.FC = () => {
   );
 
   const startQueueTest = async () => {
-    if (!base) return;
+    if (!e) return;
     setQueueBusy(true);
     setQueueMsg(null);
-    const a = await setQueueTest(base, true);
-    const b = a && (await setQueueCount(base, queueN));
+    const a = await setQueueTest(e.queueTest, true);
+    const b = a && (await setQueueCount(e.queue, queueN));
     setQueueMsg(b ? { ok: true, text: `Test läuft: ${queueN} LEDs. Jetzt den Taster drücken, dann wird es eine weniger. Es startet kein Druck.` } : { ok: false, text: 'Hat nicht geklappt. Ist Firmware 1.202 auf dem ESP?' });
     setQueueBusy(false);
   };
   const stopQueueTest = async () => {
-    if (!base) return;
+    if (!e) return;
     setQueueBusy(true);
-    const ok = await setQueueTest(base, false);
+    const ok = await setQueueTest(e.queueTest, false);
     setQueueMsg(ok ? { ok: true, text: 'Test beendet. Die LEDs zeigen wieder die echte Warteschlange.' } : { ok: false, text: 'Beenden hat nicht geklappt.' });
     setQueueBusy(false);
   };
   // Menü zu: Test sicher beenden
-  const baseRef = useRef(base);
-  baseRef.current = base;
+  const testEntityRef = useRef<string | null>(null);
+  testEntityRef.current = e ? e.queueTest : null;
   const testRef = useRef(testOn);
   testRef.current = testOn;
   useEffect(
     () => () => {
-      if (baseRef.current && testRef.current) void setQueueTest(baseRef.current, false);
+      if (testEntityRef.current && testRef.current) void setQueueTest(testEntityRef.current, false);
     },
     []
   );
@@ -238,7 +242,7 @@ export const TestTab: React.FC = () => {
             <ul className="mt-1 space-y-0.5 break-all" style={muted}>
               {entities.map(x => (
                 <li key={x.id}>
-                  {x.id.replace(`${base}_`, '')}: <strong style={{ color: 'var(--app-text)' }}>{x.state.length > 40 ? `${x.state.slice(0, 40)}…` : x.state}</strong>
+                  {x.name || x.id} <span className="opacity-60">({x.id})</span>: <strong style={{ color: 'var(--app-text)' }}>{x.state.length > 40 ? `${x.state.slice(0, 40)}…` : x.state}</strong>
                 </li>
               ))}
             </ul>

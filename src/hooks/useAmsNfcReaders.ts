@@ -7,6 +7,7 @@ import { paramsFromSpool, sendToSlot } from '../utils/slotAssign';
 import { addSystemLog } from '../utils/logService';
 import { useWorkshopSettings } from '../utils/workshopSettings';
 import { haFetch } from '../utils/haAutoOff';
+import { resolveAms } from '../utils/amsEntities';
 
 // NFC-Leser im AMS (ESPHome, siehe hardware/ams-nfc): liest über Home Assistant, welcher Tag in welchem Slot steckt,
 // und ordnet die passende Spule automatisch zu. Optional werden Material und Farbe an den Drucker geschickt.
@@ -14,11 +15,7 @@ import { haFetch } from '../utils/haAutoOff';
 /** Tag-Nummer vergleichbar machen: „04-A1-B2“, „04:a1:b2“, „04a1b2“ → „04a1b2“ */
 export const normUid = (s: string) => String(s || '').toLowerCase().replace(/[^0-9a-f]/g, '');
 
-const ENTITY_RE = /^sensor\.[a-z0-9_]*ams[a-z0-9_]*slot_?(\d)_tag$/;
-/** Zustand je Leser (ab Firmware 1.200): „OK (Chip 0x92)“, „Keine Verbindung …“ */
-const STATUS_RE = /^sensor\.[a-z0-9_]*ams[a-z0-9_]*_leser_(\d)$/;
-/** Zuletzt gelesener Tag an irgendeinem Leser (auch ignorierte) */
-const LAST_RE = /^sensor\.[a-z0-9_]*ams[a-z0-9_]*_letzter_tag$/;
+// 1.206: Leser, Slots und letzter Tag über resolveAms (auch mit anderem ID-Anfang in Home Assistant)
 const STATUS_MS = 30_000;
 const POLL_MS = 4000;
 const DISCOVER_MS = 5 * 60 * 1000;
@@ -85,21 +82,12 @@ export function useAmsNfcReaders(p: Params): NfcReaderState & { learn: (slot: nu
       try {
         const res = await haFetch('/api/states');
         if (!res.ok) return;
-        const all: any[] = await res.json();
-        const found: Record<number, string> = {};
+        const dev = resolveAms(await res.json());
+        const found: Record<number, string> = { ...(dev?.roles.slot || {}) };
         const st: Record<number, string> = {};
-        lastEntity = '';
-        for (const s of all) {
-          const id = String(s?.entity_id || '');
-          const m = id.match(ENTITY_RE);
-          if (m) found[Number(m[1])] = id;
-          const k = id.match(STATUS_RE);
-          if (k) {
-            statusEntities[Number(k[1])] = id;
-            st[Number(k[1])] = String(s?.state || '');
-          }
-          if (LAST_RE.test(id)) lastEntity = id;
-        }
+        statusEntities = { ...(dev?.roles.reader || {}) };
+        for (const [n, id] of Object.entries(statusEntities)) st[Number(n)] = dev?.entities.find(x => x.id === id)?.state || '';
+        lastEntity = dev?.roles.lastTag || '';
         entities = found;
         status = st;
         lastStatus = Date.now();

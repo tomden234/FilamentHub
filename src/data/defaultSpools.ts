@@ -3037,5 +3037,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.206',
+    label: '1.206 (ESP-Werte überall finden)',
+    releaseDate: '05.11.2026',
+    description: 'Home Assistant behält alte Entitäts-IDs, wenn das ESP-Gerät früher anders hieß. Neue Werte (Leser, Firmware, Trockner, Testschalter) hatten deshalb einen anderen Anfang und wurden nicht gefunden. Jetzt sucht die App (und der Pi) über den Anzeigenamen „Filament AMS …“.',
+    features: [
+      '🔎 Testmenü, NFC-Anzeige und Pi-Warteschlange finden alle ESP-Werte über den Anzeigenamen',
+      '🔄 Testmenü liest live die ganze Liste (ein Abruf alle 2,5 s), klappt auch mit altem Pi-Server',
+      '📋 Liste „Was Home Assistant vom ESP sieht“ zeigt Name und ID',
+      '🖥️ Pi-Server 1.2.2: Warteschlangen-LEDs und Taster auch mit anderen IDs'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -126,12 +126,12 @@ describe('Stillstand', () => {
 });
 
 describe('NFC-Leser über die Weiterleitung', () => {
-  it('lässt nur AMS-Sensoren lesen', async () => {
+  it('lässt Sensoren lesen, aber keine Schlösser', async () => {
     const { isRawAllowed } = await import('../../server/haRawAllow');
     expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_slot_1_tag', undefined)).toBe(true);
     expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_leser_3', undefined)).toBe(true);
     expect(isRawAllowed('GET', '/api/states/sensor.filament_ams_letzter_tag', undefined)).toBe(true);
-    expect(isRawAllowed('GET', '/api/states/sensor.wohnzimmer_temperatur', undefined)).toBe(false);
+    expect(isRawAllowed('GET', '/api/states/sensor.wohnzimmer_temperatur', undefined)).toBe(true); // 1.206: Sensoren nur lesen, egal welche ID
     expect(isRawAllowed('GET', '/api/states/lock.haustuer', undefined)).toBe(false);
   });
 });
@@ -146,5 +146,16 @@ describe('Testmenü über die Weiterleitung', () => {
     expect(isRawAllowed('POST', '/api/services/switch/turn_on', { entity_id: 'switch.3d_drucker_steckdose' })).toBe(false);
     expect(isRawAllowed('GET', '/api/states/binary_sensor.filament_ams_platte_frei', undefined)).toBe(true);
     expect(isRawAllowed('GET', '/api/states/switch.filament_ams_warteschlange_test', undefined)).toBe(true);
+  });
+});
+
+describe('Freigabe 1.206: ESP-Werte ohne „ams“ in der ID', () => {
+  it('lesen und Warteschlange auch mit anderem ID-Anfang', async () => {
+    const { isRawAllowed } = await import('../../server/haRawAllow');
+    expect(isRawAllowed('GET', '/api/states/sensor.esp32dev_leser_1', undefined)).toBe(true);
+    expect(isRawAllowed('POST', '/api/services/number/set_value', { entity_id: 'number.esp32dev_warteschlange', value: 3 })).toBe(true);
+    expect(isRawAllowed('POST', '/api/services/switch/turn_on', { entity_id: 'switch.esp32dev_warteschlange_test' })).toBe(true);
+    expect(isRawAllowed('POST', '/api/services/switch/turn_on', { entity_id: 'switch.steckdose' })).toBe(false);
+    expect(isRawAllowed('GET', '/api/states/lock.haustuer', undefined)).toBe(false);
   });
 });

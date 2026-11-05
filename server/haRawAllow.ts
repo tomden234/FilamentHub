@@ -31,21 +31,22 @@ export function okLedIntensityBody(b: unknown): boolean {
 /** Warteschlangen-LEDs am AMS-ESP: number.*ams*warteschlange, Wert 0-10 */
 export function okQueueBody(b: unknown): boolean {
   if (!isObj(b) || !hasOnly(b, ['entity_id', 'value'])) return false;
-  if (typeof b.entity_id !== 'string' || !/^number\.[a-z0-9_]*ams[a-z0-9_]*_warteschlange(_modus)?$/.test(b.entity_id)) return false;
+  if (typeof b.entity_id !== 'string' || !/^number\.[a-z0-9_]*_warteschlange(_modus)?(_\d+)?$/.test(b.entity_id)) return false;
   return typeof b.value === 'number' && Number.isInteger(b.value) && b.value >= 0 && b.value <= 10;
 }
 
 /** Test-Modus des Tasters: genau switch.*ams*_warteschlange_test */
 export function okQueueTestBody(b: unknown): boolean {
-  return isObj(b) && hasOnly(b, ['entity_id']) && typeof b.entity_id === 'string' && /^switch\.[a-z0-9_]*ams[a-z0-9_]*_warteschlange_test$/.test(b.entity_id);
+  return isObj(b) && hasOnly(b, ['entity_id']) && typeof b.entity_id === 'string' && /^switch\.[a-z0-9_]*_warteschlange_test(_\d+)?$/.test(b.entity_id);
 }
 
 const RAW_ALLOWED: { method: string; path: RegExp; body?: (b: unknown) => boolean }[] = [
   { method: 'GET', path: /^\/api\/states$/ },
   { method: 'GET', path: /^\/api\/states\/automation\.filamenthub_[a-z0-9_]+$/ },
   { method: 'GET', path: /^\/api\/states\/(light|number)\.[a-z0-9_]+$/ },
-  // NFC-Leser im AMS (ESPHome „Filament AMS“): Tag je Slot, Leser-Zustand, letzter Tag. Nur Sensoren mit „ams“ im Namen.
-  { method: 'GET', path: /^\/api\/states\/(sensor|binary_sensor|switch)\.[a-z0-9_]*ams[a-z0-9_]*$/ },
+  // AMS-ESP (ESPHome „Filament AMS“): Tag je Slot, Leser-Zustand, letzter Tag, Feuchte, Testschalter. Nur lesen.
+  // 1.206: auch ohne „ams“ in der ID (Home Assistant behält alte IDs, wenn das Gerät früher anders hieß)
+  { method: 'GET', path: /^\/api\/states\/(sensor|binary_sensor|switch)\.[a-z0-9_]+$/ },
   // Testmenü: Warteschlangen-LEDs (0-10) setzen und den Test-Modus des Tasters schalten
   { method: 'POST', path: /^\/api\/services\/number\/set_value$/, body: okQueueBody },
   { method: 'POST', path: /^\/api\/services\/switch\/(turn_on|turn_off)$/, body: okQueueTestBody },
