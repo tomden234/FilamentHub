@@ -109,11 +109,10 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
 
   return (
     <>
-      {/* Fach rechts, bündig am Inhalt: am PC feste Spalte neben den Kacheln (nichts liegt übereinander, nichts wird abgedunkelt),
-          am Handy ein Fach über dem Inhalt. Gleitet auf und zu, Escape oder X oder der Streifen schließen es. */}
+      {/* Fach rechts: liegt immer über dem Inhalt (am PC und am Handy), der Inhalt verschiebt sich nicht und wird nicht abgedunkelt. Gleitet auf und zu, Escape oder X oder der Streifen schließen es. */}
       <div
-        className="order-last shrink-0 overflow-hidden transition-[width] duration-300 ease-out fixed inset-y-0 right-0 z-[55] lg:static lg:z-auto lg:self-start lg:sticky lg:top-0 lg:h-screen"
-        style={{ width: open ? QUEUE_PANEL_W : 0 }}
+        className="overflow-hidden transition-[width,box-shadow] duration-300 ease-out fixed inset-y-0 right-0 z-[55]"
+        style={{ width: open ? QUEUE_PANEL_W : 0, boxShadow: open ? '-8px 0 24px -8px rgba(0,0,0,0.45)' : 'none' }}
         aria-hidden={!open}
       >
       <aside

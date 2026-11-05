@@ -3157,5 +3157,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.214',
+    label: '1.214 (Warteschlange schiebt nicht)',
+    releaseDate: '05.11.2026',
+    description: 'Die Warteschlange liegt jetzt am PC wie am Handy als Fach über dem Inhalt am rechten Rand. Der Inhalt bleibt genau, wie er ist: nichts rutscht mehr nach links, wenn du sie öffnest.',
+    features: [
+      '📌 Warteschlange öffnen verschiebt den Inhalt nicht mehr',
+      '🪟 Fach liegt über dem Inhalt mit leichtem Schatten (nichts wird abgedunkelt)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
