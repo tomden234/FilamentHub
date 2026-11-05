@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { piPrinterFiles, piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
@@ -26,6 +26,10 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
 
 /** Streifen am rechten Rand wie „DRUCKER“: öffnet/schließt die Warteschlange. Offen sitzt er an der Kante des Fachs. */
 export const QUEUE_PANEL_W = 'min(72vw, 18rem)';
+
+/** Suche ohne Groß/klein, Leerzeichen, _ und - (findet „air up“ in „Air_Up_Fake_Pod“) */
+const normName = (t: string) => t.toLowerCase().replace(/\.gcode\.3mf$|\.3mf$/i, '').replace(/[\s_\-.()]+/g, '');
+const matchName = (name: string, q: string) => !q.trim() || normName(name).includes(normName(q));
 
 const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => {
   const druckerOpen = useDruckerOpen();
@@ -75,6 +79,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
   const listRef = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<PrinterFile[] | null>(null);
   const [filesBusy, setFilesBusy] = useState(false);
+  const [fileQuery, setFileQuery] = useState('');
 
   const count = items ? items.length : 0;
   // Esc und Zurück schließen das Fach (wie die anderen Fenster: immer nur eine Ebene)
@@ -225,6 +230,24 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
             {filesBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             Datei vom Drucker vormerken
           </button>
+          {files && files.length > 0 && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border" style={{ borderColor: 'var(--app-border)' }}>
+              <Search className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--app-text-muted)' }} />
+              <input
+                value={fileQuery}
+                onChange={e => setFileQuery(e.target.value)}
+                placeholder="Name suchen …"
+                className="flex-1 min-w-0 bg-transparent text-[11px] outline-none"
+                style={{ color: 'var(--app-text)' }}
+                aria-label="Dateiname suchen"
+              />
+              {fileQuery && (
+                <button type="button" onClick={() => setFileQuery('')} className="p-0.5 cursor-pointer" aria-label="Suche leeren">
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
           {files && (
             <div className="max-h-40 overflow-y-auto space-y-1">
               {files.length === 0 && (
@@ -232,7 +255,12 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                   Keine .3mf-Dateien gefunden.
                 </p>
               )}
-              {files.map(f => (
+              {files.length > 0 && fileQuery && !files.some(f => matchName(f.name, fileQuery)) && (
+                <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
+                  Nichts gefunden für „{fileQuery}“.
+                </p>
+              )}
+              {files.filter(f => matchName(f.name, fileQuery)).map(f => (
                 <button
                   key={f.path}
                   type="button"

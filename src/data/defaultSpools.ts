@@ -3225,5 +3225,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.219',
+    label: '1.219 (Dateisuche)',
+    releaseDate: '05.11.2026',
+    description: 'Bei „Datei vom Drucker vormerken“ gibt es jetzt ein Suchfeld. Groß/klein, Leerzeichen, Unterstriche und Bindestriche sind egal: „air up“ findet „Air_Up_Fake_Pod“.',
+    features: [
+      '🔍 Namenssuche in der Dateiliste vom Drucker',
+      '✨ Tolerant: „air up“ findet „Air_Up_Fake_Pod“'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
