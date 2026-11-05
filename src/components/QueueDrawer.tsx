@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GripVertical, ListOrdered, Play, Trash2, X } from 'lucide-react';
+import { GripVertical, ListOrdered, Play, RefreshCw, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem } from '../utils/recorderServer';
@@ -96,7 +96,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     if (r) setItems(r);
   };
 
-  const act = async (action: 'remove' | 'start', id?: string) => {
+  const act = async (action: 'remove' | 'start' | 'refresh', id?: string) => {
     setBusy(true);
     setMsg(null);
     const r = await piQueueAction(action, id ? { id } : {});
@@ -123,6 +123,9 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
         <div className="flex items-center gap-2 px-3 py-3 border-b" style={{ borderColor: 'var(--app-border)' }}>
           <ListOrdered className="w-4 h-4 text-emerald-400" />
           <span className="text-sm font-extrabold flex-1">Warteschlange ({items.length})</span>
+          <button disabled={busy} onClick={() => void act('refresh')} className="p-1.5 rounded-lg cursor-pointer disabled:opacity-40" title="Auf dem Drucker nach neuen Dateien suchen" aria-label="Aktualisieren">
+            <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} />
+          </button>
           <button onClick={onClose} className="p-1.5 rounded-lg cursor-pointer" aria-label="Schließen">
             <X className="w-4 h-4" />
           </button>

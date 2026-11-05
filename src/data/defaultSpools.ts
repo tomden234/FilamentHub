@@ -3184,5 +3184,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.216',
+    label: '1.216 (Warteschlange aktualisieren)',
+    releaseDate: '05.11.2026',
+    description: 'Neuer Knopf „Aktualisieren“ oben im Warteschlangen-Fach: Der Pi schaut sofort auf dem Drucker nach neuen Dateien und sagt, was er gefunden hat. Eine gleich benannte Datei, die du neu sendest, wird jetzt auch erkannt. Ein hängender Scan blockiert nicht mehr alles (Pi-Add-on 1.2.8).',
+    features: [
+      '🔄 Aktualisieren-Knopf im Warteschlangen-Fach (sucht sofort neue Dateien, zeigt Ergebnis)',
+      '📄 Neu gesendete Datei mit gleichem Namen kommt wieder in die Warteschlange',
+      '🛟 Hängender Scan wird nach 60 s freigegeben (Zeitlimit 40 s)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

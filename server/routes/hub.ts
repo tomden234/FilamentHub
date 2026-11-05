@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { backupNow, energyWeeks, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
-import { autoAddOn, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
+import { autoScan, autoAddOn, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -88,6 +88,11 @@ router.post('/api/hub/queue/add', async (req, res) => {
   } catch (e: any) {
     res.json({ success: false, error: String(e?.message || e) });
   }
+});
+
+router.post('/api/hub/queue/refresh', async (_req, res) => {
+  const r = await autoScan(true);
+  res.json({ success: r.ok, text: r.text, items: queueList() });
 });
 
 router.post('/api/hub/queue/remove', (req, res) => {

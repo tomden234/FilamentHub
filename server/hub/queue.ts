@@ -14,6 +14,8 @@ export interface QueueItem {
   /** Titelbild der Platte vorhanden (Datei queue-thumbs/<id>.png) */
   thumb?: boolean;
   path: string;
+  /** Pfad|Größe|Zeit der Datei beim Vormerken: erkennt eine neu gesendete Datei mit gleichem Namen */
+  fkey?: string;
   name: string;
   plate: number;
   filaments: JobFilament[];
@@ -120,7 +122,7 @@ export async function printerFiles() {
   return listJobFiles(lan.ip, lan.code);
 }
 
-export async function queueAdd(filePath: string, plate = 1): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
+export async function queueAdd(filePath: string, plate = 1, fkey?: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
   const lan = port?.getLanAccess();
   if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
   if (!/^\/[\w .\-()/äöüÄÖÜß+&,]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
@@ -131,6 +133,7 @@ export async function queueAdd(filePath: string, plate = 1): Promise<QueueItem &
     id,
     thumb: saveThumb(id, r.thumb),
     path: filePath,
+    fkey,
     name: path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''),
     plate: r.plate,
     filaments: r.filaments,
@@ -160,24 +163,41 @@ const baseOf = (n: string) => n.replace(/\.gcode\.3mf$|\.3mf$/i, '').toLowerCase
  * Der erste Durchlauf merkt sich nur, was schon da ist. Eine Datei, die gerade gedruckt wird („Drucken“ statt „Senden“), kommt nicht in die Warteschlange.
  */
 let scanning = false;
+let scanStarted = 0;
 let scanBlockedUntil = 0;
-export async function autoScan(): Promise<void> {
+export interface ScanResult {
+  ok: boolean;
+  text: string;
+  added: number;
+}
+/** force = Knopf „Aktualisieren“ in der App: ignoriert die Pause nach einem Fehler und einen hängenden Scan, und sagt, was passiert ist. */
+export async function autoScan(force = false): Promise<ScanResult> {
   load();
-  if (Date.now() < scanBlockedUntil) return;
+  const quiet = (text: string, ok = true): ScanResult => ({ ok, text, added: 0 });
+  // Hängt ein Scan länger als 60 s (Drucker antwortet nicht mehr), wird er freigegeben
+  if (scanning && Date.now() - scanStarted > (force ? 5_000 : 60_000)) scanning = false;
+  if (!force && Date.now() < scanBlockedUntil) return quiet('Pause nach Fehler');
   const lan = port?.getLanAccess();
   const st = port?.getStatus();
-  if (!autoOn || scanning || !lan || !st?.connected) return;
+  if (!lan || !st?.connected) return quiet('Drucker nicht im LAN-Modus verbunden', false);
+  if (!autoOn && !force) return quiet('Automatik aus');
+  if (scanning) return quiet('Scan läuft gerade, gleich nochmal drücken', false);
   scanning = true;
+  scanStarted = Date.now();
+  let added = 0;
   try {
-    const files = await listJobFiles(lan.ip, lan.code);
+    const files = await Promise.race([
+      listJobFiles(lan.ip, lan.code),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Drucker antwortet nicht (Zeitüberschreitung)')), 40_000))
+    ]);
     if (seen === null) {
       seen = new Set(files.map(fileKey));
       save();
-      return;
+      return quiet(`Erster Abgleich: ${files.length} Dateien auf dem Drucker gemerkt. Neue Dateien kommen jetzt automatisch.`);
     }
     const known = seen;
     const fresh = files.filter(f => !known.has(fileKey(f)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name));
-    if (!fresh.length) return;
+    if (!fresh.length) return quiet(`Nichts Neues (${files.length} Dateien auf dem Drucker geprüft)`);
     const d: any = st.data || {};
     const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(String(d.gcode_state || ''));
     const nowName = `${d.subtask_name || ''} ${d.gcode_file || ''}`.toLowerCase();
@@ -185,9 +205,10 @@ export async function autoScan(): Promise<void> {
     for (const f of fresh.sort((a, b) => a.time - b.time)) {
       known.add(fileKey(f));
       if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
-      if (load().some(x => x.path === f.path)) continue; // schon vorgemerkt
+      if (load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
       try {
-        const it = await queueAdd(f.path, 1);
+        const it = await queueAdd(f.path, 1, fileKey(f));
+        added++;
         await notify('➕ In der Warteschlange', `${it.name} (automatisch aus Bambu Studio)\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}`);
         console.log(`[Warteschlange] automatisch vorgemerkt: ${it.name}`);
       } catch (e) {
@@ -195,9 +216,12 @@ export async function autoScan(): Promise<void> {
       }
     }
     save();
+    return { ok: true, added, text: added ? `${added} neue Datei(en) vorgemerkt` : 'Neue Datei war schon in der Warteschlange oder wird gerade gedruckt' };
   } catch (e) {
+    const msg = (e as Error)?.message || String(e);
     scanBlockedUntil = Date.now() + 90_000; // nach Fehler 90 s Pause, damit der Drucker seine Sitzungen freigeben kann
-    console.warn('[Warteschlange] Scan fehlgeschlagen (nächster Versuch in 90 s):', (e as Error)?.message || e);
+    console.warn('[Warteschlange] Scan fehlgeschlagen (nächster Versuch in 90 s):', msg);
+    return { ok: false, added, text: msg };
   } finally {
     scanning = false;
   }

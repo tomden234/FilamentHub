@@ -425,7 +425,7 @@ export async function piPrinterFiles(): Promise<{ files: PrinterFile[]; error?: 
   }
 }
 
-export async function piQueueAction(action: 'add' | 'remove' | 'move' | 'start', body: Record<string, unknown> = {}): Promise<{ ok: boolean; text?: string; items: PiQueueItem[] }> {
+export async function piQueueAction(action: 'add' | 'remove' | 'move' | 'start' | 'refresh', body: Record<string, unknown> = {}): Promise<{ ok: boolean; text?: string; items: PiQueueItem[] }> {
   try {
     const j = await get(`/api/hub/queue/${action}`, { method: 'POST', body, timeoutMs: 60000 });
     return { ok: Boolean(j?.success), text: j?.text || j?.error, items: Array.isArray(j?.items) ? j.items : [] };
