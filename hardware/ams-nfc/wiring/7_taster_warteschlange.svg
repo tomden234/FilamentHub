@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1060" viewBox="0 0 1400 1060" font-family="DejaVu Sans, Arial, sans-serif">
+  <rect width="1400" height="1060" fill="#ffffff"/>
+  <text x="40" y="52" font-size="30" font-weight="bold" fill="#16324f">Taster „Platte frei“ + Warteschlangen-LEDs (10 Stück) am AMS-ESP32</text>
+  <text x="40" y="86" font-size="17" fill="#555">Revision 1.202 · Farben der Kabel sind nur ein Vorschlag · alles andere am ESP bleibt wie es ist</text>
+
+  <!-- ESP32 -->
+  <rect x="60" y="130" width="270" height="560" rx="14" fill="#16324f" stroke="#0b1b2b" stroke-width="3"/>
+  <text x="195" y="172" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">ESP32</text>
+  <text x="195" y="198" font-size="14" fill="#cfe3f7" text-anchor="middle">38-Pin-Board (D-Aufdrucke)</text>
+  <text x="195" y="672" font-size="13" fill="#cfe3f7" text-anchor="middle">Reihenfolge wie auf dem Board</text>
+  <!-- pins -->
+  <g font-size="17" fill="#fff">
+    <text x="300" y="256" text-anchor="end">D33</text>
+    <text x="300" y="306" text-anchor="end">D25</text>
+    <text x="300" y="356" text-anchor="end" font-weight="bold" fill="#ffd34d">D26 ← Taster</text>
+    <text x="300" y="406" text-anchor="end" fill="#9fb3c8">D27 (Status-Streifen)</text>
+    <text x="300" y="456" text-anchor="end" font-weight="bold" fill="#7ee08a">D14 ← 10 LEDs</text>
+    <text x="300" y="506" text-anchor="end">D12</text>
+    <text x="300" y="556" text-anchor="end" font-weight="bold" fill="#ffffff">GND</text>
+    <text x="300" y="606" text-anchor="end">D13</text>
+  </g>
+  <g fill="#e8e8e8" stroke="#444" stroke-width="2">
+    <circle cx="330" cy="250" r="7"/><circle cx="330" cy="300" r="7"/><circle cx="330" cy="350" r="9" fill="#ffd34d"/>
+    <circle cx="330" cy="400" r="7"/><circle cx="330" cy="450" r="9" fill="#2fbf4a"/><circle cx="330" cy="500" r="7"/>
+    <circle cx="330" cy="550" r="9" fill="#222"/><circle cx="330" cy="600" r="7"/>
+  </g>
+
+  <!-- Wires -->
+  <!-- D26 -> Taster NO (gelb) -->
+  <polyline points="339,350 860,350" fill="none" stroke="#e6b800" stroke-width="7"/>
+  <!-- GND Sammelleitung (schwarz) -->
+  <polyline points="339,550 520,550" fill="none" stroke="#222" stroke-width="7"/>
+  <polyline points="520,280 520,880" fill="none" stroke="#222" stroke-width="7"/>
+  <polyline points="520,280 860,280" fill="none" stroke="#222" stroke-width="7"/>
+  <polyline points="520,760 860,760" fill="none" stroke="#222" stroke-width="7"/>
+  <circle cx="520" cy="550" r="9" fill="#222"/><circle cx="520" cy="280" r="9" fill="#222"/><circle cx="520" cy="760" r="9" fill="#222"/>
+  <!-- D14 -> Widerstand -> DIN (grün) -->
+  <polyline points="339,450 620,450 620,710 690,710" fill="none" stroke="#1f9e3a" stroke-width="7"/>
+  <rect x="690" y="696" width="80" height="28" rx="6" fill="#e9d8b4" stroke="#7a5a1e" stroke-width="2"/>
+  <text x="730" y="716" font-size="15" text-anchor="middle" fill="#3b2a0a">330 Ω</text>
+  <text x="730" y="682" font-size="13" text-anchor="middle" fill="#666">(optional)</text>
+  <polyline points="770,710 860,710" fill="none" stroke="#1f9e3a" stroke-width="7"/>
+  <!-- 5V (lila) -->
+  <polyline points="436,840 470,840 470,795 800,795 800,660 860,660" fill="none" stroke="#8b3fd1" stroke-width="7"/>
+
+  <!-- Taster -->
+  <circle cx="1010" cy="315" r="95" fill="#d9dde2" stroke="#7d848c" stroke-width="5"/>
+  <circle cx="1010" cy="315" r="62" fill="#f4f6f8" stroke="#22252a" stroke-width="4"/>
+  <path d="M 990 300 A 28 28 0 1 0 1030 300" fill="none" stroke="#22252a" stroke-width="7" stroke-linecap="round"/>
+  <line x1="1010" y1="282" x2="1010" y2="318" stroke="#22252a" stroke-width="7" stroke-linecap="round"/>
+  <text x="1010" y="196" font-size="22" font-weight="bold" fill="#16324f" text-anchor="middle">Taster 19 mm</text>
+  <g font-size="17" font-weight="bold">
+    <rect x="860" y="266" width="58" height="28" rx="5" fill="#222"/><text x="889" y="286" fill="#fff" text-anchor="middle">C</text>
+    <rect x="860" y="336" width="58" height="28" rx="5" fill="#e6b800"/><text x="889" y="356" fill="#222" text-anchor="middle">NO</text>
+  </g>
+  <g font-size="15" fill="#666">
+    <text x="1120" y="270">NC: frei lassen</text>
+    <text x="1120" y="310">LED + / LED −: frei lassen</text>
+    <text x="1120" y="332">(Leuchtring ist 12 V, der ESP</text>
+    <text x="1120" y="354">hat nur 3,3 V / 5 V)</text>
+    <text x="1120" y="394" fill="#16324f" font-weight="bold">Drücken = „Platte frei“</text>
+  </g>
+
+  <!-- LED-Streifen -->
+  <text x="1100" y="600" font-size="22" font-weight="bold" fill="#16324f" text-anchor="middle">Streifen: 10 LEDs (WS2812B)</text>
+  <rect x="860" y="630" width="500" height="150" rx="10" fill="#f2f2f2" stroke="#999" stroke-width="2"/>
+  <g font-size="15" font-weight="bold">
+    <rect x="860" y="646" width="64" height="28" rx="5" fill="#8b3fd1"/><text x="892" y="666" fill="#fff" text-anchor="middle">5V</text>
+    <rect x="860" y="696" width="64" height="28" rx="5" fill="#1f9e3a"/><text x="892" y="716" fill="#fff" text-anchor="middle">DIN</text>
+    <rect x="860" y="746" width="64" height="28" rx="5" fill="#222"/><text x="892" y="766" fill="#fff" text-anchor="middle">GND</text>
+  </g>
+  <g>
+    <rect x="945" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="985" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="1025" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="1065" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="1105" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="1145" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="1185" y="690" width="32" height="32" rx="4" fill="#2f6bff"/>
+    <rect x="1225" y="690" width="32" height="32" rx="4" fill="#444"/>
+    <rect x="1265" y="690" width="32" height="32" rx="4" fill="#444"/>
+    <rect x="1305" y="690" width="32" height="32" rx="4" fill="#444"/>
+  </g>
+  <text x="1140" y="660" font-size="20" fill="#16324f" text-anchor="middle">▶ ▶ ▶ Pfeile zeigen vom ESP weg ▶ ▶ ▶</text>
+  <text x="1140" y="752" font-size="15" fill="#555" text-anchor="middle">Beispiel: 7 Drucke warten = 7 LEDs blau</text>
+  <text x="1140" y="772" font-size="15" fill="#555" text-anchor="middle">grün = startet · rot blinkt = nicht gestartet</text>
+
+  <!-- Netzteil -->
+  <rect x="240" y="800" width="180" height="110" rx="10" fill="#fff4d6" stroke="#b08a2e" stroke-width="3"/>
+  <text x="330" y="836" font-size="18" font-weight="bold" fill="#5a4410" text-anchor="middle">5-V-Netzteil</text>
+  <text x="320" y="858" font-size="13" fill="#5a4410" text-anchor="middle">(vom Status-Streifen)</text>
+  <g font-size="16" font-weight="bold">
+    <rect x="404" y="826" width="32" height="28" rx="5" fill="#8b3fd1"/><text x="420" y="846" fill="#fff" text-anchor="middle">+</text>
+    <rect x="404" y="866" width="32" height="28" rx="5" fill="#222"/><text x="420" y="886" fill="#fff" text-anchor="middle">−</text>
+  </g>
+  <polyline points="436,880 520,880" fill="none" stroke="#222" stroke-width="7"/>
+  <circle cx="520" cy="880" r="9" fill="#222"/>
+
+  <!-- Hinweise -->
+  <rect x="560" y="820" width="800" height="210" rx="12" fill="#eef5fb" stroke="#9cc0e0" stroke-width="2"/>
+  <g font-size="16" fill="#16324f">
+    <text x="580" y="852" font-weight="bold">So wird es angeschlossen</text>
+    <text x="580" y="880">1. Taster: C → GND (schwarz), NO → D26 (gelb). NC und Leuchtring frei lassen.</text>
+    <text x="580" y="906">2. Streifen: DIN → D14 (grün), am Anfang des Streifens (Pfeil zeigt weg vom ESP).</text>
+    <text x="580" y="932">3. Streifen 5V und GND ans 5-V-Netzteil (lila / schwarz), nie an 3V3 des ESP.</text>
+    <text x="580" y="958">4. Alle GND verbinden: Netzteil −, Streifen GND, ESP GND, Taster C.</text>
+    <text x="580" y="984">5. 330 Ω in DIN ist optional (schützt die erste LED). Ohne geht es meist auch.</text>
+    <text x="580" y="1010">6. Testen: App → Menü → Testmenü → „4. Taster und Warteschlangen-LEDs“.</text>
+  </g>
+</svg>

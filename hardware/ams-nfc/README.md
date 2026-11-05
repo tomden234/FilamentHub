@@ -45,6 +45,21 @@ In Home Assistant (Gerät **Filament AMS**) und in der App (Tipp auf „NFC-Lese
 - **Strom:** 5 Leser + ESP an einem USB-Anschluss am PC reicht manchmal nicht. Besser ein 5-V-Netzteil mit mind. 1 A am ESP.
 - **Protokoll:** ESPHome → Filament AMS → Protokoll. Jeder Tag erscheint als `Found new tag '04-…'`.
 
+## Taster „Platte frei“ und Warteschlangen-LEDs (ab Revision 1.199)
+
+![Schaltplan Taster und 10 LEDs](wiring/7_taster_warteschlange.png)
+
+| Teil | Anschluss | ESP32 |
+|---|---|---|
+| Taster C (Common) | GND | GND (neben D12) |
+| Taster NO | Signal | D26 |
+| Taster NC, Leuchtring (12 V) | frei lassen | – |
+| Streifen 10 LEDs DIN | Daten (optional über 330 Ω) | D14 |
+| Streifen 5V / GND | 5-V-Netzteil (das vom Status-Streifen) | GND mit ESP verbinden |
+
+- **NFC-Tags:** NTAG215, rund 25 mm (7-Byte-Nummer) passen. Mittig 1 cm vor die Antenne halten.
+- Testen: App → Menü → Testmenü.
+
 ## Feuchte-Sensor (optional, SHT31-D)
 
 Ein kleiner I2C-Sensor misst Luftfeuchte und Temperatur, z. B. in der Filament-Lagerbox. Die App meldet sich, wenn die Feuchte über der Grenze liegt (Mitteilungen → Einstellungen → Luftfeuchte, Standard 25 %, AMS automatisch trocknen ab 30 %).

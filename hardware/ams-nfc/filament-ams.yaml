@@ -1,4 +1,4 @@
-# Erstellt: 05.11.2026 17:45 Uhr (Revision 1.202)
+# Erstellt: 05.11.2026 18:40 Uhr (Revision 1.202)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -20,8 +20,9 @@
 #   (kein Widerstand nötig, der ESP hat einen eingebauten) → binary_sensor.filament_ams_platte_frei.
 #   Drücken = Platte ist leer, der Pi startet den nächsten Druck der Warteschlange.
 #   Rastet der Taster ein (bleibt unten): button_latching: "true" setzen.
-#   Leuchtring (nur bei 3-6-V- oder 5-V-Version, NICHT bei 12/24 V): + → GPIO2, − → GND.
-#   Leuchtet, wenn ein Druck wartet; blinkt schnell = nicht gestartet. (GPIO2 ist auch die blaue LED auf dem ESP.)
+#   Leuchtring: nur die 3-6-V- oder 5-V-Version an + → GPIO2, − → GND. Die 12-V-Version (dein Taster) FREI LASSEN.
+#   GPIO2 ist auch die blaue LED auf dem ESP: sie leuchtet, wenn ein Druck wartet, und blinkt schnell = nicht gestartet.
+#   Schaltplan: hardware/ams-nfc/wiring/7_taster_warteschlange.png
 #   Streifen „Warteschlange“ (10 LEDs, Rest vom Status-Streifen): DIN → GPIO14, GND → GND, 5V → gleiches 5-V-Netzteil
 #   Eine blaue LED je wartendem Druck. Grün = startet. Rot blinkend = nicht gestartet (Drucker druckt noch, Material fehlt, Drucker aus).
 #
