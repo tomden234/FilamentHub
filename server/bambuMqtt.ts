@@ -131,7 +131,8 @@ attachPrinter({
   command: cmd => bambuService.sendCommand(cmd),
   resumeAfterError: code => bambuService.resumeAfterError(code),
   delayedResume: () => bambuService.getDelayedResume(),
-  startProject: p => bambuService.startProjectFile(p)
+  startProject: p => bambuService.startProjectFile(p),
+  cleanError: code => bambuService.cleanPrintError(code)
 });
 if (hubEnabled()) {
   setInterval(() => void hubTick(), 30_000).unref();

@@ -262,8 +262,8 @@ export function attachPrinter(p: PrinterPort): void {
       onAction(ev);
     });
     setTimeout(() => refreshLeds(), 20_000);
-    // Neue Dateien aus Bambu Studio alle 10 s suchen (eigener Takt; autoScan lässt sich nicht doppelt starten)
-    setInterval(() => void autoScan(), 10_000).unref();
+    // Neue Dateien aus Bambu Studio alle 3 s suchen (eigener Takt; autoScan lässt sich nicht doppelt starten)
+    setInterval(() => void autoScan(), 3_000).unref();
   }
 }
 

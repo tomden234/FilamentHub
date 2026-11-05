@@ -25,10 +25,42 @@ export interface QueueItem {
 export interface QueuePort {
   getStatus: () => { connected: boolean; receivingData?: boolean; data?: any };
   getLanAccess: () => { ip: string; code: string } | null;
-  startProject: (p: { path: string; plate: number; name: string; amsMapping: number[]; amsMapping2: { ams_id: number; slot_id: number }[]; useAms: boolean }) => Promise<unknown>;
+  startProject: (p: { path: string; plate: number; name: string; amsMapping: number[]; amsMapping2: { ams_id: number; slot_id: number }[]; useAms: boolean; url?: string }) => Promise<unknown>;
+  cleanError?: (code: number) => Promise<unknown>;
 }
 
+// Start-URL: Druckermodelle erwarten verschiedene Formen. Der Drucker meldet bei falscher Form 0500-4002 („Nicht unterstützter Dateipfad oder Name“).
+// Wir probieren der Reihe nach und merken uns die Form, die geklappt hat.
+const BAD_PATH = 0x05004002;
+const urlVariants = (p: string): { key: string; url: string }[] => {
+  const abs = p.startsWith('/') ? p : `/${p}`;
+  const noSd = abs.replace(/^\/sdcard(?=\/)/, '');
+  return [
+    { key: 'ftp', url: `ftp://${abs}` },
+    { key: 'file-sdcard', url: `file:///sdcard${noSd}` },
+    { key: 'ftp-nosd', url: `ftp://${noSd}` },
+    { key: 'file-mnt-sdcard', url: `file:///mnt/sdcard${noSd}` },
+    { key: 'file-abs', url: `file://${abs}` }
+  ];
+};
+let urlKey = '';
+
 const file = () => path.join(dataDir, 'hub-queue.json');
+const urlKeyFile = () => path.join(dataDir, 'hub-start-url.txt');
+function loadUrlKey(): string {
+  try {
+    return fs.readFileSync(urlKeyFile(), 'utf-8').trim();
+  } catch {
+    return '';
+  }
+}
+function saveUrlKey(k: string): void {
+  try {
+    fs.writeFileSync(urlKeyFile(), k, 'utf-8');
+  } catch {
+    /* egal */
+  }
+}
 const thumbDir = () => path.join(dataDir, 'queue-thumbs');
 export const thumbPath = (id: string): string | null => {
   if (!/^[0-9a-f]{12}$/.test(id)) return null;
@@ -311,7 +343,43 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
         console.warn('[Warteschlange] Umbenennen auf dem Drucker fehlgeschlagen:', (e as Error)?.message || e);
       }
     }
-    await port!.startProject({ path: it.path, plate: it.plate, name: it.name, amsMapping: m!.amsMapping, amsMapping2: m!.amsMapping2, useAms: true });
+    const variants = urlVariants(it.path);
+    if (!urlKey) urlKey = loadUrlKey();
+    variants.sort((a, b) => (a.key === urlKey ? -1 : b.key === urlKey ? 1 : 0));
+    let started = false;
+    let lastErr = '';
+    for (const v of variants) {
+      await port!.startProject({ path: it.path, plate: it.plate, name: it.name, amsMapping: m!.amsMapping, amsMapping2: m!.amsMapping2, useAms: true, url: v.url });
+      // Bis 12 s warten: lehnt der Drucker ab (0500-4002), nächste Form probieren
+      let rejected = false;
+      for (let t = 0; t < 24; t++) {
+        await new Promise(r => setTimeout(r, 500));
+        const d: any = port!.getStatus().data || {};
+        if (Number(d.print_error) === BAD_PATH) {
+          rejected = true;
+          break;
+        }
+        if (['RUNNING'].includes(String(d.gcode_state)) || (t >= 16 && String(d.gcode_state) === 'PREPARE')) break;
+      }
+      if (!rejected) {
+        started = true;
+        if (urlKey !== v.key) {
+          urlKey = v.key;
+          saveUrlKey(v.key);
+          console.log(`[Warteschlange] Start-Pfad „${v.key}“ (${v.url}) funktioniert`);
+        }
+        break;
+      }
+      lastErr = `Drucker lehnt Pfad ab (${v.url})`;
+      console.warn(`[Warteschlange] ${lastErr}, probiere nächste Form`);
+      await port!.cleanError?.(BAD_PATH);
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    if (!started) {
+      await showLeds(1);
+      await notify('⛔ Nicht gestartet', `${it.name}: Drucker lehnt alle Pfad-Formen ab. Bitte Log schicken.`);
+      return { ok: false, text: lastErr || 'Start abgelehnt' };
+    }
     items = list.slice(1);
     dropThumb(it.id);
     save();

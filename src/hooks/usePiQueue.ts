@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { piQueue, type PiQueueItem } from '../utils/recorderServer';
 
-/** Warteschlange vom Pi: alle 2 s neu laden (nur wenn die App sichtbar ist). null = kein Pi mit Hub. */
+/** Warteschlange vom Pi: jede Sekunde neu laden (nur wenn die App sichtbar ist). null = kein Pi mit Hub. */
 export function usePiQueue(active = true): { items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void; reload: () => Promise<void> } {
   const [items, setItems] = useState<PiQueueItem[] | null>(null);
   const reload = useCallback(async () => {
@@ -13,7 +13,7 @@ export function usePiQueue(active = true): { items: PiQueueItem[] | null; setIte
     void reload();
     const iv = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden) void reload();
-    }, 2000);
+    }, 1000);
     const onVis = () => !document.hidden && void reload();
     document.addEventListener('visibilitychange', onVis);
     return () => {

@@ -3199,5 +3199,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.217',
+    label: '1.217 (Start-Fix & schneller)',
+    releaseDate: '05.11.2026',
+    description: 'Der Start aus der Warteschlange probiert jetzt mehrere Pfad-Formen, bis der Drucker die Datei annimmt (Fehler 0500-4002 wird erkannt und gelöscht). Die Warteschlange ist schneller: Der Pi sucht alle 3 s nach neuen Dateien, die App lädt jede Sekunde neu (Pi-Add-on 1.3.0).',
+    features: [
+      '▶️ Start probiert mehrere Pfad-Formen und merkt sich die richtige',
+      '⚡ Neue Dateien nach ca. 3 s in der Warteschlange, App jede Sekunde aktuell'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

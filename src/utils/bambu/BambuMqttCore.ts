@@ -1079,6 +1079,17 @@ export abstract class BambuMqttCore {
     });
   }
 
+  /** Nur den Druckfehler löschen (ohne Fortsetzen), z. B. nach abgelehntem Start */
+  public async cleanPrintError(code: number): Promise<void> {
+    if (!this.client || !this.connected || !this.serialNumber) return;
+    this.client.publish(
+      `device/${this.serialNumber}/request`,
+      JSON.stringify({ print: { sequence_id: String(Date.now()), command: 'clean_print_error', subtask_id: String((this.printData as any).subtask_id || '0'), print_error: code } })
+    );
+    this.printData.print_error = 0;
+    this.schedulePushall(800);
+  }
+
   /** Druckfehler quittieren (z. B. „Objekt auf dem Druckbett erkannt“) und fortsetzen – wie „Weiter“ am Drucker oder in Bambu Handy */
   public async resumeAfterError(code: number): Promise<{ success: boolean; message: string }> {
     if (!this.client || !this.connected || !this.serialNumber) throw new Error('Drucker ist nicht verbunden.');
@@ -1104,6 +1115,8 @@ export abstract class BambuMqttCore {
     amsMapping: number[];
     amsMapping2: { ams_id: number; slot_id: number }[];
     useAms: boolean;
+    /** Fertige URL für den Drucker (z. B. ftp:///datei.3mf). Ohne: file:///sdcard/… */
+    url?: string;
   }): Promise<{ success: boolean; message: string }> {
     if (!this.client || !this.connected || !this.serialNumber) throw new Error('Drucker ist nicht verbunden.');
     const sdPath = p.path.startsWith('/sdcard') ? p.path : `/sdcard${p.path.startsWith('/') ? '' : '/'}${p.path}`;
@@ -1112,7 +1125,7 @@ export abstract class BambuMqttCore {
         sequence_id: String(Date.now()),
         command: 'project_file',
         param: `Metadata/plate_${Math.max(1, Math.round(p.plate) || 1)}.gcode`,
-        url: `file://${sdPath}`,
+        url: p.url || `file://${sdPath}`,
         file: baseName(p.path),
         subtask_name: p.name,
         md5: '',
