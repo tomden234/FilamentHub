@@ -3052,5 +3052,18 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.207',
+    label: '1.207 (Warteschlange sofort)',
+    releaseDate: '05.11.2026',
+    description: 'Nach einem Tasterdruck verschwindet der Druck sofort aus der Warteschlangen-Liste in der App (Liste wird alle 2 Sekunden aktualisiert, vorher alle 20 Sekunden).',
+    features: [
+      '⚡ Warteschlangen-Liste in der App aktualisiert alle 2 Sekunden (vorher 20), im versteckten Tab nicht',
+      '👁️ Beim Zurückkehren in die App wird sofort neu geladen'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

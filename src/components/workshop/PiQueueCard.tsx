@@ -15,8 +15,16 @@ export const PiQueueCard: React.FC = () => {
   const reload = async () => setItems(await piQueue());
   useEffect(() => {
     void reload();
-    const iv = setInterval(() => void reload(), 20_000);
-    return () => clearInterval(iv);
+    // 1.207: alle 2 s (vorher 20 s), damit ein Tasterdruck sofort in der Liste ankommt. Im versteckten Tab nicht.
+    const iv = setInterval(() => {
+      if (typeof document === 'undefined' || !document.hidden) void reload();
+    }, 2000);
+    const onVis = () => !document.hidden && void reload();
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
 
   if (items === null) return null; // kein Pi mit Hub
