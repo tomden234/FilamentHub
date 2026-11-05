@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GripVertical, ListOrdered, Play, Trash2, X } from 'lucide-react';
-import { setQueueDock, useQueueDock } from '../utils/queueDock';
+import { setQueueDock, toggleQueueDock, useQueueDock } from '../utils/queueDock';
 import { piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
@@ -23,6 +23,42 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
   );
 };
 
+/** Streifen am rechten Rand wie „DRUCKER“: öffnet/schließt die Warteschlange. Offen sitzt er an der Kante des Fachs. */
+const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => (
+  <div
+    className="fixed z-40 select-none transition-all duration-300"
+    style={{ right: open ? 'min(88vw, 22rem)' : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
+  >
+    <button
+      onClick={toggleQueueDock}
+      title={open ? 'Warteschlange schließen' : 'Warteschlange öffnen'}
+      aria-label={open ? 'Warteschlange schließen' : `Warteschlange öffnen (${count})`}
+      className="group relative flex flex-col items-center justify-between w-7 sm:w-8 min-h-[64px] sm:min-h-[168px] py-2 sm:py-3 px-0.5 sm:px-1.5 rounded-l-2xl border-l-2 border-t border-b shadow-2xl backdrop-blur-xl cursor-pointer transition-all opacity-80 hover:opacity-100 sm:opacity-100 hover:scale-105 active:scale-95"
+      style={{
+        backgroundColor: 'var(--app-card)',
+        borderColor: count > 0 ? 'var(--app-accent)' : 'var(--app-border)',
+        color: 'var(--app-text)',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)'
+      }}
+    >
+      <div className="relative flex items-center justify-center">
+        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: count > 0 ? 'var(--app-accent)' : 'var(--app-text-muted)' }} />
+      </div>
+      <div className="flex flex-col items-center justify-center gap-1 my-1">
+        <span className="hidden sm:block text-[10px] font-black tracking-widest uppercase [writing-mode:vertical-lr] rotate-180" style={{ color: 'var(--app-text)' }}>
+          WARTESCHLANGE
+        </span>
+        <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded border" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', color: 'var(--app-accent-text)' }}>
+          {count}
+        </span>
+      </div>
+      <div style={{ color: 'var(--app-text-muted)' }}>
+        <ListOrdered className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      </div>
+    </button>
+  </div>
+);
+
 export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void }> = ({ items, setItems }) => {
   const open = useQueueDock();
   const onClose = () => setQueueDock(false);
@@ -32,7 +68,9 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  if (!open || items === null) return null;
+  if (items === null) return null;
+  const count = items.length;
+  if (!open) return <QueueEdgeTab count={count} open={false} />;
 
   const drop = async (targetId: string) => {
     const from = dragId;
@@ -64,9 +102,9 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
 
   return (
     <>
-      {/* Angedockt: am PC als feste Spalte rechts (schiebt den Inhalt zur Seite), am Handy unten. Kein Abdunkeln, schließt nie von selbst. */}
+      {/* Fach rechts: schiebt nichts weg, kein Abdunkeln, schließt nur mit dem Streifen oder dem X (bleibt auch beim Arbeiten woanders offen) */}
       <aside
-        className="order-last fixed z-30 bottom-0 inset-x-0 h-[42vh] border-t flex flex-col lg:static lg:inset-auto lg:z-auto lg:h-screen lg:sticky lg:top-0 lg:w-[22rem] lg:shrink-0 lg:border-t-0 lg:border-l"
+        className="fixed z-30 top-0 right-0 h-full w-[min(88vw,22rem)] flex flex-col border-l shadow-2xl"
         style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
         aria-label="Warteschlange"
       >
@@ -152,6 +190,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
           </p>
         </div>
       </aside>
+      <QueueEdgeTab count={count} open />
     </>
   );
 };

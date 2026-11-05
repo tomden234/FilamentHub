@@ -3113,5 +3113,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.211',
+    label: '1.211 (Warteschlangen-Streifen)',
+    releaseDate: '05.11.2026',
+    description: 'Eigener Streifen „WARTESCHLANGE“ am rechten Rand, direkt über dem „DRUCKER“-Streifen und gleich gestaltet. Ein Klick öffnet das Fach, es kann dauerhaft offen bleiben (merkt sich den Zustand), schiebt nichts zur Seite, dunkelt nichts ab und sieht aus wie die anderen Fächer. Ein Klick auf den Streifen oder das X schließt es.',
+    features: [
+      '📑 Zweiter Streifen „WARTESCHLANGE“ mit Zähler über dem „DRUCKER“-Streifen',
+      '📌 Fach bleibt offen, schiebt nichts weg, kein Abdunkeln, schließt nur auf Klick',
+      '🎨 Gleiches Aussehen wie das Drucker-Fach',
+      '↔️ Der Drucker-Streifen rückt neben das offene Fach'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

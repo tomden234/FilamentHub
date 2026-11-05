@@ -24,8 +24,7 @@ import { LogCategory, SystemLogEntry, Spool } from '../types/filament';
 import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logService';
 import { safeStorage } from '../utils/safeStorage';
 import { useBackLayer } from '../utils/backNav';
-import { getHubInfo } from '../utils/serverDeducts';
-import { setQueueDock, useQueueDock } from '../utils/queueDock';
+import { useQueueDock } from '../utils/queueDock';
 
 interface RightLogDrawerProps {
   onOpenPrinterSettings?: () => void;
@@ -42,9 +41,9 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   logsOnly = false
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  // Angedocktes Warteschlangen-Fach: der Streifen rückt daneben (am PC) bzw. nach oben (Handy), statt darüber zu liegen
-  const queueDocked = useQueueDock() && Boolean(getHubInfo()?.enabled);
-  const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>(getHubInfo()?.enabled ? 'prints' : 'queue');
+  // Warteschlangen-Fach offen: der Drucker-Streifen rückt neben dessen Kante, statt darüber zu liegen
+  const queuePanelOpen = useQueueDock();
+  const [panelTabState, setPanelTab] = useState<'queue' | 'prints' | 'logs'>('queue');
   const panelTab = logsOnly ? 'logs' : panelTabState;
   useBackLayer(isOpen, () => setIsOpen(false), 'log-drawer');
   const [logs, setLogs] = useState<SystemLogEntry[]>(() => getSystemLogs());
@@ -186,10 +185,9 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
       {/* 1. DER ZENTIMETERLANGE STREIFEN AM RECHTEN BILDSCHIRMRAND */}
       <div
         className={`fixed top-1/2 -translate-y-1/2 z-40 transition-all duration-300 select-none ${
-          queueDocked ? 'right-0 lg:right-[22rem] top-[28%] lg:top-1/2' : 'right-0'
-        } ${
           isOpen ? 'translate-x-full pointer-events-none opacity-0' : 'translate-x-0'
         }`}
+        style={{ right: queuePanelOpen ? 'min(88vw, 22rem)' : 0 }}
       >
         <button
           onClick={handleToggle}
@@ -355,15 +353,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
             return (
               <button
                 key={t.id}
-                onClick={() => {
-                  // Mit Pi-Hub: „Warteschlange“ öffnet das angedockte Fach (bleibt offen, nichts wird abgedunkelt)
-                  if (t.id === 'queue' && getHubInfo()?.enabled) {
-                    setQueueDock(true);
-                    setIsOpen(false);
-                    return;
-                  }
-                  setPanelTab(t.id);
-                }}
+                onClick={() => setPanelTab(t.id)}
                 className="px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
                 style={{
                   backgroundColor: active ? 'var(--app-accent)' : 'var(--app-card-sub)',
