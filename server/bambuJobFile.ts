@@ -141,7 +141,6 @@ async function ftp(ip: string, code: string): Promise<Client> {
     }
   }
   throw new Error(`FTP zum Drucker ${ip} nicht möglich → ${errs.join(' | ')}`);
-} nicht möglich (alle Arten probiert: ${FTP_MODES.map(m => m.label).join(', ')}): ${msg}`);
 }
 
 /** Alle .3mf-Dateien auf dem Drucker (neueste zuerst), für die Warteschlange */
