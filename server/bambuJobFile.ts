@@ -68,16 +68,9 @@ export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number
 }
 
 export async function fetchJobWeights(opts: { ip: string; code: string; jobName: string; plate?: number }): Promise<JobWeights | { error: string }> {
-  const client = new Client(20000);
+  let client: Client | null = null;
   try {
-    await client.access({
-      host: opts.ip,
-      port: 990,
-      user: 'bblp',
-      password: opts.code,
-      secure: 'implicit',
-      secureOptions: { rejectUnauthorized: false } // Drucker nutzt ein selbstsigniertes Zertifikat
-    });
+    client = await ftp(opts.ip, opts.code);
     const want = norm(opts.jobName);
     if (!want) return { error: 'Kein Auftragsname.' };
 
@@ -117,14 +110,38 @@ export async function fetchJobWeights(opts: { ip: string; code: string; jobName:
   } catch (e: any) {
     return { error: `FTP zum Drucker fehlgeschlagen: ${e?.message || e}` };
   } finally {
-    client.close();
+    client?.close();
   }
 }
 
+// Verbindungsarten zum Drucker. Normal: Port 990 mit TLS von Anfang an. Als Ausweich: Port 990 / 21 mit „AUTH TLS“ und zuletzt ohne Verschlüsselung.
+const FTP_MODES: { port: number; secure: boolean | 'implicit'; label: string }[] = [
+  { port: 990, secure: 'implicit', label: '990 implizit' },
+  { port: 990, secure: true, label: '990 explizit' },
+  { port: 21, secure: true, label: '21 explizit' },
+  { port: 21, secure: false, label: '21 unverschlüsselt' }
+];
+let ftpModeIdx = 0;
+
 async function ftp(ip: string, code: string): Promise<Client> {
-  const client = new Client(20000);
-  await client.access({ host: ip, port: 990, user: 'bblp', password: code, secure: 'implicit', secureOptions: { rejectUnauthorized: false } });
-  return client;
+  let lastErr: unknown = null;
+  // Zuletzt funktionierende Art zuerst, dann der Rest
+  const order = [ftpModeIdx, ...FTP_MODES.map((_, i) => i).filter(i => i !== ftpModeIdx)];
+  for (const i of order) {
+    const m = FTP_MODES[i];
+    const client = new Client(12000);
+    try {
+      await client.access({ host: ip, port: m.port, user: 'bblp', password: code, secure: m.secure, secureOptions: { rejectUnauthorized: false } });
+      if (i !== ftpModeIdx) console.log(`[FTP] Drucker ${ip}: Verbindungsart „${m.label}“ funktioniert`);
+      ftpModeIdx = i;
+      return client;
+    } catch (e) {
+      client.close();
+      lastErr = e;
+    }
+  }
+  const msg = (lastErr as Error)?.message || String(lastErr);
+  throw new Error(`FTP zum Drucker ${ip} nicht möglich (alle Arten probiert: ${FTP_MODES.map(m => m.label).join(', ')}): ${msg}`);
 }
 
 /** Alle .3mf-Dateien auf dem Drucker (neueste zuerst), für die Warteschlange */
