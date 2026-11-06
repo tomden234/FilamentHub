@@ -32,6 +32,11 @@ jobs:
 
       - run: npm ci
 
+      # Ohne steigende Version erkennt das Live-Update nie etwas Neues (live-version.json blieb dauerhaft auf 2.1.0).
+      # Jetzt zählt jeder Build hoch, genau wie bei der Windows-App. Muss VOR dem Web-Build stehen, weil die Version in die App eingebaut wird.
+      - name: Programm-Version hochzählen
+        run: npm pkg set version=2.1.${{ github.run_number }}
+
       - name: Web-App bauen (App-Modus, Wurzel-Pfad)
         run: npm run build
         env:
