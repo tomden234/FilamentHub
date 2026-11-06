@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { RefreshCw, Lock, CheckCircle2 } from 'lucide-react';
-import { getSyncPass, setSyncPass, syncDevices, syncDetail, lastSyncAt, type SyncResult } from '../../utils/deviceSync';
+import { RefreshCw, Lock, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { getSyncPass, setSyncPass, resetSyncPass, syncDevices, syncDetail, lastSyncAt, type SyncResult } from '../../utils/deviceSync';
 
 const MESSAGES: Record<SyncResult, { text: string; ok: boolean }> = {
   pushed: { text: 'Dieses Gerät ist jetzt die Quelle: Drucker-Zugang und Einstellungen sind verschlüsselt in der Cloud.', ok: true },
@@ -15,6 +15,7 @@ const MESSAGES: Record<SyncResult, { text: string; ok: boolean }> = {
 export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl }) => {
   const [pass, setPass] = useState(getSyncPass());
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [at, setAt] = useState(lastSyncAt());
   const [detail, setDetail] = useState('');
@@ -33,6 +34,18 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
     setAt(lastSyncAt());
     setBusy(false);
     window.dispatchEvent(new CustomEvent('filamenthub:sync-now'));
+  };
+
+  // Passwort vergessen: neues festlegen, dieses Gerät wird die Quelle
+  const reset = async () => {
+    if (!confirm('Neues Sync-Passwort festlegen?\n\nDieses Gerät verschlüsselt seine Einstellungen neu. Auf allen anderen Geräten musst du danach das neue Passwort eintragen. Das alte Passwort gilt nicht mehr.')) return;
+    setBusy(true);
+    const r = await resetSyncPass(cloudDbUrl, pass);
+    setResult(r);
+    setDetail(r === 'error' ? syncDetail() : '');
+    setCert(null);
+    setAt(lastSyncAt());
+    setBusy(false);
   };
 
   return (
@@ -57,13 +70,16 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
         <div className="relative flex-1">
           <Lock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 opacity-60" />
           <input
-            type="password"
+            type={show ? 'text' : 'password'}
             value={pass}
             onChange={e => setPass(e.target.value)}
             placeholder="Sync-Passwort (min. 6 Zeichen)"
-            className="w-full pl-8 pr-2 py-2 rounded-lg border text-xs outline-none"
+            className="w-full pl-8 pr-9 py-2 rounded-lg border text-xs outline-none"
             style={{ backgroundColor: 'var(--app-input-bg)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
           />
+          <button type="button" onClick={() => setShow(v => !v)} aria-label={show ? 'Passwort verbergen' : 'Passwort anzeigen'} className="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 cursor-pointer">
+            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
         </div>
         <button
           type="button"
@@ -75,6 +91,9 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
           {busy ? '…' : active ? 'Jetzt abgleichen' : 'Sync starten'}
         </button>
       </div>
+      <button type="button" disabled={busy || pass.trim().length < 6} onClick={reset} className="text-[10px] font-bold underline cursor-pointer disabled:opacity-40 text-left" style={{ color: 'var(--app-text-muted)' }}>
+        Passwort vergessen? Das eingetragene als neues Passwort festlegen
+      </button>
       {result && (
         <p className={`text-[11px] font-bold ${MESSAGES[result].ok ? 'text-emerald-400' : 'text-amber-400'}`}>{MESSAGES[result].text}</p>
       )}

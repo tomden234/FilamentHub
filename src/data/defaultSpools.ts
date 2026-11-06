@@ -3393,7 +3393,9 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
       '🔢 Versions-Zähler: Geräte überschreiben sich nicht mehr',
       '🛟 Letzte Version bleibt als Notkopie (.prev) auf dem Pi',
       '🔁 Einmal-Umzug von npoint/Gist mit einem Knopf',
-      '☁️ GitHub-Gist weiter möglich (Ausklapper)'
+      '☁️ GitHub-Gist weiter möglich (Ausklapper)',
+      '👁️ Sync-Passwort und Pi-Schlüssel anzeigbar, Passwort vergessen: neues festlegen',
+      '📱 Android-App darf http im Heimnetz (Pi vom Handy)'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],

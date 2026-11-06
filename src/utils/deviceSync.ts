@@ -128,6 +128,40 @@ export async function connectFromStored(): Promise<void> {
   }
 }
 
+/**
+ * Sync-Passwort vergessen: neues festlegen. Dieses Gerät wird die Quelle und verschlüsselt seine Einstellungen neu.
+ * Andere Geräte brauchen danach das neue Passwort (das alte Paket in der Cloud wird ersetzt).
+ */
+export async function resetSyncPass(cloudUrl: string, newPass: string): Promise<SyncResult> {
+  const p = newPass.trim();
+  lastDetail = '';
+  if (p.length < 6) return 'nopass';
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    lastDetail = 'Verschlüsselung nicht verfügbar: Die Seite läuft ohne sichere Verbindung (http). Bitte die App/Windows-App oder https nutzen.';
+    return 'error';
+  }
+  const local = localBundle();
+  if (!Object.keys(local).length) {
+    lastDetail = 'Dieses Gerät hat noch keine Einstellungen zum Hochladen. Bitte zuerst am Gerät mit den Einstellungen (z. B. Windows-App) ausführen.';
+    return 'error';
+  }
+  try {
+    const enc = await encrypt(JSON.stringify(local), p);
+    const ok = await cloudUpdate(cloudUrl, fresh => ({ ...fresh, secure: { ...enc, at: Date.now() } }));
+    if (!ok) {
+      lastDetail = 'Speicher hat das Speichern abgelehnt.';
+      return 'error';
+    }
+    setSyncPass(p);
+    safeStorage.setItem(BASE_HASH_KEY, await sha(canon(local)));
+    safeStorage.setItem(AT_KEY, String(Date.now()));
+    return 'pushed';
+  } catch (e: any) {
+    lastDetail = String(e?.message || e);
+    return 'error';
+  }
+}
+
 let busy = false;
 let lastDetail = '';
 /** Technischer Grund des letzten Fehlers (für die Anzeige) */

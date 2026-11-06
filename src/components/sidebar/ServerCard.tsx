@@ -28,6 +28,7 @@ const label = 'text-[11px] font-bold block mb-1';
 export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
   const [url, setUrl] = useState(getServerUrl());
   const [key, setKey] = useState(getServerKey());
+  const [showKey, setShowKey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -109,7 +110,11 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
         <label className={label} style={{ color: 'var(--app-text)' }}>
           Schlüssel (Home Assistant → FilamentHub Server → Protokoll)
         </label>
-        <input className={inputCls} style={inputStyle} type="password" value={key} onChange={e => setKey(e.target.value)} autoComplete="off" />
+        <input className={inputCls} style={inputStyle} type={showKey ? 'text' : 'password'} value={key} onChange={e => setKey(e.target.value)} autoComplete="off" />
+        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer" style={{ color: 'var(--app-text-muted)' }}>
+          <input type="checkbox" checked={showKey} onChange={e => setShowKey(e.target.checked)} />
+          Schlüssel anzeigen
+        </label>
       </div>
       <div className="flex gap-2">
         <button type="button" onClick={save} className="flex-1 py-2 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5" style={{ backgroundColor: 'var(--app-accent)', color: 'var(--app-accent-fg, #fff)' }}>
