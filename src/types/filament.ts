@@ -122,31 +122,6 @@ export interface BambuPrintProfile {
   notes?: string;
 }
 
-export interface BambuConnectedPrinter {
-  id: string;
-  name: string;
-  model: string;
-  ip: string;
-  serialNumber: string;
-  accessCode: string;
-  port: number;
-  status: 'idle' | 'printing' | 'paused' | 'offline';
-  nozzleTemp: number;
-  targetNozzleTemp: number;
-  bedTemp: number;
-  targetBedTemp: number;
-  fanSpeed: number;
-  printName?: string;
-  currentLayer?: number;
-  totalLayers?: number;
-  elapsedSeconds?: number;
-  totalSeconds?: number;
-  printGrams?: number;
-  amsSlots: { [slotIndex: number]: string }; // slot 1..4 -> spoolId
-  activeSlot: number;
-  lastConnected?: string;
-}
-
 export type LogCategory = 'steckdose' | 'drucker' | 'licht' | 'temp' | 'spule' | 'kamera' | 'system';
 
 export interface SystemLogEntry {
@@ -158,5 +133,4 @@ export interface SystemLogEntry {
   details?: string;
   level?: 'info' | 'success' | 'warn' | 'error';
 }
-
 

@@ -2,7 +2,7 @@
 // Bambu Studio schickt die Datei (<Name>.gcode.3mf) per FTPS (Port 990, Benutzer bblp, Passwort = Zugangscode) an den Drucker.
 // Darin steht Metadata/slice_info.config mit used_g je Filament. So braucht es keine Cloud und keine Handeingabe.
 import { Client } from 'basic-ftp';
-import { Writable } from 'stream';
+import { Readable, Writable } from 'stream';
 import { unzipSync, strFromU8 } from 'fflate';
 
 export interface JobFilament {
@@ -236,5 +236,14 @@ export async function renameJobFile(ip: string, code: string, filePath: string, 
     const to = `${dir}/${newName}`;
     await client.rename(filePath, to);
     return to;
+  });
+}
+
+/** 1.229: Datei aus der App per FTPS auf den Drucker laden (Wurzelordner). Gibt den Pfad auf dem Drucker zurück. */
+export async function uploadJobFile(ip: string, code: string, name: string, bytes: Buffer): Promise<string> {
+  const safe = name.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '').slice(0, 120) || 'upload.gcode';
+  return withFtp(ip, code, async client => {
+    await client.uploadFrom(Readable.from(bytes), `/${safe}`);
+    return `/${safe}`;
   });
 }

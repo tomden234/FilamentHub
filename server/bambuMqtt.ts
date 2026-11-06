@@ -26,8 +26,7 @@ class BambuMqttService extends BambuMqttCore {
     const client = mqtt.connect(url, {
       username: options.username,
       password: options.password,
-      // Standard aus, weil Bambu-Drucker im LAN selbstsignierte Zertifikate nutzen.
-      // Mit BAMBU_TLS_VERIFY=true wird das Zertifikat geprüft (sinnvoll für die Bambu Cloud).
+      // LAN: nie prüfen (Drucker hat ein selbstsigniertes Zertifikat). Cloud: prüfen, außer BAMBU_TLS_VERIFY=false.
       rejectUnauthorized: options.tlsVerify,
       port: 8883,
       clean: true,
@@ -39,7 +38,7 @@ class BambuMqttService extends BambuMqttCore {
   }
 
   protected tlsVerify(): boolean {
-    return process.env.BAMBU_TLS_VERIFY === 'true';
+    return process.env.BAMBU_TLS_VERIFY !== 'false'; // 1.229: Cloud-Zertifikat standardmäßig prüfen (LAN prüft nie, Drucker hat ein selbstsigniertes)
   }
 
   protected loadConfig(): SavedBambuConfig | null {
@@ -100,7 +99,22 @@ class BambuMqttService extends BambuMqttCore {
     }
   }
 
+  /** 1.229: Der Drucker schickt oft mehrere Meldungen pro Sekunde. Höchstens 1× pro Sekunde an Rekorder und Apps weitergeben (letzter Stand kommt immer an). */
+  private lastNotify = 0;
+  private notifyTimer: ReturnType<typeof setTimeout> | null = null;
+
   protected notifyChange(): void {
+    const wait = 1000 - (Date.now() - this.lastNotify);
+    if (wait > 0) {
+      if (!this.notifyTimer) {
+        this.notifyTimer = setTimeout(() => {
+          this.notifyTimer = null;
+          this.notifyChange();
+        }, wait);
+      }
+      return;
+    }
+    this.lastNotify = Date.now();
     this.feedRecorder();
     const payload = `data: ${JSON.stringify(this.getStatus())}\n\n`;
     for (const client of this.sseClients) {

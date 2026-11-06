@@ -51,13 +51,19 @@ export const cloudSync = {
   async save(url: string, payload: CloudPayload): Promise<boolean> {
     if (!url) return false; // keine Cloud eingerichtet: rein lokal
     // Bestehende Felder (z. B. verschlüsselter Geräte-Sync „secure“) erhalten, nur Spulen/Verlauf ersetzen
-    let existing: Record<string, unknown> = {};
+    // 1.229: Ohne aktuellen Stand nie schreiben. Vorher wurde bei einem Lesefehler (npoint 5xx) ein leeres Dokument angenommen
+    // und z. B. das Speichern der Druckliste hat Spulen und Pi-Abzüge in der Cloud gelöscht.
+    let existing: Record<string, unknown>;
     try {
       const cur = await cloudFetch(url, { cache: 'no-store' });
-      if (cur.ok) existing = (await cur.json()) || {};
+      if (!cur.ok) return false;
+      const j = await cur.json();
+      existing = j && typeof j === 'object' && !Array.isArray(j) ? j : {};
     } catch {
-      existing = {};
+      return false;
     }
+    // Teil-Speicherung (nur Druckliste) auf ein Dokument ohne Spulen: lieber nichts schreiben als ein halbes Dokument anlegen
+    if (!payload.spools && !Array.isArray(existing.spools)) return false;
     const res = await cloudFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

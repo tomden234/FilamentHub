@@ -1,141 +1,73 @@
 import { Router } from 'express';
 import path from 'path';
-import fs from 'fs';
 import { bambuService } from '../bambuMqtt.js';
-import { rootDir } from '../paths.js';
-import { fetchJobWeights } from '../bambuJobFile.js';
+import { fetchJobWeights, uploadJobFile } from '../bambuJobFile.js';
+import { hubEnabled } from '../hub/hub.js';
+import { queueAdd } from '../hub/queue.js';
+import { isLanIp } from '../netCheck.js';
 import { handlePrinterRoute, testCloudToken } from '../../src/utils/bambu/printerRoutes.js';
 
 const router = Router();
 
 // API-Route: Bambu Lab Verbindungstest (Cloud MQTT & LAN)
 router.post('/api/bambu/test-connection', async (req, res) => {
-  let { ip, port = 8883, accessCode, serialNumber, connectionType, accessToken } = req.body;
-  if (!ip) {
-    ip = 'us.mqtt.bambulab.com';
-  }
-
+  const b = req.body || {};
+  const serialNumber = typeof b.serialNumber === 'string' ? b.serialNumber.slice(0, 40) : '';
+  const accessToken = typeof b.accessToken === 'string' ? b.accessToken : '';
+  let ip = typeof b.ip === 'string' && b.ip.trim() ? b.ip.trim() : 'us.mqtt.bambulab.com';
   // Bambu Lab nutzt weltweit us.mqtt.bambulab.com (eu.mqtt.bambulab.com hat keine DNS-Auflösung)
-  if (ip === 'eu.mqtt.bambulab.com') {
-    ip = 'us.mqtt.bambulab.com';
-  }
-
-  const isCloud = connectionType === 'cloud' || ip.includes('bambulab.com');
+  if (ip === 'eu.mqtt.bambulab.com') ip = 'us.mqtt.bambulab.com';
+  // 1.229: Port fest 8883 (MQTTS), Ziel nur Bambu Cloud oder Heimnetz
+  const port = 8883;
+  const isCloud = b.connectionType === 'cloud' || /(^|\.)bambulab\.com$/i.test(ip);
 
   if (isCloud) {
     // Falls Token übergeben wurde, verifiziere direkt gegen die echte Bambu Cloud API
-    if (accessToken && accessToken.trim()) {
+    if (accessToken.trim()) {
       const result = await testCloudToken(bambuService, accessToken);
       return res.status(result.status).json(result.body);
     }
+    if (!/(^|\.)bambulab\.com$/i.test(ip)) return res.status(400).json({ success: false, isCloud: true, error: 'Cloud-Test nur mit *.bambulab.com.' });
 
-    // Cloud MQTT: Verbindung über TLS zu us.mqtt.bambulab.com
-    try {
-      const tls = await import('tls');
-      const timeoutMs = 4000;
-      let resolved = false;
-
-      const tlsSocket = tls.connect({
-        host: ip,
-        port: Number(port) || 8883,
-        rejectUnauthorized: false,
-        timeout: timeoutMs
-      }, () => {
-        if (!resolved) {
-          resolved = true;
-          tlsSocket.destroy();
-          const snInfo = serialNumber ? ` für SN „${serialNumber}“` : '';
-          return res.json({
-            success: true,
-            isCloud: true,
-            message: `Erfolgreich mit Bambu Cloud MQTT (${ip}:${port})${snInfo} verbunden! Live-Status ohne LAN-Modus bereit.`
-          });
-        }
-      });
-
-      const timer = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          tlsSocket.destroy();
-          // Auch bei Timeout auf Cloud-Server erlauben wir Speichern mit Hinweis
-          return res.status(504).json({
-            success: false,
-            isCloud: true,
-            error: `Bambu Cloud Broker ${ip}:${port} antwortet nicht (Zeitlimit). Internetverbindung des Servers prüfen.`
-          });
-        }
-      }, timeoutMs);
-
-      tlsSocket.on('error', (err) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timer);
-          tlsSocket.destroy();
-          return res.status(502).json({
-            success: false,
-            isCloud: true,
-            error: `Bambu Cloud Broker ${ip} nicht erreichbar (${err.message}).`
-          });
-        }
-      });
-      return;
-    } catch {
-      return res.status(500).json({ success: false, isCloud: true, error: `Verbindungstest zu ${ip} fehlgeschlagen.` });
-    }
+    const tls = await import('tls');
+    let resolved = false;
+    const done = (status: number, body: any) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      tlsSocket.destroy();
+      res.status(status).json(body);
+    };
+    const tlsSocket = tls.connect({ host: ip, port, servername: ip, timeout: 4000 }, () => {
+      const snInfo = serialNumber ? ` für SN „${serialNumber}“` : '';
+      done(200, { success: true, isCloud: true, message: `Erfolgreich mit Bambu Cloud MQTT (${ip}:${port})${snInfo} verbunden!` });
+    });
+    const timer = setTimeout(
+      () => done(504, { success: false, isCloud: true, error: `Bambu Cloud Broker ${ip}:${port} antwortet nicht (Zeitlimit). Internetverbindung des Servers prüfen.` }),
+      4000
+    );
+    tlsSocket.on('error', err => done(502, { success: false, isCloud: true, error: `Bambu Cloud Broker ${ip} nicht erreichbar (${err.message}).` }));
+    return;
   }
 
-  // Lokaler LAN-Modus
+  // Lokaler LAN-Modus: nur Heimnetz/Tailscale, und nur „erfolgreich“, wenn der Drucker wirklich antwortet
+  if (!isLanIp(ip)) return res.status(400).json({ success: false, error: 'Bitte eine Heimnetz-IP eintragen (z. B. 192.168.x.x oder Tailscale 100.x.x.x).' });
   const net = await import('net');
-  const timeoutMs = 3000;
   const socket = new net.Socket();
   let resolved = false;
-
-  const timer = setTimeout(() => {
-    if (!resolved) {
-      resolved = true;
-      socket.destroy();
-      const isPrivate = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(ip);
-      if (isPrivate) {
-        return res.json({
-          success: true,
-          isLocalIp: true,
-          message: `Drucker-Profil für ${ip} (Port ${port}) erfolgreich im LAN-Modus konfiguriert!`
-        });
-      }
-      return res.status(504).json({ error: `Verbindung zu ${ip}:${port} hat das Zeitlimit überschritten.` });
-    }
-  }, timeoutMs);
-
-  socket.connect(port, ip, () => {
-    if (!resolved) {
-      resolved = true;
-      clearTimeout(timer);
-      socket.destroy();
-      return res.json({
-        success: true,
-        message: `Erfolgreich mit Bambu Lab Drucker unter ${ip}:${port} verbunden! MQTTS ist erreichbar.`
-      });
-    }
-  });
-
-  socket.on('error', (err) => {
-    if (!resolved) {
-      resolved = true;
-      clearTimeout(timer);
-      socket.destroy();
-      const isPrivate = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(ip);
-      if (isPrivate) {
-        return res.json({
-          success: true,
-          isLocalIp: true,
-          message: `Drucker-Profil für ${ip} (Port ${port}) aktiv gespeichert! Lokales Netzwerkprofil bereit.`
-        });
-      }
-      return res.status(502).json({
-        error: `Konnte Drucker unter ${ip}:${port} nicht erreichen (${err.message}).`
-      });
-    }
-  });
+  const done = (status: number, body: any) => {
+    if (resolved) return;
+    resolved = true;
+    clearTimeout(timer);
+    socket.destroy();
+    res.status(status).json(body);
+  };
+  const timer = setTimeout(
+    () => done(504, { success: false, error: `Drucker unter ${ip}:${port} antwortet nicht. Ist er an und im selben Netz (oder Tailscale an)?` }),
+    3000
+  );
+  socket.connect(port, ip, () => done(200, { success: true, message: `Erfolgreich mit Bambu Lab Drucker unter ${ip}:${port} verbunden! MQTTS ist erreichbar.` }));
+  socket.on('error', err => done(502, { success: false, error: `Konnte Drucker unter ${ip}:${port} nicht erreichen (${err.message}).` }));
 });
 
 // ============================================================================
@@ -155,7 +87,6 @@ router.get('/api/printer/stream', (req, res) => {
   bambuService.registerSseClient(res);
 });
 
-// 12. G-Code & .3MF Datei hochladen und optional direkt Druck starten
 // Gewicht je Filament des aktuellen/letzten Drucks direkt aus der Datei auf dem Drucker (nur LAN-Modus)
 router.post('/api/printer/job-weights', async (req, res) => {
   const lan = bambuService.getLanAccess();
@@ -167,44 +98,44 @@ router.post('/api/printer/job-weights', async (req, res) => {
   return res.json({ success: true, ...r });
 });
 
+// G-Code / .3mf aus der App auf den Drucker laden (1.229: vorher lag die Datei nur auf dem Server und „Drucken“ lief nie)
 router.post('/api/printer/upload-gcode', async (req, res) => {
   try {
-    const { fileName, fileContent, startPrint } = req.body;
-    if (!fileName || !fileContent) {
-      return res.status(400).json({ error: 'fileName und fileContent (Text oder Base64) erforderlich.' });
+    const { fileName, fileContent } = req.body || {};
+    if (typeof fileName !== 'string' || typeof fileContent !== 'string' || !fileName || !fileContent) {
+      return res.status(400).json({ success: false, error: 'fileName und fileContent (Text oder Base64) erforderlich.' });
     }
+    if (!/\.(gcode|3mf)$/i.test(fileName)) return res.status(400).json({ success: false, error: 'Nur .gcode oder .3mf.' });
+    const lan = bambuService.getLanAccess();
+    if (!lan) return res.status(400).json({ success: false, error: 'Hochladen auf den Drucker geht nur im LAN-Modus.' });
 
-    const uploadDir = path.resolve(rootDir, 'uploads', 'gcode');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    const bytes = fileContent.startsWith('data:')
+      ? Buffer.from(fileContent.replace(/^data:[^;]*;base64,/, ''), 'base64')
+      : Buffer.from(fileContent, 'utf8');
+    if (bytes.length < 10) return res.status(400).json({ success: false, error: 'Datei ist leer.' });
+    const remote = await uploadJobFile(lan.ip, lan.code, path.basename(fileName), bytes);
+
+    // .3mf auf dem Pi: gleich in die Warteschlange (dort stimmt die AMS-Zuordnung, Start per Taster oder App)
+    let queued = false;
+    if (hubEnabled() && /\.3mf$/i.test(remote)) {
+      try {
+        await queueAdd(remote, 1);
+        queued = true;
+      } catch (e: any) {
+        console.warn('[Upload] Warteschlange:', e?.message || e);
+      }
     }
-
-    const sanitizedName = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
-    const targetPath = path.join(uploadDir, sanitizedName);
-
-    // Prüfe ob Base64 oder Klartext
-    if (fileContent.startsWith('data:') || fileContent.length > 50000 && /^[a-zA-Z0-9+/=\r\n]+$/.test(fileContent.slice(0, 100))) {
-      const b64 = fileContent.replace(/^data:[^;]+;base64,/, '');
-      fs.writeFileSync(targetPath, Buffer.from(b64, 'base64'));
-    } else {
-      fs.writeFileSync(targetPath, fileContent, 'utf8');
-    }
-
-    let printResult: any = null;
-    if (startPrint) {
-      printResult = await bambuService.startGcodePrint(sanitizedName);
-    }
-
     return res.json({
       success: true,
-      message: `Datei "${sanitizedName}" erfolgreich gespeichert!${startPrint ? ' Druckauftrag an Drucker übergeben.' : ''}`,
-      fileName: sanitizedName,
-      fileSize: fs.statSync(targetPath).size,
-      startedPrint: Boolean(startPrint),
-      printResult
+      fileName: remote.slice(1),
+      fileSize: bytes.length,
+      queued,
+      message: queued
+        ? `„${remote.slice(1)}“ liegt auf dem Drucker und steht in der Warteschlange. Start per Taster oder Warteschlange.`
+        : `„${remote.slice(1)}“ liegt auf dem Drucker. Starten am Drucker-Display (Dateien).`
     });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err?.message || String(err) });
+    return res.status(502).json({ success: false, error: `Hochladen fehlgeschlagen: ${err?.message || err}` });
   }
 });
 

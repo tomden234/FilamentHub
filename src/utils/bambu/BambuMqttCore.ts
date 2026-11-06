@@ -537,18 +537,6 @@ export abstract class BambuMqttCore {
     return await bambuCloud.getRecentTasks(this.accessToken, limit);
   }
   /**
-   * Konfigurationsdatei aus Bambu Studio (%APPDATA%\BambuStudio) parsen
-   */
-  public parseConfiguration(rawText: string): {
-    success: boolean;
-    accessToken?: string;
-    userId?: string;
-    serialNumber?: string;
-    error?: string;
-  } {
-    return bambuCloud.parseConfiguration(rawText);
-  }
-  /**
    * Verbindung zu Bambu Cloud MQTT aufbauen
    */
   public async connect(params: {
@@ -1017,6 +1005,12 @@ export abstract class BambuMqttCore {
     const next: any = { ...cur, ...incoming };
     if (!Array.isArray(incoming.ams) && Array.isArray(cur.ams)) next.ams = cur.ams;
     this.printData.ams = next;
+  }
+
+  /** 1.229: Stimmt die Admin-PIN? (Ohne eingerichtete PIN immer ja.) Für „Stop“ aus der App Pflicht. */
+  public checkAdminPin(pin: unknown): boolean {
+    if (!this.adminPin) return true;
+    return typeof pin === 'string' && pin.trim() === this.adminPin.trim();
   }
 
   /**
@@ -1781,42 +1775,6 @@ export abstract class BambuMqttCore {
     return {
       success: false,
       error: `Drucker hat die Trocknung nicht bestätigt. ${diag}`
-    };
-  }
-
-  /**
-   * G-Code Druckauftrag direkt auf dem Drucker starten
-   */
-  public async startGcodePrint(fileName: string, subtaskName?: string) {
-    if (!this.client || !this.connected || !this.serialNumber) {
-      throw new Error('Drucker ist nicht verbunden.');
-    }
-
-    const reqTopic = `device/${this.serialNumber}/request`;
-    const cleanFileName = fileName.trim();
-
-    const payload = {
-      print: {
-        sequence_id: String(Date.now()),
-        command: 'gcode_file',
-        param: cleanFileName
-      }
-    };
-
-    this.client.publish(reqTopic, JSON.stringify(payload));
-
-    // Optimistisch auf Vorbereitung setzen
-    this.printData.gcode_state = 'PREPARE';
-    this.printData.subtask_name = subtaskName || baseName(cleanFileName);
-    this.printData.gcode_file = cleanFileName;
-    this.printData.gcode_start_time = String(Math.floor(Date.now() / 1000));
-    this.notifyChange();
-
-    this.schedulePushall(1500);
-
-    return {
-      success: true,
-      message: `Druckauftrag "${baseName(cleanFileName)}" an Bambu X2D übergeben!`
     };
   }
 }

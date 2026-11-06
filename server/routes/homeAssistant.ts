@@ -1,26 +1,22 @@
 import { Router } from 'express';
-import { bambuService } from '../bambuMqtt.js';
-import { loadHaConfig, saveHaConfig, triggerHaAutomation } from '../haConfig.js';
+import { loadHaConfig, saveHaConfig, haTarget } from '../haConfig.js';
 import { isRawAllowed } from '../haRawAllow.js';
 
 const router = Router();
 
-// HA Automation direkt auslösen
-router.post('/api/homeassistant/trigger-pull-automation', async (req, res) => {
-  const { entity_id = 'automation.filament_website_auto_pull_github', haUrl, haToken } = req.body;
-  const result = await triggerHaAutomation(entity_id, haUrl, haToken);
-  return res.json(result);
-});
+// 1.229: Entitäten nur in genau diesem Format (sonst ließe sich jedes Gerät schalten oder der API-Pfad verbiegen)
+const SWITCH_ID = /^(switch|light)\.[a-z0-9_]+$/;
+const CAMERA_ID = /^camera\.[a-z0-9_]+$/;
+const isStr = (v: unknown): v is string => typeof v === 'string';
 
 // Begrenzte Weiterleitung an Home Assistant (Browser dürfen Nabu Casa oft nicht direkt ansprechen, der Server schon).
 // Erlaubt sind nur: Zustände lesen, die FilamentHub-Automationen anlegen, Automationen ein-/ausschalten und die Status-LED
 // (ein Licht mit Farbe/Helligkeit/Effekt, ein Intensity-Regler). Die Regeln stehen in server/haRawAllow.ts.
 router.post('/api/homeassistant/raw', async (req, res) => {
   try {
-    const config = loadHaConfig();
     const { method = 'GET', path = '', body } = req.body || {};
-    const url = String(req.body?.haUrl || config.haUrl || '').trim().replace(/\/+$/, '');
-    const token = String(req.body?.haToken || config.haToken || '');
+    // 1.229: fremde Adresse nur zusammen mit eigenem Token (sonst ginge der gespeicherte Token an diese Adresse)
+    const { url, token } = haTarget(req.body?.haUrl, req.body?.haToken);
     if (!url || !token) return res.status(400).json({ success: false, error: 'Home Assistant URL und Token erforderlich.' });
     if (!/^https?:\/\//i.test(url)) return res.status(400).json({ success: false, error: 'Ungültige Adresse.' });
     if (!isRawAllowed(String(method), String(path), body)) {
@@ -39,7 +35,7 @@ router.post('/api/homeassistant/raw', async (req, res) => {
   }
 });
 
-// HA Konfiguration abrufen (inkl. Nabu Casa Adresse & Token)
+// HA Konfiguration abrufen (ohne Token)
 router.get('/api/homeassistant/config', (_req, res) => {
   const config = loadHaConfig();
   return res.json({
@@ -53,39 +49,36 @@ router.get('/api/homeassistant/config', (_req, res) => {
 
 // HA Konfiguration speichern
 router.post('/api/homeassistant/config', (req, res) => {
-  const { haUrl, haToken, cameraEntity, switchEntity } = req.body;
+  const { haUrl, haToken, cameraEntity, switchEntity } = req.body || {};
   const current = loadHaConfig();
+  const url = isStr(haUrl) ? haUrl.trim().replace(/\/+$/, '') : current.haUrl;
+  if (url && !/^https?:\/\/[^\s/]+/i.test(url)) return res.status(400).json({ success: false, error: 'Ungültige Adresse.' });
+  const cam = isStr(cameraEntity) && cameraEntity.trim() ? cameraEntity.trim() : current.cameraEntity;
+  const sw = isStr(switchEntity) && switchEntity.trim() ? switchEntity.trim() : current.switchEntity;
   const updated = {
-    haUrl: haUrl !== undefined ? haUrl.trim().replace(/\/+$/, '') : current.haUrl,
-    haToken: haToken !== undefined && haToken.trim().length > 0 ? haToken.trim() : current.haToken,
-    cameraEntity: cameraEntity !== undefined ? cameraEntity.trim() : current.cameraEntity,
-    switchEntity: switchEntity !== undefined ? switchEntity.trim() : current.switchEntity
+    haUrl: url,
+    haToken: isStr(haToken) && haToken.trim().length > 0 ? haToken.trim().slice(0, 1000) : current.haToken,
+    cameraEntity: CAMERA_ID.test(cam) ? cam : current.cameraEntity,
+    switchEntity: SWITCH_ID.test(sw) ? sw : current.switchEntity
   };
   saveHaConfig(updated);
-  return res.json({ success: true, message: 'Home Assistant & Nabu Casa Zugangsdaten dauerhaft gespeichert!', config: updated });
+  const { haToken: _hidden, ...visible } = updated;
+  return res.json({ success: true, message: 'Home Assistant Zugangsdaten gespeichert!', config: { ...visible, hasToken: Boolean(updated.haToken) } });
 });
 
 // HA Verbindung testen & Entitäten auflisten (Kameras & Steckdosen)
 router.post('/api/homeassistant/test', async (req, res) => {
   try {
-    const config = loadHaConfig();
-    const url = (req.body.haUrl || config.haUrl || '').trim().replace(/\/+$/, '');
-    const token = req.body.haToken || config.haToken;
-
+    const { url, token } = haTarget(req.body?.haUrl, req.body?.haToken);
     if (!url || !token) {
       return res.status(400).json({ success: false, error: 'Home Assistant URL und Token erforderlich.' });
     }
+    if (!/^https?:\/\//i.test(url)) return res.status(400).json({ success: false, error: 'Ungültige Adresse.' });
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
     const resp = await fetch(`${url}/api/states`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      signal: controller.signal
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(4000)
     });
-    clearTimeout(timeout);
 
     if (!resp.ok) {
       let specificHint = '';
@@ -99,22 +92,13 @@ router.post('/api/homeassistant/test', async (req, res) => {
       });
     }
 
-    const states = await resp.json() as any[];
-    const cameras = states
-      .filter((s: any) => s.entity_id && s.entity_id.startsWith('camera.'))
-      .map((s: any) => ({
-        entity_id: s.entity_id,
-        name: s.attributes?.friendly_name || s.entity_id,
-        state: s.state
-      }));
-
-    const switches = states
-      .filter((s: any) => s.entity_id && (s.entity_id.startsWith('switch.') || s.entity_id.startsWith('light.')))
-      .map((s: any) => ({
-        entity_id: s.entity_id,
-        name: s.attributes?.friendly_name || s.entity_id,
-        state: s.state
-      }));
+    const states = (await resp.json()) as any[];
+    const pick = (prefixes: string[]) =>
+      states
+        .filter((s: any) => isStr(s?.entity_id) && prefixes.some(p => s.entity_id.startsWith(p)))
+        .map((s: any) => ({ entity_id: s.entity_id, name: s.attributes?.friendly_name || s.entity_id, state: s.state }));
+    const cameras = pick(['camera.']);
+    const switches = pick(['switch.', 'light.']);
 
     return res.json({
       success: true,
@@ -134,23 +118,16 @@ router.post('/api/homeassistant/test', async (req, res) => {
 router.get('/api/homeassistant/camera-snapshot', async (req, res) => {
   try {
     const config = loadHaConfig();
-    const entity = (req.query.entity as string) || config.cameraEntity;
-    const url = config.haUrl;
-    const token = config.haToken;
-
-    if (!url || !token || !entity) {
+    const entity = isStr(req.query.entity) && req.query.entity ? req.query.entity : config.cameraEntity;
+    if (!config.haUrl || !config.haToken || !entity) {
       return res.status(400).send('Home Assistant oder Kamera-Entität nicht konfiguriert.');
     }
+    if (!CAMERA_ID.test(entity)) return res.status(400).send('Ungültige Kamera-Entität.');
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-    const snapResp = await fetch(`${url}/api/camera_proxy/${entity}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      signal: controller.signal
+    const snapResp = await fetch(`${config.haUrl}/api/camera_proxy/${entity}`, {
+      headers: { Authorization: `Bearer ${config.haToken}` },
+      signal: AbortSignal.timeout(3000)
     });
-    clearTimeout(timeout);
 
     if (snapResp.ok && snapResp.headers.get('content-type')?.includes('image')) {
       const buffer = await snapResp.arrayBuffer();
@@ -159,7 +136,7 @@ router.get('/api/homeassistant/camera-snapshot', async (req, res) => {
       return res.send(Buffer.from(buffer));
     }
 
-    return res.status(snapResp.status).send('Konnte Snapshot von Home Assistant nicht abrufen.');
+    return res.status(snapResp.status >= 400 ? snapResp.status : 502).send('Konnte Snapshot von Home Assistant nicht abrufen.');
   } catch (err: any) {
     return res.status(500).send(`Home Assistant Kamera Fehler: ${err?.message}`);
   }
@@ -169,18 +146,20 @@ router.get('/api/homeassistant/camera-snapshot', async (req, res) => {
 router.get('/api/homeassistant/switch-status', async (req, res) => {
   try {
     const config = loadHaConfig();
-    const entity = (req.query.entity as string) || config.switchEntity;
+    const entity = isStr(req.query.entity) && req.query.entity ? req.query.entity : config.switchEntity;
     if (!config.haUrl || !config.haToken || !entity) {
       return res.json({ configured: false, state: 'unknown' });
     }
+    if (!SWITCH_ID.test(entity)) return res.status(400).json({ configured: true, state: 'error', error: 'Ungültige Entität' });
 
     const resp = await fetch(`${config.haUrl}/api/states/${entity}`, {
-      headers: { 'Authorization': `Bearer ${config.haToken}` }
+      headers: { Authorization: `Bearer ${config.haToken}` },
+      signal: AbortSignal.timeout(6000)
     });
     if (!resp.ok) {
       return res.json({ configured: true, state: 'error', error: `HTTP ${resp.status}` });
     }
-    const data = await resp.json() as any;
+    const data = (await resp.json()) as any;
     return res.json({
       configured: true,
       entity_id: entity,
@@ -196,95 +175,28 @@ router.get('/api/homeassistant/switch-status', async (req, res) => {
 router.post('/api/homeassistant/toggle-switch', async (req, res) => {
   try {
     const config = loadHaConfig();
-    const entity = (req.body.entity as string) || config.switchEntity;
-    const targetState = req.body.state as 'on' | 'off' | undefined; // optional toggle if undefined
+    const entity = isStr(req.body?.entity) && req.body.entity ? req.body.entity : config.switchEntity;
+    const targetState = req.body?.state === 'on' || req.body?.state === 'off' ? (req.body.state as 'on' | 'off') : undefined;
 
     if (!config.haUrl || !config.haToken || !entity) {
       return res.status(400).json({ success: false, error: 'Home Assistant oder Steckdosen-Entität nicht konfiguriert.' });
     }
+    if (!SWITCH_ID.test(entity)) return res.status(400).json({ success: false, error: 'Nur switch.* oder light.* erlaubt.' });
 
-    const domain = entity.split('.')[0] || 'switch';
+    const domain = entity.split('.')[0];
     const service = targetState === 'on' ? 'turn_on' : targetState === 'off' ? 'turn_off' : 'toggle';
 
     const resp = await fetch(`${config.haUrl}/api/services/${domain}/${service}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.haToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ entity_id: entity })
+      headers: { Authorization: `Bearer ${config.haToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_id: entity }),
+      signal: AbortSignal.timeout(8000)
     });
 
     if (resp.ok) {
       return res.json({ success: true, message: `Steckdose "${entity}" geschaltet (${service})!` });
     }
     return res.status(resp.status).json({ success: false, error: `Home Assistant Fehler: ${resp.statusText}` });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err?.message });
-  }
-});
-
-// HA Bambu Temperatur setzen
-router.post('/api/homeassistant/set-temperature', async (req, res) => {
-  try {
-    const config = loadHaConfig();
-    const { target, temp } = req.body;
-    if (!config.haUrl || !config.haToken) {
-      return res.status(400).json({ success: false, error: 'Home Assistant nicht konfiguriert.' });
-    }
-
-    const gcode = target === 'bed' ? `M140 S${temp}\n` : `M104 S${temp}\n`;
-
-    // Sende über Service bambu_lab.send_gcode oder climate falls vorhanden
-    const resp = await fetch(`${config.haUrl}/api/services/bambu_lab/send_gcode`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.haToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ gcode })
-    });
-
-    if (resp.ok) {
-      return res.json({ success: true, message: `${target} auf ${temp}°C über Home Assistant gesetzt!` });
-    }
-
-    // Fallback: Direkter MQTTS Befehl
-    const result = await bambuService.setTemperature(target as any, Number(temp));
-    return res.json(result);
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err?.message });
-  }
-});
-
-// HA Bambu Licht schalten
-router.post('/api/homeassistant/set-light', async (req, res) => {
-  try {
-    const config = loadHaConfig();
-    const { mode, entity } = req.body;
-    if (!config.haUrl || !config.haToken) {
-      return res.status(400).json({ success: false, error: 'Home Assistant nicht konfiguriert.' });
-    }
-
-    const targetEntity = entity || 'light.x2d_chamber_light';
-    const service = mode === 'on' ? 'turn_on' : 'turn_off';
-
-    const resp = await fetch(`${config.haUrl}/api/services/light/${service}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.haToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ entity_id: targetEntity })
-    });
-
-    if (resp.ok) {
-      return res.json({ success: true, message: `Licht über Home Assistant ${mode === 'on' ? 'eingeschaltet' : 'ausgeschaltet'}!` });
-    }
-
-    // Fallback: Direct
-    const directRes = await bambuService.toggleLight(mode);
-    return res.json(directRes);
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err?.message });
   }

@@ -38,7 +38,7 @@ export async function testCloudToken(svc: BambuMqttCore, accessToken: string): P
   }
 }
 
-function bambuStatusCompat(svc: BambuMqttCore, query: URLSearchParams): RouteResult {
+function bambuStatusCompat(svc: BambuMqttCore): RouteResult {
   const current = svc.getStatus();
   if (current.connected) {
     return ok({
@@ -65,28 +65,8 @@ function bambuStatusCompat(svc: BambuMqttCore, query: URLSearchParams): RouteRes
     });
   }
 
-  // Fallback
-  return ok({
-    success: true,
-    serialNumber: query.get('serialNumber') || '00M00A234500123',
-    model: query.get('model') || 'Bambu Lab X2D',
-    source: 'Bambu Cloud MQTT',
-    status: 'idle',
-    nozzleTemp: 24,
-    targetNozzleTemp: 0,
-    bedTemp: 22,
-    targetBedTemp: 0,
-    fanSpeed: 0,
-    printName: undefined,
-    currentLayer: 0,
-    totalLayers: 0,
-    progressPct: 0,
-    elapsedSeconds: 0,
-    totalSeconds: 0,
-    printGrams: 0,
-    activeSlot: 1,
-    timestamp: new Date().toISOString()
-  });
+  // 1.229: keine erfundenen Werte mehr (vorher Fantasie-Seriennummer und 24 °C), sondern ehrlich „nicht verbunden“
+  return ok({ success: false, connected: false, error: 'Drucker nicht verbunden.', timestamp: new Date().toISOString() });
 }
 
 /**
@@ -104,7 +84,7 @@ export async function handlePrinterRoute(
   const b = body ?? {};
 
   if (m === 'GET' && path === '/api/printer/status') return ok(svc.getStatus());
-  if (m === 'GET' && path === '/api/bambu/status') return bambuStatusCompat(svc, query);
+  if (m === 'GET' && path === '/api/bambu/status') return bambuStatusCompat(svc);
   if (m !== 'POST') return null;
 
   switch (path) {
@@ -178,6 +158,10 @@ export async function handlePrinterRoute(
         if (!command || !['pause', 'resume', 'stop'].includes(command)) {
           return fail(400, { error: 'Ungültiger Befehl (erlaubt: pause, resume, stop).' });
         }
+        // 1.229: Abbrechen nur mit richtiger Admin-PIN (vorher lief „stop“ ohne PIN-Feld immer durch)
+        if (command === 'stop' && !svc.checkAdminPin(pin)) {
+          return fail(403, { success: false, error: 'Admin-PIN fehlt oder ist falsch. Druck nicht abgebrochen.' });
+        }
         return ok(await svc.sendCommand(command, pin));
       } catch (error: any) {
         return fail(403, { success: false, error: errText(error) || 'Befehl konnte nicht ausgeführt werden.' });
@@ -214,26 +198,9 @@ export async function handlePrinterRoute(
       }
     }
 
-    case '/api/printer/import-config': {
-      try {
-        const { fileContent } = b;
-        if (!fileContent || typeof fileContent !== 'string') {
-          return fail(400, { success: false, error: 'Kein Dateiinhalt übergeben.' });
-        }
-        const parsed = svc.parseConfiguration(fileContent);
-        if (!parsed.success) return fail(400, parsed);
-        // Wenn Token vorhanden aber keine User-ID, versuchen wir die User-ID aufzulösen
-        if (parsed.accessToken && !parsed.userId) {
-          const resolvedUid = await svc.resolveUserId(parsed.accessToken);
-          if (resolvedUid) parsed.userId = resolvedUid;
-        }
-        return ok(parsed);
-      } catch (error: any) {
-        return fail(500, { success: false, error: errText(error) });
-      }
-    }
-
     case '/api/printer/demo': {
+      // 1.229: nie über einen echten Drucker legen (sonst zeichnet der Rekorder einen Fake-Druck auf)
+      if (svc.getStatus().connected) return fail(409, { success: false, error: 'Drucker ist verbunden: Demo nur ohne echten Drucker.' });
       svc.seedDemoData();
       return ok({ success: true, message: 'Demo-Telemetrie aktiviert.', status: svc.getStatus() });
     }

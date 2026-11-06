@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Camera, RefreshCw, Lightbulb, Power, Plug, AlertTriangle, Maximize2, X } from 'lucide-react';
 import { diagnoseHaCamera } from '../../utils/haClient';
 import { getPrinterCameraError } from '../../utils/printerCamera';
+import { withApiKey } from '../../api/client';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 
 export interface PrinterCameraPanelProps {
@@ -71,16 +72,17 @@ export const PrinterCameraPanel: React.FC<PrinterCameraPanelProps> = ({
   }, [big]);
 
   const imgSrc =
-    cameraSource === 'ha'
-      ? haCameraBlobUrl || `/api/homeassistant/camera-snapshot?entity=${encodeURIComponent(haCreds.cameraEntity)}&t=${cameraSnapshotKey}`
-      : `/api/printer/camera-snapshot?t=${cameraSnapshotKey}`;
+    haCameraBlobUrl ||
+    (cameraSource === 'ha'
+      ? withApiKey(`/api/homeassistant/camera-snapshot?entity=${encodeURIComponent(haCreds.cameraEntity)}&t=${cameraSnapshotKey}`)
+      : withApiKey(`/api/printer/camera-frame?t=${cameraSnapshotKey}`));
 
   const image = (fit: 'cover' | 'contain') => (
     <img
       src={imgSrc}
       onError={e => {
         e.currentTarget.onerror = null;
-        e.currentTarget.src = haCameraBlobUrl || `/api/printer/camera-snapshot?t=${Date.now()}`;
+        e.currentTarget.src = haCameraBlobUrl || withApiKey(`/api/printer/camera-frame?t=${Date.now()}`);
       }}
       alt="Bambu Lab X2D Live Kamera"
       className={`w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`}

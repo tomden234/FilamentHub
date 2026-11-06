@@ -3361,5 +3361,25 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.229',
+    label: '1.229 (Sicherheit)',
+    releaseDate: '06.11.2026',
+    description:
+      'Großer Sicherheits-Check: Der Pi-Server antwortet nur noch mit Schlüssel (erzeugt er selbst, steht im Protokoll der Pi-App, einmal in der App unter Pi-Server eintragen, Geräte-Sync verteilt ihn). Ohne Schlüssel nur noch localhost (Windows-App), Schutz gegen fremde Webseiten. Git-Push-Route und andere unbenutzte, gefährliche Routen entfernt. Home Assistant: Token geht nie an fremde Adressen, nur Steckdosen/Lichter schaltbar. Cloud-Abgleich löscht keine Spulen mehr, wenn die Cloud kurz hakt. „Druck abbrechen“ braucht die Admin-PIN. „G-Code hochladen“ legt die Datei jetzt wirklich auf den Drucker (Pi: gleich in die Warteschlange). Kamera: kein ffmpeg-Doppelstart, keine Fantasie-Bilder mehr. Pi-Add-on 1.3.8.',
+    features: [
+      '🔐 Pi-Server nur mit Schlüssel (steht im Protokoll der Pi-App)',
+      '🧹 Git-Push und ungenutzte Routen entfernt',
+      '🏠 Home Assistant: Token nie an fremde Adressen, nur Steckdose/Licht schaltbar',
+      '☁️ Cloud-Abgleich überschreibt nichts mehr bei Lesefehler',
+      '🛑 Abbrechen nur mit Admin-PIN',
+      '📤 G-Code-Upload landet auf dem Drucker',
+      '📷 Kamera: kein doppeltes ffmpeg, keine Platzhalter-Bilder',
+      '🔑 APK nur noch mit eigenem Signierschlüssel (Secret)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

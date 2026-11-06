@@ -57,6 +57,21 @@ public class FilamentMqttPlugin extends Plugin {
         return ctx.getSocketFactory();
     }
 
+    /** Host aus „ssl://192.168.1.5:8883“: privat (10/8, 172.16/12, 192.168/16) oder Tailscale (100.64/10)? */
+    static boolean isLanHost(String url) {
+        try {
+            String rest = url.substring(url.indexOf("://") + 3);
+            String host = rest.split("[:/]")[0];
+            String[] p = host.split("\\.");
+            if (p.length != 4) return false;
+            int a = Integer.parseInt(p[0]), b = Integer.parseInt(p[1]);
+            for (String x : p) { int n = Integer.parseInt(x); if (n < 0 || n > 255) return false; }
+            return a == 10 || (a == 192 && b == 168) || (a == 172 && b >= 16 && b <= 31) || (a == 100 && b >= 64 && b <= 127);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private void emit(String id, String type, String topic, String payload, int code, String message) {
         JSObject o = new JSObject();
         o.put("id", id);
@@ -106,6 +121,11 @@ public class FilamentMqttPlugin extends Plugin {
         final boolean insecure = Boolean.TRUE.equals(call.getBoolean("insecure"));
         if (id == null || url == null || clientId == null) {
             call.reject("id, url und clientId sind erforderlich");
+            return;
+        }
+        // 1.229: Ohne Zertifikatsprüfung nur ins Heimnetz oder Tailscale (nie zu Servern im Internet)
+        if (insecure && !isLanHost(url)) {
+            call.reject("Unsichere Verbindung nur im Heimnetz oder über Tailscale erlaubt");
             return;
         }
         try {

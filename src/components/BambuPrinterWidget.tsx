@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Spool, ViewMode } from '../types/filament';
 import type { BambuLiveState } from '../types/bambu';
-import { printerApi } from '../api';
+import { printerApi, withApiKey } from '../api';
 import { safeStorage } from '../utils/safeStorage';
 import { ThreeDPrinterIcon } from './ThreeDPrinterIcon';
 import { addSystemLog } from '../utils/logService';
@@ -702,7 +702,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
     const connectSSE = () => {
       if (stopped) return;
       try {
-        eventSource = new EventSource('/api/printer/stream');
+        eventSource = new EventSource(withApiKey('/api/printer/stream'));
         eventSource.onopen = () => {
           retryDelay = 5000;
           stopPolling(); // Stream läuft: keine zusätzliche Abfrage

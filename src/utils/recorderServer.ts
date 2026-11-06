@@ -57,7 +57,7 @@ async function get(path: string, init: { method?: string; body?: unknown; timeou
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
     signal: AbortSignal.timeout(init.timeoutMs || 8000)
   });
-  if (res.status === 401) throw new Error('Schlüssel (API-Key) falsch');
+  if (res.status === 401) throw new Error('Schlüssel fehlt oder falsch. Er steht in Home Assistant → FilamentHub Server → Protokoll.');
   if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) throw new Error(`Antwort ${res.status}`);
   return res.json();
 }

@@ -93,11 +93,6 @@ export function closeTopLayer(): boolean {
   return true;
 }
 
-/** Ist gerade irgendeine Ebene (Menü, Fenster) offen? */
-export function hasOpenLayer(): boolean {
-  return stack.length > 0;
-}
-
 /**
  * Solange `active` wahr ist, gehört diese Ebene zum Verlauf: „Zurück“ ruft `close` auf.
  * `reopen` (optional): öffnet die Ebene wieder, wenn danach „Vor“ gedrückt wird.

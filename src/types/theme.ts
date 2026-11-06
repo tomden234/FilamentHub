@@ -1,11 +1,6 @@
 export type ThemeBrightness = 'polar' | 'warm' | 'titanium' | 'slate' | 'midnight';
 export type ThemeAccent = 'orange' | 'blue' | 'emerald' | 'cyan' | 'violet' | 'mono';
 
-export interface ThemeConfig {
-  brightness: ThemeBrightness;
-  accent: ThemeAccent;
-}
-
 export interface BrightnessOption {
   id: ThemeBrightness;
   name: string;

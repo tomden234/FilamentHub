@@ -107,7 +107,7 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
       </div>
       <div>
         <label className={label} style={{ color: 'var(--app-text)' }}>
-          API-Key (nur wenn im Server eingetragen)
+          Schlüssel (Home Assistant → FilamentHub Server → Protokoll)
         </label>
         <input className={inputCls} style={inputStyle} type="password" value={key} onChange={e => setKey(e.target.value)} autoComplete="off" />
       </div>

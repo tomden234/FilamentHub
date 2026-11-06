@@ -91,9 +91,16 @@ async function createWindow() {
     if (dir === 'left') goBack();
     else if (dir === 'right') goFwd();
   });
+  // 1.229: nur echte Webadressen im Browser öffnen (kein file:, ms-…: oder andere Protokolle)
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (!url.startsWith(URL)) shell.openExternal(url);
-    return { action: url.startsWith(URL) ? 'allow' : 'deny' };
+    if (url.startsWith(URL + '/')) return { action: 'allow' };
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (e, url) => {
+    if (url.startsWith(URL + '/') || url === URL) return;
+    e.preventDefault();
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
   });
   try {
     await waitForServer();

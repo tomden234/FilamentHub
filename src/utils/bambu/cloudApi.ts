@@ -115,56 +115,6 @@ export async function getBoundDevices(token: string): Promise<{
   }
 }
 
-/**
- * Konfigurationsdatei aus Bambu Studio (%APPDATA%\BambuStudio) parsen
- */
-export function parseConfiguration(rawText: string): {
-  success: boolean;
-  accessToken?: string;
-  userId?: string;
-  serialNumber?: string;
-  error?: string;
-} {
-  let foundToken = '';
-  let foundUid = '';
-  let foundSerial = '';
-
-  // 1. JSON-Parsing (bambu_network.json)
-  try {
-    const json = JSON.parse(rawText);
-    foundToken = json.access_token || json.token || json.user?.token || '';
-    foundUid = json.user_id || json.uid || json.user?.uid || '';
-
-    if (Array.isArray(json.devices) && json.devices.length > 0) {
-      foundSerial = json.devices[0].dev_id || json.devices[0].serial || '';
-    }
-  } catch {
-    // 2. INI / Text-Parsing (BambuStudio.conf)
-    const tokenMatch = rawText.match(/access_token\s*[:=]\s*"?([^"\r\n]+)"?/);
-    if (tokenMatch) foundToken = tokenMatch[1].trim();
-
-    const uidMatch = rawText.match(/user_id\s*[:=]\s*"?([^"\r\n]+)"?/);
-    if (uidMatch) foundUid = uidMatch[1].trim();
-
-    const devMatch = rawText.match(/dev_id\s*[:=]\s*"?([^"\r\n]+)"?/);
-    if (devMatch) foundSerial = devMatch[1].trim();
-  }
-
-  if (!foundToken && !foundUid && !foundSerial) {
-    return {
-      success: false,
-      error: 'Keine Zugangsdaten in der Datei gefunden. Bitte sicherstellen, dass Bambu Studio auf dem PC eingeloggt ist.'
-    };
-  }
-
-  return {
-    success: true,
-    accessToken: foundToken,
-    userId: foundUid ? String(foundUid).replace(/^u_/, '') : undefined,
-    serialNumber: foundSerial ? foundSerial.toUpperCase() : undefined
-  };
-}
-
 export interface BambuTaskFilament {
   material: string;
   colorHex: string;

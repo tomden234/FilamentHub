@@ -2,15 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
-import crypto from 'crypto';
+import { apiGuard } from './server/apiGuard.js';
 import { rootDir } from './server/paths.js';
 import storageRoutes from './server/routes/storage.js';
 import recognizeRoutes from './server/routes/recognize.js';
 import printerRoutes from './server/routes/printer.js';
 import printerCameraRoutes from './server/routes/printerCamera.js';
 import homeAssistantRoutes from './server/routes/homeAssistant.js';
-import haTelemetryRoutes from './server/routes/haTelemetry.js';
-import gitRoutes from './server/routes/git.js';
 import recorderRoutes from './server/routes/recorder.js';
 import hubRoutes from './server/routes/hub.js';
 
@@ -24,22 +22,13 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
 app.use(cors({ origin: corsOrigins.length > 0 ? corsOrigins : false }));
 
-// Optionaler Zugriffsschutz: Ist APP_API_KEY gesetzt, verlangen alle /api-Routen den Header x-api-key.
-app.use('/api', (req, res, next) => {
-  const expected = process.env.APP_API_KEY;
-  if (!expected) return next();
-  const given = req.headers['x-api-key'];
-  if (
-    typeof given === 'string' &&
-    given.length === expected.length &&
-    crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected))
-  ) {
-    return next();
-  }
-  return res.status(401).json({ error: 'Nicht autorisiert' });
-});
-// JSON Body-Parser mit erweitertem Limit für Bild-Uploads (Base64)
-app.use(express.json({ limit: '25mb' }));
+// Zugriffsschutz (1.229): Ist APP_API_KEY gesetzt (Pi-App erzeugt ihn selbst), braucht jede /api-Route den Schlüssel.
+// Ohne Schlüssel antwortet der Server nur Aufrufen über localhost (Windows-App, npm run dev): so kann weder jemand im WLAN
+// noch eine fremde Webseite per DNS-Rebinding den Drucker steuern.
+app.use('/api', apiGuard());
+// JSON-Body: große Bilder/Dateien nur für Foto-Erkennung und G-Code-Upload, sonst höchstens 5 MB
+app.use(['/api/recognize-spool', '/api/printer/upload-gcode'], express.json({ limit: '25mb' }));
+app.use(express.json({ limit: '5mb' }));
 
 // Routen (jede Gruppe liegt in server/routes/)
 app.use(storageRoutes);
@@ -47,8 +36,6 @@ app.use(recognizeRoutes);
 app.use(printerRoutes);
 app.use(printerCameraRoutes);
 app.use(homeAssistantRoutes);
-app.use(haTelemetryRoutes);
-app.use(gitRoutes);
 app.use(recorderRoutes);
 app.use(hubRoutes);
 

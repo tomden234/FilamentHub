@@ -15,7 +15,7 @@ Du brauchst nur ein GitHub-Konto, keinen eigenen Server.
 3. Die App startet **leer**. Spulen anlegen, Foto-Erkennung und Drucker sind optional.
 4. **Android-App:** *Actions → Build Android APK → Run workflow*. Die APK liegt danach im Release `apk-latest`. Ohne eigenen Schlüssel wird bei jedem Build ein neuer erzeugt (dann gehen Updates über eine ältere App nicht). Für dauerhafte Updates einmal einen eigenen Schlüssel anlegen, siehe [Webseite, Android, Windows](#webseite-android-windows).
 5. **Windows-App:** *Actions → Build Windows App → Run workflow*, Installer im Release `desktop-latest`.
-6. **Drucker, Kamera, Git-Push** brauchen den Server (`npm run build && npm start`, zum Beispiel auf einem Raspberry Pi). Der Bambu-X2D wird im LAN-Modus angebunden (Drucker-IP und LAN-Zugangscode in der App eintragen).
+6. **Drucker und Kamera** brauchen den Server (`npm run build && npm start`, zum Beispiel auf einem Raspberry Pi). Der Bambu-X2D wird im LAN-Modus angebunden (Drucker-IP und LAN-Zugangscode in der App eintragen).
 
 Cloud-Sync ist **aus**, bis du ihn einrichtest (Einstellungen → Verbindungen → Cloud). Dann liegen deine Daten in einem **privaten** GitHub-Gist, nirgends sonst.
 
@@ -199,14 +199,14 @@ Hinweis: Die Verbindung zu `api.github.com` muss im Netz erlaubt sein. Ein Test 
 **GitHub Pages:** `https://<dein-name>.github.io/<repo-name>/` wird bei jedem Push auf `main` per GitHub Action gebaut (`.github/workflows/pages.yml`). Einmalig unter *Settings → Pages* die Quelle auf *GitHub Actions* stellen.
 
 - Auf Pages läuft nur das Frontend (`VITE_STATIC=true`). Spulen und Einstellungen liegen im Browser.
-- Drucker-Livedaten, Git-Push und Foto-Erkennung brauchen den Server (`server.ts`). Home Assistant lässt sich direkt aus dem Browser anbinden.
+- Drucker-Livedaten und Foto-Erkennung brauchen den Server (`server.ts`). Home Assistant lässt sich direkt aus dem Browser anbinden.
 - Lokal testen: `VITE_BASE=/filament-website-google-ai/ VITE_STATIC=true npm run build && npm run preview`
 
 **Android-App (APK):** `.github/workflows/apk.yml` baut bei jedem Push auf `main` eine signierte APK (Capacitor) im Release `apk-latest`. Download: `https://github.com/<dein-name>/<repo-name>/releases/latest/download/FilamentHub.apk`
 
 - Signatur: eigener Schlüssel über zwei Secrets (*Settings → Secrets and variables → Actions*): `ANDROID_KEYSTORE_BASE64` und `ANDROID_KEYSTORE_PASSWORD`. Schlüssel einmal anlegen:
   `keytool -genkeypair -keystore filamenthub.keystore -alias filamenthub -keyalg RSA -keysize 2048 -validity 10000` (Alias muss `filamenthub` sein, Schlüssel- und Speicher-Passwort gleich), dann `base64 -w0 filamenthub.keystore` als Secret eintragen. Den Schlüssel gut sichern: Mit einem anderen Schlüssel lässt sich eine installierte App nicht mehr aktualisieren.
-  Ohne Secrets nutzt der Build die alte Datei `android-signing/` (falls vorhanden), sonst erzeugt er für diesen Build einen neuen Schlüssel.
+  Ohne Secrets baut der Workflow keine neue APK (seit 1.229, der alte Schlüssel im Repo war öffentlich); das Live-Update der Oberfläche läuft trotzdem.
 - Das Repository muss öffentlich sein, damit der Download ohne Login klappt.
 - Seit 1.62 spricht die App selbst mit dem Drucker (natives MQTT) und liest/beschreibt NFC-Tags (`android-native/`).
 - Seit 1.63 aktualisiert sie sich live (Plugin `FilamentLive`, `live-bundle.zip`). Nur bei Änderungen am Java-Teil `NATIVE_API` (FilamentLivePlugin.java) und `nativeApi` (apk.yml) erhöhen, dann ist eine neue APK nötig.
@@ -222,12 +222,10 @@ Hinweis: Die Verbindung zu `api.github.com` muss im Netz erlaubt sein. Ein Test 
 | `PORT` | Port des Servers (Standard 3000) |
 | `GEMINI_API_KEY` | Optional: KI-Bilderkennung (Google Gemini) |
 | `BAMBU_HOST`, `BAMBU_SERIAL` | Drucker (IP im LAN, Seriennummer) |
-| `BAMBU_ACCESS_CODE` | LAN-Zugangscode (RTSP-Kamera-Link) |
 | `BAMBU_USER_ID`, `BAMBU_ACCESS_TOKEN`, `BAMBU_ADMIN_PIN` | Bambu-Cloud-Zugang und PIN für Steuerbefehle |
-| `BAMBU_TLS_VERIFY` | `true` prüft das MQTT-Zertifikat (Standard aus) |
-| `APP_API_KEY` | Optional: schützt alle `/api`-Routen, Header `x-api-key` |
+| `BAMBU_TLS_VERIFY` | `false` schaltet die Zertifikatsprüfung der Bambu Cloud ab (Standard an, LAN prüft nie) |
+| `APP_API_KEY` | Schützt alle `/api`-Routen (Header `x-api-key`, Bilder/Stream `?k=`). Ohne Schlüssel nur Zugriff über localhost. Die Pi-App erzeugt ihn selbst |
 | `CORS_ORIGIN` | Erlaubte Ursprünge (kommagetrennt) |
-| `GIT_AUTHOR_EMAIL` | E-Mail für Commits, die der Server erzeugt |
 
 Vorlage: `.env.example`.
 

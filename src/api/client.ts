@@ -32,12 +32,23 @@ export interface ApiBase {
   message?: string;
 }
 
+/** Schlüssel für den eigenen Server: eigener Eintrag oder der Schlüssel des Pi (Menü → Pi-Server), falls die App vom Pi kommt */
 function readApiKey(): string | null {
   try {
-    return localStorage.getItem(API_KEY_STORAGE);
+    return localStorage.getItem(API_KEY_STORAGE) || localStorage.getItem('filamenthub_server_key') || null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Für Adressen, die der Browser selbst lädt (<img>, EventSource): die können keinen Header mitschicken,
+ * darum hängt der Schlüssel als ?k= dran (der Server erlaubt das nur für Bild- und Stream-Routen).
+ */
+export function withApiKey(path: string): string {
+  const key = readApiKey();
+  if (!key || !path.startsWith('/api')) return path;
+  return `${path}${path.includes('?') ? '&' : '?'}k=${encodeURIComponent(key)}`;
 }
 
 /**
@@ -73,11 +84,16 @@ export function apiFetch(path: string, init: RequestInit & { timeoutMs?: number 
   const key = path.startsWith('/api') ? readApiKey() : null;
   if (key) headers.set('x-api-key', key);
 
+  // 1.229: Zeitgrenze gilt auch, wenn zusätzlich ein eigenes Abbruch-Signal mitkommt
   let timer: ReturnType<typeof setTimeout> | undefined;
   let signal = rest.signal ?? undefined;
-  if (timeoutMs && !signal) {
+  if (timeoutMs) {
     const controller = new AbortController();
     timer = setTimeout(() => controller.abort(), timeoutMs);
+    if (signal) {
+      if (signal.aborted) controller.abort();
+      else signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
     signal = controller.signal;
   }
 

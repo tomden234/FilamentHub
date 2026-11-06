@@ -1,6 +1,7 @@
 // Start der Home-Assistant-App: Einstellungen aus der Konfiguration in die Server-Dateien und Umgebung übernehmen, dann den Server starten.
 import fs from 'fs';
 import { spawn } from 'child_process';
+import crypto from 'crypto';
 
 let o = {};
 try {
@@ -37,7 +38,28 @@ const env = {
   // Handy-App, Windows-App und Webseite dürfen den Server ansprechen
   CORS_ORIGIN: 'https://tomden234.github.io,https://localhost,capacitor://localhost,http://localhost,http://localhost:3000,http://127.0.0.1:38517,http://localhost:38517,app://.'
 };
-if (o.api_key) env.APP_API_KEY = String(o.api_key);
+// 1.229: Schlüssel ist Pflicht. Ohne eigenen Eintrag erzeugt der Pi einmal einen und merkt ihn sich (/data/api-key.txt).
+let apiKey = String(o.api_key || '').trim();
+if (!apiKey) {
+  try {
+    apiKey = fs.readFileSync('/data/api-key.txt', 'utf-8').trim();
+  } catch {
+    /* noch keiner */
+  }
+  if (!apiKey) {
+    apiKey = crypto.randomBytes(18).toString('base64url');
+    try {
+      fs.writeFileSync('/data/api-key.txt', apiKey, { mode: 0o600 });
+    } catch (e) {
+      console.error('[FilamentHub] Schlüssel nicht speicherbar:', e.message);
+    }
+  }
+}
+env.APP_API_KEY = apiKey;
+console.log('[FilamentHub] ==============================================');
+console.log(`[FilamentHub] Schlüssel für die Apps: ${apiKey}`);
+console.log('[FilamentHub] In jeder App: Menü → Pi-Server → Schlüssel eintragen → Prüfen');
+console.log('[FilamentHub] ==============================================');
 
 const child = spawn('node', ['/app/server-dist/server.mjs'], { cwd: '/data', env, stdio: 'inherit' });
 child.on('exit', code => process.exit(code ?? 1));

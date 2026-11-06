@@ -85,11 +85,6 @@ function get(): NativeBambuService {
   return service;
 }
 
-/** Sofort (neu) verbinden, z. B. nach dem Login. Gibt Erfolg und Meldung zurück. */
-export function reconnectNativePrinter() {
-  return get().ensureConnected(true);
-}
-
 /** Live-Status abonnieren (ersetzt den Server-Stream). Gibt eine Abmelde-Funktion zurück. */
 export function subscribeNativePrinter(cb: (status: ReturnType<BambuMqttCore['getStatus']>) => void): () => void {
   const svc = get();

@@ -14,11 +14,6 @@ export const homeAssistantApi = {
       body: JSON.stringify(payload)
     }).catch(() => undefined),
 
-  telemetry: () => apiGet<any>('/api/homeassistant/bambu-telemetry'),
-
-  setTemperature: (target: 'nozzle' | 'bed', temperature: number) =>
-    apiPost<ApiBase>('/api/homeassistant/set-temperature', { target, temperature }),
-
   switchStatus: (entity: string) =>
     apiGet<any>(`/api/homeassistant/switch-status?entity=${encodeURIComponent(entity)}`),
 

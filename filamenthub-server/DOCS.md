@@ -8,14 +8,14 @@ Läuft rund um die Uhr auf deinem Pi. Er hört am Drucker mit (LAN-Modus) und sp
    - **Drucker-IP**: am besten im Router eine feste IP für den Drucker einstellen.
    - **Seriennummer**: steht am Drucker (Einstellungen → Gerät) oder in Bambu Studio.
    - **Zugangscode**: am Drucker unter Einstellungen → WLAN/LAN → Zugangscode.
-   - **API-Key** (optional): ein beliebiges Passwort. Dann braucht jede App den gleichen Schlüssel.
+   - **API-Key** (optional): eigenes Passwort. Leer lassen: der Pi erzeugt selbst einen Schlüssel (ab 1.3.8 Pflicht).
 2. Am Drucker müssen **Nur-LAN-Modus** und **Entwicklermodus** an sein.
 3. Reiter **Info**: „Beim Systemstart starten“ und „Watchdog“ einschalten, dann **Starten**.
 4. Im Reiter **Protokoll** muss stehen: `Drucker ... LAN-Modus` und `FilamentHub Server läuft`.
 
 ## In der App
 
-Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum Beispiel `192.168.68.10`, der Port 3000 wird ergänzt) und auf **Prüfen** tippen. Unterwegs geht dieselbe Adresse über Tailscale.
+Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum Beispiel `192.168.68.10`, der Port 3000 wird ergänzt), den **Schlüssel** aus dem Reiter **Protokoll** (Zeile `Schlüssel für die Apps: …`) eintragen und auf **Prüfen** tippen. Unterwegs geht dieselbe Adresse über Tailscale. Mit Geräte-Sync-Passwort reicht es, den Schlüssel auf einem Gerät einzutragen.
 
 ## Was der Server ohne App macht (ab 1.1.0)
 
@@ -34,6 +34,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - **Strom** der Drucker-Steckdose je Woche, **Wochenbericht** sonntags 18 Uhr, **Ruhezeit** (lautlos), **Drucker antwortet nicht**.
 - **ESP-Update übers WLAN**: Mit der ESPHome-App in Home Assistant legt der Server die neueste AMS-YAML in den ESPHome-Ordner (eigene Werte bleiben). Dann nur „Installieren“ → „Drahtlos“.
 - **App direkt vom Pi**: Knopf „Web-UI öffnen“ oder `http://<IP des Pi>:3000`. Über http geht im Browser der verschlüsselte Geräte-Sync nicht; Handy- und Windows-App sind davon nicht betroffen.
+
+## Neu in 1.3.8 (Sicherheit)
+
+- Der Server antwortet nur noch mit Schlüssel. Ohne eigenen API-Key erzeugt er beim ersten Start einen (steht im Protokoll, bleibt bei Updates gleich).
 
 ## Hinweise
 

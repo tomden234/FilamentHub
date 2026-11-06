@@ -9,6 +9,7 @@ let latestAt = 0;
 let lastRequest = 0;
 let lastError = '';
 let stopTimer: ReturnType<typeof setInterval> | null = null;
+let starting: Promise<void> | null = null;
 
 async function ffmpegPath(): Promise<string> {
   if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
@@ -90,8 +91,14 @@ async function start(ip: string, code: string) {
 export async function getPrinterFrame(ip: string, code: string): Promise<{ ok: true; jpeg: Buffer } | { ok: false; error: string }> {
   lastRequest = Date.now();
   if (!proc || procKey !== `${ip}|${code}`) {
-    latest = null;
-    await start(ip, code);
+    // 1.229: Zwei Abrufe gleichzeitig (Handy + PC) starteten zwei ffmpeg, der erste lief dann ewig weiter. Jetzt nur ein Start.
+    if (!starting) {
+      latest = null;
+      starting = start(ip, code).finally(() => {
+        starting = null;
+      });
+    }
+    await starting;
   }
   const t0 = Date.now();
   while ((!latest || Date.now() - latestAt > 5000) && Date.now() - t0 < 10_000) {

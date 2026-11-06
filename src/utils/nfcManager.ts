@@ -63,51 +63,6 @@ export function isWebNfcSupported(): boolean {
 }
 
 /**
- * Löscht den Inhalt eines physischen NFC-Tags (schreibt leeren Text / leert den NDEF Record)
- */
-export async function clearNfcTag(
-  serialNumber?: string,
-  signal?: AbortSignal
-): Promise<{ success: boolean; message: string }> {
-  if (serialNumber) {
-    unmapTag(serialNumber);
-  }
-
-  if (isWebNfcSupported()) {
-    try {
-      const NDEFReaderClass = (window as any).NDEFReader;
-      const ndef = new NDEFReaderClass();
-      await ndef.write(
-        {
-          records: [
-            {
-              recordType: 'text',
-              data: ''
-            }
-          ]
-        },
-        { signal }
-      );
-      return {
-        success: true,
-        message: 'NFC-Tag wurde erfolgreich gelöscht und geleert.'
-      };
-    } catch (err: any) {
-      if (err.name === 'AbortError') throw err;
-      return {
-        success: false,
-        message: `Fehler beim Löschen des Tags: ${err.message || 'Tag konnte nicht geleert werden'}`
-      };
-    }
-  }
-
-  return {
-    success: true,
-    message: 'NFC-Tag Verknüpfung im System erfolgreich gelöscht.'
-  };
-}
-
-/**
  * Schreibt eine Spule auf einen physischen NFC-Tag (oder speichert die Zuordnung)
  */
 export type NfcWriteFormat = 'filamenthub' | 'opentag3d';

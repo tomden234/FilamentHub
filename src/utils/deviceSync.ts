@@ -28,7 +28,9 @@ const SETTING_KEYS = [
   'bambu_job_grams',
   'bambu_auto_deduct',
   // NFC-Tag ↔ Spule (damit jedes Gerät die Tags im AMS erkennt)
-  'filamenthub_nfc_tag_mappings_v1'
+  'filamenthub_nfc_tag_mappings_v1',
+  // 1.229: Schlüssel des Pi-Servers (Pflicht), einmal eintragen reicht
+  'filamenthub_server_key'
 ];
 // Home Assistant (für Kamera, Steckdose und NFC-Leser im AMS)
 export const HA_KEYS = ['ha_nabu_url', 'ha_url', 'ha_long_lived_token', 'ha_token', 'ha_camera_entity', 'ha_switch_entity'];

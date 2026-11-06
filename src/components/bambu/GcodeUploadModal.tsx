@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileCode, X, UploadCloud, RefreshCw, Play } from 'lucide-react';
+import { FileCode, X, UploadCloud, RefreshCw, Upload } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 import type { Spool } from '../../types/filament';
 import { SpoolFitList } from '../workshop/SpoolFitList';
@@ -146,8 +146,8 @@ export const GcodeUploadModal: React.FC<GcodeUploadModalProps> = ({
                 disabled={!selectedGcodeFile || isUploadingGcode}
                 className="flex-1 py-2 px-3 rounded-xl bg-[#00AE42] hover:bg-[#009237] text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-[#00AE42]/20 disabled:opacity-50"
               >
-                {isUploadingGcode ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-white" />}
-                <span>Direkt drucken</span>
+                {isUploadingGcode ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                <span>Auf Drucker laden</span>
               </button>
             </div>
           </div>

@@ -110,11 +110,10 @@ export async function callHaService(domain: string, service: string, serviceData
   const { url, token } = getHaCredentials();
 
   // 1. Direkter Aufruf an Home Assistant
+  // 1.229: Lief der direkte Aufruf in die Zeitgrenze, kam er evtl. trotzdem an. Ein „toggle“ dann nicht nochmal senden (sonst wieder aus).
+  let maybeSent = false;
   if (token) {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-
       const directEndpoint = `${url}/api/services/${domain}/${service}`;
       const directRes = await fetch(directEndpoint, {
         method: 'POST',
@@ -123,9 +122,8 @@ export async function callHaService(domain: string, service: string, serviceData
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(serviceData),
-        signal: controller.signal
+        signal: AbortSignal.timeout(6000)
       });
-      clearTimeout(timeout);
 
       if (directRes.ok) {
         return {
@@ -134,21 +132,26 @@ export async function callHaService(domain: string, service: string, serviceData
         };
       }
     } catch (err: any) {
+      if (err?.name === 'TimeoutError' || err?.name === 'AbortError') maybeSent = true;
       console.warn('[HA Client] Direkter Service-Aufruf fehlgeschlagen, versuche Proxy-Fallback:', err?.message);
     }
+  }
+  if (maybeSent && service === 'toggle') {
+    return { success: false, message: 'Home Assistant hat zu langsam geantwortet. Bitte den Schaltzustand prüfen, bevor du nochmal schaltest.' };
   }
 
   // 2. Fallback: Express Server Proxy (/api/homeassistant/...)
   try {
-    let proxyEndpoint = '';
-    let bodyData: any = {};
-
     if (domain === 'switch' && (service === 'turn_on' || service === 'turn_off' || service === 'toggle')) {
-      proxyEndpoint = '/api/homeassistant/toggle-switch';
-      bodyData = { entity: serviceData.entity_id, state: service === 'turn_on' ? 'on' : service === 'turn_off' ? 'off' : undefined };
-    } else if (domain === 'light') {
-      proxyEndpoint = '/api/homeassistant/set-light';
-      bodyData = { entity: serviceData.entity_id, mode: service === 'turn_on' ? 'on' : 'off' };
+      const proxyRes = await homeAssistantApi.proxyService('/api/homeassistant/toggle-switch', {
+        entity: serviceData.entity_id,
+        state: service === 'turn_on' ? 'on' : service === 'turn_off' ? 'off' : undefined
+      });
+      if (proxyRes.ok && proxyRes.isJson) {
+        const proxyData = proxyRes.data;
+        if (proxyData.success) return { success: true, message: proxyData.message || 'Befehl ausgeführt!' };
+        return { success: false, message: proxyData.error || 'Home Assistant Fehler' };
+      }
     } else if (domain === 'automation' && (service === 'turn_on' || service === 'turn_off')) {
       const r = await homeAssistantApi.proxyService('/api/homeassistant/raw', {
         haUrl: url,
@@ -158,21 +161,6 @@ export async function callHaService(domain: string, service: string, serviceData
         body: serviceData
       });
       if (r.ok && r.isJson && r.data?.success && r.data.status < 300) return { success: true, message: `Home Assistant: automation.${service} ausgeführt.` };
-    } else if (domain === 'automation' && service === 'trigger') {
-      proxyEndpoint = '/api/homeassistant/trigger-pull-automation';
-      bodyData = { entity_id: serviceData.entity_id, haUrl: url, haToken: token };
-    }
-
-    if (proxyEndpoint) {
-      const proxyRes = await homeAssistantApi.proxyService(proxyEndpoint, bodyData);
-
-      if (proxyRes.ok && proxyRes.isJson) {
-        const proxyData = proxyRes.data;
-        if (proxyData.success) {
-          return { success: true, message: proxyData.message || 'Befehl ausgeführt!' };
-        }
-        return { success: false, message: proxyData.error || 'Home Assistant Fehler' };
-      }
     }
   } catch {}
 

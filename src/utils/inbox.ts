@@ -80,12 +80,6 @@ export function clearInbox(): void {
   save([]);
 }
 
-/** Nach Backup-Import oder Sync: neu aus dem Speicher lesen */
-export function reloadInbox(): void {
-  cache = null;
-  listeners.forEach(l => l());
-}
-
 function subscribe(cb: () => void): () => void {
   listeners.add(cb);
   return () => listeners.delete(cb);

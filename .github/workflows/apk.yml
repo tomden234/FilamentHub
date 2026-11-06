@@ -193,24 +193,16 @@ jobs:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_SECRET_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          # Signierschlüssel: 1) eigener Schlüssel aus dem Secret ANDROID_KEYSTORE_BASE64 (empfohlen),
-          # 2) alter Schlüssel im Repo (android-signing/, nur für bestehende Installationen),
-          # 3) sonst wird für diesen Build ein neuer Schlüssel erzeugt (Updates über die alte App gehen dann nicht).
+          # Signierschlüssel nur aus den Secrets ANDROID_KEYSTORE_BASE64 + ANDROID_KEYSTORE_PASSWORD (1.229: der alte Schlüssel im Repo war öffentlich).
+          # Ohne Secrets wird keine neue APK gebaut: das Live-Update (Oberfläche) läuft trotzdem, die bisherige APK bleibt im Release.
           KS_FILE="$RUNNER_TEMP/filamenthub.keystore"
-          if [ -n "$KS_B64" ]; then
-            echo "$KS_B64" | base64 -d > "$KS_FILE"
-            KS_PASS="$KS_SECRET_PASS"
-            echo "Signierschlüssel: aus Secret"
-          elif [ -f "$GITHUB_WORKSPACE/android-signing/filamenthub.keystore" ]; then
-            cp "$GITHUB_WORKSPACE/android-signing/filamenthub.keystore" "$KS_FILE"
-            KS_PASS="${KS_SECRET_PASS:-filamenthub}"
-            echo "Signierschlüssel: Datei im Repo (alt)"
-          else
-            KS_PASS="$(openssl rand -hex 16)"
-            keytool -genkeypair -v -keystore "$KS_FILE" -alias filamenthub -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$KS_PASS" -keypass "$KS_PASS" -dname "CN=FilamentHub"
-            echo "Signierschlüssel: neu erzeugt (nur für diesen Build)"
+          if [ -z "$KS_B64" ] || [ -z "$KS_SECRET_PASS" ]; then
+            echo "::warning::Keine APK gebaut: Secrets ANDROID_KEYSTORE_BASE64 und ANDROID_KEYSTORE_PASSWORD fehlen. Live-Update läuft trotzdem."
+            exit 0
           fi
+          echo "$KS_B64" | base64 -d > "$KS_FILE"
+          KS_PASS="$KS_SECRET_PASS"
+          echo "Signierschlüssel: aus Secret"
           VERSION=$(node -p "require('../package.json').version")
           sed -i "s/versionName \".*\"/versionName \"$VERSION\"/; s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" app/build.gradle
           chmod +x gradlew
@@ -222,6 +214,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk ../FilamentHub.apk
 
       - name: APK als Artefakt speichern
+        if: hashFiles('FilamentHub.apk') != ''
         uses: actions/upload-artifact@v4
         with:
           name: FilamentHub-apk
@@ -232,8 +225,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          # Keine neue APK (Secrets fehlen): die bisherige aus dem Release behalten
+          if [ ! -f FilamentHub.apk ]; then gh release download apk-latest -p FilamentHub.apk || true; fi
+          ASSETS="live-bundle.zip live-version.json"
+          if [ -f FilamentHub.apk ]; then ASSETS="FilamentHub.apk $ASSETS"; fi
           gh release delete apk-latest --cleanup-tag --yes || true
-          gh release create apk-latest FilamentHub.apk live-bundle.zip live-version.json \
+          gh release create apk-latest $ASSETS \
             --title "FilamentHub APK v$VERSION" \
             --notes "Automatisch gebaut aus Commit ${GITHUB_SHA::7}. Auf dem Handy installieren (Unbekannte Quellen erlauben)." \
             --latest
