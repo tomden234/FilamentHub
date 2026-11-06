@@ -9,7 +9,7 @@ import { PENDING_DEDUCT_KEY } from './printUsage';
 import { isPrintDone, makePrintId, markPrintDone, type PrintSession } from './printSession';
 import { extractPrints, findHistorySensors, mergePrintSources, parseHistory, type HaPrint, type HistorySensors } from './haPrintHistory';
 import { fetchServerPrints, pushHubConfig, type ServerDeductState } from './recorderServer';
-import { hubDeductActive, printAlreadyDeducted } from './serverDeducts';
+import { printAlreadyDeducted } from './serverDeducts';
 
 const SENSORS_KEY = 'filamenthub_ha_hist_sensors';
 const FIRST_KEY = 'filamenthub_ha_hist_first';
@@ -116,8 +116,6 @@ export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promi
   // Neueste zuerst durchsehen: bei Abbrüchen wird nur der neueste erfragt
   const todo = prints.filter(p => now - p.endMs >= MIN_AGE_MS).sort((a, b) => b.endMs - a.endMs);
   const fresh: { p: HaPrint; id: string; st?: ServerDeductState; resolved?: boolean }[] = [];
-  // Der Pi zeichnet jeden Druck rund um die Uhr auf und zieht selbst ab: Drucke, die nur Home Assistant kennt, nur in die Liste (nie fragen)
-  const piOwns = Boolean(srv.prints) && hubDeductActive();
   for (const p of todo) {
     const st = (p as { deduct?: ServerDeductState }).deduct;
     // Der Pi zieht gerade ab: nichts anfassen, nächster Lauf (sonst doppelt)
@@ -145,7 +143,6 @@ export async function syncHaPrints(onEnd: HaEndHandler, now = Date.now()): Promi
     if (p.endMs < first - BACKFILL_MS) continue; // zu alt für einen Abzug, nur in die Liste
     // Der Pi hat schon abgezogen (oder es war schon abgezogen) bzw. ein anderes Gerät hat die Frage beantwortet: nur in die Liste
     if (st === 'done' || st === 'skip' || (st === 'ask' && resolved)) continue;
-    if (piOwns && !st) continue;
     if (printAlreadyDeducted(id, p.name, p.endMs)) continue;
     if (p.state === 'FAILED') {
       if (askedFailed) continue;

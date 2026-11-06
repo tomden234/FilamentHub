@@ -88,6 +88,12 @@ export function startedJobPath(name: string): string | null {
   const k = jobKey(name);
   return (k && loadStarted().find(x => x.names.includes(k))?.path) || null;
 }
+/** 1.227: Druck ohne Namen: hat die Warteschlange um diese Zeit (±15 min) etwas gestartet? */
+export function startedJobNear(startMs: number): { name: string; filaments: JobFilament[] } | null {
+  if (!(startMs > 0)) return null;
+  const j = loadStarted().find(x => Math.abs(x.at - startMs) < 15 * 60_000 && x.filaments.length);
+  return j ? { name: j.names[0] || '', filaments: j.filaments } : null;
+}
 /** Filament-Gewichte eines Drucks, den die Warteschlange gestartet hat (null = unbekannt) */
 export function startedJobFilaments(name: string): JobFilament[] | null {
   const k = jobKey(name);

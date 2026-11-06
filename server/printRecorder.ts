@@ -177,6 +177,14 @@ export class PrintRecorder {
     return null;
   }
 
+  /** 1.227: Druck ohne Namen nachträglich benennen (Name aus der Druckdatei) */
+  public setName(id: string, name: string): void {
+    const r = this.data.prints.find(p => p.id === id);
+    if (!r || !name) return;
+    r.name = name;
+    this.save(true, Date.now());
+  }
+
   public list(since = 0): RecordedPrint[] {
     return this.data.prints.filter(p => p.endMs > since).sort((a, b) => a.endMs - b.endMs);
   }

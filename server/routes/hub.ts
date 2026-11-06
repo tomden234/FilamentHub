@@ -25,7 +25,7 @@ router.post('/api/hub/resolve', (req, res) => {
 
 router.post('/api/hub/deduct/suggest', async (req, res) => {
   try {
-    const r = await deductSuggest({ id: String(req.body?.id || ''), name: String(req.body?.name || '') });
+    const r = await deductSuggest({ id: String(req.body?.id || ''), name: String(req.body?.name || ''), startMs: Number(req.body?.startMs) || 0, endMs: Number(req.body?.endMs) || 0 });
     res.json({ success: true, ...r });
   } catch (e: any) {
     res.json({ success: false, error: String(e?.message || e) });

@@ -55,6 +55,15 @@ describe('Pi-Server: Abzug im Ablauf', () => {
     expect(doc.spools[0].remainingWeight).toBe(450);
     expect(posts).toBe(2);
     expect(manual.ok).toBe(false);
+
+    // 1.227: Druck OHNE Namen („Druckauftrag“), Drucker danach aus: Gewichte vom Druckstart werden genommen
+    const rec3 = { ...rec, id: 'druck|s3', name: 'Druckauftrag', startMs: T - 4 * 3600_000, endMs: T - 3 * 3600_000 };
+    hub._test.state().openFil = { startMs: rec3.startMs + 2000, name: 'Air_Up_Fake_Pod.gcode.3mf', filaments: [{ type: 'PLA', colorHex: '#FFFFFF', grams: 25 }] };
+    hub._test.state().prints[rec3.id] = { deduct: 'pending', tries: 0, lastTry: 0, photo: false, pushed: false, trays: [{ slot: 1, type: 'PLA', colorHex: '#FFFFFF' }], at: T };
+    await hub._test.tryDeduct(rec3);
+    expect(hub.printMeta(rec3.id)?.deduct).toBe('done');
+    expect(doc.spools[0].remainingWeight).toBe(425);
+    expect(doc.printLog.some((r: any) => r.name === 'Air_Up_Fake_Pod')).toBe(true);
     vi.unstubAllGlobals();
   });
 });

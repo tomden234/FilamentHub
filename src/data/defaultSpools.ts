@@ -3335,5 +3335,21 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.227',
+    label: '1.227 (Abzug immer, auch ohne Namen)',
+    releaseDate: '06.11.2026',
+    description:
+      'Drucke ohne Namen („Druckauftrag“) wurden nicht abgezogen, weil der Pi ohne Namen die Druckdatei nicht fand. Jetzt holt der Pi die Gewichte schon beim Druckstart (Drucker sicher an), sucht ohne Namen die neueste Druckdatei bzw. den Start aus der Warteschlange und übernimmt den echten Namen in die Liste. „Aus nach Druck“ wartet, bis der Abzug durch ist (höchstens 10 min). Ist gar nichts bekannt, schätzt der Pi die Gramm nach Druckzeit aus deinen letzten Drucken und schreibt „geschätzt, bitte prüfen“ dazu. Liegengebliebene Drucke mit „Gewicht unbekannt“ versucht der Pi nach dem Update einmal neu. Pi-Add-on 1.3.7.',
+    features: [
+      '⚖️ Gewichte schon beim Druckstart geholt',
+      '🏷️ Druck ohne Namen: neueste Datei / Warteschlange, echter Name in der Liste',
+      '🔌 „Aus nach Druck“ wartet auf den Abzug',
+      '📏 Notfall: Schätzung nach Druckzeit (markiert)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

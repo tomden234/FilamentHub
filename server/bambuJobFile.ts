@@ -67,9 +67,11 @@ export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number
   return r.filaments.length ? r : null;
 }
 
-export async function fetchJobWeights(opts: { ip: string; code: string; jobName: string; plate?: number }): Promise<JobWeights | { error: string }> {
+export async function fetchJobWeights(opts: { ip: string; code: string; jobName: string; plate?: number; newestBefore?: number }): Promise<JobWeights | { error: string }> {
   const want = norm(opts.jobName);
-  if (!want) return { error: 'Kein Auftragsname.' };
+  // 1.227: ohne Namen (Drucker meldet keinen) die neueste Druckdatei nehmen, die vor dem Druckstart da war
+  const newest = !want && Number(opts.newestBefore) > 0;
+  if (!want && !newest) return { error: 'Kein Auftragsname.' };
   try {
     return await withFtp(opts.ip, opts.code, async client => {
 
@@ -83,8 +85,8 @@ export async function fetchJobWeights(opts: { ip: string; code: string; jobName:
       }
       for (const f of list) {
         if (!f.isFile || !/\.3mf$/i.test(f.name)) continue;
-        if (norm(f.name) !== want) continue;
         const time = f.modifiedAt ? f.modifiedAt.getTime() : 0;
+        if (newest ? time > Number(opts.newestBefore) + 10 * 60_000 : norm(f.name) !== want) continue;
         if (!best || time >= best.time) best = { path: (dir === '/' ? '' : dir) + '/' + f.name, name: f.name, time };
       }
     }

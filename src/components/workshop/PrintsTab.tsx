@@ -69,7 +69,7 @@ const DeductEditor: React.FC<{ r: PrintRecord; spools: Spool[]; onDone: () => vo
     setOpen(true);
     setBusy(true);
     setMsg(null);
-    const sug = await piDeductSuggest({ id: r.id, name: r.name });
+    const sug = await piDeductSuggest({ id: r.id, name: r.name, startMs: r.startMs, endMs: r.endMs });
     const ls = (sug?.parts || []).map(p => ({ spoolId: p.spoolId, grams: String(Math.round(p.grams * 10) / 10) }));
     setLines(ls.length ? ls : [{ spoolId: '', grams: '' }]);
     if (!sug) setMsg({ ok: false, text: 'Pi nicht erreichbar. Spule und Gramm von Hand eintragen.' });

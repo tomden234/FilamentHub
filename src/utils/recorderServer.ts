@@ -440,7 +440,7 @@ export interface DeductSuggestion {
 }
 
 /** Manueller Abzug über den Pi: Vorschlag (Gramm aus der Datei, passende Spulen) */
-export async function piDeductSuggest(p: { id: string; name: string }): Promise<DeductSuggestion | null> {
+export async function piDeductSuggest(p: { id: string; name: string; startMs?: number; endMs?: number }): Promise<DeductSuggestion | null> {
   try {
     const j = await get('/api/hub/deduct/suggest', { method: 'POST', body: p, timeoutMs: 90000 });
     return j?.success ? { filaments: j.filaments || null, parts: Array.isArray(j.parts) ? j.parts : [] } : null;

@@ -20,7 +20,8 @@ import { applyDeduction, deductedIn, expectedMinutes, planParts, shortages, tooL
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { haAvailable, haCameraJpeg, haListen, haPowerW, haPush, haState, haSwitch, type PushOptions } from './ha.js';
 import { addEnergy, allTrays, inQuietHours, missingMaterials, stalled, weekKey, weeklyReport, type EnergyWeek } from './hubLogic.js';
-import { attachQueue, autoScan, onHaEvent as queueEvent, refreshLeds, startedJobFilaments, type QueuePort } from './queue.js';
+import { attachQueue, autoScan, onHaEvent as queueEvent, refreshLeds, startedJobFilaments, startedJobNear, type QueuePort } from './queue.js';
+import { isGenericPrintName } from '../../src/utils/printMatch.js';
 import { espInfo as espInfoFn, publishImage, syncEspYaml } from './esphome.js';
 import { rootDir } from '../paths.js';
 
@@ -191,6 +192,10 @@ export interface PrintMeta {
   /** Fächer beim Druckende (für den Abzug) */
   trays?: TrayLite[];
   resolved?: boolean;
+  /** Gewicht nur nach Druckzeit geschätzt */
+  estimated?: boolean;
+  /** „Gewicht unbekannt“ wurde schon einmal neu versucht */
+  retried?: boolean;
   at: number;
 }
 
@@ -209,7 +214,11 @@ interface HubState {
   lastReportWeek: string;
   /** Energie des laufenden Drucks (Wh) */
   printWh: number;
+  /** 1.227: Gewichte des laufenden Drucks, schon beim Start geholt (Drucker ist am Ende evtl. schon aus) */
+  openFil?: { startMs: number; name: string; filaments: Fil[] } | null;
 }
+
+type Fil = { type: string; colorHex: string; grams: number };
 
 let st: HubState | null = null;
 function state(): HubState {
@@ -357,22 +366,48 @@ async function takePhoto(id: string): Promise<boolean> {
   }
 }
 
-async function jobWeights(name: string): Promise<{ type: string; colorHex: string; grams: number }[] | null> {
-  // Von der Warteschlange gestartet: Gewichte sind schon bekannt (Datei kann umbenannt sein)
-  const known = startedJobFilaments(name);
-  if (known) return known;
+/**
+ * Gewichte eines Drucks. Reihenfolge (1.227):
+ * 1. von der Warteschlange gestartet (Name oder Startzeit), 2. schon beim Druckstart geholt,
+ * 3. Datei auf dem Drucker per Name, 4. ohne Namen: neueste Druckdatei vor dem Start.
+ */
+async function jobWeights(name: string, startMs = 0, tries = 3): Promise<{ filaments: Fil[]; fileName?: string } | null> {
+  const generic = isGenericPrintName(name);
+  const known = generic ? null : startedJobFilaments(name);
+  if (known) return { filaments: known };
+  const near = startedJobNear(startMs);
+  if (near) return { filaments: near.filaments, fileName: near.name };
+  const of = state().openFil;
+  if (of && startMs && Math.abs(of.startMs - startMs) < 5 * 60_000 && of.filaments.length) return { filaments: of.filaments, fileName: of.name };
   const lan = port?.getLanAccess();
   if (!lan) return null;
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetchJobWeights({ ip: lan.ip, code: lan.code, jobName: name });
-      if (!('error' in r) && r.filaments.length) return r.filaments;
+      const r = await fetchJobWeights({ ip: lan.ip, code: lan.code, jobName: generic ? '' : name, newestBefore: generic ? startMs || Date.now() : undefined });
+      if (!('error' in r) && r.filaments.length) return { filaments: r.filaments, fileName: r.fileName };
     } catch {
       /* nochmal */
     }
-    await sleep(20_000);
+    if (i < tries - 1) await sleep(20_000);
   }
   return null;
+}
+
+/** 1.227: Schätzung, wenn gar nichts bekannt ist: Gramm je Minute aus deinen letzten abgezogenen Drucken */
+function gramsPerMinute(): number {
+  const s = state();
+  let g = 0;
+  let min = 0;
+  const recs = printRecorder.list();
+  for (const [id, m] of Object.entries(s.prints)) {
+    if (m.deduct !== 'done' || !m.parts?.length || m.estimated) continue;
+    const r = recs.find(p => p.id === id);
+    const dur = r ? (r.endMs - r.startMs) / 60000 : 0;
+    if (!r || r.state !== 'FINISH' || dur < 5) continue;
+    g += m.parts.reduce((a, p) => a + p.grams, 0);
+    min += dur;
+  }
+  return min >= 30 ? g / min : 0;
 }
 
 // ---------- Druckende ----------
@@ -466,11 +501,22 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
   m.tries += 1;
   m.lastTry = Date.now();
   try {
-    const filaments = await jobWeights(rec.name);
-    if (filaments) {
+    const jw = await jobWeights(rec.name, rec.startMs);
+    const filaments = jw?.filaments || null;
+    // Druck ohne Namen: Namen aus der Druckdatei übernehmen (Liste zeigt dann „Air_Up_Fake_Pod“ statt „Druckauftrag“)
+    if (jw?.fileName && isGenericPrintName(rec.name)) {
+      const nice = jw.fileName.replace(/\.(gcode\.3mf|3mf|gcode)$/i, '');
+      printRecorder.setName(rec.id, nice);
+      rec = { ...rec, name: nice };
+    }
+    if (filaments && !isGenericPrintName(rec.name)) {
       const total = Math.round(filaments.reduce((a, f) => a + f.grams, 0) * 10) / 10;
       updateHubConfig({ jobGrams: { ...c.jobGrams, [nameKey(rec.name)]: total } });
     }
+    // Gar nichts bekannt: nach Druckzeit schätzen (deine letzten Drucke), damit trotzdem abgezogen wird
+    const durMin = (rec.endMs - rec.startMs) / 60000;
+    const gpm = gramsPerMinute();
+    const estimate = !filaments && !(Number(c.jobGrams[nameKey(rec.name)]) > 0) && gpm > 0 && durMin >= 3 ? Math.round(gpm * durMin) : 0;
     // Lesen → rechnen → schreiben ohne Lücke: kein anderer Abzug (manuell aus der App) dazwischen
     const res = await withCloudLock(async () => {
       if (m.deduct !== 'pending' && m.deduct !== 'working') return null; // inzwischen manuell erledigt
@@ -483,7 +529,7 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
         mainSlot: mainSlotOf(rec.slots),
         amsSlots: getHubConfig().amsSlots,
         spools,
-        knownGrams: Number(getHubConfig().jobGrams[nameKey(rec.name)]) || 0
+        knownGrams: Number(getHubConfig().jobGrams[nameKey(rec.name)]) || estimate
       });
       if (!parts.length) {
         m.deduct = 'ask';
@@ -491,6 +537,7 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
         saveState();
         return null;
       }
+      m.estimated = Boolean(estimate) && !filaments && !(Number(getHubConfig().jobGrams[nameKey(rec.name)]) > 0);
       m.deduct = 'working';
       m.parts = parts;
       saveState();
@@ -511,7 +558,7 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
       }
       await saveDoc(access(), r.doc);
       m.deduct = 'done';
-      m.texts = r.texts;
+      m.texts = m.estimated ? [...r.texts, 'geschätzt nach Druckzeit, bitte prüfen'] : r.texts;
       saveState();
       return { r, parts, before };
     });
@@ -545,17 +592,13 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
 // ---------- Manueller Abzug (aus der App, läuft auf dem Pi) ----------
 
 /** Vorschlag für den manuellen Abzug: Gewichte aus der Datei bzw. Warteschlange und passende Spulen */
-export async function deductSuggest(p: { id: string; name: string }): Promise<{ filaments: { type: string; colorHex: string; grams: number }[] | null; parts: Part[] }> {
-  let filaments: { type: string; colorHex: string; grams: number }[] | null = startedJobFilaments(p.name);
-  const lan = port?.getLanAccess();
-  if (!filaments && lan) {
-    try {
-      const r = await fetchJobWeights({ ip: lan.ip, code: lan.code, jobName: p.name });
-      if (!('error' in r) && r.filaments.length) filaments = r.filaments;
-    } catch {
-      /* ohne Gewicht */
-    }
-  }
+export async function deductSuggest(p: { id: string; name: string; startMs?: number; endMs?: number }): Promise<{ filaments: { type: string; colorHex: string; grams: number }[] | null; parts: Part[] }> {
+  // 1.227: auch ohne Namen (Startzeit → Warteschlange, beim Start geholte Gewichte, neueste Datei); sonst nach Druckzeit schätzen
+  const rec = printRecorder.list().find(x => x.id === p.id);
+  const startMs = Number(p.startMs) || rec?.startMs || 0;
+  const filaments = (await jobWeights(p.name, startMs, 1))?.filaments || null;
+  const dur = rec ? (rec.endMs - rec.startMs) / 60000 : Number(p.endMs) && startMs ? (Number(p.endMs) - startMs) / 60000 : 0;
+  const est = !filaments && dur >= 3 ? Math.round(gramsPerMinute() * dur) : 0;
   const doc: any = cloudReady(access()) ? await loadDoc(access()).catch(() => ({})) : {};
   const spools = Array.isArray(doc?.spools) ? doc.spools : [];
   const m = state().prints[p.id];
@@ -567,7 +610,7 @@ export async function deductSuggest(p: { id: string; name: string }): Promise<{ 
     mainSlot: null,
     amsSlots: getHubConfig().amsSlots,
     spools,
-    knownGrams: Number(getHubConfig().jobGrams[nameKey(p.name)]) || 0
+    knownGrams: Number(getHubConfig().jobGrams[nameKey(p.name)]) || est
   });
   return { filaments, parts };
 }
@@ -646,6 +689,16 @@ async function retryDeducts(now: number): Promise<void> {
       }
       m.deduct = 'pending';
     }
+    // 1.227: „Gewicht unbekannt“ (z. B. Druck ohne Namen) einmal neu versuchen, jetzt mit Startzeit, neuester Datei und Schätzung
+    if (m.deduct === 'ask' && m.reason === 'Gewicht unbekannt' && !m.resolved && !m.retried && now - m.at < 2 * 86400_000) {
+      m.retried = true;
+      m.pushed = false; // danach kommt eine Meldung mit dem Ergebnis
+      m.deduct = 'pending';
+      m.tries = 0;
+      m.lastTry = 0;
+      m.at = Math.min(m.at, now - 3 * 60_000);
+      saveState();
+    }
     // Auch „noch nie versucht“ (Pi startete in der Minute nach dem Druckende neu): sonst bliebe der Abzug für immer liegen
     if (m.deduct === 'pending' && now - (m.lastTry || m.at) > 2 * 60_000) {
       const rec = printRecorder.list().find(p => p.id === id);
@@ -687,7 +740,13 @@ async function watchPrint(gs: string, d: any, now: number, dt: number): Promise<
     // Läuft nebenher: das Laden der Druckdatei (FTP, bis ca. 1 Minute) hält den Takt nicht auf („Aus nach Druck“, Fehler-Push …)
     void (async () => {
       try {
-        const [filaments, doc] = await Promise.all([jobWeights(open.name), cloudReady(access()) ? loadDoc(access()).catch(() => ({})) : Promise.resolve({} as any)]);
+        const [jw, doc] = await Promise.all([jobWeights(open.name, open.startMs), cloudReady(access()) ? loadDoc(access()).catch(() => ({})) : Promise.resolve({} as any)]);
+        const filaments = jw?.filaments || null;
+        // 1.227: Gewichte jetzt merken, solange der Drucker sicher an ist (am Ende ist er evtl. schon aus)
+        if (filaments) {
+          state().openFil = { startMs: open.startMs, name: jw?.fileName || open.name, filaments };
+          saveState();
+        }
         const left = Math.max(0, 1 - (Number(d.mc_percent) || 0) / 100);
         const probs = shortages({
           filaments,
@@ -767,6 +826,9 @@ async function autoOff(gs: string, d: any, live: boolean, now: number): Promise<
     return;
   }
   if (now - rt.finishSince < 3 * 60_000) return;
+  // 1.227: erst ausschalten, wenn der Abzug durch ist (braucht evtl. noch die Druckdatei vom Drucker), höchstens 10 min warten
+  const busy = Object.values(state().prints).some(m => (m.deduct === 'pending' || m.deduct === 'working') && now - m.at < 15 * 60_000);
+  if (busy && now - rt.finishSince < 10 * 60_000) return;
   const ok = await haSwitch(c.switchEntity, false);
   if (ok) {
     disarm();
