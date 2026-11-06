@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
-import { autoScan, autoAddOn, queueDuplicate, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
+import { autoScan, autoAddOn, queueDuplicate, queueReprint, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -122,6 +122,15 @@ router.post('/api/hub/queue/add', async (req, res) => {
 router.post('/api/hub/queue/refresh', async (_req, res) => {
   const r = await autoScan(true);
   res.json({ success: r.ok, text: r.text, items: queueList() });
+});
+
+router.post('/api/hub/queue/reprint', async (req, res) => {
+  try {
+    const item = await queueReprint(String(req.body?.name || ''));
+    res.json({ success: true, text: `„${item.name}“ vorgemerkt.`, items: queueList() });
+  } catch (e: any) {
+    res.json({ success: false, text: String(e?.message || e), items: queueList() });
+  }
 });
 
 router.post('/api/hub/queue/duplicate', (req, res) => {

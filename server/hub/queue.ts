@@ -57,6 +57,7 @@ function loadUrlKey(): string {
 // Gestartete Drucke mit Filament-Gewicht merken: Der Abzug am Druckende braucht die Gramm, findet die Datei aber nicht,
 // wenn sie vor dem Start umbenannt wurde (fh_….gcode.3mf). 7 Tage, höchstens 50.
 interface StartedJob {
+  path?: string;
   names: string[];
   filaments: JobFilament[];
   at: number;
@@ -74,12 +75,17 @@ function loadStarted(): StartedJob[] {
 function rememberStarted(it: QueueItem): void {
   const now = Date.now();
   const names = Array.from(new Set([jobKey(it.name), jobKey(path.posix.basename(it.path))]));
-  const list = [{ names, filaments: it.filaments, at: now }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
+  const list = [{ path: it.path, names, filaments: it.filaments, at: now }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
   try {
     fs.writeFileSync(startedFile(), JSON.stringify(list), 'utf-8');
   } catch {
     /* egal */
   }
+}
+/** Pfad der Datei eines Drucks, den die Warteschlange gestartet hat (auch nach dem Umbenennen) */
+export function startedJobPath(name: string): string | null {
+  const k = jobKey(name);
+  return (k && loadStarted().find(x => x.names.includes(k))?.path) || null;
 }
 /** Filament-Gewichte eines Drucks, den die Warteschlange gestartet hat (null = unbekannt) */
 export function startedJobFilaments(name: string): JobFilament[] | null {
@@ -147,6 +153,17 @@ async function resolveIds(force = false): Promise<void> {
 export function attachQueue(p: QueuePort, n: (title: string, text: string) => Promise<unknown>): void {
   port = p;
   notify = n;
+  // Druckende erkennen: danach leuchtet „Platte räumen“, bis der Taster gedrückt wird oder der nächste Druck startet
+  let lastGs = '';
+  setInterval(() => {
+    const gs = String(port?.getStatus().data?.gcode_state || '');
+    if (!gs || gs === lastGs) return;
+    const prev = lastGs;
+    lastGs = gs;
+    if (!prev) return;
+    if ((gs === 'FINISH' || gs === 'FAILED') && ['RUNNING', 'PAUSE', 'PREPARE'].includes(prev)) setPlateClear(true);
+    else if (gs === 'RUNNING' || gs === 'PREPARE') setPlateClear(false);
+  }, 3000).unref();
 }
 
 function load(): QueueItem[] {
@@ -189,7 +206,7 @@ export async function printerFiles() {
   return listJobFiles(lan.ip, lan.code);
 }
 
-export async function queueAdd(filePath: string, plate = 1, fkey?: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
+export async function queueAdd(filePath: string, plate = 1, fkey?: string, displayName?: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
   const lan = port?.getLanAccess();
   if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
   if (!/^\/[\w .\-()/äöüÄÖÜß+&,]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
@@ -201,7 +218,7 @@ export async function queueAdd(filePath: string, plate = 1, fkey?: string): Prom
     thumb: saveThumb(id, r.thumb),
     path: filePath,
     fkey,
-    name: path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''),
+    name: displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''),
     plate: r.plate,
     filaments: r.filaments,
     addedAt: Date.now()
@@ -211,6 +228,19 @@ export async function queueAdd(filePath: string, plate = 1, fkey?: string): Prom
   void showLeds(0);
   const m = currentMapping(it);
   return { ...it, mapping: m.lines, missing: m.missing };
+}
+
+/** „Nochmal drucken“ aus dem Verlauf: dieselbe Datei auf dem Drucker noch einmal vormerken */
+export async function queueReprint(name: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
+  const files = await printerFiles();
+  const k = jobKey(name);
+  let f = files.find(x => jobKey(x.name) === k);
+  if (!f) {
+    const sp = startedJobPath(name);
+    if (sp) f = files.find(x => x.path === sp);
+  }
+  if (!f) throw new Error('Die Datei liegt nicht mehr auf dem Drucker. Bitte in Bambu Studio noch einmal „Senden“.');
+  return queueAdd(f.path, 1, fileKey(f), name);
 }
 
 export const autoAddOn = (): boolean => (load(), autoOn);
@@ -354,20 +384,30 @@ export function queueMove(id: string, dir: -1 | 1): void {
 }
 
 let modeTimer: ReturnType<typeof setTimeout> | null = null;
-/** LEDs: Anzahl + Modus (0 = normal, 1 = rot blinken, 2 = grün = startet). Modus 1/2 geht nach 6 s zurück. */
+/** Druck ist fertig, die Platte ist noch nicht frei: die freien LEDs oben leuchten orange (Modus 3), bis der Taster gedrückt wird oder ein Druck startet */
+let plateClear = false;
+function setPlateClear(on: boolean): void {
+  if (plateClear === on) return;
+  plateClear = on;
+  void showLeds(0);
+}
+const baseMode = (): 0 | 3 => (plateClear ? 3 : 0);
+
+/** LEDs: Anzahl + Modus (0 = normal, 1 = rot blinken, 2 = grün = startet, 3 = Platte räumen). Modus 1/2 gehen nach 6 s zurück. */
 async function showLeds(mode: 0 | 1 | 2): Promise<void> {
   if (!haAvailable()) return;
   await resolveIds();
   await haSetNumber(found.count, Math.min(10, load().length));
-  await haSetNumber(found.mode, mode);
+  await haSetNumber(found.mode, mode || baseMode());
   if (modeTimer) clearTimeout(modeTimer);
-  if (mode) modeTimer = setTimeout(() => void haSetNumber(found.mode, 0), 6000);
+  if (mode) modeTimer = setTimeout(() => void haSetNumber(found.mode, baseMode()), 6000);
 }
 
 let starting = false;
 /** Nächsten Druck starten (Taster am ESP oder Knopf in der App). Gibt zurück, was passiert ist. */
 export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean; text: string }> {
   if (starting) return { ok: false, text: 'Startet schon.' };
+  setPlateClear(false); // Taster/Knopf = Platte ist frei
   starting = true;
   try {
     const list = load();

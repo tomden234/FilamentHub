@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Camera, CheckCircle2, Clock, ImageOff, Loader2, MinusCircle, Trash2, XCircle } from 'lucide-react';
+import { Camera, CheckCircle2, Clock, ImageOff, Loader2, MinusCircle, Repeat, Trash2, XCircle } from 'lucide-react';
 import { loadPhoto, removePrintRecord, savePhoto, usePrintLog, type PrintRecord } from '../../utils/printLog';
-import { fetchServerPhoto, getServerUrl, piDeductManual, piDeductSuggest } from '../../utils/recorderServer';
+import { fetchServerPhoto, getServerUrl, piDeductManual, piDeductSuggest, piQueueAction } from '../../utils/recorderServer';
 import type { Spool } from '../../types/filament';
 import { Card, buttonStyle } from './ui';
 
@@ -130,6 +130,27 @@ const DeductEditor: React.FC<{ r: PrintRecord; spools: Spool[]; onDone: () => vo
   );
 };
 
+/** Nochmal drucken: dieselbe Datei auf dem Drucker noch einmal in die Warteschlange */
+const ReprintButton: React.FC<{ name: string }> = ({ name }) => {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const go = async () => {
+    setBusy(true);
+    setMsg(null);
+    const r = await piQueueAction('reprint', { name });
+    setMsg({ ok: r.ok, text: r.text || (r.ok ? 'Vorgemerkt.' : 'Fehler') });
+    setBusy(false);
+  };
+  return (
+    <>
+      <button disabled={busy} onClick={() => void go()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer disabled:opacity-40" style={buttonStyle}>
+        {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Repeat className="w-3 h-3" />} Nochmal drucken
+      </button>
+      {msg && <span className={`text-[11px] ${msg.ok ? 'text-emerald-400' : 'text-amber-300'}`}>{msg.text}</span>}
+    </>
+  );
+};
+
 const Row: React.FC<{ r: PrintRecord; spools: Spool[]; onOpen: (url: string) => void }> = ({ r, spools, onOpen }) => {
   const [hidden, setHidden] = useState(false);
   void hidden;
@@ -178,7 +199,10 @@ const Row: React.FC<{ r: PrintRecord; spools: Spool[]; onOpen: (url: string) => 
             <span style={{ color: 'var(--app-text-muted)' }}>Verbrauch noch nicht abgezogen</span>
           )}
         </div>
-        {r.grams <= 0 && <DeductEditor r={r} spools={spools} onDone={() => setHidden(true)} />}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {r.grams <= 0 && <DeductEditor r={r} spools={spools} onDone={() => setHidden(true)} />}
+          <ReprintButton name={r.name} />
+        </div>
       </div>
     </div>
   );

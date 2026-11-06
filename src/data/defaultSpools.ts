@@ -3252,5 +3252,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.221',
+    label: '1.221 (LED-Schwerkraft & nochmal drucken)',
+    releaseDate: '06.11.2026',
+    description: 'Der LED-Streifen stapelt die Warteschlange jetzt von unten: Kommt ein Druck dazu, fällt eine helle LED von oben herunter und bleibt liegen. Nach einem fertigen Druck leuchten die freien LEDs oben orange („Platte räumen“), bis du den Taster drückst oder der nächste Druck startet. Im Druck-Verlauf gibt es „Nochmal drucken“. ESP-Firmware 1.203, Pi-Add-on 1.3.3.',
+    features: [
+      '⬇️ LEDs fallen von oben auf den Stapel (130 ms je LED), Stapel liegt unten',
+      '🟠 „Platte räumen“: freie LEDs oben orange nach Druckende, Taster löscht es',
+      '🔁 „Nochmal drucken“ im Druck-Verlauf (Datei muss noch auf dem Drucker liegen)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

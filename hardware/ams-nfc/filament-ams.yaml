@@ -1,4 +1,4 @@
-# Erstellt: 05.11.2026 18:40 Uhr (Revision 1.202)
+# Erstellt: 06.11.2026 01:35 Uhr (Revision 1.203)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -52,7 +52,7 @@ substitutions:
   # Taster: "false" = federt zurück (Standard), "true" = rastet ein (jedes Umschalten zählt als Drücken)
   button_latching: "false"
   # Stand dieser Datei (zeigt die App im Testmenü, damit man sieht, ob die neue Firmware drauf ist)
-  fw_revision: "1.202"
+  fw_revision: "1.203"
 
 # Merker für den Test der Warteschlange (Zahl vor dem Test)
 globals:
@@ -454,7 +454,7 @@ light:
             float b = 0.15f + 0.85f * (0.5f - 0.5f * cosf(t * 6.2831853f));
             it.all() = current_color * (uint8_t) (255.0f * ${led_cap} * b);
 
-  # Warteschlange: so viele LEDs wie Drucke warten (Zahl setzt der Pi). Modus 1 = rot blinken, 2 = grün (startet).
+  # Warteschlange: so viele LEDs wie Drucke warten (Zahl setzt der Pi), von unten gestapelt. Modus 1 = rot blinken, 2 = grün (startet), 3 = Platte räumen (freie LEDs orange).
   - platform: esp32_rmt_led_strip
     id: queue_led
     name: "Warteschlange LED"
@@ -468,19 +468,39 @@ light:
     effects:
       - addressable_lambda:
           name: "Warteschlange"
-          update_interval: 100ms
+          update_interval: 40ms
           lambda: |-
+            // Der Streifen hängt von oben nach unten: LED 0 (Eingang) = oben, letzte LED = unten.
+            // Die Warteschlange stapelt sich von UNTEN. Kommt ein Druck dazu, fällt eine helle LED von oben herunter (Schwerkraft)
+            // und bleibt auf dem Stapel liegen. Wird einer weniger, verschwindet die oberste LED des Stapels.
+            static int landed = -1;      // so viele LEDs liegen unten
+            static int fpos = -1;        // Position der fallenden LED (-1 = keine)
+            static uint32_t last = 0;
             int n = it.size();
             int count = (int) id(queue_count).state;
+            if (count > n) count = n;
+            if (count < 0) count = 0;
             int mode = (int) id(queue_mode).state;
             uint8_t cap = (uint8_t) (255 * ${led_cap});
+            uint32_t now = millis();
+            if (landed < 0) landed = count;               // beim Start ohne Animation
+            if (count < landed) { landed = count; fpos = -1; }
+            if (fpos < 0 && count > landed) { fpos = 0; last = now; }
+            if (fpos >= 0 && now - last >= 130) { last = now; fpos++; }   // 130 ms je LED
+            if (fpos >= 0 && fpos >= n - 1 - landed) { landed++; fpos = -1; }
             if (mode == 1) {
               bool on = (millis() / 300) % 2 == 0;
               it.all() = on ? Color(255, 0, 0) * cap : Color::BLACK;
             } else if (mode == 2) {
               it.all() = Color(0, 255, 0) * cap;
             } else {
-              for (int i = 0; i < n; i++) it[i] = (i < count) ? Color(0, 90, 255) * cap : Color::BLACK;
+              // Modus 3 = „Platte räumen“: die freien LEDs oben leuchten orange, der Stapel unten bleibt blau
+              Color free_c = (mode == 3) ? Color(255, 70, 0) * cap : Color::BLACK;
+              for (int i = 0; i < n; i++) it[i] = (i >= n - landed) ? Color(0, 90, 255) * cap : free_c;
+              if (fpos >= 0) {
+                if (mode != 3 && fpos > 0) it[fpos - 1] = Color(0, 40, 120) * cap;   // kurzer Schweif
+                it[fpos] = Color(150, 210, 255) * cap;                                // fallende LED
+              }
             }
 
 number:
@@ -500,7 +520,7 @@ number:
     name: "Warteschlange Modus"
     icon: mdi:traffic-light
     min_value: 0
-    max_value: 2
+    max_value: 3
     step: 1
     initial_value: 0
     optimistic: true
