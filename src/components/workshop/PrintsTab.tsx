@@ -10,6 +10,8 @@ import { Card, buttonStyle } from './ui';
 const fmtDate = (ms: number) => new Date(ms).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' Uhr';
 const fmtDur = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`);
 const euro = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+/** Gramm mit einer Nachkommastelle unter 10 g (z. B. 2,4 g), sonst ganz */
+const fmtG = (g: number) => (g > 0 && g < 10 ? (Math.round(g * 10) / 10).toLocaleString('de-DE') : String(Math.round(g)));
 
 /** Fotos, die beim Pi-Server schon gesucht wurden (nicht dauernd neu fragen) */
 const askedServer = new Set<string>();
@@ -183,22 +185,41 @@ const Row: React.FC<{ r: PrintRecord; spools: Spool[]; onOpen: (url: string) => 
             </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          {r.spools.map(s => (
-            <span key={s.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border" style={{ borderColor: 'var(--app-border)' }}>
-              <span className="w-2.5 h-2.5 rounded-full border" style={{ backgroundColor: s.color, borderColor: 'var(--app-border)' }} />
-              <span className="truncate max-w-[9rem]">{s.label}</span>
-              <span className="font-mono-num font-bold">{Math.round(s.grams)} g</span>
-            </span>
-          ))}
-          {r.grams > 0 ? (
-            <span className="font-bold">
-              {Math.round(r.grams)} g · {euro(r.cost)}
-            </span>
-          ) : (
-            <span style={{ color: 'var(--app-text-muted)' }}>Verbrauch noch nicht abgezogen</span>
-          )}
-        </div>
+        {r.grams > 0 && r.spools.length > 0 ? (
+          // 1.226: jede abgezogene Spule als eigene Zeile (Mehrfarb-/Mehrmaterialdruck), darunter die Summe
+          <div className="rounded-lg border text-[11px] divide-y" style={{ borderColor: 'var(--app-border)' }}>
+            {r.spools.length > 1 && (
+              <div className="px-2 py-1 font-bold" style={{ color: 'var(--app-text-muted)', borderColor: 'var(--app-border)' }}>
+                Mehrfarbdruck · {r.spools.length} Spulen abgezogen
+              </div>
+            )}
+            {r.spools.map(s => {
+              const mat = spools.find(x => x.id === s.id)?.material;
+              return (
+                <div key={s.id} className="flex items-center gap-1.5 px-2 py-1" style={{ borderColor: 'var(--app-border)' }}>
+                  <span className="w-2.5 h-2.5 rounded-full border shrink-0" style={{ backgroundColor: s.color, borderColor: 'var(--app-border)' }} />
+                  <span className="min-w-0 flex-1 truncate">
+                    {s.label}
+                    {mat && !s.label.toLowerCase().includes(mat.toLowerCase()) ? <span style={{ color: 'var(--app-text-muted)' }}> · {mat}</span> : null}
+                  </span>
+                  <span className="font-mono-num font-bold shrink-0">−{fmtG(s.grams)} g</span>
+                  <span className="font-mono-num shrink-0 w-14 text-right" style={{ color: 'var(--app-text-muted)' }}>{euro(s.cost)}</span>
+                </div>
+              );
+            })}
+            <div className="flex items-center gap-1.5 px-2 py-1 font-bold" style={{ borderColor: 'var(--app-border)' }}>
+              <span className="flex-1">Gesamt</span>
+              <span className="font-mono-num shrink-0">{fmtG(r.grams)} g</span>
+              <span className="font-mono-num shrink-0 w-14 text-right">{euro(r.cost)}</span>
+            </div>
+          </div>
+        ) : r.grams > 0 ? (
+          <div className="text-[11px] font-bold">
+            {fmtG(r.grams)} g · {euro(r.cost)}
+          </div>
+        ) : (
+          <div className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>Verbrauch noch nicht abgezogen</div>
+        )}
         <div className="flex flex-wrap items-center gap-1.5">
           {r.grams <= 0 && <DeductEditor r={r} spools={spools} onDone={() => setHidden(true)} />}
           <ReprintButton name={r.name} />

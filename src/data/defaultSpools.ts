@@ -3325,5 +3325,15 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.226',
+    label: '1.226 (Druckliste: jede Spule eine Zeile)',
+    releaseDate: '06.11.2026',
+    description: 'In der Druckliste steht unter jedem Druck, was abgezogen wurde: jede Spule eine eigene Zeile mit Farbe, Name, Material, Gramm und Kosten, darunter die Summe. Bei Mehrfarbdrucken steht oben „Mehrfarbdruck · 2 Spulen abgezogen“.',
+    features: ['🎨 Jede abgezogene Spule als eigene Zeile mit Gramm und Kosten', '➕ Summe darunter, Mehrfarbdruck klar erkennbar'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
