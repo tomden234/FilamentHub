@@ -35,6 +35,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - **ESP-Update übers WLAN**: Mit der ESPHome-App in Home Assistant legt der Server die neueste AMS-YAML in den ESPHome-Ordner (eigene Werte bleiben). Dann nur „Installieren“ → „Drahtlos“.
 - **App direkt vom Pi**: Knopf „Web-UI öffnen“ oder `http://<IP des Pi>:3000`. Über http geht im Browser der verschlüsselte Geräte-Sync nicht; Handy- und Windows-App sind davon nicht betroffen.
 
+## Neu in 1.3.9 (Pi speichert)
+
+- Die Spulen-Daten liegen als Datei im Speicher der App (`/data/filamenthub-doc.json`, Vorversion als `.prev`). In der App unter Cloud & Geräte-Sync auf **Auf Pi-Server umstellen** tippen: vorhandene Daten werden einmal übernommen. Danach braucht es weder npoint noch Gist noch Token. Abzug, Warteschlange und Tages-Sicherung nutzen dieselbe Datei.
+
 ## Neu in 1.3.8 (Sicherheit)
 
 - Der Server antwortet nur noch mit Schlüssel. Ohne eigenen API-Key erzeugt er beim ersten Start einen (steht im Protokoll, bleibt bei Updates gleich).

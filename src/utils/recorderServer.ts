@@ -1,6 +1,5 @@
 // FilamentHub Server (Home-Assistant-Add-on): zeichnet Drucke rund um die Uhr auf. Die App holt die Liste und trägt Fehlendes nach.
 import { safeStorage } from './safeStorage';
-import { IS_NATIVE, IS_STATIC } from './env';
 import type { HaPrint } from './haPrintHistory';
 import { getHubInfo as getHubInfoLite, saveHubInfo } from './serverDeducts';
 import { STORAGE_KEY_CLOUD_URL } from './storageKeys';
@@ -8,41 +7,23 @@ import { getGistToken } from './gistStore';
 import { isAutoDeductOn, readJobGrams } from './printUsage';
 import { getHaCredentials } from './haClient';
 import { getWorkshopSettings } from './workshopSettings';
+import { SERVER_KEY_KEY, SERVER_URL_KEY, getServerKey, getServerUrl, normalizeServerUrl, serverBase } from './serverEndpoint';
 
-const URL_KEY = 'filamenthub_server_url';
-const KEY_KEY = 'filamenthub_server_key';
+export { getServerKey, getServerUrl, normalizeServerUrl };
 
-/** „192.168.68.10“ → „http://192.168.68.10:3000“ */
-export function normalizeServerUrl(v: string): string {
-  let u = String(v || '').trim().replace(/\/+$/, '');
-  if (!u) return '';
-  if (!/^https?:\/\//i.test(u)) u = `http://${u}`;
-  const host = u.replace(/^https?:\/\//i, '').split('/')[0];
-  if (/^http:\/\//i.test(u) && !host.includes(':')) u += ':3000';
-  return u;
-}
-
-export const getServerUrl = (): string => safeStorage.getItem(URL_KEY) || '';
+const base = serverBase;
 
 /** Gibt es einen Server zum Fragen? (eingetragener Pi oder die App kommt selbst vom Pi / aus der Windows-App) */
 export const hasServer = (): boolean => base() !== null;
-export const getServerKey = (): string => safeStorage.getItem(KEY_KEY) || '';
 
 export function saveServer(url: string, key: string): void {
-  safeStorage.setItem(URL_KEY, normalizeServerUrl(url));
-  safeStorage.setItem(KEY_KEY, key.trim());
+  safeStorage.setItem(SERVER_URL_KEY, normalizeServerUrl(url));
+  safeStorage.setItem(SERVER_KEY_KEY, key.trim());
   try {
     window.dispatchEvent(new CustomEvent('filamenthub:ha-history-sync'));
   } catch {
     /* ohne Fenster egal */
   }
-}
-
-/** Ohne eingetragene Adresse: nur der eigene Server (Windows-App, lokaler Server). Auf GitHub Pages und in der Handy-App gibt es keinen. */
-function base(): string | null {
-  const u = getServerUrl();
-  if (u) return u;
-  return IS_STATIC || IS_NATIVE ? null : '';
 }
 
 async function get(path: string, init: { method?: string; body?: unknown; timeoutMs?: number } = {}): Promise<any> {

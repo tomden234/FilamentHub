@@ -3,6 +3,7 @@ import { RefreshCw, Download, Upload, Database, Trash2, Cloud, ShieldAlert } fro
 import type { SidebarProps as ParentProps } from '../Sidebar';
 import { safeStorage } from '../../utils/safeStorage';
 import { isGistUrl } from '../../utils/gistStore';
+import { isPiUrl } from '../../utils/piDoc';
 import { STORAGE_KEY_CLOUD_URL } from '../../utils/storageKeys';
 
 export interface ToolsTabProps {
@@ -70,10 +71,11 @@ const Group: React.FC<{ title: string; children: React.ReactNode }> = ({ title, 
 
 export const ToolsTab: React.FC<ToolsTabProps> = ({ full = true, onSyncCloud, onExportBackup, onImportBackup, onRestoreDefaultSpools, onClearAllSpools }) => {
   const gist = isGistUrl(safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '');
+  const pi = isPiUrl(safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '');
   return (
     <div className="space-y-4">
       <Group title="Abgleich">
-        <Item icon={RefreshCw} tone="text-sky-400 bg-sky-500/15 border-sky-500/30" title="Jetzt mit der Cloud abgleichen" hint={gist ? 'Privater GitHub-Gist' : 'npoint.io (alt)'} onClick={onSyncCloud}>
+        <Item icon={RefreshCw} tone="text-sky-400 bg-sky-500/15 border-sky-500/30" title="Jetzt mit der Cloud abgleichen" hint={pi ? 'Pi-Server (SSD)' : gist ? 'Privater GitHub-Gist' : 'npoint.io (alt)'} onClick={onSyncCloud}>
           <Cloud className="w-4 h-4 shrink-0 opacity-50" />
         </Item>
       </Group>

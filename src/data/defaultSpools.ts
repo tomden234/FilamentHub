@@ -3381,5 +3381,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.230',
+    label: '1.230 (Pi speichert)',
+    releaseDate: '07.11.2026',
+    description:
+      'Deine Spulen-Daten liegen jetzt als Datei auf dem Pi (SSD), ohne Cloud-Dienst und ohne Token. Unter Menü → Verbindungen → Cloud & Geräte-Sync auf „Auf Pi-Server umstellen“ tippen: vorhandene Daten (npoint, Gist oder dieses Gerät) werden einmal übernommen. Der Pi nutzt dieselbe Datei für Abzug, Warteschlange und Tages-Sicherung. Neu: Versions-Zähler, damit zwei Geräte sich nicht gegenseitig überschreiben (bei Konflikt lädt die App neu und speichert nochmal). Die letzte Version bleibt als Notkopie auf dem Pi. GitHub-Gist bleibt als Alternative im Ausklapper. Pi-Add-on 1.3.9.',
+    features: [
+      '🥧 Daten als Datei auf dem Pi (SSD), kein Token, kein Fremddienst',
+      '🔢 Versions-Zähler: Geräte überschreiben sich nicht mehr',
+      '🛟 Letzte Version bleibt als Notkopie (.prev) auf dem Pi',
+      '🔁 Einmal-Umzug von npoint/Gist mit einem Knopf',
+      '☁️ GitHub-Gist weiter möglich (Ausklapper)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

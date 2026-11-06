@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Cloud, CheckCircle2, ExternalLink, KeyRound } from 'lucide-react';
+import { Cloud, CheckCircle2, ExternalLink, KeyRound, Server } from 'lucide-react';
 import { safeStorage } from '../../utils/safeStorage';
 import { cloudFetch } from '../../utils/cloudFetch';
+import { PI_URL, isPiUrl, piDocFetch } from '../../utils/piDoc';
+import { serverBase } from '../../utils/serverEndpoint';
+import { pushHubConfig } from '../../utils/recorderServer';
 import {
   checkGistToken,
   createGist,
@@ -31,6 +34,7 @@ const readJson = <T,>(key: string, fallback: T): T => {
 };
 
 export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (url: string) => void }> = ({ cloudDbUrl, onCloudUrlChange }) => {
+  const piActive = isPiUrl(cloudDbUrl);
   const active = isGistUrl(cloudDbUrl);
   const [token, setToken] = useState(getGistToken());
   const [pairText, setPairText] = useState('');
@@ -38,6 +42,55 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const say = (text: string, ok: boolean) => setMsg({ text, ok });
+
+  // 1.230: Spulen-Daten liegen als Datei auf dem Pi (SSD). Vorhandene Daten (alter Speicher, sonst dieses Gerät) werden einmal übernommen.
+  const moveToPi = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      if (serverBase() === null) return say('Erst oben unter „FilamentHub Server (Pi)“ Adresse und Schlüssel eintragen.', false);
+      const cur = await piDocFetch();
+      if (!cur.ok) {
+        let e = `Pi antwortet mit HTTP ${cur.status}.`;
+        try {
+          e = ((await cur.json()) as { error?: string })?.error || e;
+        } catch {
+          /* Text bleibt */
+        }
+        return say(e, false);
+      }
+      const etag = cur.headers.get('etag') || '';
+      const piDoc = ((await cur.json()) as Record<string, unknown>) || {};
+      const piHasSpools = Array.isArray(piDoc.spools) && piDoc.spools.length > 0;
+      if (!piHasSpools) {
+        let old: Record<string, unknown> = {};
+        if (cloudDbUrl && !piActive) {
+          try {
+            const r = await cloudFetch(cloudDbUrl, { cache: 'no-store' });
+            if (r.ok) old = ((await r.json()) as Record<string, unknown>) || {};
+          } catch {
+            old = {}; // alter Speicher nicht erreichbar: Daten dieses Geräts nehmen
+          }
+        }
+        const localAt = Number(safeStorage.getItem(STORAGE_KEY_SPOOLS_AT)) || 0;
+        const oldAt = Number(old.updatedAt) || 0;
+        const useOld = Array.isArray(old.spools) && oldAt > localAt;
+        const doc = {
+          ...old, // enthält auch den verschlüsselten Geräte-Sync („secure“)
+          updatedAt: useOld ? oldAt : localAt || Date.now(),
+          spools: useOld ? old.spools : readJson(STORAGE_KEY_SPOOLS, [] as unknown[]),
+          printHistory: useOld && Array.isArray(old.printHistory) ? old.printHistory : readJson(STORAGE_KEY_HISTORY, [] as unknown[])
+        };
+        const w = await piDocFetch({ method: 'POST', headers: { 'Content-Type': 'application/json', ...(etag ? { 'If-Match': etag } : {}) }, body: JSON.stringify(doc) });
+        if (!w.ok) return say(`Pi hat das Speichern abgelehnt (HTTP ${w.status}).`, false);
+      }
+      onCloudUrlChange(PI_URL);
+      void pushHubConfig(true).catch(() => undefined);
+      say(piHasSpools ? 'Fertig. Auf dem Pi lagen schon Daten, die bleiben erhalten.' : 'Fertig. Deine Daten liegen jetzt auf dem Pi. Alte Speicher (npoint/Gist) werden nicht mehr benutzt.', true);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Neuen privaten Gist anlegen und die vorhandenen Daten hineinkopieren (aus dem alten Speicher, sonst aus diesem Gerät)
   const createAndMove = async () => {
@@ -98,6 +151,12 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
 
   const test = async () => {
     setBusy(true);
+    if (piActive) {
+      const r = await piDocFetch();
+      say(r.ok ? 'Verbindung zum Pi funktioniert.' : `Pi antwortet mit HTTP ${r.status}.`, r.ok);
+      setBusy(false);
+      return;
+    }
     const res = await testGist(cloudDbUrl);
     say(res.ok ? 'Verbindung zum privaten Gist funktioniert.' : res.error, res.ok);
     setBusy(false);
@@ -144,22 +203,46 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
         </h3>
         <span
           className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-            active ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+            active || piActive ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
           }`}
         >
-          {active && <CheckCircle2 className="w-3 h-3" />}
-          {active ? 'Privater GitHub-Gist' : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet'}
+          {(active || piActive) && <CheckCircle2 className="w-3 h-3" />}
+          {piActive ? 'Pi-Server (SSD)' : active ? 'Privater GitHub-Gist' : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet'}
         </span>
       </header>
 
       <p className="text-[11px] leading-relaxed" style={{ color: 'var(--app-text-muted)' }}>
-        {active
+        {piActive
+          ? 'Deine Daten liegen als Datei auf dem Pi (SSD), nur mit deinem Schlüssel erreichbar. Kein Cloud-Dienst, kein Token. Unterwegs brauchst du Zugriff auf den Pi (z. B. Tailscale).'
+          : active
           ? `Deine Daten liegen in einem privaten GitHub-Gist (ID ${gistIdOf(cloudDbUrl)}). Der Zugang zu Drucker und Home Assistant bleibt zusätzlich mit deinem Sync-Passwort verschlüsselt.`
           : cloudDbUrl
             ? 'Der alte Speicher npoint.io ist öffentlich lesbar und wird in manchen Schul- und Firmennetzen gesperrt. Ein privater GitHub-Gist ist geschützt und läuft über github.com.'
             : 'Ohne Cloud bleiben deine Daten nur auf diesem Gerät. Mit einem privaten GitHub-Gist (eigener Zugang, kostenlos) kannst du mehrere Geräte abgleichen.'}
       </p>
 
+      <div className="space-y-1.5">
+        {!piActive && (
+          <button type="button" disabled={busy} onClick={moveToPi} className={`${btn} w-full flex items-center justify-center gap-1.5`} style={{ backgroundImage: 'var(--app-accent-gradient)' }}>
+            <Server className="w-3.5 h-3.5" />
+            {busy ? '…' : 'Auf Pi-Server umstellen (empfohlen)'}
+          </button>
+        )}
+        {piActive && (
+          <button type="button" disabled={busy} onClick={test} className="w-full py-2 rounded-lg border text-xs font-bold cursor-pointer disabled:opacity-40" style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
+            Verbindung zum Pi testen
+          </button>
+        )}
+        <p className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+          Braucht Adresse und Schlüssel des Pi (Zeile „FilamentHub Server (Pi)“). Vorhandene Daten werden einmal übernommen.
+        </p>
+      </div>
+
+      <details className="rounded-lg border p-2" style={{ borderColor: 'var(--app-border)' }}>
+        <summary className="text-[11px] font-bold cursor-pointer" style={{ color: 'var(--app-text-muted)' }}>
+          Alternative: GitHub-Gist (geht auch ohne Zugriff auf den Pi)
+        </summary>
+        <div className="space-y-3 pt-3">
       <div className="space-y-1.5">
         <label className="text-[11px] font-bold flex items-center gap-1.5" style={{ color: 'var(--app-text)' }}>
           <KeyRound className="w-3.5 h-3.5" />
@@ -201,6 +284,9 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
           </button>
         </div>
       )}
+
+        </div>
+      </details>
 
       {msg && <p className={`text-[11px] font-bold break-words ${msg.ok ? 'text-emerald-400' : 'text-amber-400'}`}>{msg.text}</p>}
     </section>

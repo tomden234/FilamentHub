@@ -3,6 +3,7 @@ import { Home, Cloud, Nfc, Smartphone, ChevronDown, Settings2, Server } from 'lu
 import { getHaCredentials } from '../../utils/haClient';
 import { IS_DESKTOP, IS_NATIVE, IS_STATIC, isAppShell } from '../../utils/env';
 import { isGistUrl } from '../../utils/gistStore';
+import { isPiUrl } from '../../utils/piDoc';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { getSyncPass } from '../../utils/deviceSync';
 import { CloudStoreCard } from './CloudStoreCard';
@@ -114,6 +115,7 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
   const ha = getHaCredentials();
   const haOk = !!ha.url?.trim() && !!ha.token;
   const gist = isGistUrl(cloudDbUrl);
+  const pi = isPiUrl(cloudDbUrl);
   const syncPass = !!getSyncPass();
   void rev;
 
@@ -139,7 +141,7 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
     printerStatus = `Eingerichtet · ${way}`;
     printerLevel = 'ok';
   }
-  const syncStatus = gist ? `Privater Gist${syncPass ? ' · Geräte-Sync an' : ''}` : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet (nur auf diesem Gerät)';
+  const syncStatus = pi ? `Pi-Server (SSD)${syncPass ? ' · Geräte-Sync an' : ''}` : gist ? `Privater Gist${syncPass ? ' · Geräte-Sync an' : ''}` : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet (nur auf diesem Gerät)';
 
   return (
     <div className="space-y-2.5">
@@ -162,7 +164,7 @@ export const ConnectionsPanel: React.FC<ConnectionsPanelProps> = ({ cloudDbUrl, 
         <ServerCard onSaved={() => setRev(r => r + 1)} />
       </Row>
 
-      <Row id="sync" open={open} setOpen={setOpen} icon={Cloud} tone="text-violet-400 bg-violet-500/15 border-violet-500/30" title="Cloud & Geräte-Sync" status={syncStatus} level={gist ? 'ok' : 'warn'}>
+      <Row id="sync" open={open} setOpen={setOpen} icon={Cloud} tone="text-violet-400 bg-violet-500/15 border-violet-500/30" title="Cloud & Geräte-Sync" status={syncStatus} level={gist || pi ? 'ok' : 'warn'}>
         <CloudStoreCard cloudDbUrl={cloudDbUrl} onCloudUrlChange={onCloudUrlChange} />
         <DeviceSyncCard cloudDbUrl={cloudDbUrl} />
       </Row>

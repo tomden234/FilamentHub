@@ -144,6 +144,7 @@ export function parseGistPair(hash: string): { id: string; token: string } | nul
 /** Koppel-Link für QR-Code und Kopieren: bei Gist mit Zugang im Teil nach „#“, sonst die alte npoint-Adresse */
 export function pairUrlFor(cloudUrl: string): string {
   const base = `${window.location.origin}${window.location.pathname}`;
+  if (cloudUrl === 'pi:') return base; // Pi-Server: Adresse und Schlüssel gibt man am zweiten Gerät unter „FilamentHub Server“ ein
   if (isGistUrl(cloudUrl)) {
     const frag = gistPairFragment(cloudUrl);
     return frag ? `${base}#${frag}` : base;

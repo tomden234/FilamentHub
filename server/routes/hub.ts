@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
+import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { autoScan, autoAddOn, queueDuplicate, queueReprint, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
@@ -7,6 +8,22 @@ const router = Router();
 
 router.get('/api/hub/status', (_req, res) => {
   res.json({ success: true, ...hubStatus() });
+});
+
+// Spulen-Dokument auf dem Pi (ab 1.230). ETag = Versionszähler, POST mit If-Match schreibt nur, wenn niemand dazwischen war.
+router.get('/api/hub/doc', (_req, res) => {
+  const d = readLocalDoc();
+  res.setHeader('ETag', `"${d.rev}"`);
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(d.doc);
+});
+
+router.post('/api/hub/doc', (req, res) => {
+  const m = /^"?(\d+)"?$/.exec(String(req.headers['if-match'] || '').trim());
+  const w = writeLocalDoc(req.body, m ? Number(m[1]) : undefined);
+  if (!w.ok) return res.status(w.status).json({ error: w.error });
+  res.setHeader('ETag', `"${w.rev}"`);
+  res.json({ success: true, rev: w.rev });
 });
 
 router.post('/api/hub/config', (req, res) => {

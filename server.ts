@@ -20,7 +20,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 // CORS: nur ausdrücklich erlaubte Ursprünge (Env CORS_ORIGIN, kommagetrennt).
 // Ohne Angabe ist kein Cross-Origin-Zugriff erlaubt (Frontend wird vom selben Server ausgeliefert).
 const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
-app.use(cors({ origin: corsOrigins.length > 0 ? corsOrigins : false }));
+app.use(cors({ origin: corsOrigins.length > 0 ? corsOrigins : false, exposedHeaders: ['ETag'] }));
 
 // Zugriffsschutz (1.229): Ist APP_API_KEY gesetzt (Pi-App erzeugt ihn selbst), braucht jede /api-Route den Schlüssel.
 // Ohne Schlüssel antwortet der Server nur Aufrufen über localhost (Windows-App, npm run dev): so kann weder jemand im WLAN

@@ -4,7 +4,7 @@
 import { safeStorage } from './safeStorage';
 import { STORAGE_KEY_SETTINGS } from './storageKeys';
 import { printerApi } from '../api/printerApi';
-import { cloudFetch } from './cloudFetch';
+import { cloudFetch, cloudUpdate } from './cloudFetch';
 
 const PASS_KEY = 'filamenthub_sync_pass';
 const BASE_HASH_KEY = 'filamenthub_sync_hash';
@@ -173,12 +173,7 @@ export async function syncDevices(cloudUrl: string): Promise<SyncResult> {
     const upload = async () => {
       const enc = await encrypt(JSON.stringify(local), pass);
       // frischen Stand holen, damit Spulen/Verlauf anderer Geräte nicht überschrieben werden
-      const fresh = await cloudFetch(cloudUrl, { cache: 'no-store' }).then(r => (r.ok ? r.json() : doc)).catch(() => doc);
-      const ok = await cloudFetch(cloudUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...fresh, secure: { ...enc, at: Date.now() } })
-      }).then(r => r.ok);
+      const ok = await cloudUpdate(cloudUrl, fresh => ({ ...fresh, secure: { ...enc, at: Date.now() } }));
       if (!ok) {
         lastDetail = 'Cloud hat das Speichern abgelehnt.';
         return 'error' as SyncResult;

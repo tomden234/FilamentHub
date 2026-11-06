@@ -1,5 +1,5 @@
 import { apiGet, apiPost, type ApiBase } from './client';
-import { cloudFetch } from '../utils/cloudFetch';
+import { cloudFetch, cloudUpdate } from '../utils/cloudFetch';
 
 // Server-Speicher (/api/storage/*) und optionaler Cloud-Sync (externer JSON-Speicher).
 
@@ -53,29 +53,18 @@ export const cloudSync = {
     // Bestehende Felder (z. B. verschlüsselter Geräte-Sync „secure“) erhalten, nur Spulen/Verlauf ersetzen
     // 1.229: Ohne aktuellen Stand nie schreiben. Vorher wurde bei einem Lesefehler (npoint 5xx) ein leeres Dokument angenommen
     // und z. B. das Speichern der Druckliste hat Spulen und Pi-Abzüge in der Cloud gelöscht.
-    let existing: Record<string, unknown>;
-    try {
-      const cur = await cloudFetch(url, { cache: 'no-store' });
-      if (!cur.ok) return false;
-      const j = await cur.json();
-      existing = j && typeof j === 'object' && !Array.isArray(j) ? j : {};
-    } catch {
-      return false;
-    }
-    // Teil-Speicherung (nur Druckliste) auf ein Dokument ohne Spulen: lieber nichts schreiben als ein halbes Dokument anlegen
-    if (!payload.spools && !Array.isArray(existing.spools)) return false;
-    const res = await cloudFetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    // 1.230: Beim Pi-Server mit Versionszähler, damit sich zwei Geräte nicht überschreiben.
+    return cloudUpdate(url, existing => {
+      // Teil-Speicherung (nur Druckliste) auf ein Dokument ohne Spulen: lieber nichts schreiben als ein halbes Dokument anlegen
+      if (!payload.spools && !Array.isArray(existing.spools)) return null;
+      return {
         ...existing,
         ...payload,
         ...(payload.printLog || existing.printLog ? { printLog: unionById(existing.printLog, payload.printLog) } : {}),
         ...(payload.printLogRemoved || existing.printLogRemoved
           ? { printLogRemoved: Array.from(new Set([...((existing.printLogRemoved as string[]) || []), ...(payload.printLogRemoved || [])])).slice(-300) }
           : {})
-      })
+      };
     });
-    return res.ok;
   }
 };
