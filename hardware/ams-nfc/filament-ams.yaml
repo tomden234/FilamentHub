@@ -1,4 +1,4 @@
-# Erstellt: 06.11.2026 01:35 Uhr (Revision 1.203)
+# Erstellt: 06.11.2026 02:10 Uhr (Revision 1.204)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -19,6 +19,7 @@
 #   Taster „Platte frei“ (19-mm-Metalltaster mit Leuchtring): C (Common) → GND, NO → GPIO26, NC frei lassen
 #   (kein Widerstand nötig, der ESP hat einen eingebauten) → binary_sensor.filament_ams_platte_frei.
 #   Drücken = Platte ist leer, der Pi startet den nächsten Druck der Warteschlange.
+#   Zweimal schnell drücken = Druck pausieren, nochmal zweimal = fortsetzen (binary_sensor.filament_ams_taster_doppelt).
 #   Rastet der Taster ein (bleibt unten): button_latching: "true" setzen.
 #   Leuchtring: nur die 3-6-V- oder 5-V-Version an + → GPIO2, − → GND. Die 12-V-Version (dein Taster) FREI LASSEN.
 #   GPIO2 ist auch die blaue LED auf dem ESP: sie leuchtet, wenn ein Druck wartet, und blinkt schnell = nicht gestartet.
@@ -52,12 +53,16 @@ substitutions:
   # Taster: "false" = federt zurück (Standard), "true" = rastet ein (jedes Umschalten zählt als Drücken)
   button_latching: "false"
   # Stand dieser Datei (zeigt die App im Testmenü, damit man sieht, ob die neue Firmware drauf ist)
-  fw_revision: "1.203"
+  fw_revision: "1.204"
 
 # Merker für den Test der Warteschlange (Zahl vor dem Test)
 globals:
   - id: queue_before_test
     type: float
+    initial_value: '0'
+  # Zählt Drücke innerhalb von 450 ms (1 = Platte frei, 2 = Druck pausieren/fortsetzen)
+  - id: press_count
+    type: int
     initial_value: '0'
 
 esphome:
@@ -351,7 +356,7 @@ interval:
 script:
   # Taster gedrückt: im Test eine LED weniger (der Pi merkt nichts), sonst Impuls „Platte frei“ an den Pi
   - id: button_pressed
-    mode: single
+    mode: restart
     then:
       - if:
           condition:
@@ -364,7 +369,24 @@ script:
             - delay: 300ms
             - number.set: { id: queue_mode, value: 0 }
           else:
-            - script.execute: plate_pulse
+            # Einmal drücken = Platte frei (kommt nach 450 ms, damit ein zweites Drücken erkannt wird),
+            # zweimal schnell = Taster doppelt (Pi pausiert den Druck oder setzt ihn fort)
+            - lambda: 'id(press_count)++;'
+            - delay: 450ms
+            - if:
+                condition:
+                  lambda: 'return id(press_count) >= 2;'
+                then:
+                  - script.execute: double_pulse
+                else:
+                  - script.execute: plate_pulse
+            - lambda: 'id(press_count) = 0;'
+  - id: double_pulse
+    mode: single
+    then:
+      - binary_sensor.template.publish: { id: button_double, state: true }
+      - delay: 500ms
+      - binary_sensor.template.publish: { id: button_double, state: false }
   - id: plate_pulse
     mode: single
     then:
@@ -564,6 +586,11 @@ binary_sensor:
     id: plate_free
     name: "Platte frei"
     icon: mdi:gesture-tap-button
+  # Zweimal schnell drücken: der Pi pausiert den Druck bzw. setzt ihn fort
+  - platform: template
+    id: button_double
+    name: "Taster doppelt"
+    icon: mdi:gesture-double-tap
 
 text_sensor:
   # Stand der Firmware (Revision), fürs Testmenü der App

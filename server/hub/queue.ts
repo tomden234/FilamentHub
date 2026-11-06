@@ -27,6 +27,7 @@ export interface QueuePort {
   getLanAccess: () => { ip: string; code: string } | null;
   startProject: (p: { path: string; plate: number; name: string; amsMapping: number[]; amsMapping2: { ams_id: number; slot_id: number }[]; useAms: boolean; url?: string }) => Promise<unknown>;
   cleanError?: (code: number) => Promise<unknown>;
+  command?: (cmd: 'pause' | 'resume' | 'stop') => Promise<unknown>;
 }
 
 // Start-URL: Druckermodelle erwarten verschiedene Formen. Der Drucker meldet bei falscher Form 0500-4002 („Nicht unterstützter Dateipfad oder Name“).
@@ -495,10 +496,45 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
 }
 
 /** Taster am ESP gedrückt? (Ereignis aus Home Assistant) */
+/** Doppelt drücken: laufenden Druck pausieren, pausierten fortsetzen */
+let toggling = false;
+async function togglePause(): Promise<void> {
+  if (toggling) return;
+  toggling = true;
+  try {
+    const d: any = port?.getStatus().data || {};
+    const gs = String(d.gcode_state || '');
+    const name = String(d.subtask_name || 'Druck');
+    if (!port?.command) return;
+    if (gs === 'RUNNING') {
+      await port.command('pause');
+      await notify('⏸️ Druck pausiert', `${name} (Taster doppelt gedrückt). Nochmal doppelt drücken = weiter.`);
+    } else if (gs === 'PAUSE') {
+      if (Number(d.print_error) > 0) {
+        await notify('⚠️ Nicht fortgesetzt', `${name}: Der Drucker meldet einen Fehler. Bitte erst dort bestätigen.`);
+      } else {
+        await port.command('resume');
+        await notify('▶️ Druck läuft weiter', `${name} (Taster doppelt gedrückt)`);
+      }
+    } else {
+      await showLeds(1); // nichts zu pausieren: kurz rot
+    }
+  } catch (e) {
+    console.warn('[Warteschlange] Pausieren/Fortsetzen fehlgeschlagen:', (e as Error)?.message || e);
+  } finally {
+    toggling = false;
+  }
+}
+
 export function onHaEvent(ev: { event_type: string; data: any }): void {
-  if (ev.event_type !== 'state_changed' || ev.data?.entity_id !== found.button) return;
+  if (ev.event_type !== 'state_changed') return;
+  const id = ev.data?.entity_id;
+  const isOn = ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on';
+  if (!isOn) return;
+  // Zweiter Taster-Sensor „Taster doppelt“: gleicher Gerätename wie „Platte frei“
+  if (id === found.button.replace(/platte_frei/, 'taster_doppelt') && found.button.includes('platte_frei')) void togglePause();
   // Auch der erste Druck nach einem ESP-Neustart zählt (alter Zustand dann „unknown“/„unavailable“)
-  if (ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on') void startNext('Taster');
+  else if (id === found.button) void startNext('Taster');
 }
 
 /** Beim Start: LEDs auf den aktuellen Stand bringen */

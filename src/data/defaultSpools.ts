@@ -3267,5 +3267,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.222',
+    label: '1.222 (Taster doppelt = Pause)',
+    releaseDate: '06.11.2026',
+    description: 'Der Taster kann jetzt mehr: Einmal drücken = Platte frei und nächsten Druck starten (kommt 0,45 s später, damit ein zweiter Druck erkannt wird). Zweimal schnell drücken = laufenden Druck pausieren, nochmal zweimal = fortsetzen, mit Meldung aufs Handy. Bei einem Druckerfehler setzt der Taster nicht fort. ESP-Firmware 1.204, Pi-Add-on 1.3.4.',
+    features: [
+      '⏸️ Taster doppelt: Druck pausieren, nochmal doppelt: fortsetzen',
+      '📲 Meldung aufs Handy bei Pause und Weiter',
+      '🛡️ Nicht fortsetzen, solange der Drucker einen Fehler meldet'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
