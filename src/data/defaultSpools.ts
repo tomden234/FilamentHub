@@ -3261,7 +3261,8 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     features: [
       '⬇️ LEDs fallen von oben auf den Stapel (130 ms je LED), Stapel liegt unten',
       '🟠 „Platte räumen“: freie LEDs oben orange nach Druckende, Taster löscht es',
-      '🔁 „Nochmal drucken“ im Druck-Verlauf (Datei muss noch auf dem Drucker liegen)'
+      '🔁 „Nochmal drucken“ im Druck-Verlauf (Datei muss noch auf dem Drucker liegen)',
+      '🖨️ Neues App-Symbol: 3D-Drucker statt Spule (Handy, Windows, Browser, Statusleiste)'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],

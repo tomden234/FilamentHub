@@ -20,9 +20,11 @@ public class FilamentKeepAliveService extends Service {
     // FOREGROUND_SERVICE_TYPE_SPECIAL_USE (Android 14+), als Zahl, damit es auch mit älterem compileSdk baut
     private static final int TYPE_SPECIAL_USE = 0x40000000;
 
-    /** Kleines Symbol für Meldungen: einfarbige Spule, sonst das App-Symbol */
+    /** Kleines Symbol für Meldungen: einfarbiger 3D-Drucker, sonst Spule, sonst das App-Symbol */
     static int smallIcon(Context c) {
-        int id = c.getResources().getIdentifier("ic_stat_spool", "drawable", c.getPackageName());
+        int id = c.getResources().getIdentifier("ic_stat_printer", "drawable", c.getPackageName());
+        if (id != 0) return id;
+        id = c.getResources().getIdentifier("ic_stat_spool", "drawable", c.getPackageName());
         if (id != 0) return id;
         int icon = c.getApplicationInfo().icon;
         return icon != 0 ? icon : android.R.drawable.ic_dialog_info;
