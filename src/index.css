@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* "dark:" folgt dem App-Theme (Graphit/Nacht), nicht der Handy-/PC-Einstellung */
-@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *, [data-style="glass"]:not([data-tone="cream"]), [data-style="glass"]:not([data-tone="cream"]) *));
+@custom-variant dark (&:where([data-theme="slate"], [data-theme="slate"] *, [data-theme="midnight"], [data-theme="midnight"] *, [data-style="cozy"], [data-style="cozy"] *, [data-style="night"], [data-style="night"] *, [data-style="mocha"], [data-style="mocha"] *, [data-style="glass"]:not([data-tone="cream"]), [data-style="glass"]:not([data-tone="cream"]) *));
 
 /* Die Akzentfarbe steuert auch alle bisherigen "orange"-Klassen (Tailwind), damit Blau, Grün usw. überall greifen */
 @theme {
@@ -445,6 +445,7 @@ progress {
    (data-theme="slate"), Sand über den hellen (data-theme="warm"). Abschalten: Design „Klassisch“. */
 :root[data-style="cozy"],
 :root[data-style="night"],
+:root[data-style="mocha"],
 :root[data-style="sand"] {
   --radius-lg: 0.8rem;
   --radius-xl: 1.05rem;
@@ -541,6 +542,76 @@ progress {
 :root[data-style="night"] .text-orange-500 { color: var(--a-300); }
 :root[data-style="night"] .bg-black\/75 { background-color: rgba(10, 8, 24, 0.62); }
 
+/* Mocha (1.228): Coffee Brown #693822, Mocha Sand #C48B67, Tangerine Orange #FE4D03 – warm dunkel, knallige Akzente, fette Überschriften */
+:root[data-style="mocha"] {
+  color-scheme: dark;
+  --app-bg: #2a160d;
+  --app-card: #3d2114;
+  --app-card-sub: #341c11;
+  --app-border: #693822;
+  --app-text: #f6e9dc;
+  --app-text-muted: #c48b67;
+  --app-input-bg: #241209;
+  --app-accent: #fe4d03;
+  --app-accent-hover: #e04302;
+  --app-accent-sub: rgba(254, 77, 3, 0.16);
+  --app-accent-bar: #fe4d03;
+  --app-accent-gradient: linear-gradient(90deg, #693822 0%, #c48b67 55%, #fe4d03 100%);
+  --app-accent-text: #ff8a54;
+  --app-danger-text: #ffa48c;
+  --a-100: #ffe3d4;
+  --a-300: #ff8a54;
+  --a-400: #ff6a2b;
+  --a-500: #fe4d03;
+  --a-600: #e04302;
+  --a-700: #b83701;
+  --color-emerald-300: #b9d9a8;
+  --color-emerald-400: #9cc985;
+  --color-green-300: #c2dba8;
+  --color-green-400: #a4cc85;
+  --color-amber-300: #f2cd9a;
+  --color-amber-400: #e7b678;
+  --color-yellow-300: #f2dc9a;
+  --color-yellow-400: #e6c978;
+  --color-orange-300: #ff9a6b;
+  --color-orange-400: #ff7a3d;
+  --color-rose-300: #ffc0b4;
+  --color-rose-400: #ff9e8c;
+  --color-red-300: #ffb4a3;
+  --color-red-400: #ff8f78;
+  --color-sky-300: #c6dbe6;
+  --color-sky-400: #a3c6d8;
+  --color-teal-300: #b3dccf;
+  --color-teal-400: #8cc8b6;
+  --color-cyan-300: #b5dde0;
+  --color-cyan-400: #8ec9ce;
+  --color-blue-300: #c4d0ec;
+  --color-blue-400: #a5b8e0;
+  --color-violet-300: #dccdf0;
+  --color-violet-400: #c4b0e6;
+}
+:root[data-style="mocha"] .text-emerald-500 { color: #9cc985; }
+:root[data-style="mocha"] .text-green-500 { color: #a4cc85; }
+:root[data-style="mocha"] .text-rose-500 { color: #ff9e8c; }
+:root[data-style="mocha"] .text-amber-500 { color: #e7b678; }
+:root[data-style="mocha"] .text-sky-500 { color: #a3c6d8; }
+:root[data-style="mocha"] .text-orange-500 { color: #ff7a3d; }
+:root[data-style="mocha"] .bg-black\/75 { background-color: rgba(26, 12, 6, 0.66); }
+/* Überschriften wie im Vorbild: fett, eng, groß */
+:root[data-style="mocha"] :is(h1, h2, h3, h4, .fh-serif) {
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+:root[data-style="mocha"] .rounded-2xl.border,
+:root[data-style="mocha"] .rounded-t-2xl.border {
+  box-shadow: 0 16px 36px -24px rgba(0, 0, 0, 0.75);
+}
+:root[data-style="mocha"] .fh-eyebrow {
+  color: #fe4d03;
+  letter-spacing: 0.2em;
+}
+
 /* Sand: warmes Papier mit Waldgrün, kein reines Weiß */
 :root[data-style="sand"] {
   color-scheme: light;
@@ -569,10 +640,12 @@ progress {
 /* Warmer, sehr leichter Lichtschein statt hartem Hintergrund */
 :root[data-style="cozy"] { --fh-glow-hue: 150; }
 :root[data-style="night"] { --fh-glow-hue: 262; }
+:root[data-style="mocha"] { --fh-glow-hue: 20; }
 :root[data-style="sand"] { --fh-glow-hue: 45; }
 :root { --fh-glow: 0.5; }
 :root[data-style="cozy"] body,
 :root[data-style="night"] body,
+:root[data-style="mocha"] body,
 :root[data-custom] body {
   background:
     radial-gradient(1000px 560px at 6% -10%, hsl(var(--fh-glow-hue) 70% 62% / calc(var(--fh-glow) * 0.16)), transparent 62%),
@@ -802,7 +875,7 @@ progress {
 }
 
 /* Der Hintergrund-Glanz liegt auf dem body: die App-Hülle darf ihn nicht zudecken */
-:root:is([data-style="glass"], [data-style="cozy"], [data-style="night"], [data-style="sand"], [data-custom]) .fh-root {
+:root:is([data-style="glass"], [data-style="cozy"], [data-style="night"], [data-style="mocha"], [data-style="sand"], [data-custom]) .fh-root {
   background-color: transparent !important;
 }
 

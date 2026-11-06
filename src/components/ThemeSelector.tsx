@@ -88,6 +88,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
               { id: 'glass-purple', name: 'Glas Lila', sub: 'Dunkellila, Creme', bg: 'linear-gradient(135deg,#4a2f86,#0d0a17 62%,#35246b)', card: 'rgba(226,214,255,.14)', ink: '#f1ebdd', acc: '#8f7bd0', serif: false },
               { id: 'glass-cream', name: 'Glas Creme', sub: 'Hell, Salbeigrün', bg: 'linear-gradient(135deg,#f3d9b8,#ece3d0 55%,#cfe3d2)', card: 'rgba(255,252,244,.7)', ink: '#2b281f', acc: '#4d7a5b', serif: false },
               { id: 'night', name: 'Nacht', sub: 'Dunkles Lila', bg: '#16132a', card: '#201c38', ink: '#e6e2f4', acc: '#9484e6', serif: true },
+              { id: 'mocha', name: 'Mocha', sub: 'Kaffeebraun, Orange', bg: '#2a160d', card: '#3d2114', ink: '#f3e2d2', acc: '#FE4D03', serif: false },
               { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#3f8a5c', serif: true }
             ] as const
           ).map(o => {

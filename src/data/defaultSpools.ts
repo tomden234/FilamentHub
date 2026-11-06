@@ -3351,5 +3351,15 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.228',
+    label: '1.228 (Design Mocha)',
+    releaseDate: '06.11.2026',
+    description: 'Neues Design „Mocha“: Kaffeebraun (#693822) als Grund, Mocha Sand (#C48B67) für Nebentexte und Ränder, Tangerine Orange (#FE4D03) für Knöpfe und Akzente. Fette, enge Überschriften. Einstellen: Menü → Aussehen → Design → Mocha.',
+    features: ['☕ Design Mocha: Coffee Brown, Mocha Sand, Tangerine Orange'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

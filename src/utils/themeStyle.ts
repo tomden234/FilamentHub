@@ -4,7 +4,7 @@ import { safeStorage } from './safeStorage';
 import { STORAGE_KEY_THEME_BRIGHT } from './storageKeys';
 import { applyCustomize, setActiveCustomizeStyle } from './customize';
 
-export type ThemeStyle = 'classic' | 'cozy' | 'night' | 'glass-green' | 'glass-purple' | 'glass-cream' | 'sand';
+export type ThemeStyle = 'classic' | 'cozy' | 'night' | 'mocha' | 'glass-green' | 'glass-purple' | 'glass-cream' | 'sand';
 const KEY = 'filamenthub_theme_style';
 const listeners = new Set<() => void>();
 
@@ -12,13 +12,13 @@ const listeners = new Set<() => void>();
 export function getThemeStyle(): ThemeStyle {
   const v = safeStorage.getItem(KEY);
   if (v === 'glass') return 'glass-purple'; // Name aus 1.167
-  return v === 'classic' || v === 'sand' || v === 'night' || v === 'glass-green' || v === 'glass-purple' || v === 'glass-cream' ? v : 'cozy';
+  return v === 'classic' || v === 'sand' || v === 'night' || v === 'mocha' || v === 'glass-green' || v === 'glass-purple' || v === 'glass-cream' ? v : 'cozy';
 }
 
 /** data-theme, das wirklich gesetzt wird: Cozy nutzt die dunklen Grundregeln (Graphit) und legt seine Farben darüber */
 export function effectiveTheme(brightness: string): string {
   const st = getThemeStyle();
-  return st === 'cozy' || st === 'night' || st === 'glass-green' || st === 'glass-purple' ? 'slate' : st === 'sand' || st === 'glass-cream' ? 'warm' : brightness;
+  return st === 'cozy' || st === 'night' || st === 'mocha' || st === 'glass-green' || st === 'glass-purple' ? 'slate' : st === 'sand' || st === 'glass-cream' ? 'warm' : brightness;
 }
 
 export function applyThemeStyle(): void {
