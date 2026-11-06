@@ -3261,8 +3261,7 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     features: [
       '⬇️ LEDs fallen von oben auf den Stapel (130 ms je LED), Stapel liegt unten',
       '🟠 „Platte räumen“: freie LEDs oben orange nach Druckende, Taster löscht es',
-      '🔁 „Nochmal drucken“ im Druck-Verlauf (Datei muss noch auf dem Drucker liegen)',
-      '🖨️ Neues App-Symbol: 3D-Drucker statt Spule (Handy, Windows, Browser, Statusleiste)'
+      '🔁 „Nochmal drucken“ im Druck-Verlauf (Datei muss noch auf dem Drucker liegen)'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
@@ -3277,6 +3276,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
       '⏸️ Taster doppelt: Druck pausieren, nochmal doppelt: fortsetzen',
       '📲 Meldung aufs Handy bei Pause und Weiter',
       '🛡️ Nicht fortsetzen, solange der Drucker einen Fehler meldet'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
+  },
+  {
+    id: 'v1.223',
+    label: '1.223 (Spule zurück, 3D-Würfel in der Meldung)',
+    releaseDate: '06.11.2026',
+    description: 'Das beliebte Spulen-Symbol der App ist wieder da (Handy, Windows, Browser, Statusleiste). In der Druck-Meldung („Druck 34 %“) steht statt des normalen Papier-Druckers jetzt ein Würfel 🧊 für das gedruckte Teil.',
+    features: [
+      '🧵 Altes Spulen-Symbol zurück (App, PWA, Windows, Statusleiste)',
+      '🧊 Druck-Meldung mit Würfel statt 2D-Drucker'
     ],
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],

@@ -18,33 +18,37 @@
       <stop offset="0%" stop-color="#34d399" stop-opacity="0.45"/>
       <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="chamber" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#042a1b"/>
-      <stop offset="100%" stop-color="#010a06"/>
-    </linearGradient>
+    <radialGradient id="hub" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#0b2a1b"/>
+      <stop offset="100%" stop-color="#010604"/>
+    </radialGradient>
   </defs>
   <rect width="512" height="512" rx="128" fill="url(#bg)"/>
   <circle cx="256" cy="256" r="236" fill="url(#glow)"/>
-  <!-- Gehäuse des 3D-Druckers -->
-  <rect x="96" y="88" width="320" height="336" rx="38" fill="url(#ring)"/>
-  <rect x="96" y="88" width="320" height="336" rx="38" fill="none" stroke="#d1fae5" stroke-opacity="0.35" stroke-width="5"/>
-  <!-- Bauraum -->
-  <rect x="128" y="124" width="256" height="240" rx="20" fill="url(#chamber)"/>
-  <rect x="128" y="124" width="256" height="240" rx="20" fill="none" stroke="#6ee7a8" stroke-opacity="0.45" stroke-width="4"/>
-  <!-- Schiene und Druckkopf -->
-  <rect x="128" y="186" width="256" height="14" fill="#6ee7a8"/>
-  <rect x="216" y="176" width="80" height="48" rx="11" fill="url(#ring)" stroke="#d1fae5" stroke-opacity="0.5" stroke-width="3"/>
-  <polygon points="241,224 271,224 256,254" fill="#d1fae5"/>
-  <!-- Druckteil mit Schichten -->
-  <rect x="208" y="264" width="96" height="62" rx="7" fill="url(#wind)"/>
-  <g stroke="#a7f3d0" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round">
-    <path d="M 214 277 H 298"/><path d="M 214 291 H 298"/><path d="M 214 305 H 298"/>
+  <!-- Spulenflansch -->
+  <circle cx="256" cy="256" r="188" fill="url(#ring)"/>
+  <circle cx="256" cy="256" r="188" fill="none" stroke="#d1fae5" stroke-opacity="0.35" stroke-width="5"/>
+  <!-- aufgewickeltes Filament -->
+  <circle cx="256" cy="256" r="158" fill="#053b27"/>
+  <g fill="none" stroke="url(#wind)" stroke-width="9">
+    <circle cx="256" cy="256" r="150"/>
+    <circle cx="256" cy="256" r="132"/>
+    <circle cx="256" cy="256" r="114"/>
+    <circle cx="256" cy="256" r="96"/>
   </g>
-  <!-- Druckplatte -->
-  <rect x="148" y="326" width="216" height="14" rx="7" fill="#6ee7a8"/>
-  <!-- Bedienfeld -->
-  <circle cx="164" cy="394" r="8" fill="#d1fae5"/>
-  <rect x="296" y="380" width="88" height="28" rx="9" fill="#053b27"/>
-  <rect x="296" y="380" width="88" height="28" rx="9" fill="none" stroke="#6ee7a8" stroke-opacity="0.6" stroke-width="3"/>
-  <path d="M 312 394 H 340" stroke="#6ee7a8" stroke-width="5" stroke-linecap="round"/>
+  <g fill="none" stroke="#a7f3d0" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round">
+    <path d="M 128 200 A 140 140 0 0 1 220 126"/>
+    <path d="M 148 214 A 118 118 0 0 1 226 150"/>
+  </g>
+  <!-- Nabe -->
+  <circle cx="256" cy="256" r="74" fill="url(#ring)"/>
+  <circle cx="256" cy="256" r="46" fill="url(#hub)"/>
+  <circle cx="256" cy="256" r="46" fill="none" stroke="#6ee7a8" stroke-opacity="0.6" stroke-width="4"/>
+  <!-- Speichen -->
+  <g stroke="#022c1b" stroke-width="10" stroke-linecap="round" opacity="0.55">
+    <path d="M256 190 V 174"/><path d="M256 322 V 338"/><path d="M190 256 H 174"/><path d="M322 256 H 338"/>
+  </g>
+  <!-- ablaufender Faden -->
+  <path d="M 404 300 C 440 340 418 392 360 404 C 330 410 318 436 344 452" fill="none" stroke="#6ee7a8" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="344" cy="452" r="7" fill="#d1fae5"/>
 </svg>

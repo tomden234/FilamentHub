@@ -65,7 +65,7 @@ export function buildLiveStatus(i: LiveStatusInput): LiveStatus | null {
     const prepare = i.gcodeState === 'PREPARE';
     const pct = Math.max(0, Math.min(100, Math.round(i.percent || 0)));
     const eta = i.remainingMin > 0 ? i.now + i.remainingMin * 60_000 : 0;
-    const title = paused ? `⏸️ Druck pausiert (${pct} %)` : prepare ? '🖨️ Druck wird vorbereitet' : `🖨️ Druck ${pct} %`;
+    const title = paused ? `⏸️ Druck pausiert (${pct} %)` : prepare ? '🧊 Druck wird vorbereitet' : `🧊 Druck ${pct} %`;
     const main = eta ? `Fertig ${fmtClock(eta, i.now)} · noch ${fmtDuration(i.remainingMin)}` : 'Restzeit wird berechnet';
     const layers = i.totalLayers && i.totalLayers > 0 ? `Schicht ${i.layer || 0}/${i.totalLayers}` : '';
     return {

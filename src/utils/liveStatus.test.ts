@@ -12,7 +12,7 @@ describe('liveStatus', () => {
   it('Druck: Prozent, Uhrzeit des Endes und Restzeit', () => {
     const s = buildLiveStatus({ ...base, gcodeState: 'RUNNING', percent: 45, remainingMin: 72, jobName: 'Case' })!;
     expect(s.kind).toBe('print');
-    expect(s.title).toBe('🖨️ Druck 45 %');
+    expect(s.title).toBe('🧊 Druck 45 %');
     expect(s.text).toContain('Fertig 17:42 Uhr');
     expect(s.text).toContain('noch 1 h 12 min');
     expect(s.progress).toBe(45);
