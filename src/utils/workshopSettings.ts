@@ -190,12 +190,6 @@ export function updateWorkshopSettings(patch: Partial<WorkshopSettings>): void {
   listeners.forEach(l => l());
 }
 
-/** Nach einem Backup-Import: Einstellungen neu aus dem Speicher laden */
-export function reloadWorkshopSettings(): void {
-  cache = null;
-  listeners.forEach(l => l());
-}
-
 function subscribe(cb: () => void): () => void {
   listeners.add(cb);
   return () => {

@@ -3,7 +3,7 @@ import { safeStorage } from './safeStorage';
 import type { HaPrint } from './haPrintHistory';
 import { getHubInfo as getHubInfoLite, saveHubInfo } from './serverDeducts';
 import { STORAGE_KEY_CLOUD_URL } from './storageKeys';
-import { getGistToken } from './gistStore';
+import { getGistToken, isGistUrl } from './gistStore';
 import { isAutoDeductOn, readJobGrams } from './printUsage';
 import { getHaCredentials } from './haClient';
 import { getWorkshopSettings } from './workshopSettings';
@@ -133,9 +133,11 @@ function readSlots(): Record<string, string> {
 export function hubConfigPayload() {
   const ha = getHaCredentials();
   const ws = getWorkshopSettings();
+  const cloudUrl = safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '';
   return {
-    cloudUrl: safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '',
-    gistToken: getGistToken(),
+    cloudUrl,
+    // Token nur schicken, wenn wirklich ein Gist genutzt wird (bei „pi:“ wird ein alter Token am Pi gelöscht)
+    gistToken: isGistUrl(cloudUrl) ? getGistToken() : '',
     amsSlots: readSlots(),
     jobGrams: readJobGrams(),
     switchEntity: ha.switchEntity || '',

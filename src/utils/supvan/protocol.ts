@@ -40,10 +40,6 @@ export function concat(parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
-export function toHex(b: ArrayLike<number>, sep = ''): string {
-  return Array.from(b as ArrayLike<number>, x => (x & 0xff).toString(16).padStart(2, '0')).join(sep).toUpperCase();
-}
-
 /** 16-Byte-Befehl */
 export function makeCmd(cmd: number, param = 0, param2 = 0): Uint8Array {
   const p = new Uint8Array(16);

@@ -22,6 +22,14 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const corsOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
 app.use(cors({ origin: corsOrigins.length > 0 ? corsOrigins : false, exposedHeaders: ['ETag'] }));
 
+// Einfache Schutz-Köpfe (1.230): Browser soll Inhalte nicht umdeuten und keine Adressen weitergeben.
+// (Kein X-Frame-Options: die Home-Assistant-Seitenleiste zeigt die Oberfläche in einem Rahmen.)
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+
 // Zugriffsschutz (1.229): Ist APP_API_KEY gesetzt (Pi-App erzeugt ihn selbst), braucht jede /api-Route den Schlüssel.
 // Ohne Schlüssel antwortet der Server nur Aufrufen über localhost (Windows-App, npm run dev): so kann weder jemand im WLAN
 // noch eine fremde Webseite per DNS-Rebinding den Drucker steuern.

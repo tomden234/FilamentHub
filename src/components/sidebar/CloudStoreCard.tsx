@@ -85,6 +85,8 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
         if (!w.ok) return say(`Pi hat das Speichern abgelehnt (HTTP ${w.status}).`, false);
       }
       onCloudUrlChange(PI_URL);
+      setGistToken(''); // alter Token wird nicht mehr gebraucht: vom Gerät entfernen (und beim nächsten Abgleich am Pi)
+      setToken('');
       void pushHubConfig(true).catch(() => undefined);
       say(piHasSpools ? 'Fertig. Auf dem Pi lagen schon Daten, die bleiben erhalten.' : 'Fertig. Deine Daten liegen jetzt auf dem Pi. Alte Speicher (npoint/Gist) werden nicht mehr benutzt.', true);
     } finally {
