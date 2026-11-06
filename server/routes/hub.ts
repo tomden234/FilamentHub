@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { backupNow, energyWeeks, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
+import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
 import { autoScan, autoAddOn, queueDuplicate, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
@@ -21,6 +21,35 @@ router.post('/api/hub/power', (req, res) => {
 
 router.post('/api/hub/resolve', (req, res) => {
   res.json({ success: resolvePrint(String(req.body?.id || '')) });
+});
+
+router.post('/api/hub/deduct/suggest', async (req, res) => {
+  try {
+    const r = await deductSuggest({ id: String(req.body?.id || ''), name: String(req.body?.name || '') });
+    res.json({ success: true, ...r });
+  } catch (e: any) {
+    res.json({ success: false, error: String(e?.message || e) });
+  }
+});
+
+router.post('/api/hub/deduct/manual', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const r = await manualDeduct(
+      {
+        id: String(b.id || ''),
+        name: String(b.name || ''),
+        startMs: Number(b.startMs) || 0,
+        endMs: Number(b.endMs) || Date.now(),
+        state: b.state === 'FAILED' ? 'FAILED' : 'FINISH',
+        percent: Number(b.percent) || 0
+      },
+      Array.isArray(b.parts) ? b.parts : []
+    );
+    res.json({ success: r.ok, text: r.text });
+  } catch (e: any) {
+    res.json({ success: false, text: String(e?.message || e) });
+  }
 });
 
 router.post('/api/hub/test-push', async (_req, res) => {

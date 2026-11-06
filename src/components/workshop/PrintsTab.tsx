@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Camera, CheckCircle2, Clock, ImageOff, Trash2, XCircle } from 'lucide-react';
+import { Camera, CheckCircle2, Clock, ImageOff, Loader2, MinusCircle, Trash2, XCircle } from 'lucide-react';
 import { loadPhoto, removePrintRecord, savePhoto, usePrintLog, type PrintRecord } from '../../utils/printLog';
-import { fetchServerPhoto, getServerUrl } from '../../utils/recorderServer';
+import { fetchServerPhoto, getServerUrl, piDeductManual, piDeductSuggest } from '../../utils/recorderServer';
+import type { Spool } from '../../types/filament';
 import { Card, buttonStyle } from './ui';
 
 // Druck-Verlauf mit Foto: jeder Druck mit Kamerabild vom Ende, Dauer, Verbrauch und Kosten.
@@ -50,7 +51,88 @@ const Photo: React.FC<{ id: string; has: boolean; onOpen: (url: string) => void 
   );
 };
 
-const Row: React.FC<{ r: PrintRecord; onOpen: (url: string) => void }> = ({ r, onOpen }) => {
+interface Line {
+  spoolId: string;
+  grams: string;
+}
+
+/** Manuell abziehen: Pi schlägt Spule und Gramm vor, du kannst ändern. Der Pi bucht es in die Cloud (nie doppelt). */
+const DeductEditor: React.FC<{ r: PrintRecord; spools: Spool[]; onDone: () => void }> = ({ r, spools, onDone }) => {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const start = async () => {
+    setOpen(true);
+    setBusy(true);
+    setMsg(null);
+    const sug = await piDeductSuggest({ id: r.id, name: r.name });
+    const ls = (sug?.parts || []).map(p => ({ spoolId: p.spoolId, grams: String(Math.round(p.grams * 10) / 10) }));
+    setLines(ls.length ? ls : [{ spoolId: '', grams: '' }]);
+    if (!sug) setMsg({ ok: false, text: 'Pi nicht erreichbar. Spule und Gramm von Hand eintragen.' });
+    else if (!ls.length) setMsg({ ok: false, text: 'Gewicht unbekannt. Spule und Gramm von Hand eintragen.' });
+    setBusy(false);
+  };
+  const set = (i: number, v: Partial<Line>) => setLines(l => l.map((x, k) => (k === i ? { ...x, ...v } : x)));
+  const save = async () => {
+    const parts = lines.map(l => ({ spoolId: l.spoolId, grams: Number(l.grams.replace(',', '.')) })).filter(p => p.spoolId && p.grams > 0);
+    if (!parts.length) return setMsg({ ok: false, text: 'Bitte Spule und Gramm angeben.' });
+    setBusy(true);
+    const res = await piDeductManual({ id: r.id, name: r.name, startMs: r.startMs, endMs: r.endMs, state: r.state, percent: r.percent, parts });
+    setMsg({ ok: res.ok, text: res.text });
+    setBusy(false);
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('filamenthub:sync-now'));
+      setTimeout(onDone, 1200);
+    }
+  };
+
+  if (!open)
+    return (
+      <button onClick={() => void start()} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer" style={buttonStyle}>
+        <MinusCircle className="w-3 h-3" /> Jetzt abziehen
+      </button>
+    );
+  return (
+    <div className="w-full space-y-1.5 pt-1">
+      {busy && !lines.length && (
+        <div className="text-[11px] inline-flex items-center gap-1" style={{ color: 'var(--app-text-muted)' }}>
+          <Loader2 className="w-3 h-3 animate-spin" /> Pi sucht das Gewicht …
+        </div>
+      )}
+      {lines.map((l, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <select value={l.spoolId} onChange={e => set(i, { spoolId: e.target.value })} className="flex-1 min-w-0 px-1.5 py-1 rounded-lg border text-[11px]" style={{ ...buttonStyle, backgroundColor: 'var(--app-card)' }}>
+            <option value="">Spule wählen …</option>
+            {spools.map(sp => (
+              <option key={sp.id} value={sp.id}>
+                {sp.brand} {sp.name} ({Math.round(sp.remainingWeight)} g)
+              </option>
+            ))}
+          </select>
+          <input value={l.grams} onChange={e => set(i, { grams: e.target.value })} inputMode="decimal" placeholder="g" className="w-16 px-1.5 py-1 rounded-lg border text-[11px] text-right" style={{ ...buttonStyle, backgroundColor: 'var(--app-card)' }} />
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button disabled={busy} onClick={() => void save()} className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white bg-emerald-600 disabled:opacity-40 cursor-pointer">
+          {busy ? 'Moment …' : 'Abziehen'}
+        </button>
+        <button disabled={busy} onClick={() => setLines(l => [...l, { spoolId: '', grams: '' }])} className="px-2 py-1 rounded-lg border text-[11px] cursor-pointer" style={buttonStyle}>
+          + Spule
+        </button>
+        <button disabled={busy} onClick={() => setOpen(false)} className="px-2 py-1 rounded-lg text-[11px] cursor-pointer" style={{ color: 'var(--app-text-muted)' }}>
+          Abbrechen
+        </button>
+      </div>
+      {msg && <div className={`text-[11px] ${msg.ok ? 'text-emerald-400' : 'text-amber-300'}`}>{msg.text}</div>}
+    </div>
+  );
+};
+
+const Row: React.FC<{ r: PrintRecord; spools: Spool[]; onOpen: (url: string) => void }> = ({ r, spools, onOpen }) => {
+  const [hidden, setHidden] = useState(false);
+  void hidden;
   const ok = r.state === 'FINISH';
   return (
     <div className="flex gap-3 p-2.5 rounded-xl border" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
@@ -96,12 +178,13 @@ const Row: React.FC<{ r: PrintRecord; onOpen: (url: string) => void }> = ({ r, o
             <span style={{ color: 'var(--app-text-muted)' }}>Verbrauch noch nicht abgezogen</span>
           )}
         </div>
+        {r.grams <= 0 && <DeductEditor r={r} spools={spools} onDone={() => setHidden(true)} />}
       </div>
     </div>
   );
 };
 
-export const PrintsTab: React.FC = () => {
+export const PrintsTab: React.FC<{ spools?: Spool[] }> = ({ spools = [] }) => {
   const log = usePrintLog();
   const [big, setBig] = useState<string | null>(null);
   const [limit, setLimit] = useState(30);
@@ -119,7 +202,7 @@ export const PrintsTab: React.FC = () => {
   return (
     <div className="space-y-2">
       {log.slice(0, limit).map(r => (
-        <Row key={r.id} r={r} onOpen={setBig} />
+        <Row key={r.id} r={r} spools={spools} onOpen={setBig} />
       ))}
       {log.length > limit && (
         <button onClick={() => setLimit(l => l + 30)} className="w-full py-2 rounded-xl border text-xs font-bold cursor-pointer" style={buttonStyle}>

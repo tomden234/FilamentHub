@@ -390,7 +390,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
         )}
         {panelTab === 'prints' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-3">
-            <PrintsTab />
+            <PrintsTab spools={spools || []} />
           </div>
         )}
 

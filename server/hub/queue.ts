@@ -54,6 +54,41 @@ function loadUrlKey(): string {
     return '';
   }
 }
+// Gestartete Drucke mit Filament-Gewicht merken: Der Abzug am Druckende braucht die Gramm, findet die Datei aber nicht,
+// wenn sie vor dem Start umbenannt wurde (fh_….gcode.3mf). 7 Tage, höchstens 50.
+interface StartedJob {
+  names: string[];
+  filaments: JobFilament[];
+  at: number;
+}
+const startedFile = () => path.join(dataDir, 'hub-started.json');
+const jobKey = (n: string) => String(n || '').toLowerCase().replace(/\.gcode\.3mf$|\.3mf$|\.gcode$/i, '').trim();
+function loadStarted(): StartedJob[] {
+  try {
+    const v = JSON.parse(fs.readFileSync(startedFile(), 'utf-8'));
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+function rememberStarted(it: QueueItem): void {
+  const now = Date.now();
+  const names = Array.from(new Set([jobKey(it.name), jobKey(path.posix.basename(it.path))]));
+  const list = [{ names, filaments: it.filaments, at: now }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
+  try {
+    fs.writeFileSync(startedFile(), JSON.stringify(list), 'utf-8');
+  } catch {
+    /* egal */
+  }
+}
+/** Filament-Gewichte eines Drucks, den die Warteschlange gestartet hat (null = unbekannt) */
+export function startedJobFilaments(name: string): JobFilament[] | null {
+  const k = jobKey(name);
+  if (!k) return null;
+  const j = loadStarted().find(x => x.names.includes(k));
+  return j && j.filaments.length ? j.filaments : null;
+}
+
 function saveUrlKey(k: string): void {
   try {
     fs.writeFileSync(urlKeyFile(), k, 'utf-8');
@@ -397,6 +432,7 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
       await port!.cleanError?.(BAD_PATH);
       await new Promise(r => setTimeout(r, 1500));
     }
+    if (started) rememberStarted(it);
     if (!started) {
       await showLeds(1);
       await notify('⛔ Nicht gestartet', `${it.name}: Drucker lehnt alle Pfad-Formen ab. Bitte Log schicken.`);

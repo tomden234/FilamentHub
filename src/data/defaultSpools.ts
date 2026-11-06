@@ -3238,5 +3238,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.220',
+    label: '1.220 (Manuell abziehen)',
+    releaseDate: '06.11.2026',
+    description: 'Im Druck-Verlauf gibt es bei Drucken ohne Abzug den Knopf „Jetzt abziehen“. Der Pi schlägt Spule und Gramm vor (aus der Druckdatei), du kannst ändern oder weitere Spulen dazunehmen. Gebucht wird auf dem Pi in die Cloud, nie doppelt. Drucke aus der Warteschlange behalten ihr Gewicht, auch wenn die Datei umbenannt wurde (Pi-Add-on 1.3.2).',
+    features: [
+      '➖ „Jetzt abziehen“ im Druck-Verlauf: Vorschlag vom Pi, Spule und Gramm änderbar',
+      '🖥️ Abzug läuft auf dem Pi, nie doppelt, auch ohne offene App',
+      '🧠 Gewicht von Drucken aus der Warteschlange bleibt gemerkt (Auto-Abzug klappt auch nach Umbenennen)'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

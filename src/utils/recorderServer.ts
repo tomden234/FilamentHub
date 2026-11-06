@@ -433,3 +433,28 @@ export async function piQueueAction(action: 'add' | 'remove' | 'move' | 'start' 
     return { ok: false, text: String(e?.message || e), items: [] };
   }
 }
+
+export interface DeductSuggestion {
+  filaments: { type: string; colorHex: string; grams: number }[] | null;
+  parts: { spoolId: string; grams: number }[];
+}
+
+/** Manueller Abzug über den Pi: Vorschlag (Gramm aus der Datei, passende Spulen) */
+export async function piDeductSuggest(p: { id: string; name: string }): Promise<DeductSuggestion | null> {
+  try {
+    const j = await get('/api/hub/deduct/suggest', { method: 'POST', body: p, timeoutMs: 90000 });
+    return j?.success ? { filaments: j.filaments || null, parts: Array.isArray(j.parts) ? j.parts : [] } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Manueller Abzug über den Pi: schreibt in die Cloud, nie doppelt */
+export async function piDeductManual(p: { id: string; name: string; startMs: number; endMs: number; state: string; percent: number; parts: { spoolId: string; grams: number }[] }): Promise<{ ok: boolean; text: string }> {
+  try {
+    const j = await get('/api/hub/deduct/manual', { method: 'POST', body: p, timeoutMs: 30000 });
+    return { ok: Boolean(j?.success), text: String(j?.text || '') };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e) };
+  }
+}

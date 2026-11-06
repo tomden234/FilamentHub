@@ -16,11 +16,11 @@ import { getPrinterFrame } from '../printerCameraStream.js';
 import { printRecorder, nameKey, type RecordedPrint } from '../printRecorder.js';
 import { readExternal, readTrays, activeSlotFromPrinter } from '../../src/utils/amsMatch.js';
 import { dryOffAction } from '../../src/utils/dryAutoOff.js';
-import { applyDeduction, deductedIn, expectedMinutes, planParts, shortages, tooLong, type Part, type TrayLite } from './deductPlan.js';
+import { applyDeduction, deductedIn, expectedMinutes, planParts, shortages, tooLong, type Part, type PrintInfo, type TrayLite } from './deductPlan.js';
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { haAvailable, haCameraJpeg, haListen, haPowerW, haPush, haState, haSwitch, type PushOptions } from './ha.js';
 import { addEnergy, allTrays, inQuietHours, missingMaterials, stalled, weekKey, weeklyReport, type EnergyWeek } from './hubLogic.js';
-import { attachQueue, autoScan, onHaEvent as queueEvent, refreshLeds, type QueuePort } from './queue.js';
+import { attachQueue, autoScan, onHaEvent as queueEvent, refreshLeds, startedJobFilaments, type QueuePort } from './queue.js';
 import { espInfo as espInfoFn, publishImage, syncEspYaml } from './esphome.js';
 import { rootDir } from '../paths.js';
 
@@ -358,6 +358,9 @@ async function takePhoto(id: string): Promise<boolean> {
 }
 
 async function jobWeights(name: string): Promise<{ type: string; colorHex: string; grams: number }[] | null> {
+  // Von der Warteschlange gestartet: Gewichte sind schon bekannt (Datei kann umbenannt sein)
+  const known = startedJobFilaments(name);
+  if (known) return known;
   const lan = port?.getLanAccess();
   if (!lan) return null;
   for (let i = 0; i < 3; i++) {
@@ -502,6 +505,56 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
     }
     saveState();
   }
+}
+
+// ---------- Manueller Abzug (aus der App, läuft auf dem Pi) ----------
+
+/** Vorschlag für den manuellen Abzug: Gewichte aus der Datei bzw. Warteschlange und passende Spulen */
+export async function deductSuggest(p: { id: string; name: string }): Promise<{ filaments: { type: string; colorHex: string; grams: number }[] | null; parts: Part[] }> {
+  let filaments: { type: string; colorHex: string; grams: number }[] | null = startedJobFilaments(p.name);
+  const lan = port?.getLanAccess();
+  if (!filaments && lan) {
+    try {
+      const r = await fetchJobWeights({ ip: lan.ip, code: lan.code, jobName: p.name });
+      if (!('error' in r) && r.filaments.length) filaments = r.filaments;
+    } catch {
+      /* ohne Gewicht */
+    }
+  }
+  const doc: any = cloudReady(access()) ? await loadDoc(access()).catch(() => ({})) : {};
+  const spools = Array.isArray(doc?.spools) ? doc.spools : [];
+  const m = state().prints[p.id];
+  const trays = m?.trays?.length ? m.trays : traysOf(port?.getStatus().data || {});
+  const parts = planParts({
+    filaments,
+    trays,
+    usedSlots: [],
+    mainSlot: null,
+    amsSlots: getHubConfig().amsSlots,
+    spools,
+    knownGrams: Number(getHubConfig().jobGrams[nameKey(p.name)]) || 0
+  });
+  return { filaments, parts };
+}
+
+/** Manuell abziehen: schreibt wie der Auto-Abzug in die Cloud (Spulen, Verlauf, Druckliste). Nie doppelt. */
+export async function manualDeduct(p: PrintInfo, parts: Part[]): Promise<{ ok: boolean; text: string }> {
+  if (!cloudReady(access())) return { ok: false, text: 'Am Pi ist der Cloud-Abgleich nicht eingerichtet.' };
+  const clean = parts.filter(x => x && typeof x.spoolId === 'string' && Number(x.grams) > 0).map(x => ({ spoolId: x.spoolId, grams: Math.round(Number(x.grams) * 10) / 10 }));
+  if (!clean.length) return { ok: false, text: 'Keine Spule mit Gramm angegeben.' };
+  const doc = await loadDoc(access());
+  const r = applyDeduction(doc, p, clean, Date.now());
+  if (!r.ok) return { ok: false, text: r.reason };
+  await saveDoc(access(), r.doc);
+  const m = state().prints[p.id];
+  if (m) {
+    m.deduct = 'done';
+    m.texts = r.texts;
+    m.resolved = true;
+    saveState();
+  }
+  console.log(`[Hub] Manuell abgezogen: ${p.name}: ${r.texts.join(', ')}`);
+  return { ok: true, text: `Abgezogen: ${r.texts.join(', ')}` };
 }
 
 // ---------- Takt (alle 30 s) ----------
