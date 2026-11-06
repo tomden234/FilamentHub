@@ -1,6 +1,7 @@
 // Gemeinsame Hilfen für den Druck-Verbrauch (manuelles Fenster und Auto-Abzug): gemerkte Aufträge und Spulen-Zuordnung.
 import type { Spool } from '../types/filament';
 import { safeStorage } from './safeStorage';
+import { isGenericPrintName } from './printMatch';
 
 export const DONE_KEY = 'bambu_tasks_deducted';
 export const AUTO_KEY = 'bambu_auto_deduct';
@@ -74,8 +75,9 @@ export function recordDeduct(name: string, at: number, via: 'cloud' | 'lan'): vo
 /** Wurde dieser Druck (Name, Ende) schon abgezogen? */
 export function alreadyDeducted(name: string, at: number): boolean {
   const key = jobKey(name);
-  if (!key) return false;
   const t = Number.isFinite(at) ? at : Date.now();
+  // Ohne Namen („Druckauftrag“): jeder Abzug mit Ende innerhalb von 5 min war dieser Druck (nur ein Drucker)
+  if (!key || isGenericPrintName(name)) return readDeductLog().some(e => Math.abs(e.at - t) < 5 * 60_000);
   return readDeductLog().some(e => e.key === key && Math.abs(e.at - t) < SAME_PRINT_MS);
 }
 

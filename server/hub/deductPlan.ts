@@ -4,6 +4,7 @@
 //    Genau EINMAL: steht der Druck schon in serverDeducts oder hat er in der Druckliste schon Gramm (App hat abgezogen), passiert nichts.
 import { baseMaterial, colorDistance, EXTERNAL_SLOT } from '../../src/utils/amsMatch.js';
 import { bestSpool } from '../../src/utils/printUsage.js';
+import { samePrint as samePrintCore } from '../../src/utils/printMatch.js';
 
 export interface SpoolLite {
   id: string;
@@ -63,24 +64,35 @@ export function planParts(i: PlanInput): Part[] {
     const all = i.trays.filter(t => !t.empty && t.type);
     const used = new Set(i.usedSlots);
     const usedOnly = all.filter(t => used.has(t.slot));
-    const candidates = usedOnly.length ? usedOnly : all;
     const per = new Map<string, number>();
-    for (const f of fil) {
-      let target = '';
-      let bestD = Infinity;
-      for (const t of candidates) {
+    // 1.225 Mehrfarbdruck: jede Farbe bekommt ihr EIGENES Fach (beste Farbnähe zuerst), damit z. B. Weiß und Schwarz PLA
+    // nicht beide auf einer Spule landen. Erst wenn kein freies Fach mit dem Material übrig ist, darf ein Fach doppelt.
+    // Fächer, die laut Drucker benutzt wurden, zuerst; andere nur, wenn dort nichts passt (kurzer Farbwechsel nicht erfasst)
+    const pairs: { fi: number; t: TrayLite; d: number; off: number }[] = [];
+    fil.forEach((f, fi) => {
+      for (const t of all) {
         if (baseMaterial(t.type) !== baseMaterial(f.type)) continue;
-        const d = colorDistance(t.colorHex || '#888888', f.colorHex);
-        if (d < bestD) {
-          bestD = d;
-          const a = i.amsSlots[String(t.slot)];
-          target = a && i.spools.some(s => s.id === a) ? a : '';
-        }
+        pairs.push({ fi, t, d: colorDistance(t.colorHex || '#888888', f.colorHex), off: usedOnly.length && !used.has(t.slot) ? 1 : 0 });
       }
+    });
+    pairs.sort((x, y) => x.off - y.off || x.d - y.d);
+    const trayOf = new Map<number, TrayLite>();
+    const taken = new Set<number>();
+    for (const p of pairs) {
+      if (trayOf.has(p.fi) || taken.has(p.t.slot)) continue;
+      trayOf.set(p.fi, p.t);
+      taken.add(p.t.slot);
+    }
+    for (const p of pairs) if (!trayOf.has(p.fi)) trayOf.set(p.fi, p.t);
+    fil.forEach((f, fi) => {
+      const t = trayOf.get(fi);
+      const a = t ? i.amsSlots[String(t.slot)] : '';
+      let target = a && i.spools.some(s => s.id === a) ? a : '';
+      if (!target && t) target = bestSpool(i.spools as any, t.type, t.colorHex || f.colorHex);
       if (!target && fil.length === 1) target = main;
       if (!target) target = bestSpool(i.spools as any, f.type, f.colorHex);
       if (target) per.set(target, (per.get(target) || 0) + f.grams);
-    }
+    });
     return Array.from(per, ([spoolId, grams]) => ({ spoolId, grams: round1(grams) })).filter(p => p.grams > 0);
   }
   if (i.knownGrams > 0 && main) return [{ spoolId: main, grams: round1(i.knownGrams) }];
@@ -110,10 +122,8 @@ const nameKey = (n: string) =>
     .replace(/\.(gcode\.3mf|3mf|gcode)$/g, '')
     .trim();
 
-/** Gleicher Druck? Gleicher Name und Ende nah beieinander (wie in der App) */
-export function samePrint(a: { name: string; endMs: number }, b: { name: string; endMs: number }, windowMs = 45 * 60_000): boolean {
-  return nameKey(a.name) === nameKey(b.name) && Math.abs(Number(a.endMs) - Number(b.endMs)) < windowMs;
-}
+/** Gleicher Druck? Gleiche Regel wie in der App (printMatch.ts): Name+Ende, „Druckauftrag“ ohne Namen, überlappende Laufzeit */
+export const samePrint = samePrintCore;
 
 /** Wurde dieser Druck schon abgezogen (vom Server oder von einer App)? */
 export function deductedIn(doc: any, p: { id: string; name: string; endMs: number }): 'server' | 'app' | null {

@@ -1,6 +1,7 @@
 // Druckverlauf aus Home Assistant (Bambu-Lab-Integration): Aus dem Verlauf der Sensoren (Status, Auftragsname, aktives Fach, Fortschritt)
 // werden fertige und abgebrochene Drucke gebaut, auch wenn keine App offen war. Rein (ohne Netz), damit es testbar ist.
 
+import { betterPrintName, samePrint } from './printMatch';
 export type PState = 'RUNNING' | 'PREPARE' | 'PAUSE' | 'FINISH' | 'FAILED' | 'IDLE';
 
 export interface HistPoint {
@@ -173,23 +174,19 @@ export function findHistorySensors(states: any[]): HistorySensors {
   };
 }
 
-const keyOf = (n: string) =>
-  String(n || '')
-    .toLowerCase()
-    .replace(/\.(gcode\.3mf|3mf|gcode)$/g, '')
-    .trim();
-
 /** Drucke aus mehreren Quellen zusammenführen (gleicher Name, Ende nah beieinander = ein Druck). Die erste Quelle gewinnt, fehlende Angaben kommen aus den anderen. */
 export function mergePrintSources(lists: HaPrint[][], windowMs = 10 * 60_000): HaPrint[] {
   const out: HaPrint[] = [];
   for (const list of lists) {
     for (const p of list) {
-      const i = out.findIndex(x => keyOf(x.name) === keyOf(p.name) && Math.abs(x.endMs - p.endMs) < windowMs);
+      // 1.225: auch ohne Namen („Druckauftrag“ aus dem HA-Verlauf) oder mit anderem Namen bei gleicher Laufzeit = derselbe Druck
+      const i = out.findIndex(x => samePrint(x, p, windowMs));
       if (i < 0) {
         out.push({ ...p, slots: { ...p.slots } });
         continue;
       }
       const keep = out[i];
+      keep.name = betterPrintName(keep.name, p.name);
       if (!Object.keys(keep.slots).length && Object.keys(p.slots).length) keep.slots = { ...p.slots };
       if (!keep.trayRaw && p.trayRaw) keep.trayRaw = p.trayRaw;
       if (keep.state === 'FAILED' && !keep.percent && p.percent) keep.percent = p.percent;

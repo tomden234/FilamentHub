@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import type { Spool } from '../types/filament';
 import { safeStorage } from './safeStorage';
 import { getHaCredentials } from './haClient';
+import { betterPrintName, samePrint as samePrintCore } from './printMatch';
 
 export interface PrintRecordSpool {
   id: string;
@@ -51,17 +52,8 @@ function isRecord(r: any): r is PrintRecord {
   return r && typeof r.id === 'string' && typeof r.name === 'string' && Number.isFinite(Number(r.endMs));
 }
 
-/** Name vergleichbar machen: „Case.gcode.3mf“ = „case“ */
-const nameKey = (n: string) =>
-  String(n || '')
-    .toLowerCase()
-    .replace(/\.(gcode\.3mf|3mf|gcode)$/g, '')
-    .trim();
-
-/** Gleicher Druck? Gleicher Name und Ende nah beieinander */
-export function samePrint(a: { name: string; endMs: number }, b: { name: string; endMs: number }, windowMs = 45 * 60_000): boolean {
-  return nameKey(a.name) === nameKey(b.name) && Math.abs(Number(a.endMs) - Number(b.endMs)) < windowMs;
-}
+/** Gleicher Druck? Gleicher Name und Ende nah, oder ohne Namen („Druckauftrag“) bzw. überlappende Laufzeit (siehe printMatch.ts) */
+export const samePrint = samePrintCore;
 
 /** Wie viel ein Eintrag weiß (Verbrauch, Dauer, Foto): der bessere bleibt bei doppelten */
 const richness = (r: PrintRecord) => (r.grams > 0 ? 4 : 0) + (r.durationMin > 0 ? 2 : 0) + (r.hasPhoto ? 1 : 0);
@@ -79,6 +71,8 @@ export function dedupePrintLog(list: PrintRecord[]): PrintRecord[] {
     const other = keep === r ? out[i] : r;
     out[i] = {
       ...keep,
+      // 1.225: echter Name statt „Druckauftrag“, Pi-Kennung bevorzugt
+      name: betterPrintName(keep.name, other.name),
       durationMin: keep.durationMin || other.durationMin,
       startMs: keep.startMs || other.startMs,
       spools: keep.spools.length ? keep.spools : other.spools,
