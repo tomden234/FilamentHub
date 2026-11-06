@@ -21,8 +21,8 @@ describe('Doppelte Drucke (1.225)', () => {
 
   it('Quellen zusammenführen: nur ein Eintrag mit echtem Namen', () => {
     const merged = mergePrintSources([
-      [{ name: 'Air_Up_Fake_Pod(2)', startMs: T - 61 * 60_000, endMs: T, state: 'FINISH', percent: 100, slots: { '1': 3600 } }],
-      [{ name: 'Druckauftrag', startMs: T - 62 * 60_000, endMs: T + 30_000, state: 'FINISH', percent: 100, slots: {} }]
+      [{ name: 'Air_Up_Fake_Pod(2)', startMs: T - 61 * 60_000, endMs: T, state: 'FINISH', percent: 100, slots: { '1': 3600 }, trayRaw: '' }],
+      [{ name: 'Druckauftrag', startMs: T - 62 * 60_000, endMs: T + 30_000, state: 'FINISH', percent: 100, slots: {}, trayRaw: '' }]
     ]);
     expect(merged).toHaveLength(1);
     expect(merged[0].name).toBe('Air_Up_Fake_Pod(2)');

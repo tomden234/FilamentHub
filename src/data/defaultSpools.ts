@@ -3310,5 +3310,20 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.225',
+    label: '1.225 (Drucke nicht mehr doppelt, Mehrfarbe)',
+    releaseDate: '06.11.2026',
+    description:
+      'Jeder Druck steht nur noch einmal in der Liste. Vorher kam derselbe Druck zweimal: einmal vom Pi mit Namen, einmal aus dem Home-Assistant-Verlauf als „Druckauftrag“ (1 Minute länger, weil HA das Vorheizen mitzählt). Dann fragte die App beim Start „Spule abziehen?“, obwohl der Pi schon abgezogen hatte = doppelter Abzug. Jetzt gilt: gleiche Laufzeit = gleicher Druck, egal welcher Name. Alte doppelte Einträge werden automatisch zusammengelegt. Zieht der Pi ab, fragt die App nie mehr für Drucke, die nur Home Assistant kennt. Mehrfarbdruck: jede Farbe wird von ihrer eigenen Spule abgezogen (auch bei gleichem Material) und in der Druckliste angezeigt. Pi-Add-on 1.3.6.',
+    features: [
+      '🧹 Kein doppelter Druck mehr in der Liste („Druckauftrag“ + Name)',
+      '🛡️ Keine Abzieh-Frage mehr für schon abgezogene Drucke',
+      '🎨 Mehrfarbdruck: jede Farbe von ihrer eigenen Spule'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
