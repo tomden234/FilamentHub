@@ -76,6 +76,9 @@ jobs:
           # Paho MQTT (Drucker ohne Server) und NFC-Berechtigung
           sed -i '/^dependencies {/a\    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5"' android/app/build.gradle
           MANIFEST=android/app/src/main/AndroidManifest.xml
+          # http im Heimnetz erlauben (Pi-Server 192.168.x.x:3000). Ohne das blockiert Android 9+ jeden http-Aufruf der App: „Server nicht erreichbar“, obwohl der Browser den Pi sieht.
+          grep -q 'usesCleartextTraffic' "$MANIFEST" || sed -i 's|<application|<application android:usesCleartextTraffic="true"|' "$MANIFEST"
+          grep -n 'usesCleartextTraffic' "$MANIFEST" || echo "::warning::usesCleartextTraffic fehlt im Manifest"
           # Meldungen (Android 13+ braucht diese Berechtigung, sonst ist der Schalter in den Einstellungen grau/aus)
           sed -i '/<uses-permission android:name="android.permission.INTERNET"/a\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />' "$MANIFEST"
           sed -i '/<uses-permission android:name="android.permission.INTERNET"/a\    <uses-permission android:name="android.permission.NFC" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-feature android:name="android.hardware.nfc" android:required="false" />' "$MANIFEST"
