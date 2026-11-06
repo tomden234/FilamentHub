@@ -68,11 +68,10 @@ export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number
 }
 
 export async function fetchJobWeights(opts: { ip: string; code: string; jobName: string; plate?: number }): Promise<JobWeights | { error: string }> {
-  let client: Client | null = null;
+  const want = norm(opts.jobName);
+  if (!want) return { error: 'Kein Auftragsname.' };
   try {
-    client = await ftp(opts.ip, opts.code);
-    const want = norm(opts.jobName);
-    if (!want) return { error: 'Kein Auftragsname.' };
+    return await withFtp(opts.ip, opts.code, async client => {
 
     let best: { path: string; name: string; time: number } | null = null;
     for (const dir of DIRS) {
@@ -107,10 +106,9 @@ export async function fetchJobWeights(opts: { ip: string; code: string; jobName:
       filaments: parsed.filaments,
       totalGrams: Math.round(parsed.filaments.reduce((a, f) => a + f.grams, 0) * 100) / 100
     };
+    });
   } catch (e: any) {
     return { error: `FTP zum Drucker fehlgeschlagen: ${e?.message || e}` };
-  } finally {
-    await closeFtp(client);
   }
 }
 
@@ -156,10 +154,36 @@ async function ftp(ip: string, code: string): Promise<Client> {
   throw new Error(`FTP zum Drucker ${ip} nicht möglich → ${errs.join(' | ')}`);
 }
 
+// Immer nur EINE FTP-Sitzung zum Drucker gleichzeitig (Suche alle 3 s, Datei lesen, Umbenennen, Gewicht holen).
+// Der Drucker erlaubt nur wenige Sitzungen; mehrere parallel führen zu „421 too many connections“.
+let ftpChain: Promise<unknown> = Promise.resolve();
+let ftpUsers = 0;
+/** Läuft gerade eine FTP-Sitzung oder wartet eine? (Die 3-s-Suche lässt dann eine Runde aus.) */
+export const ftpBusy = (): boolean => ftpUsers > 0;
+async function withFtp<T>(ip: string, code: string, fn: (c: Client) => Promise<T>): Promise<T> {
+  ftpUsers++;
+  const run = ftpChain.then(async () => {
+    const client = await ftp(ip, code);
+    // Notbremse: hängt eine Sitzung über 3 Minuten, wird sie getrennt, sonst warteten alle anderen für immer
+    const guard = setTimeout(() => client.close(), 180_000);
+    try {
+      return await fn(client);
+    } finally {
+      clearTimeout(guard);
+      await closeFtp(client);
+    }
+  });
+  ftpChain = run.catch(() => undefined);
+  try {
+    return await run;
+  } finally {
+    ftpUsers--;
+  }
+}
+
 /** Alle .3mf-Dateien auf dem Drucker (neueste zuerst), für die Warteschlange */
 export async function listJobFiles(ip: string, code: string): Promise<{ path: string; name: string; size: number; time: number }[]> {
-  const client = await ftp(ip, code);
-  try {
+  return withFtp(ip, code, async client => {
     const out: { path: string; name: string; size: number; time: number }[] = [];
     for (const dir of DIRS) {
       let list;
@@ -176,15 +200,12 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
       }
     }
     return out.sort((a, b) => b.time - a.time).slice(0, 100);
-  } finally {
-    await closeFtp(client);
-  }
+  });
 }
 
 /** Filament je Platte aus einer Datei auf dem Drucker */
 export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; thumb: Uint8Array | null } | null> {
-  const client = await ftp(ip, code);
-  try {
+  return withFtp(ip, code, async client => {
     const chunks: Buffer[] = [];
     const sink = new Writable({
       write(chunk, _enc, cb) {
@@ -203,20 +224,15 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
       /* ohne Bild */
     }
     return { ...w, thumb };
-  } finally {
-    await closeFtp(client);
-  }
+  });
 }
 
 /** Datei auf dem Drucker umbenennen (im selben Ordner). Gibt den neuen Pfad zurück. */
 export async function renameJobFile(ip: string, code: string, filePath: string, newName: string): Promise<string> {
-  const client = await ftp(ip, code);
-  try {
+  return withFtp(ip, code, async client => {
     const dir = filePath.slice(0, filePath.lastIndexOf('/')) || '';
     const to = `${dir}/${newName}`;
     await client.rename(filePath, to);
     return to;
-  } finally {
-    await closeFtp(client);
-  }
+  });
 }

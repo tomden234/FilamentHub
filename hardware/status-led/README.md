@@ -10,6 +10,12 @@ Ein WS2812B-Streifen leuchtet passend zum Drucker. Die App legt die nötige Auto
 | Rot blinkend (30 Minuten, dann aus) | Fehler |
 | Aus | sonst |
 
+## Nachtmodus (ab Revision 1.224)
+
+Ab einer Uhrzeit leuchten beide Streifen (Status und Warteschlange) gedimmt. Standard: 21 bis 7 Uhr mit 25 %.
+Einstellen: App → Werkstatt → Status-LED → **Nachtmodus** (oder in Home Assistant: `LED Nacht ab`, `LED Nacht bis`, `LED Nacht Helligkeit`, `LED Nachtmodus`).
+Läuft direkt am ESP (Uhrzeit von Home Assistant), also auch ohne App und Pi. Braucht ESP-Firmware 1.224.
+
 ## Variante A (empfohlen): am selben ESP32 wie die NFC-Leser (ESPHome)
 
 Kein zweiter ESP32, kein WLED. Der Streifen ist schon in `hardware/ams-nfc/filament-ams.yaml` eingebaut (GPIO27, Substitution `led_count`).

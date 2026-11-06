@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { dataDir } from '../paths.js';
-import { listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
+import { ftpBusy, listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayLabel, type Mapping } from './hubLogic.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
@@ -138,7 +138,9 @@ export const QUEUE_COUNT_ENTITY = 'number.filament_ams_warteschlange';
 export const QUEUE_MODE_ENTITY = 'number.filament_ams_warteschlange_modus';
 export const BUTTON_ENTITY = 'binary_sensor.filament_ams_platte_frei';
 
-const found = { count: QUEUE_COUNT_ENTITY, mode: QUEUE_MODE_ENTITY, button: BUTTON_ENTITY, at: 0 };
+export const DOUBLE_ENTITY = 'binary_sensor.filament_ams_taster_doppelt';
+
+const found = { count: QUEUE_COUNT_ENTITY, mode: QUEUE_MODE_ENTITY, button: BUTTON_ENTITY, double: DOUBLE_ENTITY, at: 0 };
 /** Echte IDs suchen (höchstens alle 5 Minuten): Home Assistant behält alte IDs, wenn das Gerät früher anders hieß */
 async function resolveIds(force = false): Promise<void> {
   if (!force && Date.now() - found.at < 5 * 60_000) return;
@@ -149,6 +151,7 @@ async function resolveIds(force = false): Promise<void> {
   found.count = dev.roles.queue || QUEUE_COUNT_ENTITY;
   found.mode = dev.roles.queueMode || QUEUE_MODE_ENTITY;
   found.button = dev.roles.button || BUTTON_ENTITY;
+  found.double = dev.roles.buttonDouble || found.button.replace(/platte_frei/, 'taster_doppelt');
 }
 
 export function attachQueue(p: QueuePort, n: (title: string, text: string) => Promise<unknown>): void {
@@ -210,7 +213,8 @@ export async function printerFiles() {
 export async function queueAdd(filePath: string, plate = 1, fkey?: string, displayName?: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
   const lan = port?.getLanAccess();
   if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
-  if (!/^\/[\w .\-()/äöüÄÖÜß+&,]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
+  // Jeder Name aus Bambu Studio ist erlaubt (auch #, [ ], ' …); nur Steuerzeichen und „..“ nicht. Vor dem Start wird ohnehin sicher umbenannt.
+  if (!/^\/[^\r\n\0]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
   const r = await readJobFile(lan.ip, lan.code, filePath, plate);
   if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
   const id = crypto.randomBytes(6).toString('hex');
@@ -261,6 +265,8 @@ const baseOf = (n: string) => n.replace(/\.gcode\.3mf$|\.3mf$/i, '').toLowerCase
  * Der erste Durchlauf merkt sich nur, was schon da ist. Eine Datei, die gerade gedruckt wird („Drucken“ statt „Senden“), kommt nicht in die Warteschlange.
  */
 let scanning = false;
+/** Start läuft (Taster/App) */
+let starting = false;
 let scanStarted = 0;
 let scanBlockedUntil = 0;
 export interface ScanResult {
@@ -279,6 +285,8 @@ export async function autoScan(force = false): Promise<ScanResult> {
   const st = port?.getStatus();
   if (!lan || !st?.connected) return quiet('Drucker nicht im LAN-Modus verbunden', false);
   if (!autoOn && !force) return quiet('Automatik aus');
+  // Andere FTP-Arbeit (Start, Datei lesen, Gewicht) läuft: diese Runde auslassen statt eine zweite Sitzung zu öffnen
+  if (!force && (ftpBusy() || starting)) return quiet('Drucker beschäftigt, nächste Runde');
   if (scanning) return quiet('Scan läuft gerade, gleich nochmal drücken', false);
   scanning = true;
   scanStarted = Date.now();
@@ -404,7 +412,6 @@ async function showLeds(mode: 0 | 1 | 2): Promise<void> {
   if (mode) modeTimer = setTimeout(() => void haSetNumber(found.mode, baseMode()), 6000);
 }
 
-let starting = false;
 /** Nächsten Druck starten (Taster am ESP oder Knopf in der App). Gibt zurück, was passiert ist. */
 export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean; text: string }> {
   if (starting) return { ok: false, text: 'Startet schon.' };
@@ -479,7 +486,8 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
       await notify('⛔ Nicht gestartet', `${it.name}: Drucker lehnt alle Pfad-Formen ab. Bitte Log schicken.`);
       return { ok: false, text: lastErr || 'Start abgelehnt' };
     }
-    items = list.slice(1);
+    // Nach ID entfernen: während des Starts (bis ca. 1 Minute) kann sich die Liste geändert haben (neue Datei, Ziehen, Löschen)
+    items = load().filter(x => x.id !== it.id);
     dropThumb(it.id);
     save();
     await showLeds(2);
@@ -532,7 +540,7 @@ export function onHaEvent(ev: { event_type: string; data: any }): void {
   const isOn = ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on';
   if (!isOn) return;
   // Zweiter Taster-Sensor „Taster doppelt“: gleicher Gerätename wie „Platte frei“
-  if (id === found.button.replace(/platte_frei/, 'taster_doppelt') && found.button.includes('platte_frei')) void togglePause();
+  if (id === found.double && id !== found.button) void togglePause();
   // Auch der erste Druck nach einem ESP-Neustart zählt (alter Zustand dann „unknown“/„unavailable“)
   else if (id === found.button) void startNext('Taster');
 }

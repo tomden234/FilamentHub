@@ -419,6 +419,26 @@ async function pushEnd(rec: RecordedPrint): Promise<void> {
 /** Drucke, deren Abzug gerade läuft (nie zwei Versuche gleichzeitig, sonst könnte doppelt abgezogen werden) */
 const inFlight = new Set<string>();
 
+/** Alle Schreibvorgänge ins Cloud-Dokument nacheinander (Auto- und manueller Abzug dürfen nie gleichzeitig lesen → schreiben) */
+let cloudChain: Promise<unknown> = Promise.resolve();
+function withCloudLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = cloudChain.then(fn, fn);
+  cloudChain = run.catch(() => undefined);
+  return run;
+}
+
+/** Text „x g von Spule“ aus einem schon gespeicherten Server-Abzug (falls die Antwort beim Speichern verloren ging) */
+function textsFromServerDeduct(doc: any, id: string): string[] {
+  const sd = (Array.isArray(doc?.serverDeducts) ? doc.serverDeducts : []).find((d: any) => d?.id === id);
+  if (!sd) return [];
+  const spools: any[] = Array.isArray(doc?.spools) ? doc.spools : [];
+  return (sd.parts || []).map((p: Part) => {
+    const sp = spools.find(s => s.id === p.spoolId);
+    const label = sp ? `${sp.brand || ''} ${sp.name || ''}`.trim() || 'Spule' : 'Spule';
+    return `${Math.round(p.grams)} g von ${label}${sp ? ` (${Math.round(Number(sp.remainingWeight) || 0)} g übrig)` : ''}`;
+  });
+}
+
 async function tryDeduct(rec: RecordedPrint): Promise<void> {
   if (inFlight.has(rec.id)) return;
   inFlight.add(rec.id);
@@ -451,37 +471,52 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
       const total = Math.round(filaments.reduce((a, f) => a + f.grams, 0) * 10) / 10;
       updateHubConfig({ jobGrams: { ...c.jobGrams, [nameKey(rec.name)]: total } });
     }
-    const doc = await loadDoc(access());
-    const spools = Array.isArray(doc?.spools) ? doc.spools : [];
-    const parts = planParts({
-      filaments,
-      trays: m.trays || [],
-      usedSlots: Object.keys(rec.slots || {}).map(Number),
-      mainSlot: mainSlotOf(rec.slots),
-      amsSlots: getHubConfig().amsSlots,
-      spools,
-      knownGrams: Number(getHubConfig().jobGrams[nameKey(rec.name)]) || 0
+    // Lesen → rechnen → schreiben ohne Lücke: kein anderer Abzug (manuell aus der App) dazwischen
+    const res = await withCloudLock(async () => {
+      if (m.deduct !== 'pending' && m.deduct !== 'working') return null; // inzwischen manuell erledigt
+      const doc = await loadDoc(access());
+      const spools = Array.isArray(doc?.spools) ? doc.spools : [];
+      const parts = planParts({
+        filaments,
+        trays: m.trays || [],
+        usedSlots: Object.keys(rec.slots || {}).map(Number),
+        mainSlot: mainSlotOf(rec.slots),
+        amsSlots: getHubConfig().amsSlots,
+        spools,
+        knownGrams: Number(getHubConfig().jobGrams[nameKey(rec.name)]) || 0
+      });
+      if (!parts.length) {
+        m.deduct = 'ask';
+        m.reason = 'Gewicht unbekannt';
+        saveState();
+        return null;
+      }
+      m.deduct = 'working';
+      m.parts = parts;
+      saveState();
+      const before = new Map<string, number>(spools.map((x: any) => [String(x.id), Number(x.remainingWeight) || 0]));
+      const r = applyDeduction(doc, rec, parts, Date.now());
+      if (!r.ok) {
+        // Schon vom Server gebucht (Antwort beim letzten Speichern verloren): als erledigt zählen, nicht als „übersprungen“
+        if (deductedIn(doc, rec) === 'server') {
+          m.deduct = 'done';
+          m.texts = textsFromServerDeduct(doc, rec.id);
+        } else {
+          m.deduct = 'skip';
+          m.reason = r.reason;
+        }
+        console.log(`[Hub] Kein neuer Abzug für ${rec.name}: ${r.reason}`);
+        saveState();
+        return null;
+      }
+      await saveDoc(access(), r.doc);
+      m.deduct = 'done';
+      m.texts = r.texts;
+      saveState();
+      return { r, parts, before };
     });
-    if (!parts.length) {
-      m.deduct = 'ask';
-      m.reason = 'Gewicht unbekannt';
-      return saveState();
-    }
-    m.deduct = 'working';
-    m.parts = parts;
-    saveState();
-    const before = new Map<string, number>(spools.map((x: any) => [String(x.id), Number(x.remainingWeight) || 0]));
-    const r = applyDeduction(doc, rec, parts, Date.now());
-    if (!r.ok) {
-      m.deduct = 'skip';
-      m.reason = r.reason;
-      console.log(`[Hub] Kein Abzug für ${rec.name}: ${m.reason}`);
-      return saveState();
-    }
-    await saveDoc(access(), r.doc);
-    m.deduct = 'done';
-    m.texts = r.texts;
-    saveState();
+    if (!res) return;
+    const { r, parts, before } = res;
     console.log(`[Hub] Abgezogen: ${rec.name}: ${r.texts.join(', ')}`);
     // Spule fast leer?
     const low = getHubConfig().lowWeightG;
@@ -542,19 +577,22 @@ export async function manualDeduct(p: PrintInfo, parts: Part[]): Promise<{ ok: b
   if (!cloudReady(access())) return { ok: false, text: 'Am Pi ist der Cloud-Abgleich nicht eingerichtet.' };
   const clean = parts.filter(x => x && typeof x.spoolId === 'string' && Number(x.grams) > 0).map(x => ({ spoolId: x.spoolId, grams: Math.round(Number(x.grams) * 10) / 10 }));
   if (!clean.length) return { ok: false, text: 'Keine Spule mit Gramm angegeben.' };
-  const doc = await loadDoc(access());
-  const r = applyDeduction(doc, p, clean, Date.now());
-  if (!r.ok) return { ok: false, text: r.reason };
-  await saveDoc(access(), r.doc);
-  const m = state().prints[p.id];
-  if (m) {
-    m.deduct = 'done';
-    m.texts = r.texts;
-    m.resolved = true;
-    saveState();
-  }
-  console.log(`[Hub] Manuell abgezogen: ${p.name}: ${r.texts.join(', ')}`);
-  return { ok: true, text: `Abgezogen: ${r.texts.join(', ')}` };
+  if (inFlight.has(p.id)) return { ok: false, text: 'Der Pi zieht diesen Druck gerade selbst ab. Gleich nochmal ansehen.' };
+  return withCloudLock(async () => {
+    const doc = await loadDoc(access());
+    const r = applyDeduction(doc, p, clean, Date.now());
+    if (!r.ok) return { ok: false, text: r.reason };
+    await saveDoc(access(), r.doc);
+    const m = state().prints[p.id];
+    if (m) {
+      m.deduct = 'done';
+      m.texts = r.texts;
+      m.resolved = true;
+      saveState();
+    }
+    console.log(`[Hub] Manuell abgezogen: ${p.name}: ${r.texts.join(', ')}`);
+    return { ok: true, text: `Abgezogen: ${r.texts.join(', ')}` };
+  });
 }
 
 // ---------- Takt (alle 30 s) ----------
@@ -608,7 +646,8 @@ async function retryDeducts(now: number): Promise<void> {
       }
       m.deduct = 'pending';
     }
-    if (m.deduct === 'pending' && m.lastTry && now - m.lastTry > 2 * 60_000) {
+    // Auch „noch nie versucht“ (Pi startete in der Minute nach dem Druckende neu): sonst bliebe der Abzug für immer liegen
+    if (m.deduct === 'pending' && now - (m.lastTry || m.at) > 2 * 60_000) {
       const rec = printRecorder.list().find(p => p.id === id);
       if (rec) {
         await tryDeduct(rec);
@@ -645,7 +684,8 @@ async function watchPrint(gs: string, d: any, now: number, dt: number): Promise<
   if (!s.startChecked && gs === 'RUNNING') {
     s.startChecked = true;
     saveState();
-    {
+    // Läuft nebenher: das Laden der Druckdatei (FTP, bis ca. 1 Minute) hält den Takt nicht auf („Aus nach Druck“, Fehler-Push …)
+    void (async () => {
       try {
         const [filaments, doc] = await Promise.all([jobWeights(open.name), cloudReady(access()) ? loadDoc(access()).catch(() => ({})) : Promise.resolve({} as any)]);
         const left = Math.max(0, 1 - (Number(d.mc_percent) || 0) / 100);
@@ -669,7 +709,7 @@ async function watchPrint(gs: string, d: any, now: number, dt: number): Promise<
       } catch (e) {
         console.warn('[Hub] Spulen-Check:', (e as Error)?.message || e);
       }
-    }
+    })();
   }
 
   // Hängt der Druck? (Fortschritt und Schicht 30 Minuten gleich)

@@ -96,3 +96,66 @@ export function judgeReader(st: string | undefined): 'ok' | 'bad' | 'unknown' {
   if (!st || st === 'unknown' || st === 'unavailable') return 'unknown';
   return st.startsWith('OK') ? 'ok' : 'bad';
 }
+
+// ---------- Nachtmodus der LED-Streifen (Werte liegen am ESP, damit er auch ohne App/Pi dimmt) ----------
+
+export interface NightLed {
+  on: boolean;
+  from: number;
+  to: number;
+  pct: number;
+  /** Gerade Nacht (Streifen gedimmt)? null = unbekannt */
+  active: boolean | null;
+  ids: { on: string; from: string; to: string; pct: string };
+}
+
+export const NIGHT_DEFAULT = { on: true, from: 21, to: 7, pct: 25 };
+
+/** Nachtmodus-Werte vom ESP lesen. null = ESP hat noch keine Firmware mit Nachtmodus (oder nicht gefunden). */
+export async function readNightLed(): Promise<NightLed | null> {
+  const dev = await findAmsDevice();
+  if (!dev) return null;
+  const r = dev.roles;
+  const base = dev.base;
+  const idsOf = {
+    on: r.nightOn || `switch.${base}_led_nachtmodus`,
+    from: r.nightFrom || `number.${base}_led_nacht_ab`,
+    to: r.nightTo || `number.${base}_led_nacht_bis`,
+    pct: r.nightPct || `number.${base}_led_nacht_helligkeit`
+  };
+  const [on, from, to, pct, active] = await Promise.all([
+    readEntity(idsOf.on),
+    readEntity(idsOf.from),
+    readEntity(idsOf.to),
+    readEntity(idsOf.pct),
+    readEntity(`binary_sensor.${base}_led_nacht_aktiv`)
+  ]);
+  if (!from || !to || !pct || !from.available) return null;
+  const num = (e: EntityState | null, d: number) => (e && Number.isFinite(Number(e.state)) ? Math.round(Number(e.state)) : d);
+  return {
+    on: on ? on.state === 'on' : NIGHT_DEFAULT.on,
+    from: num(from, NIGHT_DEFAULT.from),
+    to: num(to, NIGHT_DEFAULT.to),
+    pct: num(pct, NIGHT_DEFAULT.pct),
+    active: active && active.available ? active.state === 'on' : null,
+    ids: idsOf
+  };
+}
+
+/** Einen Nachtmodus-Wert am ESP setzen */
+export async function setNightLed(n: Pick<NightLed, 'ids'>, change: Partial<Pick<NightLed, 'on' | 'from' | 'to' | 'pct'>>): Promise<boolean> {
+  const calls: Promise<boolean>[] = [];
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(v)));
+  if (change.on !== undefined) calls.push(service('switch', change.on ? 'turn_on' : 'turn_off', { entity_id: n.ids.on }));
+  if (change.from !== undefined) calls.push(service('number', 'set_value', { entity_id: n.ids.from, value: clamp(change.from, 0, 23) }));
+  if (change.to !== undefined) calls.push(service('number', 'set_value', { entity_id: n.ids.to, value: clamp(change.to, 0, 23) }));
+  if (change.pct !== undefined) calls.push(service('number', 'set_value', { entity_id: n.ids.pct, value: clamp(change.pct / 5, 1, 20) * 5 }));
+  const r = await Promise.all(calls);
+  return r.every(Boolean);
+}
+
+/** Ist zur Stunde h Nacht? (von 21 bis 7 = über Mitternacht; gleich = nie) – gleiche Regel wie am ESP */
+export function isNightHour(h: number, from: number, to: number): boolean {
+  if (from === to) return false;
+  return from < to ? h >= from && h < to : h >= from || h < to;
+}

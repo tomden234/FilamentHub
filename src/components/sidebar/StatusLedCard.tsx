@@ -16,6 +16,127 @@ import {
   type LedColors,
   type LedTestMode
 } from '../../utils/statusLed';
+import { NIGHT_DEFAULT, isNightHour, readNightLed, setNightLed, type NightLed } from '../../utils/amsDevice';
+
+const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
+
+/** Nachtmodus: ab einer Uhrzeit leuchten beide Streifen (Status + Warteschlange) gedimmt. Die Werte liegen am ESP (wirkt auch ohne App/Pi). */
+const NightLedSection: React.FC = () => {
+  const [n, setN] = useState<NightLed | null>(null);
+  const [state, setState] = useState<'load' | 'ok' | 'missing' | 'error'>('load');
+  const [msg, setMsg] = useState('');
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const load = async () => {
+    setState('load');
+    try {
+      const r = await readNightLed();
+      setN(r);
+      setState(r ? 'ok' : 'missing');
+    } catch (e: any) {
+      setState('error');
+      setMsg(String(e?.message || e));
+    }
+  };
+  useEffect(() => {
+    void load();
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
+  const change = (c: Partial<Pick<NightLed, 'on' | 'from' | 'to' | 'pct'>>) => {
+    if (!n) return;
+    const next = { ...n, ...c };
+    setN(next);
+    setMsg('');
+    if (timer.current) clearTimeout(timer.current);
+    // Kurz bündeln, damit nicht jeder Tastendruck an den ESP geht
+    timer.current = setTimeout(async () => {
+      const ok = await setNightLed(next, { on: next.on, from: next.from, to: next.to, pct: next.pct });
+      setMsg(ok ? 'Am ESP gespeichert.' : 'Konnte nicht an den ESP schicken (Home Assistant erreichbar?).');
+    }, c.on !== undefined ? 0 : 500);
+  };
+
+  const nowNight = n ? isNightHour(new Date().getHours(), n.from, n.to) : false;
+  const hourInput = (value: number, onChange: (v: number) => void, label: string) => (
+    <NumInput
+      type="number"
+      min={0}
+      max={23}
+      value={value}
+      onChange={e => {
+        const v = parseInt(e.target.value, 10);
+        if (Number.isFinite(v) && v >= 0 && v <= 23) onChange(v);
+      }}
+      className="w-14 px-2 py-1 rounded-lg border text-xs font-mono-num outline-none text-right"
+      style={inputStyle}
+      aria-label={label}
+    />
+  );
+
+  return (
+    <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
+      <div>
+        <p className="text-xs font-bold">🌙 Nachtmodus</p>
+        <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+          Ab der Uhrzeit leuchten beide Streifen (Status und Warteschlange) gedimmt. Läuft direkt am ESP, auch wenn App und Pi aus sind.
+        </p>
+      </div>
+      {state === 'load' && <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>Lese Werte vom ESP …</p>}
+      {(state === 'missing' || state === 'error') && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] leading-snug" style={{ color: '#f59e0b' }}>
+            {state === 'missing'
+              ? `Der ESP hat den Nachtmodus noch nicht. Neue filament-ams.yaml aufspielen (Home Assistant → ESPHome → Filament AMS → Installieren → Drahtlos). Danach gilt ab ${hh(NIGHT_DEFAULT.from)} bis ${hh(NIGHT_DEFAULT.to)} ${NIGHT_DEFAULT.pct} %.`
+              : `Home Assistant nicht erreichbar: ${msg}`}
+          </p>
+          <button onClick={() => void load()} className="px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer" style={buttonStyle}>
+            Nochmal lesen
+          </button>
+        </div>
+      )}
+      {state === 'ok' && n && (
+        <>
+          <Toggle on={n.on} onChange={v => change({ on: v })} label="Nachts dimmen" hint={`Gerade: ${n.on && (n.active ?? nowNight) ? `Nacht, ${n.pct} %` : 'Tag, normale Helligkeit'}.`} />
+          {n.on && (
+            <>
+              <div className="flex items-center justify-between gap-2 text-xs font-bold">
+                <span>Ab</span>
+                <span className="flex items-center gap-1">
+                  {hourInput(n.from, v => change({ from: v }), 'Nachtmodus ab Uhrzeit')}
+                  <span className="font-normal" style={{ color: 'var(--app-text-muted)' }}>Uhr bis</span>
+                  {hourInput(n.to, v => change({ to: v }), 'Nachtmodus bis Uhrzeit')}
+                  <span className="font-normal" style={{ color: 'var(--app-text-muted)' }}>Uhr</span>
+                </span>
+              </div>
+              <label className="block text-xs font-bold">
+                <span className="flex items-center justify-between">
+                  <span>Helligkeit nachts</span>
+                  <span className="font-mono-num">{n.pct} %</span>
+                </span>
+                <input
+                  type="range"
+                  min={5}
+                  max={100}
+                  step={5}
+                  value={n.pct}
+                  onChange={e => change({ pct: parseInt(e.target.value, 10) })}
+                  className="w-full mt-1 cursor-pointer"
+                  aria-label="Helligkeit im Nachtmodus"
+                />
+                <span className="block text-[11px] font-normal leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+                  {n.from === n.to ? 'Gleiche Uhrzeit bei „ab“ und „bis“ = nie dimmen.' : `Von ${hh(n.from)} bis ${hh(n.to)} Uhr leuchten die Streifen mit ${n.pct} % der normalen Helligkeit.`}
+                </span>
+              </label>
+            </>
+          )}
+          {msg && <p className="text-[11px]" style={{ color: msg.startsWith('Am ESP') ? 'var(--app-text-muted)' : '#f59e0b' }}>{msg}</p>}
+        </>
+      )}
+    </div>
+  );
+};
 
 /** Status-LED (LED-Streifen am Drucker, ESPHome oder WLED): an/aus, Helligkeit, Prüfen. Steht in der Werkstatt als eigener Tab „Status-LED“. */
 export const StatusLedCard: React.FC = () => {
@@ -145,6 +266,8 @@ export const StatusLedCard: React.FC = () => {
             )}
           </>
         )}
+
+        <NightLedSection />
 
         <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
           <div>

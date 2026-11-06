@@ -3293,5 +3293,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.224',
+    label: '1.224 (LED-Nachtmodus & Pi-Check)',
+    releaseDate: '06.11.2026',
+    description:
+      'Nachtmodus: Ab einer Uhrzeit (Standard 21 bis 7 Uhr) leuchten beide LED-Streifen (Status und Warteschlange) nur noch mit 25 %. Uhrzeit und Helligkeit stellst du in Werkstatt → Status-LED → Nachtmodus ein. Läuft direkt am ESP, auch ohne App und Pi. Dazu ein großer Check vom Pi-Server: Abzug kann nie doppelt passieren (auch nicht, wenn „Jetzt abziehen“ und der Auto-Abzug gleichzeitig laufen), ein Abzug bleibt nach einem Pi-Neustart nicht mehr liegen, immer nur eine FTP-Verbindung zum Drucker (weniger „421 too many connections“), die Warteschlange verliert beim Start keine neuen Einträge mehr, Dateinamen mit #, [ ] oder \' kommen jetzt auch in die Warteschlange. ESP-Firmware 1.224, Pi-Add-on 1.3.5.',
+    features: [
+      '🌙 LED-Nachtmodus: Uhrzeit und Helligkeit einstellbar, beide Streifen',
+      '🛡️ Abzug nie doppelt: Auto und „Jetzt abziehen“ warten aufeinander',
+      '🔁 Abzug nach Pi-Neustart wird nachgeholt',
+      '📡 Nur eine FTP-Sitzung zum Drucker gleichzeitig',
+      '📋 Warteschlange: Start verliert keine neuen Einträge, mehr Dateinamen erlaubt'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

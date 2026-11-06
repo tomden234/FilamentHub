@@ -1,4 +1,4 @@
-# Erstellt: 06.11.2026 02:10 Uhr (Revision 1.204)
+# Erstellt: 06.11.2026 02:40 Uhr (Revision 1.224)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -27,6 +27,10 @@
 #   Streifen „Warteschlange“ (10 LEDs, Rest vom Status-Streifen): DIN → GPIO14, GND → GND, 5V → gleiches 5-V-Netzteil
 #   Eine blaue LED je wartendem Druck. Grün = startet. Rot blinkend = nicht gestartet (Drucker druckt noch, Material fehlt, Drucker aus).
 #
+# Nachtmodus (Revision 1.224): ab „LED Nacht ab“ bis „LED Nacht bis“ (volle Stunden) leuchten BEIDE Streifen nur mit „LED Nacht Helligkeit“ (%).
+#   Standard 21 bis 7 Uhr, 25 %. Einstellbar in der App (Werkstatt → Status-LED → Nachtmodus) oder in Home Assistant.
+#   Die Uhrzeit kommt von Home Assistant. Ohne Uhrzeit (noch nicht verbunden) leuchten die Streifen normal.
+#
 # Pins funktionieren auf ESP32-Boards mit 30 UND 38 Pins (DevKitC / NodeMCU, WROOM-32).
 
 substitutions:
@@ -53,7 +57,7 @@ substitutions:
   # Taster: "false" = federt zurück (Standard), "true" = rastet ein (jedes Umschalten zählt als Drücken)
   button_latching: "false"
   # Stand dieser Datei (zeigt die App im Testmenü, damit man sieht, ob die neue Firmware drauf ist)
-  fw_revision: "1.204"
+  fw_revision: "1.224"
 
 # Merker für den Test der Warteschlange (Zahl vor dem Test)
 globals:
@@ -64,6 +68,10 @@ globals:
   - id: press_count
     type: int
     initial_value: '0'
+  # Helligkeits-Faktor 0-1 für beide Streifen (1 = Tag, sonst Nacht-Helligkeit). Wird alle 5 s aus Uhrzeit und Einstellungen berechnet.
+  - id: night_f
+    type: float
+    initial_value: '1.0'
 
 esphome:
   name: ${name}
@@ -121,6 +129,11 @@ wifi:
 
 captive_portal:
 
+# Uhrzeit von Home Assistant (für den Nachtmodus der LED-Streifen)
+time:
+  - platform: homeassistant
+    id: ha_time
+
 # I2C für die optionalen Feuchte-Sensoren (GPIO22 ist schon RST der Leser, deshalb SCL auf GPIO32).
 # Zwei getrennte Busse, weil der SHT31-D eine feste Adresse (0x44) hat: Box an Bus 1, externer Spulentrockner an Bus 2.
 # 50 kHz statt 100 kHz: stabiler bei längeren Kabeln (bis ca. 1–2 m).
@@ -153,6 +166,19 @@ switch:
           id: queue_count
           value: !lambda 'return id(queue_before_test);'
       - number.set: { id: queue_mode, value: 0 }
+
+  # Nachtmodus der LED-Streifen an/aus (bleibt nach Neustart erhalten)
+  - platform: template
+    id: night_on
+    name: "LED Nachtmodus"
+    icon: mdi:weather-night
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+    on_turn_on:
+      - script.execute: night_calc
+    on_turn_off:
+      - script.execute: night_calc
 
   # RST aller 5 Leser (GPIO22) dauerhaft HIGH: Leser sind wach, nichts „schwebt“.
   # (Vorher war GPIO22 nur Reset-Pin von Leser 1 und blieb danach oft offen = Leser konnten in den Stromspar-Modus fallen.)
@@ -313,6 +339,10 @@ output:
 # Alle 10 s: Chip-Version jedes Lesers abfragen (zeigt, ob SPI-Kabel und Strom stimmen) und die Verstärkung setzen
 # (ein Leser-Neustart setzt sie zurück). 0x91/0x92 = echter MFRC522, 0x88/0xB2/0x12 = Nachbau (geht auch), 0x00/0xFF = keine Verbindung.
 interval:
+  # Nachtmodus: alle 5 s prüfen, ob gerade Nacht ist
+  - interval: 5s
+    then:
+      - script.execute: night_calc
   - interval: 200ms
     then:
       - lambda: |-
@@ -354,6 +384,24 @@ interval:
 
 # Slot erst nach "remove_after" als leer melden (Spule dreht sich beim Drucken)
 script:
+  # Nachtmodus: Faktor für beide Streifen setzen (1 = normal, sonst „LED Nacht Helligkeit“ in %)
+  - id: night_calc
+    mode: queued
+    max_runs: 2
+    then:
+      - lambda: |-
+          float f = 1.0f;
+          auto t = id(ha_time).now();
+          if (id(night_on).state && t.is_valid()) {
+            int h = t.hour;
+            int a = (int) id(night_from).state;
+            int b = (int) id(night_to).state;
+            bool night = (a == b) ? false : (a < b ? (h >= a && h < b) : (h >= a || h < b));
+            if (night) f = id(night_pct).state / 100.0f;
+          }
+          if (f < 0.01f) f = 0.01f;
+          if (f > 1.0f) f = 1.0f;
+          id(night_f) = f;
   # Taster gedrückt: im Test eine LED weniger (der Pi merkt nichts), sonst Impuls „Platte frei“ an den Pi
   - id: button_pressed
     mode: restart
@@ -440,7 +488,7 @@ light:
           name: "Solid"
           update_interval: 1s
           lambda: |-
-            it.all() = current_color * (uint8_t) (255 * ${led_cap});
+            it.all() = current_color * (uint8_t) (255 * ${led_cap} * id(night_f));
       # Fortschrittsbalken: so viele LEDs an, wie der Regler sagt (mindestens 1)
       - addressable_lambda:
           name: "Percent"
@@ -450,7 +498,7 @@ light:
             int on = (int) roundf(n * id(led_intensity).state / 255.0f);
             if (on < 1) on = 1;
             if (on > n) on = n;
-            for (int i = 0; i < n; i++) it[i] = (i < on) ? current_color * (uint8_t) (255 * ${led_cap}) : Color::BLACK;
+            for (int i = 0; i < n; i++) it[i] = (i < on) ? current_color * (uint8_t) (255 * ${led_cap} * id(night_f)) : Color::BLACK;
       # Farbtest: zeigt nacheinander Rot, Grün, Blau (je 2 s), egal welche Farbe gewählt ist. Zum Finden von led_order.
       - addressable_lambda:
           name: "Farbtest"
@@ -458,7 +506,7 @@ light:
           lambda: |-
             int phase = (millis() / 2000) % 3;
             Color c = (phase == 0) ? Color(255, 0, 0) : ((phase == 1) ? Color(0, 255, 0) : Color(0, 0, 255));
-            it.all() = c * (uint8_t) (255 * ${led_cap});
+            it.all() = c * (uint8_t) (255 * ${led_cap} * id(night_f));
       # Blinken (Fehler): 0,5 s an, 0,5 s aus
       - addressable_lambda:
           name: "Blink"
@@ -466,7 +514,7 @@ light:
           lambda: |-
             static bool on = false;
             on = !on;
-            it.all() = on ? current_color * (uint8_t) (255 * ${led_cap}) : Color::BLACK;
+            it.all() = on ? current_color * (uint8_t) (255 * ${led_cap} * id(night_f)) : Color::BLACK;
       # Atmen (Trocknung): langsam heller und dunkler, ca. 4 s pro Zug
       - addressable_lambda:
           name: "Breathe"
@@ -474,7 +522,7 @@ light:
           lambda: |-
             float t = (millis() % 4000) / 4000.0f;
             float b = 0.15f + 0.85f * (0.5f - 0.5f * cosf(t * 6.2831853f));
-            it.all() = current_color * (uint8_t) (255.0f * ${led_cap} * b);
+            it.all() = current_color * (uint8_t) (255.0f * ${led_cap} * id(night_f) * b);
 
   # Warteschlange: so viele LEDs wie Drucke warten (Zahl setzt der Pi), von unten gestapelt. Modus 1 = rot blinken, 2 = grün (startet), 3 = Platte räumen (freie LEDs orange).
   - platform: esp32_rmt_led_strip
@@ -503,7 +551,7 @@ light:
             if (count > n) count = n;
             if (count < 0) count = 0;
             int mode = (int) id(queue_mode).state;
-            uint8_t cap = (uint8_t) (255 * ${led_cap});
+            uint8_t cap = (uint8_t) (255 * ${led_cap} * id(night_f));
             uint32_t now = millis();
             if (landed < 0) landed = count;               // beim Start ohne Animation
             if (count < landed) { landed = count; fpos = -1; }
@@ -547,6 +595,52 @@ number:
     initial_value: 0
     optimistic: true
     mode: box
+  # Nachtmodus: ab wann, bis wann (volle Stunde) und wie hell (%)
+  - platform: template
+    id: night_from
+    name: "LED Nacht ab"
+    icon: mdi:clock-start
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 21
+    optimistic: true
+    restore_value: true
+    mode: box
+    unit_of_measurement: "Uhr"
+    entity_category: config
+    on_value:
+      - script.execute: night_calc
+  - platform: template
+    id: night_to
+    name: "LED Nacht bis"
+    icon: mdi:clock-end
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 7
+    optimistic: true
+    restore_value: true
+    mode: box
+    unit_of_measurement: "Uhr"
+    entity_category: config
+    on_value:
+      - script.execute: night_calc
+  - platform: template
+    id: night_pct
+    name: "LED Nacht Helligkeit"
+    icon: mdi:brightness-4
+    min_value: 5
+    max_value: 100
+    step: 5
+    initial_value: 25
+    optimistic: true
+    restore_value: true
+    mode: slider
+    unit_of_measurement: "%"
+    entity_category: config
+    on_value:
+      - script.execute: night_calc
   - platform: template
     id: led_intensity
     name: "Status LED Intensity"
@@ -591,6 +685,12 @@ binary_sensor:
     id: button_double
     name: "Taster doppelt"
     icon: mdi:gesture-double-tap
+  # Ist gerade Nacht (Streifen gedimmt)? Für die Anzeige in der App
+  - platform: template
+    id: night_active
+    name: "LED Nacht aktiv"
+    icon: mdi:weather-night
+    lambda: 'return id(night_f) < 0.999f;'
 
 text_sensor:
   # Stand der Firmware (Revision), fürs Testmenü der App

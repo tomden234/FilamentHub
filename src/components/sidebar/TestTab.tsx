@@ -8,7 +8,7 @@ import { StatusLedCard } from './StatusLedCard';
 // Testmenü: alles am AMS-ESP Schritt für Schritt prüfen (Verbindung, NFC-Leser, Tag, Taster + Warteschlangen-LEDs, Status-LED; Feuchte steckt bei 1). Fünf aufklappbare Punkte, es ist immer nur einer offen.
 // Liest live über Home Assistant (alle 2 Sekunden), solange das Menü offen ist.
 
-const WANT_FW = '1.204';
+const WANT_FW = '1.224';
 
 const Section: React.FC<{ id: string; open: string | null; onToggle: (id: string) => void; icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ id, open, onToggle, icon, title, children }) => {
   const isOpen = open === id;

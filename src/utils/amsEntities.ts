@@ -25,6 +25,13 @@ export interface AmsRoles {
   queueMode?: string;
   queueTest?: string;
   button?: string;
+  /** Taster zweimal gedrückt (Pause/Weiter) */
+  buttonDouble?: string;
+  /** Nachtmodus der LED-Streifen */
+  nightOn?: string;
+  nightFrom?: string;
+  nightTo?: string;
+  nightPct?: string;
   boxHum?: string;
   boxTemp?: string;
   dryerHum?: string;
@@ -102,6 +109,11 @@ export function resolveAms(states: any[]): AmsFound | null {
   roles.queueMode = find('number', /^warteschlange_modus$/);
   roles.queueTest = find('switch', /^warteschlange_test$/);
   roles.button = find('binary_sensor', /^platte_frei$/);
+  roles.buttonDouble = find('binary_sensor', /^taster_doppelt$/);
+  roles.nightOn = find('switch', /^led_nachtmodus$/);
+  roles.nightFrom = find('number', /^led_nacht_ab$/);
+  roles.nightTo = find('number', /^led_nacht_bis$/);
+  roles.nightPct = find('number', /^led_nacht_helligkeit$/);
   roles.boxHum = find('sensor', /^box_(feuchte|luftfeuchte\w*|humidity)$/);
   roles.boxTemp = find('sensor', /^box_temp\w*$/);
   roles.dryerHum = find('sensor', /^trockner_(feuchte|luftfeuchte\w*|humidity)$/);

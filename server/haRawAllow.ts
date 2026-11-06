@@ -40,6 +40,20 @@ export function okQueueTestBody(b: unknown): boolean {
   return isObj(b) && hasOnly(b, ['entity_id']) && typeof b.entity_id === 'string' && /^switch\.[a-z0-9_]*_warteschlange_test(_\d+)?$/.test(b.entity_id);
 }
 
+/** Nachtmodus der LED-Streifen am AMS-ESP: number.*_led_nacht_ab/_bis (0-23) und *_led_nacht_helligkeit (5-100) */
+export function okNightBody(b: unknown): boolean {
+  if (!isObj(b) || !hasOnly(b, ['entity_id', 'value'])) return false;
+  if (typeof b.entity_id !== 'string' || typeof b.value !== 'number' || !Number.isInteger(b.value)) return false;
+  if (/^number\.[a-z0-9_]*_led_nacht_(ab|bis)(_\d+)?$/.test(b.entity_id)) return b.value >= 0 && b.value <= 23;
+  if (/^number\.[a-z0-9_]*_led_nacht_helligkeit(_\d+)?$/.test(b.entity_id)) return b.value >= 5 && b.value <= 100;
+  return false;
+}
+
+/** Nachtmodus an/aus: genau switch.*_led_nachtmodus */
+export function okNightSwitchBody(b: unknown): boolean {
+  return isObj(b) && hasOnly(b, ['entity_id']) && typeof b.entity_id === 'string' && /^switch\.[a-z0-9_]*_led_nachtmodus(_\d+)?$/.test(b.entity_id);
+}
+
 const RAW_ALLOWED: { method: string; path: RegExp; body?: (b: unknown) => boolean }[] = [
   { method: 'GET', path: /^\/api\/states$/ },
   { method: 'GET', path: /^\/api\/states\/automation\.filamenthub_[a-z0-9_]+$/ },
@@ -55,7 +69,10 @@ const RAW_ALLOWED: { method: string; path: RegExp; body?: (b: unknown) => boolea
   { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/ },
   { method: 'POST', path: /^\/api\/services\/automation\/(turn_on|turn_off)$/ },
   { method: 'POST', path: /^\/api\/services\/light\/(turn_on|turn_off)$/, body: okLedLightBody },
-  { method: 'POST', path: /^\/api\/services\/number\/set_value$/, body: okLedIntensityBody }
+  { method: 'POST', path: /^\/api\/services\/number\/set_value$/, body: okLedIntensityBody },
+  // Nachtmodus der LED-Streifen (Werkstatt → Status-LED)
+  { method: 'POST', path: /^\/api\/services\/number\/set_value$/, body: okNightBody },
+  { method: 'POST', path: /^\/api\/services\/switch\/(turn_on|turn_off)$/, body: okNightSwitchBody }
 ];
 
 export function isRawAllowed(method: string, path: string, body: unknown): boolean {
