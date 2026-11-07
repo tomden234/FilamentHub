@@ -9,6 +9,14 @@ import { isGenericPrintName } from '../../src/utils/printMatch.js';
 import { publishImage } from './esphome.js';
 import { type Fil, access, deductActive, durText, getHubConfig, hubEnabled, mainSlotOf, port, push, saveState, sleep, state, traysOf, updateHubConfig } from './core.js';
 import { lastJpeg, takePhoto } from './photo.js';
+import { statsGrams, statsPrint, type StatGram } from './printStats.js';
+
+/** Gramm je Material und Farbe für das Dauer-Protokoll (Fun Facts) */
+const gramsOf = (parts: Part[], spools: any[]): StatGram[] =>
+  parts.map(p => {
+    const sp = spools.find(x => x.id === p.spoolId);
+    return [sp ? `${sp.material || ''} ${sp.colorName || ''}`.trim() || 'Unbekannt' : 'Unbekannt', String(sp?.colorHex || '#9ca3af'), p.grams, p.spoolId] as StatGram;
+  });
 
 /**
  * Gewichte eines Drucks. Reihenfolge (1.227):
@@ -61,6 +69,11 @@ export function onPrintEnd(rec: RecordedPrint, data: any): void {
   if (!hubEnabled()) return;
   const s = state();
   if (s.prints[rec.id]) return; // schon bearbeitet
+  try {
+    statsPrint(rec);
+  } catch (e) {
+    console.warn('[Statistik]', (e as Error)?.message || e);
+  }
   s.prints[rec.id] = { deduct: deductActive() ? 'pending' : 'off', tries: 0, lastTry: 0, photo: false, pushed: false, trays: traysOf(data), energyWh: Math.round(s.printWh), at: Date.now() };
   s.printWh = 0;
   saveState();
@@ -211,6 +224,11 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
     if (!res) return;
     const { r, parts, before } = res;
     console.log(`[Hub] Abgezogen: ${rec.name}: ${r.texts.join(', ')}`);
+    try {
+      statsGrams(rec, gramsOf(parts, r.doc.spools as any[]));
+    } catch {
+      /* Statistik ist nur Zugabe */
+    }
     // Spule fast leer?
     const low = getHubConfig().lowWeightG;
     for (const sp of r.doc.spools as any[]) {
@@ -280,6 +298,11 @@ export async function manualDeduct(p: PrintInfo, parts: Part[]): Promise<{ ok: b
       saveState();
     }
     console.log(`[Hub] Manuell abgezogen: ${p.name}: ${r.texts.join(', ')}`);
+    try {
+      statsGrams(p, gramsOf(clean, r.doc.spools as any[]));
+    } catch {
+      /* Statistik ist nur Zugabe */
+    }
     return { ok: true, text: `Abgezogen: ${r.texts.join(', ')}` };
   });
 }

@@ -157,7 +157,7 @@ export const PrintStatsModal: React.FC<Props> = ({ onClose, prints, uses, projec
             )}
           </div>
           <p className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Druckzeit: Drucke, die dein Pi aufgezeichnet hat. Gewicht: Abzüge aus dem Verlauf. Ohne Bambu Cloud.
+            Druckzeit und Gewicht stehen im Dauer-Protokoll deines Pi (ohne Obergrenze) und im Verlauf der App. Ohne Bambu Cloud.
           </p>
         </div>
       </div>

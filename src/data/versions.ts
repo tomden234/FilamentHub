@@ -3446,5 +3446,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.244',
+    label: '1.244 (Dauer-Protokoll)',
+    releaseDate: '07.11.2026',
+    description:
+      'Der Pi führt jetzt ein eigenes Dauer-Protokoll für die Fun Facts: je Druck nur Start, Ende, fertig/abgebrochen und Gramm je Material und Farbe (ca. 100 Byte). Es hat keine Obergrenze von 200 Drucken mehr (bis 100.000). Schon aufgezeichnete Drucke werden beim ersten Start übernommen. Das große Druckzeit-Fenster nutzt es für Woche, Monat, Jahr und Gesamt. Pi-Add-on 1.3.17 (muss aktualisiert werden).',
+    features: ['🗃️ Dauer-Protokoll am Pi, ohne Grenze', '📊 Gesamt-Ansicht reicht Jahre zurück', '🥧 Pi-Add-on 1.3.17'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

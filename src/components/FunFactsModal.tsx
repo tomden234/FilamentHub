@@ -19,7 +19,7 @@ import { useEscapeClose } from '../hooks/useEscapeClose';
 import type { HistoryEntry, Spool } from '../types/filament';
 import { INITIAL_VERSION_PROFILES } from '../data/versions';
 import { STORAGE_KEY_HISTORY } from '../utils/storageKeys';
-import { fetchAllServerPrintSpans } from '../utils/recorderServer';
+import { fetchPrintStats, type PiStatEntry } from '../utils/recorderServer';
 import { buckets, topUses, type PrintSpan, type UseEntry } from '../utils/funStats';
 import { PrintStatsModal } from './PrintStatsModal';
 import { APP_REVISION } from '../utils/env';
@@ -37,11 +37,11 @@ interface FunFactsModalProps {
 //  SCHÄTZUNG = ungefähr, genauer geht es nicht
 type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
-// Von Claude beim Update auf v1.243 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
+// Von Claude beim Update auf v1.244 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
 const CHATS = 19; // Chats im Projekt „filament webseite“
 const MESSAGES = 466; // deine Nachrichten in diesen Chats (ca.)
 const WORDS = 40250; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 256; // Commits auf GitHub (main)
+const COMMITS = 257; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
 
 const sourceStyle: Record<Source, { bg: string; fg: string; label: string }> = {
@@ -73,14 +73,14 @@ function readHistory(): HistoryEntry[] {
 
 export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, spools = [] }) => {
   useEscapeClose(onClose, isOpen);
-  const [spans, setSpans] = useState<PrintSpan[]>([]);
+  const [piLog, setPiLog] = useState<PiStatEntry[]>([]);
   const [showStats, setShowStats] = useState(false);
 
-  // 1.243: Druckzeit selbst gezählt aus den Aufzeichnungen deines Pi (nicht mehr Bambu Cloud)
+  // 1.243/1.244: Druckzeit und Gramm selbst gezählt aus dem Dauer-Protokoll deines Pi (nicht mehr Bambu Cloud, nicht auf 200 Drucke begrenzt)
   useEffect(() => {
     if (!isOpen) return;
     let alive = true;
-    void fetchAllServerPrintSpans().then(r => alive && setSpans(r));
+    void fetchPrintStats().then(r => alive && setPiLog(r));
     return () => {
       alive = false;
     };
@@ -103,25 +103,30 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
     const nfc = spools.filter(s => s.nfcWritten).length;
     const byId = new Map(spools.map(s => [s.id, s]));
     // Jeder Abzug im Verlauf = Gramm mit Material und Farbe der Spule (Spule gelöscht: Name aus dem Verlauf)
-    const uses: UseEntry[] = readHistory()
-      .filter(h => h.grams > 0)
-      .map(h => {
-        const sp = byId.get(h.spoolId);
-        return {
-          ms: Date.parse(h.timestamp) || 0,
-          grams: h.grams,
-          label: sp ? `${sp.material} ${sp.colorName || ''}`.trim() : h.spoolLabel || 'Unbekannt',
-          colorHex: sp?.colorHex || '#9ca3af'
-        };
-      });
+    const hist = readHistory().filter(h => h.grams > 0);
+    const histIds = new Set(hist.map(h => h.id));
+    const uses: UseEntry[] = hist.map(h => {
+      const sp = byId.get(h.spoolId);
+      return {
+        ms: Date.parse(h.timestamp) || 0,
+        grams: h.grams,
+        label: sp ? `${sp.material} ${sp.colorName || ''}`.trim() : h.spoolLabel || 'Unbekannt',
+        colorHex: sp?.colorHex || '#9ca3af'
+      };
+    });
+    // Dazu das Protokoll vom Pi (kennt auch Abzüge, die in diesem Verlauf nicht mehr stehen). Doppelte erkennt die Verlaufs-ID.
+    for (const p of piLog)
+      for (const [label, colorHex, g, spoolId] of p.g || []) if (!histIds.has(`srv:${p.id}:${spoolId}`)) uses.push({ ms: p.e, grams: g, label, colorHex });
+    const spans: PrintSpan[] = piLog.filter(p => p.e > p.s).map(p => ({ startMs: p.s, endMs: p.e }));
     const deducted = uses.reduce((a, u) => a + u.grams, 0);
     const days = Math.max(1, Math.floor((Date.now() - PROJECT_START.getTime()) / 86400000) + 1);
-    return { grams, value, meters, topMaterial, topColor, nfc, deducted, days, uses };
-  }, [spools, isOpen]);
+    return { grams, value, meters, topMaterial, topColor, nfc, deducted, days, uses, spans };
+  }, [spools, isOpen, piLog]);
 
   if (!isOpen) return null;
 
   const laps = Math.round(stats.meters / 346); // Umfang Fußballfeld ≈ 346 m
+  const spans = stats.spans;
   const week = buckets('Woche', spans, stats.uses, Date.now(), PROJECT_START.getTime());
   const weekH = week.reduce((a, x) => a + x.hours, 0);
   const weekMax = Math.max(0.0001, ...week.map(x => x.hours));

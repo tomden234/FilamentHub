@@ -88,15 +88,19 @@ export async function fetchServerPrints(now = Date.now()): Promise<ServerPrints>
   }
 }
 
-/** 1.243: alle Drucke, die der Pi aufgezeichnet hat (für Fun Facts: Druckzeit). Leer, wenn kein Pi da ist. */
-export async function fetchAllServerPrintSpans(): Promise<{ startMs: number; endMs: number }[]> {
+/** 1.244: Dauer-Protokoll vom Pi (Start, Ende, Gramm je Material), ohne Obergrenze von 200 Drucken. Leer ohne Pi-Hub. */
+export interface PiStatEntry {
+  id: string;
+  s: number;
+  e: number;
+  st: 'F' | 'X';
+  g?: [string, string, number, string][];
+}
+export async function fetchPrintStats(): Promise<PiStatEntry[]> {
   if (base() === null) return [];
   try {
-    const j = await get('/api/recorder/prints?since=0');
-    if (!j?.success || !Array.isArray(j.prints)) return [];
-    return j.prints
-      .map((p: any) => ({ startMs: Number(p.startMs) || Number(p.endMs), endMs: Number(p.endMs) }))
-      .filter((p: { startMs: number; endMs: number }) => Number.isFinite(p.endMs) && p.endMs > p.startMs);
+    const j = await get('/api/recorder/stats', { timeoutMs: 15000 });
+    return j?.success && Array.isArray(j.items) ? j.items : [];
   } catch {
     return [];
   }

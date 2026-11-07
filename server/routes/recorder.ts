@@ -1,3 +1,4 @@
+import { statsAll } from '../hub/printStats.js';
 import { Router } from 'express';
 import { printRecorder } from '../printRecorder.js';
 import { bambuService } from '../bambuMqtt.js';
@@ -18,6 +19,10 @@ router.get('/api/recorder/status', (_req, res) => {
     hub: hubStatus(),
     now: Date.now()
   });
+});
+
+router.get('/api/recorder/stats', (_req, res) => {
+  res.json({ success: true, items: statsAll() });
 });
 
 router.get('/api/recorder/prints', (req, res) => {
