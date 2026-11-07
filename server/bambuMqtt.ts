@@ -64,6 +64,7 @@ class BambuMqttService extends BambuMqttCore {
   private sseHeartbeat: ReturnType<typeof setInterval> | null = null;
 
   public registerSseClient(res: Response) {
+    if (this.sseClients.length >= 10) { res.status(429).end(); return; } // 1.233: Obergrenze, sonst bremsen viele Verbindungen den Pi
     this.sseClients.push(res);
     // Sofort ersten Status senden
     res.write(`data: ${JSON.stringify(this.getStatus())}\n\n`);

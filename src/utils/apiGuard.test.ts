@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkMediaToken, decideAccess, hostName, makeMediaToken, isLoopbackAddr } from '../../server/apiGuard';
+import { checkMediaToken, decideAccess, hostName, makeMediaToken, isLoopbackAddr, failBlocked, noteFail, clearFailsForTest } from '../../server/apiGuard';
+import { okAutomationBody } from '../../server/haRawAllow';
 import { isLanIp } from '../../server/netCheck';
 
 const base = { expectedKey: 'geheim123', headerKey: undefined, queryKey: undefined, method: 'GET', path: '/api/recorder/status', host: '192.168.68.10:3000' };
@@ -85,5 +86,32 @@ describe('Home Assistant: Token geht nie an fremde Adresse', async () => {
     const t = haTarget('https://irgendwo.example', 'tok');
     expect(t.url).not.toContain('irgendwo');
     expect(t.token).not.toBe('tok');
+  });
+});
+
+describe('1.233 Server-Härtung', () => {
+  it('lehnt Cross-Site-Anfragen im Modus ohne Schlüssel ab', () => {
+    const r = decideAccess({ expectedKey: '', headerKey: undefined, queryKey: undefined, method: 'POST', path: '/api/hub/queue/start', host: 'localhost:3000', remoteAddress: '127.0.0.1', secFetchSite: 'cross-site' });
+    expect(r.ok).toBe(false);
+    const same = decideAccess({ expectedKey: '', headerKey: undefined, queryKey: undefined, method: 'POST', path: '/api/hub/queue/start', host: 'localhost:3000', remoteAddress: '127.0.0.1', secFetchSite: 'same-origin' });
+    expect(same.ok).toBe(true);
+  });
+  it('Sicherung geht nicht mehr per Adress-Zusatz', () => {
+    const r = decideAccess({ expectedKey: 'k'.repeat(20), headerKey: undefined, queryKey: 'k'.repeat(20), method: 'GET', path: '/api/hub/backup', host: 'pi:3000', remoteAddress: '192.168.1.5' });
+    expect(r.ok).toBe(false);
+  });
+  it('bremst falsche Schlüssel nach 10 Versuchen', () => {
+    clearFailsForTest();
+    for (let i = 0; i < 10; i++) noteFail('1.2.3.4', 1000);
+    expect(failBlocked('1.2.3.4', 2000)).toBe(true);
+    expect(failBlocked('1.2.3.4', 1000 + 61_000)).toBe(false);
+    expect(failBlocked('9.9.9.9', 2000)).toBe(false);
+  });
+  it('Automation nur mit bekannten Diensten', () => {
+    expect(okAutomationBody({ alias: 'x', trigger: [], action: [{ service: 'switch.turn_off', target: { entity_id: 'switch.a' } }] })).toBe(true);
+    expect(okAutomationBody({ alias: 'x', action: [{ service: 'lock.unlock', target: { entity_id: 'lock.tuer' } }] })).toBe(false);
+    expect(okAutomationBody({ alias: 'x', action: [{ action: 'shell_command.x' }] })).toBe(false);
+    expect(okAutomationBody({ alias: 'x', action: [{ if: [], then: [{ service: 'script.turn_on' }] }] })).toBe(false);
+    expect(okAutomationBody('x')).toBe(false);
   });
 });

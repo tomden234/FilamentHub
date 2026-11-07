@@ -63,6 +63,8 @@ public class FilamentNfcPlugin extends Plugin implements NfcAdapter.ReaderCallba
         // Nur einmal verarbeiten
         intent.setAction(Intent.ACTION_MAIN);
         final Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+        // Nur echte Tag-Scans des Systems: ein von einer anderen App gebauter Intent hat kein Tag-Objekt (1.233)
+        if (tag == null) return;
         final PluginCall write = pendingWrite;
         if (write != null && tag != null) {
             new Thread(() -> doWrite(tag, write)).start();

@@ -27,6 +27,7 @@ function mergeFields<T extends WithId>(base: T, local: T, remote: T): T {
   const keys = new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)]);
   for (const k of keys) {
     const b = (base as any)[k];
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue; // fremdes Doc darf den Prototyp nicht setzen
     const l = (local as any)[k];
     const r = (remote as any)[k];
     const v = same(l, b) ? r : l; // beide geändert: dieses Gerät gewinnt

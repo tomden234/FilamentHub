@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { loadHaConfig, saveHaConfig, haTarget } from '../haConfig.js';
+import { isAllowedHaUrl } from '../netCheck.js';
 import { isRawAllowed } from '../haRawAllow.js';
 
 const router = Router();
@@ -53,6 +54,7 @@ router.post('/api/homeassistant/config', (req, res) => {
   const current = loadHaConfig();
   const url = isStr(haUrl) ? haUrl.trim().replace(/\/+$/, '') : current.haUrl;
   if (url && !/^https?:\/\/[^\s/]+/i.test(url)) return res.status(400).json({ success: false, error: 'Ungültige Adresse.' });
+  if (url && !isAllowedHaUrl(url)) return res.status(400).json({ success: false, error: 'Nur Nabu Casa, Heimnetz-Adressen oder *.local erlaubt.' });
   const cam = isStr(cameraEntity) && cameraEntity.trim() ? cameraEntity.trim() : current.cameraEntity;
   const sw = isStr(switchEntity) && switchEntity.trim() ? switchEntity.trim() : current.switchEntity;
   const updated = {

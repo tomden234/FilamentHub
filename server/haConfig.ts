@@ -50,6 +50,7 @@ export function haTarget(urlOverride: unknown, tokenOverride: unknown): { url: s
   const u = typeof urlOverride === 'string' ? urlOverride.trim() : '';
   // 1.231: fremde Adresse nur Nabu Casa / Heimnetz / *.local (kein Weiterleiten an beliebige Server im Internet)
   const own = tok && u && isAllowedHaUrl(u);
-  const url = (own ? u : cfg.haUrl || '').trim().replace(/\/+$/, '');
+  // 1.233: auch die gespeicherte Adresse nur Nabu Casa / Heimnetz / *.local (sonst ginge der Token an einen fremden Server)
+  const url = (own ? u : cfg.haUrl && isAllowedHaUrl(cfg.haUrl) ? cfg.haUrl : '').trim().replace(/\/+$/, '');
   return { url, token: own ? tok : cfg.haToken || '' };
 }

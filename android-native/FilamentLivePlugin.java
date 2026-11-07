@@ -35,8 +35,11 @@ public class FilamentLivePlugin extends Plugin {
      * 1.231: Nur Dateien aus GitHub-Releases (https). Vorher nahm das Plugin jede Adresse an, auch http:
      * eine fremde Seite in der App hätte so eine eigene Oberfläche dauerhaft einspielen können.
      */
+    /** Höchstgröße des entpackten Pakets (Schutz vor Zip-Bomben) */
+    static final long MAX_UNPACKED = 150L * 1024 * 1024;
+
     static boolean isAllowedUrl(String url) {
-        return url != null && url.startsWith("https://github.com/") && url.contains("/releases/download/") && !url.contains("..") && !url.contains("@");
+        return url != null && url.startsWith("https://github.com/tomden234/filament-website-google-ai/releases/download/") && !url.contains("..") && !url.contains("@");
     }
 
     static String hex(byte[] b) {
@@ -168,8 +171,8 @@ public class FilamentLivePlugin extends Plugin {
             call.reject("Adresse nicht erlaubt (nur GitHub-Release)");
             return;
         }
-        if (sha256 != null && !sha256.matches("[0-9a-fA-F]{64}")) {
-            call.reject("Prüfsumme ungültig");
+        if (sha256 == null || !sha256.matches("[0-9a-fA-F]{64}")) {
+            call.reject("Prüfsumme fehlt oder ist ungültig");
             return;
         }
         final Context ctx = getContext();
@@ -190,6 +193,7 @@ public class FilamentLivePlugin extends Plugin {
                 try (InputStream raw = conn.getInputStream(); DigestInputStream in = new DigestInputStream(raw, md); ZipInputStream zip = new ZipInputStream(in)) {
                     ZipEntry entry;
                     byte[] buf = new byte[16384];
+                    long unpacked = 0;
                     while ((entry = zip.getNextEntry()) != null) {
                         File out = new File(tmp, entry.getName());
                         if (!out.getCanonicalPath().startsWith(tmpCanonical)) throw new Exception("Ungültiger Pfad im Paket");
@@ -200,14 +204,18 @@ public class FilamentLivePlugin extends Plugin {
                         out.getParentFile().mkdirs();
                         try (FileOutputStream fos = new FileOutputStream(out)) {
                             int n;
-                            while ((n = zip.read(buf)) > 0) fos.write(buf, 0, n);
+                            while ((n = zip.read(buf)) > 0) {
+                                unpacked += n;
+                                if (unpacked > MAX_UNPACKED) throw new Exception("Paket zu groß");
+                                fos.write(buf, 0, n);
+                            }
                         }
                     }
                     // Rest des Datenstroms (Zentralverzeichnis) mitlesen, damit die Prüfsumme über die ganze Datei geht
                     byte[] rest = new byte[16384];
                     while (in.read(rest) > 0) { }
                 }
-                if (sha256 != null && !hex(md.digest()).equalsIgnoreCase(sha256)) throw new Exception("Prüfsumme stimmt nicht (Download beschädigt oder verändert)");
+                if (!hex(md.digest()).equalsIgnoreCase(sha256)) throw new Exception("Prüfsumme stimmt nicht (Download beschädigt oder verändert)");
                 if (!new File(tmp, "index.html").exists()) throw new Exception("index.html fehlt im Paket");
                 deleteRecursive(target);
                 if (!tmp.renameTo(target)) throw new Exception("Umbenennen fehlgeschlagen");

@@ -1,5 +1,6 @@
 // Zustand einer Spule: mit/ohne Spule, verschweißt, Eibos-Beutel, muss trocknen.
 // Alte Daten kennen nur die Notiz („Im Eibos Beutel“, „Original verschweißt ohne Spule“): daraus werden die Felder einmalig abgeleitet.
+import { sanitizeSpoolList } from './safeData';
 import type { Spool } from '../types/filament';
 
 const NOTE_EIBOS = /eibos/i;
@@ -47,4 +48,5 @@ function normalizeSpool(s: Spool): Spool {
   return changed ? out : s;
 }
 
-export const normalizeSpools = (list: Spool[]): Spool[] => list.map(normalizeSpool);
+/** Fehlende Felder füllen und fremde Daten säubern (1.233): ungültige Einträge entfallen, Links nur http(s) */
+export const normalizeSpools = (list: Spool[]): Spool[] => sanitizeSpoolList(list).map(normalizeSpool);

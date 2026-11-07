@@ -8,12 +8,12 @@ const QUERY_KEY_PATHS = [
   /^\/api\/printer\/camera-frame$/,
   /^\/api\/homeassistant\/camera-snapshot$/,
   /^\/api\/recorder\/photo$/,
-  /^\/api\/hub\/queue\/thumb\/[0-9a-f]{12}$/,
-  /^\/api\/hub\/backup$/
+  /^\/api\/hub\/queue\/thumb\/[0-9a-f]{12}$/
+  // 1.233: Sicherungen (/api/hub/backup) nur noch mit Schlüssel im Kopf, nie per Adress-Zusatz
 ];
 
 /** Gültigkeit eines Medien-Tokens (1.231): 12 Stunden */
-const MEDIA_TOKEN_MS = 12 * 3600_000;
+const MEDIA_TOKEN_MS = 4 * 3600_000;
 
 /** Host-Kopf ohne Port, klein geschrieben ("[::1]:3000" → "::1") */
 export function hostName(host: string | undefined): string {
@@ -67,12 +67,17 @@ export function decideAccess(o: {
   host: string | undefined;
   /** 1.231: echte Absender-Adresse (Socket). Den Host-Kopf kann jeder fälschen. */
   remoteAddress?: string;
+  /** 1.233: Sec-Fetch-Site (Browser setzt „cross-site“, wenn eine fremde Webseite die Anfrage auslöst) */
+  secFetchSite?: string;
   now?: number;
 }): { ok: true } | { ok: false; status: number; error: string } {
   const expected = o.expectedKey;
   if (!expected) {
     // Kein Schlüssel eingerichtet: nur localhost (Windows-App, Entwicklung). Host-Kopf UND Absender müssen dieser Rechner sein:
     // fremder Host-Name = DNS-Rebinding, fremder Absender = jemand im WLAN mit gefälschtem „Host: localhost“.
+    if (String(o.secFetchSite || '').toLowerCase() === 'cross-site') {
+      return { ok: false, status: 403, error: 'Anfrage von einer fremden Webseite abgelehnt.' };
+    }
     return isLoopbackHost(hostName(o.host)) && isLoopbackAddr(o.remoteAddress)
       ? { ok: true }
       : { ok: false, status: 403, error: 'Kein API-Schlüssel eingerichtet: Zugriff nur über localhost erlaubt.' };
@@ -85,6 +90,24 @@ export function decideAccess(o: {
   return { ok: false, status: 401, error: 'Nicht autorisiert: Schlüssel vom Pi in der App eintragen (Menü → Pi-Server).' };
 }
 
+/** 1.233: Falsche Schlüssel je Absender zählen: ab 10 Fehlversuchen pro Minute gibt es 429 (Raten im WLAN wird so unpraktisch) */
+const fails = new Map<string, { n: number; at: number }>();
+const FAIL_WINDOW_MS = 60_000;
+const FAIL_MAX = 10;
+export function failBlocked(who: string, now = Date.now()): boolean {
+  const f = fails.get(who);
+  return !!f && now - f.at < FAIL_WINDOW_MS && f.n >= FAIL_MAX;
+}
+export function noteFail(who: string, now = Date.now()): void {
+  const f = fails.get(who);
+  if (!f || now - f.at >= FAIL_WINDOW_MS) fails.set(who, { n: 1, at: now });
+  else f.n++;
+  if (fails.size > 500) for (const [k, v] of fails) if (now - v.at >= FAIL_WINDOW_MS) fails.delete(k);
+}
+export function clearFailsForTest(): void {
+  fails.clear();
+}
+
 export function apiGuard() {
   return (req: Request, res: Response, next: NextFunction) => {
     const r = decideAccess({
@@ -95,9 +118,15 @@ export function apiGuard() {
       method: req.method,
       path: req.originalUrl.split('?')[0],
       host: req.headers.host,
-      remoteAddress: req.socket?.remoteAddress
+      remoteAddress: req.socket?.remoteAddress,
+      secFetchSite: String(req.headers['sec-fetch-site'] || '')
     });
+    const who = req.socket?.remoteAddress || '?';
     if (r.ok) return next();
+    if (r.status === 401) {
+      if (failBlocked(who)) return res.status(429).json({ success: false, error: 'Zu viele falsche Schlüssel. Bitte kurz warten.' });
+      noteFail(who);
+    }
     return res.status(r.status).json({ success: false, error: r.error });
   };
 }

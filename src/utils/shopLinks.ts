@@ -1,3 +1,4 @@
+import { safeHttpUrl } from './safeData';
 import { BRAND_DATABASE, COLOR_MAP, KNOWN_ASIN_DB, MATERIAL_PRESETS } from '../data/defaultSpools';
 import { AppSettings, DryingStatus, MaterialType, Spool } from '../types/filament';
 import { isSealed } from './spoolState';
@@ -58,13 +59,14 @@ export function generateAutoShopUrl(brand: string, material: string, name: strin
 
 export function getSpoolLink(spool: Spool): { url: string; label: string; auto: boolean } {
   const bLower = (spool.brand || '').toLowerCase();
-  if (spool.productUrl && spool.productUrl.trim()) {
+  const safeUrl = safeHttpUrl(spool.productUrl);
+  if (safeUrl) {
     let label = 'Shop öffnen';
     if (bLower.includes('bambu')) label = 'Bambu Lab Store';
     else if (bLower.includes('sunlu')) label = 'SUNLU Store';
-    else if (spool.productUrl.includes('amazon')) label = 'Amazon.de Prime';
+    else if (safeUrl.includes('amazon')) label = 'Amazon.de Prime';
     return {
-      url: spool.productUrl.trim(),
+      url: safeUrl,
       label,
       auto: false
     };

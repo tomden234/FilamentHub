@@ -186,8 +186,21 @@ function setupCloudBridge() {
     return callback(-3);
   });
   ipcMain.handle('cloud:cert-info', () => lastCloudCert);
-  ipcMain.handle('cloud:trust-cert', (_e, fp) => {
+  ipcMain.handle('cloud:trust-cert', async (e, fp) => {
     if (!lastCloudCert || fp !== lastCloudCert.fingerprint) return false;
+    // 1.233: Nur aus der eigenen App-Seite und nur nach Bestätigung im Hauptprogramm (ein Skript in der Seite darf das nicht still tun)
+    const from = (e && e.senderFrame && e.senderFrame.url) || '';
+    if (!(from === URL || from.startsWith(URL + '/'))) return false;
+    const answer = await dialog.showMessageBox({
+      type: 'warning',
+      buttons: ['Nicht vertrauen', 'Vertrauen'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Zertifikat vertrauen?',
+      message: 'Dem Zertifikat der Cloud-Datenbank (api.npoint.io) vertrauen?',
+      detail: 'Fingerabdruck: ' + fp + '\n\nNur bestätigen, wenn du dem Netzwerk traust (z. B. Firmen-Proxy oder Virenscanner mit eigenem Zertifikat).'
+    });
+    if (answer.response !== 1) return false;
     const list = trustedList();
     if (!list.includes(fp)) list.push(fp);
     fs.writeFileSync(trustFile(), JSON.stringify(list));

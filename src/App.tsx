@@ -65,6 +65,7 @@ import { OPEN_WORKSHOP_EVENT, openSlotAssign, type OpenWorkshopDetail } from './
 import { listenNotificationTaps } from './utils/notify';
 import { useDeviceSync } from './hooks/useDeviceSync';
 import { useCloudSync } from './hooks/useCloudSync';
+import { isTrustedCloudUrl } from './utils/safeData';
 import { gistUrlOf, parseGistPair, setGistToken } from './utils/gistStore';
 
 const SPOOLS_AT_KEY = STORAGE_KEY_SPOOLS_AT;
@@ -403,20 +404,28 @@ export default function App() {
     // Kopplung mit privatem Gist: ID und Token stehen im Link-Teil nach „#“ (geht nie an einen Server)
     const gistPair = parseGistPair(window.location.hash);
     if (gistPair) {
-      setGistToken(gistPair.token);
-      const gistUrl = gistUrlOf(gistPair.id);
-      setCloudDbUrl(gistUrl);
-      safeStorage.setItem(STORAGE_KEY_CLOUD_URL, gistUrl);
+      // Ein Link darf den Cloud-Speicher nie still ersetzen (1.233): erst fragen, sonst verwerfen
       window.history.replaceState({}, '', window.location.pathname + window.location.search);
-      showToast('Gerät mit privatem Cloud-Speicher (GitHub-Gist) gekoppelt!');
+      if (window.confirm(`Dieses Gerät mit dem privaten Cloud-Speicher (GitHub-Gist ${gistPair.id.slice(0, 8)}…) koppeln?\n\nDer bisherige Cloud-Speicher und das gespeicherte Token werden ersetzt. Nur bestätigen, wenn du den Link selbst erzeugt hast.`)) {
+        setGistToken(gistPair.token);
+        const gistUrl = gistUrlOf(gistPair.id);
+        setCloudDbUrl(gistUrl);
+        safeStorage.setItem(STORAGE_KEY_CLOUD_URL, gistUrl);
+        showToast('Gerät mit privatem Cloud-Speicher (GitHub-Gist) gekoppelt!');
+      }
     }
     const params = new URLSearchParams(window.location.search);
     const pair = params.get('pairCloud');
-    if (pair && pair.startsWith('http')) {
-      setCloudDbUrl(pair);
-      safeStorage.setItem(STORAGE_KEY_CLOUD_URL, pair);
+    if (pair) {
       window.history.replaceState({}, '', window.location.pathname);
-      showToast('Handy erfolgreich mit Cloud-Datenbank gekoppelt!');
+      // Nur bekannte Cloud-Speicher (npoint, Gist, Pi) und nur nach Bestätigung (1.233)
+      if (!isTrustedCloudUrl(pair)) {
+        showToast('Koppel-Link abgelehnt: unbekannte Cloud-Adresse.');
+      } else if (window.confirm(`Dieses Gerät mit dieser Cloud-Datenbank koppeln?\n\n${pair}\n\nDer bisherige Cloud-Speicher wird ersetzt. Nur bestätigen, wenn du den Link selbst erzeugt hast.`)) {
+        setCloudDbUrl(pair);
+        safeStorage.setItem(STORAGE_KEY_CLOUD_URL, pair);
+        showToast('Handy erfolgreich mit Cloud-Datenbank gekoppelt!');
+      }
     }
     if (seedAppliedAtStart) {
       seedAppliedAtStart = false;

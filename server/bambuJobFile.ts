@@ -5,6 +5,9 @@ import { Client } from 'basic-ftp';
 import { Readable, Writable } from 'stream';
 import { unzipSync, strFromU8 } from 'fflate';
 
+/** Höchstgröße einer Druckdatei beim Herunterladen vom Drucker (Schutz vor Speichererschöpfung) */
+const MAX_DOWNLOAD = 300 * 1024 * 1024;
+
 export interface JobFilament {
   id: number;
   type: string;
@@ -53,14 +56,14 @@ function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: Job
 /** Titelbild der Platte (Metadata/plate_N.png) aus einer .3mf */
 export function thumbFromThreeMf(data: Uint8Array, plate = 1): Uint8Array | null {
   const want = `metadata/plate_${Math.max(1, plate)}.png`;
-  const files = unzipSync(data, { filter: f => f.name.toLowerCase() === want || f.name.toLowerCase() === 'metadata/plate_1.png' });
+  const files = unzipSync(data, { filter: f => (f.name.toLowerCase() === want || f.name.toLowerCase() === 'metadata/plate_1.png') && f.originalSize <= 8_000_000 }); // 1.233: Zip-Bomben-Schutz
   const key = Object.keys(files).find(k => k.toLowerCase() === want) || Object.keys(files).find(k => k.toLowerCase() === 'metadata/plate_1.png');
   return key ? files[key] : null;
 }
 
 /** Aus den Bytes einer .3mf das Gewicht lesen */
 export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number; filaments: JobFilament[] } | null {
-  const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') });
+  const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') && f.originalSize <= 4_000_000 }); // 1.233
   const key = Object.keys(files).find(k => k.toLowerCase().endsWith('slice_info.config'));
   if (!key) return null;
   const r = parseSliceInfo(strFromU8(files[key]), plate);
@@ -93,8 +96,11 @@ export async function fetchJobWeights(opts: { ip: string; code: string; jobName:
     if (!best) return { error: `Auf dem Drucker keine Datei „${opts.jobName}.3mf“ gefunden (Druck evtl. direkt vom Slicer-Cache oder Gcode ohne 3mf).` };
 
     const chunks: Buffer[] = [];
+    let got = 0;
     const sink = new Writable({
       write(chunk, _enc, cb) {
+        got += chunk.length;
+        if (got > MAX_DOWNLOAD) return cb(new Error('Datei zu groß')); // 1.233
         chunks.push(Buffer.from(chunk));
         cb();
       }
@@ -209,8 +215,11 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
 export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; thumb: Uint8Array | null } | null> {
   return withFtp(ip, code, async client => {
     const chunks: Buffer[] = [];
+    let got = 0;
     const sink = new Writable({
       write(chunk, _enc, cb) {
+        got += chunk.length;
+        if (got > MAX_DOWNLOAD) return cb(new Error('Datei zu groß')); // 1.233
         chunks.push(Buffer.from(chunk));
         cb();
       }

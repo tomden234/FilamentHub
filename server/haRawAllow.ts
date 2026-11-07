@@ -6,6 +6,32 @@ const ID_INTENSITY = /^number\.[a-z0-9_]*intensity[a-z0-9_]*$/;
 const hasOnly = (b: Record<string, unknown>, keys: string[]) => Object.keys(b).every(k => keys.includes(k));
 const isObj = (b: unknown): b is Record<string, unknown> => Boolean(b) && typeof b === 'object' && !Array.isArray(b);
 
+/** Dienste, die FilamentHub-Automationen aufrufen dürfen (genau die, die die App selbst anlegt). Alles andere (lock., shell_command., script. …) wird abgelehnt. */
+const AUTOMATION_SERVICES = new Set([
+  'switch.turn_on', 'switch.turn_off', 'light.turn_on', 'light.turn_off',
+  'number.set_value', 'automation.turn_on', 'automation.turn_off'
+]);
+
+/** Automation für FilamentHub (1.233): nur diese Dienste, begrenzte Größe und Tiefe */
+export function okAutomationBody(b: unknown): boolean {
+  if (!isObj(b)) return false;
+  let json: string;
+  try { json = JSON.stringify(b); } catch { return false; }
+  if (json.length > 20_000) return false;
+  const walk = (v: unknown, depth: number): boolean => {
+    if (depth > 12) return false;
+    if (Array.isArray(v)) return v.every(x => walk(x, depth + 1));
+    if (!isObj(v)) return true;
+    for (const [k, x] of Object.entries(v)) {
+      if ((k === 'service' || k === 'action') && typeof x === 'string' && !AUTOMATION_SERVICES.has(x)) return false;
+      if (k === 'service_template' || k === 'action_template') return false;
+      if (!walk(x, depth + 1)) return false;
+    }
+    return true;
+  };
+  return walk(b, 0);
+}
+
 /** Status-LED an/aus mit Farbe, Helligkeit und Effekt: genau ein Licht, nur diese Felder */
 export function okLedLightBody(b: unknown): boolean {
   if (!isObj(b)) return false;
@@ -66,7 +92,7 @@ const RAW_ALLOWED: { method: string; path: RegExp; body?: (b: unknown) => boolea
   { method: 'POST', path: /^\/api\/services\/switch\/(turn_on|turn_off)$/, body: okQueueTestBody },
   // Verlauf der Druck-Sensoren (Druckverlauf ohne App): nur Sensoren, höchstens 8, nur diese Zusätze
   { method: 'GET', path: /^\/api\/history\/period\/[0-9A-Za-z%.\-]+\?filter_entity_id=sensor\.[a-z0-9_]+(,sensor\.[a-z0-9_]+){0,7}(&(minimal_response|no_attributes|significant_changes_only=[01]|end_time=[0-9A-Za-z%.\-]+))*$/ },
-  { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/ },
+  { method: 'POST', path: /^\/api\/config\/automation\/config\/filamenthub_[a-z0-9_]+$/, body: okAutomationBody },
   { method: 'POST', path: /^\/api\/services\/automation\/(turn_on|turn_off)$/ },
   { method: 'POST', path: /^\/api\/services\/light\/(turn_on|turn_off)$/, body: okLedLightBody },
   { method: 'POST', path: /^\/api\/services\/number\/set_value$/, body: okLedIntensityBody },

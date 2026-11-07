@@ -3300,5 +3300,25 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.233',
+    label: '1.233 (Audit-Fixes)',
+    releaseDate: '07.11.2026',
+    description:
+      'Sicherheits-Audit nach der Cloudflare-Methode (Teilabdeckung, nur Quelltext gelesen, drei Prüfer) und die Funde behoben. Fremde Daten werden gesäubert: Shop-Links nur noch http(s) (kein „javascript:“), kaputte Spulen aus Cloud oder Backup fliegen raus, Koppel-Links (QR) fragen erst nach und nehmen nur npoint, Gist oder Pi an, „#s=%“ stürzt nicht mehr ab. Der Pi: Home-Assistant-Adresse und Geräte-Namen werden geprüft (kein „alle Schalter aus“, kein Token an fremde Server), Automationen dürfen nur bekannte Dienste, falsche Schlüssel werden nach 10 Versuchen gebremst (eigene Schlüssel unter 16 Zeichen werden ignoriert), Sicherungen nicht mehr per Adress-Zusatz, Medien-Token nur 4 Stunden, höchstens 10 Live-Streams, 3mf-Dateien mit Größenlimit, Webseiten anderer Herkunft können localhost nicht mehr anstoßen. Android: Live-Updates nur aus diesem Repo und nur mit Prüfsumme, Paketgrößen begrenzt, NFC nur bei echtem Scan. Windows: Zertifikat-Vertrauen nur nach Rückfrage. Bauabläufe ohne gespeichertes Token.',
+    features: [
+      '🔗 Shop-Links nur http(s), kaputte Spulen werden verworfen',
+      '📱 Koppel-Links fragen nach, nur bekannte Cloud-Adressen',
+      '🏠 Home-Assistant: Adresse und Geräte geprüft, Automationen eingegrenzt',
+      '🚦 Falsche Schlüssel werden gebremst, Mindestlänge 16',
+      '🔐 Sicherungen nur mit Schlüssel im Kopf, Medien-Token 4 Stunden',
+      '📦 Android: Update nur aus diesem Repo mit Prüfsumme',
+      '🪪 Windows: Zertifikat nur nach Rückfrage',
+      '🧱 3mf-Größenlimit, Obergrenze für Live-Streams'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -1,6 +1,7 @@
 // Home Assistant aus dem Server heraus ansprechen: im Add-on über den Supervisor (kein Token nötig),
 // sonst über die gespeicherte HA-Verbindung (server/haConfig). Für Push-Meldungen, Steckdose und Kamera.
 import { loadHaConfig } from '../haConfig.js';
+import { isAllowedHaUrl } from '../netCheck.js';
 
 interface Base {
   url: string;
@@ -11,7 +12,7 @@ function base(): Base | null {
   const sup = process.env.SUPERVISOR_TOKEN;
   if (sup) return { url: 'http://supervisor/core/api', token: sup };
   const c = loadHaConfig();
-  if (c.isConfigured && c.haUrl && c.haToken) return { url: `${c.haUrl.replace(/\/+$/, '')}/api`, token: c.haToken };
+  if (c.isConfigured && c.haUrl && c.haToken && isAllowedHaUrl(c.haUrl)) return { url: `${c.haUrl.replace(/\/+$/, '')}/api`, token: c.haToken };
   return null;
 }
 
@@ -62,12 +63,14 @@ async function haService(domain: string, service: string, data: Record<string, u
 
 /** Steckdose schalten (switch., light. oder input_boolean.) */
 export async function haSwitch(entity: string, on: boolean): Promise<boolean> {
+  if (!/^(switch|light|input_boolean)\.[a-z0-9_]+$/.test(entity)) return false; // 1.233: kein „all“, keine Liste
   const domain = entity.split('.')[0] || 'switch';
   return haService(domain === 'light' || domain === 'input_boolean' ? domain : 'switch', on ? 'turn_on' : 'turn_off', { entity_id: entity });
 }
 
 /** Kamerabild über Home Assistant */
 export async function haCameraJpeg(entity: string): Promise<Buffer | null> {
+  if (!/^camera\.[a-z0-9_]+$/.test(entity)) return null; // 1.233
   try {
     const r = await call(`/camera_proxy/${encodeURIComponent(entity)}`);
     if (!r.ok || !String(r.headers.get('content-type') || '').includes('image')) return null;

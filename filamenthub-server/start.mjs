@@ -46,6 +46,11 @@ const env = {
 };
 // 1.229: Schlüssel ist Pflicht. Ohne eigenen Eintrag erzeugt der Pi einmal einen und merkt ihn sich (/data/api-key.txt).
 let apiKey = String(o.api_key || '').trim();
+// 1.233: zu kurze eigene Schlüssel sind im WLAN erratbar: ab 16 Zeichen gilt der eigene, sonst erzeugt der Pi einen starken
+if (apiKey && apiKey.length < 16) {
+  console.warn('[FilamentHub] Eigener Schlüssel ist kürzer als 16 Zeichen und wird ignoriert. Der Pi nutzt einen erzeugten (steht unten im Log).');
+  apiKey = '';
+}
 if (!apiKey) {
   try {
     apiKey = fs.readFileSync('/data/api-key.txt', 'utf-8').trim();

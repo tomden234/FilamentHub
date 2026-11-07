@@ -102,8 +102,11 @@ export function updateHubConfig(body: any): HubConfig {
   set('gistToken', str(body?.gistToken, 200));
   set('amsSlots', cleanMap(body?.amsSlots, (x): x is string => typeof x === 'string' && x.length < 100, 10));
   set('jobGrams', cleanMap(body?.jobGrams, (x): x is number => typeof x === 'number' && x > 0 && x < 10000));
-  set('switchEntity', str(body?.switchEntity, 120));
-  set('cameraEntity', str(body?.cameraEntity, 120));
+  // 1.233: nur ein einzelnes Gerät im bekannten Format (sonst ließe sich über „all“ oder eine Liste jedes Gerät schalten)
+  const sw = str(body?.switchEntity, 120);
+  if (sw === '' || (typeof sw === 'string' && /^(switch|light|input_boolean)\.[a-z0-9_]+$/.test(sw))) set('switchEntity', sw);
+  const cam = str(body?.cameraEntity, 120);
+  if (cam === '' || (typeof cam === 'string' && /^camera\.[a-z0-9_]+$/.test(cam))) set('cameraEntity', cam);
   set('deduct', bool(body?.deduct));
   set('lowWeightG', num(body?.lowWeightG, 0, 1000));
   set('dryOffDelayMin', num(body?.dryOffDelayMin, 1, 60));

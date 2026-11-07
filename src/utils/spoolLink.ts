@@ -13,7 +13,13 @@ export function spoolLink(id: string): string {
 /** Spulen-ID aus dem URL-Hash (#s=ID) lesen */
 export function spoolIdFromHash(hash: string): string | null {
   const m = /[#&]s=([^&]+)/.exec(hash || '');
-  return m ? decodeURIComponent(m[1]) : null;
+  if (!m) return null;
+  try {
+    const id = decodeURIComponent(m[1]);
+    return id.length > 0 && id.length <= 100 ? id : null; // kaputte Kodierung (z. B. „#s=%“) wirft sonst im Render
+  } catch {
+    return null;
+  }
 }
 
 /** Link, der die Android-App direkt bei der Spule öffnet (Chrome-„intent“-Link, bleibt auf der Seite, wenn die App fehlt) */
