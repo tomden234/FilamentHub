@@ -1,6 +1,7 @@
 import { apiGet, apiPost, type ApiBase } from './client';
 import { cloudFetch, cloudUpdateDoc } from '../utils/cloudFetch';
 import { mergeById, mergeHistory } from '../utils/syncMerge';
+import { normalizeSpools } from '../utils/spoolState';
 
 // Server-Speicher (/api/storage/*) und optionaler Cloud-Sync (externer JSON-Speicher).
 
@@ -52,7 +53,7 @@ function buildDoc(existing: Record<string, unknown>, payload: CloudPayload, base
   if (!payload.spools && !Array.isArray(existing.spools)) return null;
   const out: Record<string, unknown> = { ...existing, ...payload };
   // 1.231: Spulen und Verbrauch je Eintrag zusammenführen statt die ganze Liste zu ersetzen (sonst gewinnt bei 409 trotzdem der alte Stand)
-  if (base && payload.spools && Array.isArray(existing.spools)) out.spools = mergeById(base.spools, payload.spools as any[], existing.spools as any[]);
+  if (base && payload.spools && Array.isArray(existing.spools)) out.spools = mergeById(base.spools, payload.spools as any[], normalizeSpools(existing.spools as any[]));
   if (base && payload.printHistory && Array.isArray(existing.printHistory))
     out.printHistory = mergeHistory(base.history, payload.printHistory as any[], existing.printHistory as any[]);
   if (payload.printLog || existing.printLog) out.printLog = unionById(existing.printLog, payload.printLog);
