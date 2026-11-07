@@ -690,15 +690,15 @@ export const NfcModal: React.FC<NfcModalProps> = ({
                       <span className="text-[10px] font-extrabold uppercase text-orange-400">
                         {s.brand}
                       </span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold border border-[var(--app-border)]">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold border border-[var(--app-border)]">
                         {s.material}
                       </span>
                       {s.nfcWritten ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
                           ✓ Beschrieben
                         </span>
                       ) : (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30">
                           Offen
                         </span>
                       )}
@@ -770,7 +770,7 @@ export const NfcModal: React.FC<NfcModalProps> = ({
               </div>
               <div className="min-w-0">
                 <h3 className="font-extrabold text-sm text-[var(--app-text)] truncate">
-                  NFC-Tag Informationen
+                  Inhalt des NFC-Tags
                 </h3>
                 <p className="text-[11px] text-emerald-400 font-semibold truncate">
                   ✓ Verknüpft mit {targetSpool.brand} {targetSpool.name}
@@ -787,7 +787,7 @@ export const NfcModal: React.FC<NfcModalProps> = ({
                 }}
                 className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'batch'
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-md'
+                    ? 'bg-[var(--app-accent)] text-white shadow-md'
                     : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
                 }`}
               >

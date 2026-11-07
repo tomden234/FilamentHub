@@ -63,7 +63,7 @@ export const NfcBatchTab: React.FC<NfcBatchTabProps> = ({
                 {/* Fortschrittsbalken */}
                 <div className="w-full h-2.5 rounded-full bg-[var(--app-card-sub)] overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-orange-500 via-orange-400 to-emerald-400 rounded-full transition-all duration-300"
+                    className="h-full bg-[var(--app-accent)] rounded-full transition-all duration-300"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -89,7 +89,7 @@ export const NfcBatchTab: React.FC<NfcBatchTabProps> = ({
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-base font-extrabold text-[var(--app-text)]">
-                      🎉 Alle {totalCount} Spulen haben jetzt einen NFC-Tag!
+                      Alle {totalCount} Spulen haben jetzt einen NFC-Tag!
                     </h3>
                     <p className="text-xs text-[var(--app-text)] max-w-sm mx-auto leading-relaxed">
                       Jeder NFC-Tag ist erfolgreich codiert. Alle Filamente leuchten in deiner Filament-Übersicht jetzt grün.
@@ -109,7 +109,7 @@ export const NfcBatchTab: React.FC<NfcBatchTabProps> = ({
                 </div>
               ) : (
                 /* AKTIVER TAG-SCHREIB-FOKUS */
-                <div className="p-5 rounded-2xl bg-gradient-to-b from-orange-500/15 via-[var(--app-card-sub)] to-[var(--app-card-sub)] border-2 border-orange-500/50 space-y-4 text-center shadow-lg">
+                <div className="p-5 rounded-2xl bg-[var(--app-card-sub)] border-2 border-orange-500/50 space-y-4 text-center shadow-lg">
                   {/* Radar/Wellen Animation */}
                   <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
                     <div className="absolute inset-0 rounded-full bg-orange-500/25 animate-ping duration-1000" />
@@ -145,7 +145,7 @@ export const NfcBatchTab: React.FC<NfcBatchTabProps> = ({
                   </div>
 
                   <div className="p-3 rounded-xl bg-[var(--app-input-bg)]/70 border border-[var(--app-border)] text-xs text-[var(--app-text)] max-w-sm mx-auto leading-relaxed">
-                    👉 <strong>Halte jetzt einen NFC-Tag an dein Handy.</strong> Sobald der Tag berührt wird, beschreibt FilamentHub diesen Tag, gibt ein Signal und schaltet automatisch auf die nächste Spule!
+                    <strong>Halte jetzt einen NFC-Tag an dein Handy.</strong> Sobald der Tag berührt wird, beschreibt FilamentHub diesen Tag, gibt ein Signal und schaltet automatisch auf die nächste Spule!
                   </div>
 
                   {/* Letzter Erfolg oder Fehlermeldung */}
@@ -168,7 +168,7 @@ export const NfcBatchTab: React.FC<NfcBatchTabProps> = ({
                     <button
                       onClick={handleSimulateBatchTagContact}
                       disabled={isBatchWriting}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-md shadow-orange-500/25 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                      className="px-4 py-2.5 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center gap-1.5 active:scale-95"
                     >
                       <Zap className="w-4 h-4" />
                       <span>Tag-Kontakt ausführen (Spule schreiben)</span>
@@ -224,7 +224,7 @@ export const NfcBatchTab: React.FC<NfcBatchTabProps> = ({
                               <span className="text-[10px] font-extrabold uppercase text-orange-400">
                                 {s.brand}
                               </span>
-                              <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold">
+                              <span className="text-[10px] px-1 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold">
                                 {s.material}
                               </span>
                             </div>

@@ -83,7 +83,7 @@ export const NfcWriteTab: React.FC<NfcWriteTabProps> = ({
               <button
                 onClick={handleManualWriteSubmit}
                 disabled={isWriting || !targetSpool}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-lg shadow-orange-500/25 transition cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-extrabold text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
               >
                 <PenTool className="w-4 h-4" />
                 <span>{isWriting ? 'Halte den NFC-Tag an dein Smartphone...' : 'Spule jetzt auf NFC-Tag schreiben'}</span>

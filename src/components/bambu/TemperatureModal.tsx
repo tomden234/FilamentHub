@@ -143,7 +143,7 @@ export const TemperatureModal: React.FC<TemperatureModalProps> = ({
               <button
                 onClick={() => handleSetTemperature(tempModalTarget, Number(tempModalValue))}
                 disabled={Boolean(actionLoading)}
-                className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-400 hover:to-orange-400 text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20"
+                className="flex-1 py-2 px-3 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
               >
                 {actionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Flame className="w-3.5 h-3.5" />}
                 <span>Temperatur setzen</span>

@@ -77,7 +77,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
               <img src={apkQr} alt="QR-Code zum APK-Download" className="w-40 h-40 object-contain" />
             </div>
           ) : (
-            <div className="w-40 h-40 rounded-2xl animate-pulse" style={{ backgroundColor: 'var(--app-card)' }} />
+            <div className="w-40 h-40 fh-skeleton" />
           )}
         </div>
 
@@ -87,7 +87,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
               type="button"
               onClick={installHere}
               disabled={installing}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-extrabold text-sm shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               <Download className="w-4 h-4" />
               <span>{installing ? 'Lade …' : 'Neue App jetzt installieren'}</span>
@@ -101,7 +101,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
         )}
         <a
           href={APK_URL}
-          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full py-2.5 px-4 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <Download className="w-4 h-4" />
           <span>FilamentHub.apk herunterladen</span>

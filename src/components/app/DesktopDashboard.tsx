@@ -253,16 +253,16 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                         color: 'var(--app-text)'
                       }}
                     >
-                      <option value="drying_urgent">🔥 Trocknung (dringend zuerst)</option>
-                      <option value="drying_fresh">✨ Frisch getrocknet zuerst</option>
-                      <option value="remaining_asc">⚖️ Restgewicht (wenig zuerst)</option>
-                      <option value="remaining_desc">⚖️ Restgewicht (viel zuerst)</option>
-                      <option value="price_asc">💶 Preis €/kg (günstigste zuerst)</option>
-                      <option value="brand_asc">🏷️ Hersteller (A–Z)</option>
-                      <option value="material_asc">🧪 Material (A–Z)</option>
-                      <option value="color_asc">🎨 Farbe (A–Z)</option>
+                      <option value="drying_urgent">Trocknung (dringend zuerst)</option>
+                      <option value="drying_fresh">Frisch getrocknet zuerst</option>
+                      <option value="remaining_asc">Restgewicht (wenig zuerst)</option>
+                      <option value="remaining_desc">Restgewicht (viel zuerst)</option>
+                      <option value="price_asc">Preis €/kg (günstigste zuerst)</option>
+                      <option value="brand_asc">Hersteller (A–Z)</option>
+                      <option value="material_asc">Material (A–Z)</option>
+                      <option value="color_asc">Farbe (A–Z)</option>
                     </select>
-                    <span className="absolute right-2.5 pointer-events-none text-[10px] opacity-50" style={{ color: 'var(--app-text)' }}>
+                    <span className="absolute right-2.5 pointer-events-none text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
                       ▼
                     </span>
                   </div>
@@ -309,6 +309,8 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                     const count = mat === 'ALL'
                       ? spools.length
                       : spools.filter(s => s.material === mat).length;
+                    // 1.248: Materialien ohne Spule nicht anzeigen (außer gerade gewählt), spart eine Zeile voller „0“
+                    if (count === 0 && !isActive) return null;
 
                     return (
                       <button
@@ -316,7 +318,7 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                         onClick={() => setActiveMaterialFilter(mat)}
                         className={`px-3 py-1 rounded-full text-xs font-semibold border transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                           isActive
-                            ? 'font-bold shadow-orange-500/20'
+                            ? 'font-bold'
                             : 'hover:border-orange-500/40 opacity-80 hover:opacity-100'
                         }`}
                         style={{
@@ -327,7 +329,7 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                       >
                         <span>{mat === 'ALL' ? 'Alle' : mat}</span>
                         <span
-                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono-num font-bold ${
                             isActive
                               ? 'bg-black/25 text-white'
                               : 'bg-black/10 dark:bg-white/10'

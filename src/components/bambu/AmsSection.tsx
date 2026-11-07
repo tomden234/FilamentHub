@@ -56,7 +56,7 @@ const ClimateCard: React.FC<{ title: string; hint: string; temp: string; hum: st
   <div className="min-w-0 rounded-xl border p-2" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-card-sub)' }}>
     <div className="flex items-baseline justify-between gap-1 mb-1.5 px-0.5">
       <span className="text-[11px] font-extrabold truncate" style={{ color: 'var(--app-text)' }}>{title}</span>
-      <span className="text-[9px] shrink-0" style={{ color: 'var(--app-text-muted)' }}>{hint}</span>
+      <span className="text-[10px] shrink-0" style={{ color: 'var(--app-text-muted)' }}>{hint}</span>
     </div>
     {error ? (
       <div className="text-[10px] leading-snug px-0.5 py-1" style={{ color: 'var(--app-text-muted)' }}>{error}</div>
@@ -404,7 +404,7 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
                     isDryingActive
-                      ? 'bg-sky-500/20 text-sky-300 border-sky-400/50 animate-pulse'
+                      ? 'bg-sky-500/20 text-sky-300 border-sky-400/50'
                       : 'bg-[var(--app-card-sub)] text-[var(--app-text-muted)] border-[var(--app-border)]'
                   }`}
                 >
@@ -460,8 +460,8 @@ export const AmsSection: React.FC<AmsSectionProps> = ({
                     disabled={dryLoading}
                     className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md disabled:opacity-50 ${
                       isDryingActive
-                        ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-sky-500/30 ring-2 ring-sky-300 animate-pulse'
-                        : 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white'
+                        ? 'bg-sky-500 hover:bg-sky-400 text-white ring-2 ring-sky-300'
+                        : 'bg-sky-600 hover:bg-sky-500 text-white'
                     }`}
                   >
                     {dryLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sun className="w-3.5 h-3.5" />}

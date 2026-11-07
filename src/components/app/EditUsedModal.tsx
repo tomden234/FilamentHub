@@ -66,7 +66,7 @@ export const EditUsedModal: React.FC<EditUsedModalProps> = ({
                     step="1"
                     value={editUsedInputValue}
                     onChange={e => setEditUsedInputValue(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-xl border font-mono text-sm font-bold outline-none"
+                    className="flex-1 px-3 py-2 rounded-xl border font-mono-num text-sm font-bold outline-none"
                     style={{
                       backgroundColor: 'var(--app-input-bg)',
                       borderColor: 'var(--app-border)',
@@ -87,12 +87,12 @@ export const EditUsedModal: React.FC<EditUsedModalProps> = ({
                   }}
                   className="flex-1 py-2 px-3 rounded-xl bg-orange-500/15 border border-orange-500/40 text-orange-400 hover:bg-orange-500/25 font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
                 >
-                  <span>✨ Sofort auf 0 g setzen</span>
+                  <span>Sofort auf 0 g setzen</span>
                 </button>
               </div>
 
               <p className="text-[11px] leading-relaxed" style={{ color: 'var(--app-text-muted)' }}>
-                💾 Dieser Wert wird dauerhaft im Browser-Speicher und, falls ein lokaler Server läuft, in <code className="text-orange-400">./data/filamenthub-storage.json</code> gesichert.
+                Dieser Wert wird dauerhaft im Browser-Speicher und, falls ein lokaler Server läuft, in <code className="text-orange-400">./data/filamenthub-storage.json</code> gesichert.
               </p>
             </div>
 

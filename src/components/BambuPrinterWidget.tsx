@@ -895,7 +895,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 transition-transform ${
               isPrinting
-                ? 'bg-gradient-to-br from-[#00AE42] to-emerald-600 text-white shadow-[#00AE42]/25 ring-2 ring-[#00AE42]/30 animate-pulse'
+                ? 'bg-[#00AE42] text-white ring-2 ring-[#00AE42]/30'
                 : isPaused
                 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                 : 'bg-[#00AE42]/15 text-[#00AE42] border border-[#00AE42]/30'
@@ -983,7 +983,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
                     <span className={haSwitchState.state === 'on' ? 'text-emerald-400' : 'text-rose-400'}>
                       Strom: {haSwitchState.state === 'on' ? 'AN' : 'AUS'}
                     </span>
-                    {haSwitchState.power && <span className="text-amber-400 font-mono">({haSwitchState.power}W)</span>}
+                    {haSwitchState.power && <span className="text-amber-400 font-mono-num">({haSwitchState.power}W)</span>}
                   </span>
                 </>
               )}
@@ -1000,7 +1000,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
             title={`LAN-Steckdose ${haSwitchState.state === 'on' ? 'ausschalten' : 'einschalten'}`}
             className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs ${
               haSwitchState.state === 'on'
-                ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-emerald-500/20'
+                ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300'
                 : 'bg-rose-500/20 border-rose-500/50 text-rose-300 ring-1 ring-rose-500/30'
             }`}
             style={{ backgroundColor: 'var(--app-card-sub)' }}
@@ -1031,12 +1031,12 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
             title={isPrinterPowerOff ? 'Drucker ist stromlos' : isLightOn ? 'Bauraum-Licht ausschalten' : 'Bauraum-Licht einschalten'}
             className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-40 disabled:cursor-not-allowed ${
               isLightOn
-                ? 'bg-amber-500/25 border-amber-500/60 text-amber-300 shadow-amber-500/20'
+                ? 'bg-amber-500/25 border-amber-500/60 text-amber-300'
                 : 'border-[var(--app-border)] text-[var(--app-text-muted)] hover:text-[var(--app-text)] hover:bg-[var(--app-accent-sub)]'
             }`}
             style={{ backgroundColor: isLightOn ? undefined : 'var(--app-card-sub)' }}
           >
-            <Lightbulb className={`w-3.5 h-3.5 shrink-0 ${isLightOn ? 'text-amber-400 fill-amber-400/40 animate-pulse' : ''}`} />
+            <Lightbulb className={`w-3.5 h-3.5 shrink-0 ${isLightOn ? 'text-amber-400 fill-amber-400/40' : ''}`} />
             <span className="hidden sm:inline text-[11px] whitespace-nowrap">{isLightOn ? 'Licht An' : 'Licht'}</span>
           </button>
 

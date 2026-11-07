@@ -44,7 +44,7 @@ const WaitBox: React.FC<{ title: string; hint: string; error?: string; onCancel:
   <div className="p-4 rounded-2xl bg-orange-500/10 border-2 border-orange-500/40 text-center space-y-3">
     <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
       <div className="absolute inset-0 rounded-full bg-orange-500/20 animate-ping" />
-      <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
+      <div className="relative w-14 h-14 rounded-full bg-[var(--app-accent)] flex items-center justify-center text-white shadow-lg">
         <Radio className="w-7 h-7 animate-pulse" />
       </div>
     </div>
@@ -150,7 +150,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                         <button
                           onClick={() => handleWriteSpoolToCurrentTag(targetSpool)}
                           disabled={isWriting}
-                          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 px-3 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <PenTool className="w-3.5 h-3.5" />
                           <span>Diesen Tag mit „{targetSpool.brand} {targetSpool.name}“ beschreiben</span>
@@ -188,7 +188,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                             <span className="text-[10px] font-extrabold uppercase text-orange-400">
                               {activeLoadedSpool.brand}
                             </span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold border border-[var(--app-border)]">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold border border-[var(--app-border)]">
                               {activeLoadedSpool.material}
                             </span>
                           </div>
@@ -216,7 +216,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                       <div className="p-3.5 rounded-xl bg-[var(--app-input-bg)] border border-[var(--app-border)] space-y-3">
                         <div className="flex justify-between items-center text-[11px]">
                           <span className="font-extrabold text-[var(--app-text)] flex items-center gap-1.5">
-                            <span>⚡ Direkt vom Filament abziehen / hinzufügen:</span>
+                            <span>Direkt vom Filament abziehen / hinzufügen:</span>
                           </span>
                           <span className="text-[11px] text-emerald-400 font-mono-num font-extrabold">
                             Rest: {Math.round(Number(activeLoadedSpool.remainingWeight) || 0)}g
@@ -311,7 +311,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                         </div>
 
                         <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/80 border border-[var(--app-border)] text-[10px] text-[var(--app-text-muted)] flex items-center justify-between">
-                          <span>🔄 Echtzeit-Bestand:</span>
+                          <span>Echtzeit-Bestand:</span>
                           <span className="font-mono-num font-bold text-[var(--app-text)]">
                             {Math.round(Number(activeLoadedSpool.remainingWeight) || 0)}g Netto ({Math.round((activeLoadedSpool.remainingWeight / (activeLoadedSpool.initialWeight || 1000)) * 100)}%)
                           </span>
@@ -349,7 +349,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                         <button
                           onClick={() => handleWriteSpoolToCurrentTag(targetSpool, loadedSpool.id)}
                           disabled={isWriting}
-                          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 px-3 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <PenTool className="w-3.5 h-3.5" />
                           <span>Tag auf „{targetSpool.brand} {targetSpool.name}“ umschreiben</span>
@@ -438,7 +438,7 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                 <div className="p-6 rounded-2xl bg-[var(--app-card-sub)] border border-[var(--app-border)] text-center space-y-4">
                   <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
                     <div className="absolute inset-0 rounded-full bg-orange-500/20 animate-ping" />
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white shadow-xl shadow-orange-500/30">
+                    <div className="relative w-16 h-16 rounded-full bg-[var(--app-accent)] flex items-center justify-center text-white shadow-xl">
                       <Radio className="w-8 h-8 animate-pulse" />
                     </div>
                   </div>
@@ -460,13 +460,13 @@ export const NfcReadTab: React.FC<NfcReadTabProps> = ({
                         onClick={handleSimulateUnwrittenTag}
                         className="px-2.5 py-1.5 rounded-lg bg-[var(--app-card-sub)] hover:bg-[var(--app-accent-sub)] text-amber-400 border border-[var(--app-border)] text-[11px] font-semibold cursor-pointer"
                       >
-                        🧪 Neuer Tag simulieren
+                        Neuer Tag simulieren
                       </button>
                       <button
                         onClick={handleSimulateLoadedTag}
                         className="px-2.5 py-1.5 rounded-lg bg-[var(--app-card-sub)] hover:bg-[var(--app-accent-sub)] text-emerald-400 border border-[var(--app-border)] text-[11px] font-semibold cursor-pointer"
                       >
-                        🧪 Spule erkannt simulieren
+                        Spule erkannt simulieren
                       </button>
                     </div>
                   </div>

@@ -141,7 +141,7 @@ export const PrinterExpandedPanel: React.FC<PrinterExpandedPanelProps> = ({
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-md disabled:opacity-50"
               >
                 <Power className="w-4 h-4" />
-                <span>{haSwitchLoading ? 'Schaltet ein...' : '⚡ Jetzt Drucker anschalten'}</span>
+                <span>{haSwitchLoading ? 'Schaltet ein...' : 'Jetzt Drucker anschalten'}</span>
               </button>
             </div>
           )}

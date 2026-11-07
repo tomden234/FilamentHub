@@ -77,7 +77,7 @@ const Steps: React.FC<{ items: string[] }> = ({ items }) => (
   <ol className="space-y-1.5 text-[11px] leading-relaxed" style={muted}>
     {items.map((t, i) => (
       <li key={i} className="flex gap-2">
-        <span className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[9px] font-extrabold text-white" style={{ backgroundColor: 'var(--app-accent)' }}>
+        <span className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[10px] font-extrabold text-white" style={{ backgroundColor: 'var(--app-accent)' }}>
           {i + 1}
         </span>
         <span>{t}</span>

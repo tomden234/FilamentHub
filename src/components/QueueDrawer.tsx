@@ -68,7 +68,7 @@ const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open 
         <span className="hidden sm:block text-[10px] font-black tracking-widest uppercase [writing-mode:vertical-lr] rotate-180" style={{ color: 'var(--app-text)' }}>
           WARTESCHLANGE
         </span>
-        <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded border" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', color: 'var(--app-accent-text)' }}>
+        <span className="text-[10px] font-mono font-bold px-1 py-0.5 rounded border" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', color: 'var(--app-accent-text)' }}>
           {count}
         </span>
       </div>
@@ -343,7 +343,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
           <button
             disabled={busy || items.length === 0}
             onClick={() => void act('start')}
-            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-orange-400 disabled:opacity-40 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[var(--app-accent)] disabled:opacity-40 cursor-pointer"
           >
             <Play className="w-3.5 h-3.5" /> Nächsten starten (wie Taster)
           </button>

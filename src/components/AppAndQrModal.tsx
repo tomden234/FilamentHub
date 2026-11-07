@@ -146,7 +146,7 @@ export const AppAndQrModal: React.FC<AppAndQrModalProps> = ({
         {activeTab === 'app' && (
           <div className="space-y-3.5 text-xs">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 text-white">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg text-white">
                 <Smartphone className="w-6 h-6" />
               </div>
               <h3 className="font-extrabold text-sm sm:text-base" style={{ color: 'var(--app-text)' }}>
@@ -178,10 +178,10 @@ export const AppAndQrModal: React.FC<AppAndQrModalProps> = ({
               ) : (
                 <button
                   onClick={install}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 transition cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg transition cursor-pointer flex items-center justify-center gap-2 active:scale-98"
                 >
                   <Download className="w-4 h-4" />
-                  <span>📲 Jetzt auf Smartphone installieren</span>
+                  <span>Jetzt auf Smartphone installieren</span>
                 </button>
               )}
 
@@ -200,13 +200,13 @@ export const AppAndQrModal: React.FC<AppAndQrModalProps> = ({
                 }}
               >
                 <span className="font-extrabold flex items-center gap-1 text-emerald-400">
-                  <span>🤖 Für Android & Google Chrome (Wichtigster Tipp!):</span>
+                  <span>Für Android & Google Chrome (Wichtigster Tipp!):</span>
                 </span>
                 <p style={{ color: 'var(--app-text)' }} className="leading-relaxed">
                   Wenn bei dir im Chrome-Menü bei <em>„Installieren“</em> ein Fehler kommt:
                 </p>
                 <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold text-emerald-400 space-y-1">
-                  <div>👉 Wähle stattdessen <strong>„Verknüpfung erstellen“</strong>!</div>
+                  <div>Wähle stattdessen <strong>„Verknüpfung erstellen“</strong>!</div>
                   <div className="text-[10px] text-[var(--app-text)] font-normal">
                     Das funktioniert auf jedem Android-Smartphone zu 100% sofort, legt das offizielle FilamentHub-Icon auf deinen Homescreen und startet die App im vollen Vollbild ohne störende Suchleiste!
                   </div>
@@ -221,7 +221,7 @@ export const AppAndQrModal: React.FC<AppAndQrModalProps> = ({
                 }}
               >
                 <span className="font-extrabold flex items-center gap-1 text-sky-400">
-                  <span>🍏 Für Apple iPhone (Safari):</span>
+                  <span>Für Apple iPhone (Safari):</span>
                 </span>
                 <ol className="list-decimal list-inside space-y-1 leading-relaxed" style={{ color: 'var(--app-text)' }}>
                   <li>Öffne diesen Link in <strong>Safari</strong> auf dem iPhone.</li>
@@ -262,7 +262,7 @@ export const AppAndQrModal: React.FC<AppAndQrModalProps> = ({
         {activeTab === 'apk' && (
           <div className="space-y-3.5 text-xs">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 text-white">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg text-white">
                 <Smartphone className="w-6 h-6" />
               </div>
               <h3 className="font-extrabold text-sm sm:text-base" style={{ color: 'var(--app-text)' }}>
@@ -288,10 +288,10 @@ export const AppAndQrModal: React.FC<AppAndQrModalProps> = ({
 
               <a
                 href={APK_URL}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2 cursor-pointer text-center active:scale-98"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer text-center active:scale-98"
               >
                 <Download className="w-4 h-4 text-white" />
-                <span>📲 FilamentHub.apk jetzt herunterladen</span>
+                <span>FilamentHub.apk jetzt herunterladen</span>
               </a>
 
               <p className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>

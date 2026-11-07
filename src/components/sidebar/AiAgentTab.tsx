@@ -93,7 +93,7 @@ export const AiAgentTab: React.FC<AiAgentTabProps> = ({
                     >
                       {msg.text}
                     </div>
-                    <span className="text-[9px] mt-0.5 px-1" style={{ color: 'var(--app-text-muted)' }}>
+                    <span className="text-[10px] mt-0.5 px-1" style={{ color: 'var(--app-text-muted)' }}>
                       {msg.timestamp}
                     </span>
                   </div>
@@ -116,7 +116,7 @@ export const AiAgentTab: React.FC<AiAgentTabProps> = ({
                 />
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition cursor-pointer shadow-md shadow-orange-500/20"
+                  className="px-4 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition cursor-pointer shadow-md"
                 >
                   Senden
                 </button>

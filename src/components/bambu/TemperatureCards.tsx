@@ -78,7 +78,7 @@ export const TemperatureCards: React.FC<TemperatureCardsProps> = ({
                         <span>Düse 1 (Links)</span>
                         {isPrinterConnected && <Edit3 className="w-2.5 h-2.5 opacity-60" />}
                       </span>
-                      <span className="text-[9px] text-[var(--app-text-muted)] font-mono">M104 S</span>
+                      <span className="text-[10px] text-[var(--app-text-muted)] font-mono">M104 S</span>
                     </span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-base font-mono-num font-extrabold text-orange-400">
@@ -154,7 +154,7 @@ export const TemperatureCards: React.FC<TemperatureCardsProps> = ({
                         <span>Düse 2 (Rechts)</span>
                         {isPrinterConnected && <Edit3 className="w-2.5 h-2.5 opacity-60" />}
                       </span>
-                      <span className="text-[9px] text-[var(--app-text-muted)] font-mono">M104 T0</span>
+                      <span className="text-[10px] text-[var(--app-text-muted)] font-mono">M104 T0</span>
                     </span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-base font-mono-num font-extrabold text-amber-400">
@@ -234,7 +234,7 @@ export const TemperatureCards: React.FC<TemperatureCardsProps> = ({
                         <span>Druckbett</span>
                         {isPrinterConnected && <Edit3 className="w-2.5 h-2.5 opacity-60" />}
                       </span>
-                      <span className="text-[9px] text-[var(--app-text-muted)] font-mono">M140 S</span>
+                      <span className="text-[10px] text-[var(--app-text-muted)] font-mono">M140 S</span>
                     </span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-base font-mono-num font-extrabold text-rose-400">

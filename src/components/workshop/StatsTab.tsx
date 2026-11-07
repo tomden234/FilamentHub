@@ -157,11 +157,11 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
         <div className="flex items-end gap-1.5 h-28 pt-2">
           {stats.weeks.map(w => (
             <div key={w.label} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${w.label}: ${g(w.grams)}`}>
-              <span className="text-[9px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
+              <span className="text-[10px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
                 {w.grams > 0 ? Math.round(w.grams) : ''}
               </span>
               <div className="w-full rounded-t-md" style={{ height: `${Math.max(2, (w.grams / maxWeek) * 100)}%`, backgroundColor: w.grams > 0 ? 'var(--app-accent)' : 'var(--app-border)' }} />
-              <span className="text-[9px]" style={{ color: 'var(--app-text-muted)' }}>
+              <span className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
                 {w.label}
               </span>
             </div>
@@ -268,14 +268,14 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
             const label = new Date(w.start).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
             return (
               <div key={w.start} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${label}: ${w.done} fertig, ${w.failed} abgebrochen`}>
-                <span className="text-[9px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
+                <span className="text-[10px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
                   {n || ''}
                 </span>
                 <div className="w-full rounded-t-md overflow-hidden flex flex-col justify-end" style={{ height: `${(n / maxPrints) * 100}%`, minHeight: n ? 4 : 2, backgroundColor: n ? 'transparent' : 'var(--app-border)' }}>
                   {w.failed > 0 && <div className="w-full bg-rose-400" style={{ height: `${(w.failed / Math.max(1, n)) * 100}%` }} />}
                   {w.done > 0 && <div className="w-full bg-orange-400" style={{ height: `${(w.done / Math.max(1, n)) * 100}%` }} />}
                 </div>
-                <span className="text-[9px]" style={{ color: 'var(--app-text-muted)' }}>
+                <span className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
                   {label}
                 </span>
               </div>

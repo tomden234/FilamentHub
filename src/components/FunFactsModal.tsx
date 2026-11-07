@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Sparkles,
   X,
   Code2,
   MessageSquare,
@@ -37,11 +36,11 @@ interface FunFactsModalProps {
 //  SCHÄTZUNG = ungefähr, genauer geht es nicht
 type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
-// Von Claude beim Update auf v1.247 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
-const CHATS = 19; // Chats im Projekt „filament webseite“
+// Von Claude beim Update auf v1.248 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
+const CHATS = 20; // Chats im Projekt „filament webseite“
 const MESSAGES = 466; // deine Nachrichten in diesen Chats (ca.)
 const WORDS = 40250; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 260; // Commits auf GitHub (main)
+const COMMITS = 261; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
 
 const sourceStyle: Record<Source, { bg: string; fg: string; label: string }> = {
@@ -74,13 +73,17 @@ function readHistory(): HistoryEntry[] {
 export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, spools = [] }) => {
   useEscapeClose(onClose, isOpen);
   const [piLog, setPiLog] = useState<PiStatEntry[]>([]);
+  const [piLoading, setPiLoading] = useState(false);
   const [showStats, setShowStats] = useState(false);
 
   // 1.243/1.244: Druckzeit und Gramm selbst gezählt aus dem Dauer-Protokoll deines Pi (nicht mehr Bambu Cloud, nicht auf 200 Drucke begrenzt)
   useEffect(() => {
     if (!isOpen) return;
     let alive = true;
-    void fetchPrintStats().then(r => alive && setPiLog(r));
+    setPiLoading(true);
+    void fetchPrintStats()
+      .then(r => alive && setPiLog(r))
+      .finally(() => alive && setPiLoading(false));
     return () => {
       alive = false;
     };
@@ -138,7 +141,8 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
   const tile = 'p-3.5 rounded-2xl border space-y-1.5';
   const tileStyle = { backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' };
   const Head: React.FC<{ icon: any; title: string; badge?: Source }> = ({ icon: Icon, title, badge }) => {
-    const src = badge ? sourceStyle[badge] : null;
+    // 1.248: „live“ ist der Normalfall und braucht kein Abzeichen. Nur Ausnahmen (Schätzung, gezählt, beim Bauen) bekommen eins.
+    const src = badge && badge !== 'LIVE' ? sourceStyle[badge] : null;
     return (
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -150,7 +154,7 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
           </span>
         </div>
         {src && (
-          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0" style={{ backgroundColor: src.bg, color: src.fg }}>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0" style={{ backgroundColor: src.bg, color: src.fg }}>
             {src.label}
           </span>
         )}
@@ -211,13 +215,10 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
         <div className="sticky top-0 z-10 p-4 sm:p-5 text-white" style={{ background: 'var(--app-accent-gradient, var(--app-accent))' }}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center">
-                <Sparkles className="w-6 h-6" />
-              </div>
               <div>
                 <h3 className="font-extrabold text-lg leading-tight flex items-center gap-2">
                   Fun Facts
-                  <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-mono">v{APP_REVISION}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-mono-num">v{APP_REVISION}</span>
                 </h3>
                 <p className="text-[11px] text-white/85">Echte Zahlen aus deinen Spulen, deinem Drucker und unserem Projekt</p>
               </div>
@@ -263,12 +264,21 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
               <Head icon={Printer} title="Druckzeit" badge="LIVE" />
               <Maximize2 className="w-3.5 h-3.5 shrink-0 mt-1" style={muted} />
             </div>
-            <div className={big} style={acc}>
-              {fmt(weekH)} Std.
-            </div>
-            <p className="text-[11px]" style={muted}>
-              diese Woche · {fmt(week.reduce((a, x) => a + x.grams, 0), 0)} g · gesamt {fmt(totalH, 0)} Std.
-            </p>
+            {piLoading && spans.length === 0 ? (
+              <div className="space-y-1.5 py-0.5" aria-label="Lädt Druckzeiten vom Pi">
+                <div className="fh-skeleton h-6 w-24" />
+                <div className="fh-skeleton h-3 w-40" />
+              </div>
+            ) : (
+              <>
+                <div className={big} style={acc}>
+                  {fmt(weekH)} Std.
+                </div>
+                <p className="text-[11px]" style={muted}>
+                  diese Woche · {fmt(week.reduce((a, x) => a + x.grams, 0), 0)} g · gesamt {fmt(totalH, 0)} Std.
+                </p>
+              </>
+            )}
             <div className="flex items-end gap-1 h-10 pt-1">
               {week.map((x, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-0.5">
@@ -276,7 +286,7 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
                 </div>
               ))}
             </div>
-            <div className="flex gap-1 text-[9px]" style={muted}>
+            <div className="flex gap-1 text-[10px]" style={muted}>
               {week.map((x, i) => (
                 <span key={i} className="flex-1 text-center" style={{ fontWeight: x.current ? 800 : 400 }}>
                   {x.label}
@@ -330,7 +340,7 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
           <div className={`${tile} sm:col-span-2`} style={tileStyle}>
             <div className="flex items-center justify-between gap-2">
               <Head icon={Code2} title="Codezeilen" badge="BAUEN" />
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono border" style={{ borderColor: 'var(--app-border)', ...muted }}>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono-num border" style={{ borderColor: 'var(--app-border)', ...muted }}>
                 v{APP_REVISION}
               </span>
             </div>

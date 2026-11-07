@@ -155,7 +155,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
           <div className="space-y-3">
             <button
               onClick={() => cameraInputRef.current?.click()}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-bold flex flex-col items-center justify-center gap-1.5 shadow-lg shadow-orange-500/25 transition cursor-pointer"
+              className="w-full py-4 rounded-2xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-bold flex flex-col items-center justify-center gap-1.5 shadow-lg transition cursor-pointer"
             >
               <Camera className="w-7 h-7" />
               <span className="text-sm">Kamera öffnen & Foto machen</span>
@@ -278,7 +278,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
 
                 <button
                   onClick={handleApply}
-                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
                   <span>Spule jetzt in Bestand übernehmen</span>

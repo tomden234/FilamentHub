@@ -166,11 +166,11 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
           {hubMsg && <p className={`text-[11px] leading-snug whitespace-pre-line ${hubMsg.ok ? 'text-emerald-400' : 'text-amber-300'}`}>{hubMsg.text}</p>}
           {ew && (
             <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
-              ⚡ Strom diese Woche: {(ew.totalWh / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} kWh ·{' '}
+              Strom diese Woche: {(ew.totalWh / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} kWh ·{' '}
               {ew.cost.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
             </p>
           )}
-          {esp && <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>🔧 ESP: {esp.text}</p>}
+          {esp && <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>ESP: {esp.text}</p>}
           <div className="grid grid-cols-3 gap-2 text-[11px]">
             <label className="space-y-0.5">
               <span className="font-bold" style={{ color: 'var(--app-text)' }}>

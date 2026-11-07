@@ -466,7 +466,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-sm text-white shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-[var(--app-accent)] flex items-center justify-center shadow-sm text-white shrink-0">
               <Disc className="w-4 h-4" />
             </div>
             <div>
@@ -684,7 +684,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-4">
               {Array.from(new Set(homeItems.map(i => i.group))).map(group => (
                 <div key={group} className="space-y-1.5">
-                  <div className="fh-eyebrow px-1 flex items-center justify-between"><span>{group}</span><span className="opacity-60 font-mono-num">{homeItems.filter(i => i.group === group).length}</span></div>
+                  <div className="fh-eyebrow px-1 flex items-center justify-between"><span>{group}</span><span className="font-mono-num">{homeItems.filter(i => i.group === group).length}</span></div>
                   <div className="rounded-xl border overflow-hidden divide-y divide-[var(--app-border)]" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
                     {homeItems
                       .filter(i => i.group === group)
@@ -752,7 +752,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     </div>
                     <span
-                      className="text-xs font-mono font-black px-2.5 py-1 rounded-lg border transition-colors whitespace-nowrap shrink-0"
+                      className="text-xs font-mono-num font-black px-2.5 py-1 rounded-lg border transition-colors whitespace-nowrap shrink-0"
                       style={{
                         backgroundColor: 'var(--app-accent-sub)',
                         borderColor: 'var(--app-accent)',

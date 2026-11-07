@@ -233,7 +233,7 @@ export const NfcSlotModal: React.FC<Props> = ({ spools, onClose, trays = [], onA
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-extrabold break-words leading-tight">{picked.label}</div>
                 <div className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
-                  {picked.viaNfc ? '📲 per NFC · ' : ''}
+                  {picked.viaNfc ? 'per NFC · ' : ''}
                   {picked.sub || picked.material}
                 </div>
               </div>
@@ -348,7 +348,7 @@ export const NfcSlotModal: React.FC<Props> = ({ spools, onClose, trays = [], onA
                             borderColor: hw && !hw.empty ? undefined : 'var(--app-border)'
                           }}
                         />
-                        <span className="text-[9px] font-bold truncate max-w-full" style={{ color: 'var(--app-text-muted)' }}>
+                        <span className="text-[10px] font-bold truncate max-w-full" style={{ color: 'var(--app-text-muted)' }}>
                           {hw ? (hw.empty ? 'leer' : hw.type) : '–'}
                         </span>
                       </button>

@@ -303,11 +303,8 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
         <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--app-border)' }}>
           <div>
             <h3 className="text-base sm:text-lg font-bold">
-              {spoolToEdit ? 'Spule bearbeiten' : 'Spule eintragen'}
+              {spoolToEdit ? `${spoolToEdit.name || 'Spule'} bearbeiten` : 'Neue Spule anlegen'}
             </h3>
-            <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
-              In Sekunden gespeichert
-            </p>
           </div>
 
           <div className="flex items-center gap-1">
@@ -771,13 +768,13 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer border bg-[var(--app-card-sub)] text-[var(--app-text)] border-[var(--app-border)] hover:bg-[var(--app-accent-sub)] transition"
+              className="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer text-[var(--app-text-muted)] hover:text-[var(--app-text)] hover:bg-[var(--app-card-sub)] transition"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg cursor-pointer transition bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700"
+              className="fh-cta px-6 py-2.5 text-sm cursor-pointer transition"
             >
               {spoolToEdit ? 'Änderungen speichern' : 'Spule jetzt anlegen'}
             </button>

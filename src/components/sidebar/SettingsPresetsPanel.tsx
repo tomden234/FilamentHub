@@ -179,7 +179,7 @@ export const SettingsPresetsPanel: React.FC<SettingsPresetsPanelProps> = ({
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={handleSaveMaterial}
-                        className="flex-1 py-2 px-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20"
+                        className="flex-1 py-2 px-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
                       >
                         {matSavedSuccess ? <Check className="w-3.5 h-3.5" /> : null}
                         <span>{matSavedSuccess ? 'Gespeichert!' : `Für ${selectedMaterial} speichern`}</span>

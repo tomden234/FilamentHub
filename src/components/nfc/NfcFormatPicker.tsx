@@ -33,7 +33,7 @@ export const NfcFormatPicker: React.FC<NfcFormatPickerProps> = ({ writeFormat, s
               <span className="flex items-center gap-1.5 text-[11px] font-extrabold" style={{ color: active ? 'var(--app-accent-text)' : 'var(--app-text)' }}>
                 {opt.title}
                 {opt.badge && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: 'var(--app-accent)' }}>
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: 'var(--app-accent)' }}>
                     {opt.badge}
                   </span>
                 )}

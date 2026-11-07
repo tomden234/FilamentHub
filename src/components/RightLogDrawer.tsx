@@ -232,7 +232,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
               {logsOnly ? 'LOGS' : 'DRUCKER'}
             </span>
             <span
-              className="text-[9px] font-mono font-bold px-1 py-0.5 rounded border"
+              className="text-[10px] font-mono font-bold px-1 py-0.5 rounded border"
               style={{
                 backgroundColor: 'var(--app-card-sub)',
                 borderColor: 'var(--app-border)',
@@ -625,14 +625,14 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
                         [{log.timestamp}]
                       </span>
                       <span
-                        className={`px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${meta.bg} ${meta.color}`}
+                        className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${meta.bg} ${meta.color}`}
                       >
                         <CatIcon className="w-2.5 h-2.5" />
                         <span>{meta.label}</span>
                       </span>
                     </div>
 
-                    <span className="text-[9px] font-mono opacity-70" style={{ color: 'var(--app-text-muted)' }}>
+                    <span className="text-[10px] font-mono" style={{ color: 'var(--app-text-muted)' }}>
                       {log.dateStr}
                     </span>
                   </div>

@@ -100,7 +100,7 @@ export const AmsSlotEditModal: React.FC<AmsSlotEditModalProps> = ({
                       className="w-6 h-6 rounded-full border border-black/40 shadow-xs"
                       style={{ backgroundColor: `#${c.hex}` }}
                     />
-                    <span className="text-[9px] font-semibold truncate w-full text-center text-[var(--app-text)]">
+                    <span className="text-[10px] font-semibold truncate w-full text-center text-[var(--app-text)]">
                       {c.name}
                     </span>
                   </button>
@@ -213,7 +213,7 @@ export const AmsSlotEditModal: React.FC<AmsSlotEditModalProps> = ({
               <button
                 onClick={handleSaveAmsSlotToPrinter}
                 disabled={Boolean(actionLoading)}
-                className="flex-1 py-2 px-3 rounded-xl bg-[#00AE42] hover:bg-[#009237] text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-[#00AE42]/20"
+                className="flex-1 py-2 px-3 rounded-xl bg-[#00AE42] hover:bg-[#009237] text-white text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
               >
                 {actionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 <span>Auf X2D übertragen</span>

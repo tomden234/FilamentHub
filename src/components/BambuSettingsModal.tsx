@@ -381,7 +381,7 @@ export const BambuSettingsModal: React.FC<BambuSettingsModalProps> = ({
         {/* Header mit echtem 3D-Drucker Icon */}
         <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--app-border)' }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 text-white">
+            <div className="w-9 h-9 rounded-xl bg-[var(--app-accent)] flex items-center justify-center shadow-lg shrink-0 text-white">
               <ThreeDPrinterIcon className="w-5 h-5" />
             </div>
             <div>
@@ -570,7 +570,7 @@ export const BambuSettingsModal: React.FC<BambuSettingsModalProps> = ({
                   <Lock className="w-3 h-3 text-amber-400" />
                   <span>Admin-PIN (Stopp/Pause):</span>
                 </span>
-                <span className="text-[9px]" style={{ color: 'var(--app-text-muted)' }}>Standard: 1234</span>
+                <span className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>Standard: 1234</span>
               </label>
               <input
                 type="password"
@@ -700,7 +700,7 @@ export const BambuSettingsModal: React.FC<BambuSettingsModalProps> = ({
                   className="px-3 py-1.5 rounded-lg border font-bold text-xs text-emerald-400 border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {isConnecting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                  <span>⚡ 1-Klick: Drucker suchen & live verbinden</span>
+                  <span>1-Klick: Drucker suchen & live verbinden</span>
                 </button>
               </div>
             </div>
@@ -732,7 +732,7 @@ export const BambuSettingsModal: React.FC<BambuSettingsModalProps> = ({
                     <Lock className="w-3 h-3 text-amber-400" />
                     <span>Admin-PIN (Stopp/Pause):</span>
                   </span>
-                  <span className="text-[9px]" style={{ color: 'var(--app-text-muted)' }}>Standard: 1234</span>
+                  <span className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>Standard: 1234</span>
                 </label>
                 <input
                   type="password"

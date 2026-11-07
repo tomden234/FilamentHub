@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSetDeviceMode('app')}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 deviceMode === 'app'
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm'
+                  ? 'bg-[var(--app-accent)] text-white shadow-sm'
                   : 'hover:text-[var(--app-text)]'
               }`}
               style={{
@@ -178,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onSetDeviceMode('desktop')}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                 deviceMode === 'desktop'
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm'
+                  ? 'bg-[var(--app-accent)] text-white shadow-sm'
                   : 'hover:text-[var(--app-text)]'
               }`}
               style={{
@@ -342,7 +342,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowNewDropdown(!showNewDropdown)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-bold shadow-lg shadow-orange-500/20 transition cursor-pointer"
+              className="fh-cta inline-flex items-center gap-1.5 px-3.5 py-2 text-xs transition cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>Neu</span>

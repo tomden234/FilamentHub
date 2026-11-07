@@ -78,7 +78,7 @@ const NightLedSection: React.FC = () => {
   return (
     <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--app-border)' }}>
       <div>
-        <p className="text-xs font-bold">🌙 Nachtmodus</p>
+        <p className="text-xs font-bold">Nachtmodus</p>
         <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
           Ab der Uhrzeit leuchten beide Streifen (Status und Warteschlange) gedimmt. Läuft direkt am ESP, auch wenn App und Pi aus sind.
         </p>

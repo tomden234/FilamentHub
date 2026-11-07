@@ -62,7 +62,7 @@ export const GcodeCalcTab: React.FC<GcodeCalcTabProps> = ({
                     <FileCode2 className="w-4 h-4 text-orange-400" />
                     <span>G-Code Datei & X2D Live-Sync</span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  <span className="text-[10px] font-mono-num text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
                     Auto-Analyse
                   </span>
                 </div>
@@ -79,7 +79,7 @@ export const GcodeCalcTab: React.FC<GcodeCalcTabProps> = ({
                   className="w-full py-2 px-3 rounded-xl border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 active:scale-95"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${printerFetchLoading ? 'animate-spin' : ''}`} />
-                  <span>{printerFetchLoading ? 'Lese X2D Daten...' : '⚡ Aktuelle Druckdatei vom X2D übernehmen'}</span>
+                  <span>{printerFetchLoading ? 'Lese X2D Daten...' : 'Aktuelle Druckdatei vom X2D übernehmen'}</span>
                 </button>
 
                 {/* Upload Button */}

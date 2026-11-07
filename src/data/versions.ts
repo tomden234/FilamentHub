@@ -3490,5 +3490,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.248',
+    label: '1.248 (Aufgeräumt)',
+    releaseDate: '08.11.2026',
+    description:
+      'Design nach 20 Regeln gegen den „KI-Look“ aufgeräumt. Keine Farbverläufe und Leuchtschatten mehr auf Knöpfen, die Haupt-Aktion ist eine kräftige Akzentfläche. Zahlen nutzen die normale Schrift mit gleich breiten Ziffern (springen nicht), Code-Schrift nur noch für Codes und Logs. Spulen-Karten zeigen die echte Spule statt eines Punkts, das Restgewicht ist groß. Gewichtsänderungen hüpfen kurz und zeigen „−25 g“, „Getrocknet“ und „Kopiert“ bestätigen sich sichtbar. Weniger Abzeichen und Emojis, kein Kursiv, keine Mini-Schrift unter 10 px, Überschriften brechen sauber um, Ecken innen passend zu außen. Druckzeit in den Fun Facts zeigt einen Lade-Platzhalter.',
+    features: ['🧹 Kein Verlauf, kein Glow, klare Haupt-Aktion', '🔢 Gleich breite Ziffern ohne Code-Schrift', '🎞️ Sichtbares Feedback bei Gewicht und Knöpfen'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

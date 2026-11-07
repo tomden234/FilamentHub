@@ -1,6 +1,6 @@
 import { slotLabel } from '../utils/slotLabel';
-import React, { useState } from 'react';
-import { Pencil, Trash2, Tag, Sun, ShoppingCart, ChevronDown, Minus, Plus } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Pencil, Trash2, Tag, Sun, ShoppingCart, ChevronDown, Minus, Plus, Check } from 'lucide-react';
 import type { AppSettings, Spool } from '../types/filament';
 import { getDryingStatus, getSpoolLink } from '../utils/shopLinks';
 import { useSpoolAms } from '../hooks/useSpoolAms';
@@ -33,12 +33,12 @@ const LevelBar: React.FC<{ pct: number; color: string }> = ({ pct, color }) => (
 );
 
 /** Spule von der Seite: Flansch, Filament (Dicke = Rest), Nabe mit Löchern. Farbe = Filamentfarbe. */
-const SpoolIcon: React.FC<{ hex: string; pct: number; size?: number }> = ({ hex, pct, size = 60 }) => {
+export const SpoolIcon: React.FC<{ hex: string; pct: number; size?: number }> = ({ hex, pct, size = 60 }) => {
   const hub = 9; // Nabe
   const full = 21; // Filament ganz voll
   const r = hub + 1.5 + ((full - hub - 1.5) * Math.max(0, Math.min(100, pct))) / 100;
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" className="shrink-0 drop-shadow-sm" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 48 48" className="shrink-0" aria-hidden="true">
       {/* Flansch (Spulenkörper) */}
       <circle cx="24" cy="24" r="23" fill={`color-mix(in srgb, ${hex} 18%, color-mix(in srgb, var(--app-text) 10%, var(--app-card-sub)))`} stroke="color-mix(in srgb, var(--app-text) 28%, transparent)" strokeWidth="1" />
       {/* Filament */}
@@ -66,6 +66,7 @@ const quick = [10, 25, 50, 100];
 export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, onDeduct, onAdd, onEdit, onDelete, onWriteNfc, onMarkDried }) => {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState('');
+  const [driedOk, setDriedOk] = useState(false);
   const ams = useSpoolAms(spool.id);
   const [ws] = useWorkshopSettings();
   const low = ws.lowWarning && isLowSpool(spool, ws.lowWeightG);
@@ -81,6 +82,20 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
 
   const add = (g: number) => (onAdd ? onAdd(spool.id, g) : onDeduct(spool.id, -g));
   const customG = parseInt(custom, 10);
+
+  // 1.248: Sichtbares Feedback bei jeder Gewichtsänderung (Zahl hüpft, „−25 g“ schwebt weg)
+  const prevRem = useRef(remW);
+  const [delta, setDelta] = useState<{ g: number; k: number } | null>(null);
+  useEffect(() => {
+    const d = remW - prevRem.current;
+    prevRem.current = remW;
+    if (d !== 0) setDelta({ g: d, k: Date.now() });
+  }, [remW]);
+  useEffect(() => {
+    if (!delta) return;
+    const t = setTimeout(() => setDelta(null), 1100);
+    return () => clearTimeout(t);
+  }, [delta]);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
@@ -88,7 +103,6 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
       className={`relative overflow-hidden rounded-2xl border transition-colors ${dry.isOverdue ? 'border-rose-500/60' : ''}`}
       style={{
         backgroundColor: 'var(--app-card)',
-        backgroundImage: `radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, ${hex} 16%, transparent), transparent 55%)`,
         borderColor: dry.isOverdue ? undefined : 'var(--app-border)',
         color: 'var(--app-text)'
       }}
@@ -104,9 +118,22 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
             {spool.colorName ? ` · ${spool.colorName}` : ''}
           </span>
           <span className="flex items-end justify-between gap-3 mt-2">
-            <span className="font-mono-num font-extrabold text-xl leading-none" style={{ color: pct <= 15 ? 'var(--app-danger-text)' : 'var(--app-text)' }}>
-              {remW}
+            <span className="relative font-mono-num font-extrabold text-2xl leading-none tracking-tight" style={{ color: pct <= 15 ? 'var(--app-danger-text)' : 'var(--app-text)' }}>
+              <span key={delta?.k ?? 0} className={delta ? 'fh-bump' : undefined}>
+                {remW}
+              </span>
               <span className="text-xs font-bold ml-0.5" style={{ color: 'var(--app-text-muted)' }}>g</span>
+              {delta && (
+                <span
+                  key={`f${delta.k}`}
+                  className="fh-float absolute left-full ml-2 bottom-1 text-xs font-bold whitespace-nowrap"
+                  style={{ color: delta.g < 0 ? 'var(--app-danger-text)' : 'var(--app-accent-text)' }}
+                  aria-live="polite"
+                >
+                  {delta.g > 0 ? '+' : '−'}
+                  {Math.abs(delta.g)} g
+                </span>
+              )}
             </span>
             <span className="text-[11px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
               {pct} % von {initW} g
@@ -120,7 +147,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
       </button>
 
       {(ams.slot !== null || ams.isDrying || dry.isOverdue || spool.needsDrying || low) && !open && (
-        <div className="pl-[4.75rem] pr-3.5 pb-3 -mt-0.5 flex flex-wrap items-center gap-1">
+        <div className="pl-[5.25rem] pr-3.5 pb-3 -mt-0.5 flex flex-wrap items-center gap-1">
           {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">{slotLabel(ams.slot)}</span>}
           {ams.isDrying && (
             <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-500/20 text-sky-400 border border-sky-500/40 inline-flex items-center gap-1">
@@ -186,9 +213,17 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {onMarkDried && (
-              <button onClick={() => onMarkDried(spool.id)} className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer flex items-center gap-1" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                Getrocknet
+              <button
+                onClick={() => {
+                  onMarkDried(spool.id);
+                  setDriedOk(true);
+                  setTimeout(() => setDriedOk(false), 1600);
+                }}
+                className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer flex items-center gap-1"
+                style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+              >
+                {driedOk ? <Check key="ok" className="w-3.5 h-3.5 text-emerald-500 fh-pop" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
+                {driedOk ? 'Gespeichert' : 'Getrocknet'}
               </button>
             )}
             {onWriteNfc && (

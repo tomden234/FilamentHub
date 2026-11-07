@@ -21,7 +21,7 @@ import { getBrandInfo, getDryingStatus, getSpoolLink } from '../utils/shopLinks'
 import { isInEibos, spoolTara } from '../utils/spoolState';
 import { getBambuProfile, formatBambuParametersText } from '../data/bambuParameters';
 import { SpoolBadges } from './workshop/SpoolBadges';
-import { SpoolTile } from './SpoolTile';
+import { SpoolTile, SpoolIcon } from './SpoolTile';
 import { NumInput } from './ui/NumInput';
 
 interface SpoolCardProps {
@@ -45,7 +45,7 @@ const DryCountdown: React.FC<{ spool: Spool }> = ({ spool }) => {
   const d = getDryingStatus(spool, t);
   return (
     <span className={`font-mono-num ${d.isOverdue ? 'text-rose-500 font-bold' : 'font-semibold'}`}>
-      {d.isOverdue ? `⚠️ Überfällig seit ${d.days}d ${d.hours}h ${d.mins}m ${d.secs}s` : `🔥 Trocknung in ${d.days}d ${d.hours}h ${d.mins}m ${d.secs}s`}
+      {d.isOverdue ? `Trocknen überfällig seit ${d.days}d ${d.hours}h ${d.mins}m ${d.secs}s` : `Nächstes Trocknen in ${d.days}d ${d.hours}h ${d.mins}m ${d.secs}s`}
     </span>
   );
 };
@@ -66,6 +66,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
   const [deductInput, setDeductInput] = useState('');
   const [scaleInput, setScaleInput] = useState('');
   const [copiedParam, setCopiedParam] = useState(false);
+  const [driedOk, setDriedOk] = useState(false);
 
   // AMS Slot & Trocknungsstatus (vom Drucker, jede Sekunde aktuell)
   const amsInfo = useSpoolAms(spool.id);
@@ -137,7 +138,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopiedParam(true);
-      setTimeout(() => setCopiedParam(false), 2500);
+      setTimeout(() => setCopiedParam(false), 2000);
     } catch {}
   };
 
@@ -168,7 +169,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
   if (viewMode === 'params') {
     return (
       <div
-        className="rounded-2xl border transition-all p-3.5 sm:p-5 flex flex-col justify-between gap-3.5 shadow-sm"
+        className="fh-nest rounded-2xl border transition-all flex flex-col justify-between gap-3"
         style={{
           backgroundColor: 'var(--app-card)',
           borderColor: 'var(--app-border)',
@@ -177,10 +178,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
       >
         <div className="flex justify-between items-start gap-2.5">
           <div className="flex items-start gap-2.5 min-w-0 flex-1">
-            <span
-              className="w-5 h-5 rounded-full border border-black/10 dark:border-white/20 shrink-0 shadow-sm mt-0.5"
-              style={{ backgroundColor: hex }}
-            />
+            <SpoolIcon hex={hex} pct={pct} size={40} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] uppercase font-extrabold text-orange-500">
@@ -202,7 +200,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
               </h3>
               {spool.storageNote && (
                 <p className="text-[11px] break-words leading-relaxed mt-1" style={{ color: 'var(--app-text-muted)' }}>
-                  📦 {spool.storageNote}
+                  {spool.storageNote}
                 </p>
               )}
             </div>
@@ -237,57 +235,54 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
 
         {/* Hersteller-Druckparameter Gitter */}
         <div
-          className="rounded-xl border p-3 space-y-2 text-xs"
-          style={{
-            backgroundColor: 'var(--app-card-sub)',
-            borderColor: 'var(--app-border)'
-          }}
+          className="fh-nest-inner p-3 space-y-3 text-xs"
+          style={{ backgroundColor: 'var(--app-card-sub)' }}
         >
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/60 border border-[var(--app-border)] space-y-0.5">
-              <span className="text-[var(--app-text-muted)] block text-[10px] flex items-center gap-1">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-3 text-[11px]">
+            <div className="space-y-0.5">
+              <span className="text-[var(--app-text-muted)] text-[11px] flex items-center gap-1">
                 <Thermometer className="w-3 h-3 text-orange-400" />
                 <span>Düse (Nozzle)</span>
               </span>
-              <span className="font-mono-num font-bold text-[var(--app-text)] block">
+              <span className="font-mono-num font-bold text-sm text-[var(--app-text)] block">
                 {bambuProfile.nozzleTempFirstLayer}°C / {bambuProfile.nozzleTempOtherLayers}°C
               </span>
             </div>
 
-            <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/60 border border-[var(--app-border)] space-y-0.5">
-              <span className="text-[var(--app-text-muted)] block text-[10px] flex items-center gap-1">
+            <div className="space-y-0.5">
+              <span className="text-[var(--app-text-muted)] text-[11px] flex items-center gap-1">
                 <Thermometer className="w-3 h-3 text-rose-400" />
                 <span>Bett (PEI / Glatt)</span>
               </span>
-              <span className="font-mono-num font-bold text-[var(--app-text)] block">
+              <span className="font-mono-num font-bold text-sm text-[var(--app-text)] block">
                 {bambuProfile.bedTempTexturedPEI}°C / {bambuProfile.bedTempSmoothPlate}°C
               </span>
             </div>
 
-            <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/60 border border-[var(--app-border)] space-y-0.5">
-              <span className="text-[var(--app-text-muted)] block text-[10px] flex items-center gap-1">
+            <div className="space-y-0.5">
+              <span className="text-[var(--app-text-muted)] text-[11px] flex items-center gap-1">
                 <Gauge className="w-3 h-3 text-orange-400" />
                 <span>Max Flow (Speed)</span>
               </span>
-              <span className="font-mono-num font-bold text-orange-400 block">
+              <span className="font-mono-num font-bold text-sm text-[var(--app-text)] block">
                 {bambuProfile.maxVolumetricSpeed} mm³/s
               </span>
             </div>
 
-            <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/60 border border-[var(--app-border)] space-y-0.5">
-              <span className="text-[var(--app-text-muted)] block text-[10px] flex items-center gap-1">
+            <div className="space-y-0.5">
+              <span className="text-[var(--app-text-muted)] text-[11px] flex items-center gap-1">
                 <Wind className="w-3 h-3 text-sky-400" />
                 <span>Bauteillüfter</span>
               </span>
-              <span className="font-mono-num font-bold text-sky-400 block">
+              <span className="font-mono-num font-bold text-sm text-[var(--app-text)] block">
                 {bambuProfile.fanSpeedMin}% – {bambuProfile.fanSpeedMax}%
               </span>
             </div>
           </div>
 
           {bambuProfile.notes && (
-            <p className="text-[10px] text-[var(--app-text-muted)] italic pt-1 border-t border-[var(--app-border)]">
-              💡 {bambuProfile.notes}
+            <p className="text-[11px] text-[var(--app-text-muted)] pt-2 border-t border-[var(--app-border)]">
+              {bambuProfile.notes}
             </p>
           )}
         </div>
@@ -295,10 +290,10 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
         {/* 1-Klick Kopier-Button für Bambu Studio */}
         <button
           onClick={handleCopyBambuParameters}
-          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 transition cursor-pointer flex items-center justify-center gap-1.5"
+          className="w-full py-2.5 px-3 rounded-xl bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
         >
-          {copiedParam ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          <span>{copiedParam ? 'In Zwischenablage kopiert!' : '📋 Parameter für Bambu Studio kopieren'}</span>
+          {copiedParam ? <Check key="ok" className="w-4 h-4 fh-pop" /> : <Copy className="w-4 h-4" />}
+          <span>{copiedParam ? 'Kopiert' : 'Parameter für Bambu Studio kopieren'}</span>
         </button>
       </div>
     );
@@ -312,7 +307,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
 
   return (
     <div
-      className={`rounded-2xl border transition-all p-5 flex flex-col justify-between gap-3.5 shadow-sm ${
+      className={`fh-nest rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
         dry.isOverdue ? 'overdue-card border-rose-500/70' : ''
       }`}
       style={{
@@ -324,21 +319,10 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
       {/* Header mit Farbe & Aktionen */}
       <div className="flex justify-between items-start gap-2.5">
         <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div
-            className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-inner mt-0.5"
-            style={{
-              backgroundColor: 'var(--app-card-sub)',
-              borderColor: 'var(--app-border)'
-            }}
-          >
-            <span
-              className="w-6 h-6 rounded-full border border-black/10 dark:border-white/20 shadow-sm"
-              style={{ backgroundColor: hex }}
-            />
-          </div>
+          <SpoolIcon hex={hex} pct={pct} size={48} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] uppercase font-extrabold tracking-wider text-orange-500">
+              <span className="text-[11px] font-bold" style={{ color: 'var(--app-accent-text)' }}>
                 {spool.brand}
               </span>
               <span
@@ -347,16 +331,13 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
               >
                 {spool.material}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-mono-num font-bold">
-                {priceKg.toFixed(2).replace('.', ',')} €/kg
-              </span>
               {amsInfo.slot !== null && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/40 font-bold">
                   {amsInfo.slot === 5 ? 'Extern (5. Spule)' : `AMS Slot ${amsInfo.slot}`}
                 </span>
               )}
               {amsInfo.isDrying && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/25 text-sky-300 border border-sky-400/50 font-bold animate-pulse flex items-center gap-1">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/25 text-sky-300 border border-sky-400/50 font-bold flex items-center gap-1">
                   <Sun className="w-2.5 h-2.5 text-sky-400" />
                   <span>Wird getrocknet</span>
                 </span>
@@ -413,36 +394,25 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
 
       {/* Ausgeschriebene Spulen-Beschreibung & Lagerort ohne Zeilenüberlauf */}
       {spool.storageNote && (
-        <div
-          className="rounded-xl border p-2.5 text-xs leading-relaxed break-words"
-          style={{
-            backgroundColor: 'var(--app-card-sub)',
-            borderColor: 'var(--app-border)',
-            color: 'var(--app-text)'
-          }}
-        >
-          <span className="font-bold text-orange-400 mr-1.5 inline-flex items-center gap-1">
-            <Package className="w-3.5 h-3.5 inline shrink-0" />
-            <span>Beschreibung & Notiz:</span>
-          </span>
-          <span className="opacity-90">{spool.storageNote}</span>
-        </div>
+        <p className="flex items-start gap-1.5 text-xs leading-relaxed break-words" style={{ color: 'var(--app-text-muted)' }}>
+          <Package className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>{spool.storageNote}</span>
+        </p>
       )}
 
       {/* Füllstand, Restwert & Shop-Link */}
       <div
-        className="rounded-xl border p-3 space-y-1.5"
-        style={{
-          backgroundColor: 'var(--app-card-sub)',
-          borderColor: 'var(--app-border)'
-        }}
+        className="fh-nest-inner p-3 space-y-2"
+        style={{ backgroundColor: 'var(--app-card-sub)' }}
       >
-        <div className="flex justify-between text-xs" style={{ color: 'var(--app-text-muted)' }}>
-          <span>
-            Farbe: <strong style={{ color: 'var(--app-text)' }}>{spool.colorName || 'Standard'}</strong>
+        <div className="flex justify-between items-end gap-3">
+          <span className="font-mono-num font-extrabold text-3xl leading-none tracking-tight" style={{ color: isCriticalLow ? 'var(--app-danger-text)' : 'var(--app-text)' }}>
+            {remW}
+            <span className="text-sm font-bold ml-1" style={{ color: 'var(--app-text-muted)' }}>g</span>
           </span>
-          <span className="font-mono-num font-bold" style={{ color: 'var(--app-text)' }}>
-            {remW}g / {initW}g ({pct}%)
+          <span className="text-[11px] font-mono-num text-right" style={{ color: 'var(--app-text-muted)' }}>
+            {pct} % von {initW} g
+            {spool.colorName ? <span className="block">{spool.colorName}</span> : null}
           </span>
         </div>
         <div
@@ -469,16 +439,16 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
 
       {/* KÜCHENWAAGE TARA BOX */}
       <div
-        className="rounded-xl border p-3 space-y-2 border-emerald-500/30"
+        className="fh-nest-inner p-3 space-y-2"
         style={{ backgroundColor: 'var(--app-card-sub)' }}
       >
         <div className="flex justify-between items-center text-[11px]">
           <span style={{ color: 'var(--app-text-muted)' }}>
-            🧵 Tara: <strong className="font-mono-num text-xs" style={{ color: 'var(--app-text)' }}>{effectiveTara} g</strong>
+            Tara: <strong className="font-mono-num text-xs" style={{ color: 'var(--app-text)' }}>{effectiveTara} g</strong>
             <span className="text-[10px] ml-1">({tara > 0 ? `${tara}g Spule` : 'ohne Spule'}{includeEibosBag ? ` + ${eibosTara}g Beutel` : ''}{includeSilica ? ` + ${silicaTara}g Silica` : ''})</span>
           </span>
           <span style={{ color: 'var(--app-text-muted)' }}>
-            ⚖️ Waage zeigt jetzt: <strong className="font-mono-num text-emerald-500 text-xs">≈ {scaleNow} g</strong>
+            Waage zeigt: <strong className="font-mono-num text-emerald-500 text-xs">≈ {scaleNow} g</strong>
           </span>
         </div>
 
@@ -492,7 +462,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
             onKeyDown={e => {
               if (e.key === 'Enter') handleScaleSubmit();
             }}
-            className="flex-1 px-2.5 py-1.5 rounded-lg text-xs font-mono-num outline-none border focus:border-emerald-500"
+            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg text-xs font-mono-num outline-none border focus:border-emerald-500"
             style={{
               backgroundColor: 'var(--app-input-bg)',
               borderColor: 'var(--app-border)',
@@ -501,9 +471,9 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
           />
           <button
             onClick={handleScaleSubmit}
-            className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-xs font-bold text-white transition whitespace-nowrap cursor-pointer shadow-sm"
+            className="fh-cta px-3 py-1.5 text-xs whitespace-nowrap cursor-pointer"
           >
-            Übernehmen
+            Gewicht übernehmen
           </button>
         </div>
 
@@ -536,7 +506,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
           {netPreview !== null ? (
             netPreview < 0 ? (
               <span className="text-rose-500 font-semibold">
-                ⚠️ {grossVal} g ist weniger als die Tara ({effectiveTara} g).
+                {grossVal} g ist weniger als die Tara ({effectiveTara} g).
               </span>
             ) : (
               <span className="text-emerald-500 font-semibold">
@@ -562,7 +532,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
             onKeyDown={e => {
               if (e.key === 'Enter') handleDeductSubmit();
             }}
-            className="flex-1 px-2.5 py-1.5 rounded-lg text-xs font-mono-num outline-none border focus:border-orange-500"
+            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg text-xs font-mono-num outline-none border focus:border-orange-500"
             style={{
               backgroundColor: 'var(--app-input-bg)',
               borderColor: 'var(--app-border)',
@@ -572,16 +542,16 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
           <button
             onClick={handleDeductSubmit}
             title="Gramm abziehen"
-            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition cursor-pointer shadow-xs bg-rose-600 hover:bg-rose-700"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition cursor-pointer whitespace-nowrap shrink-0 bg-rose-600 hover:bg-rose-700"
           >
-            − Abziehen
+            − Ab
           </button>
           <button
             onClick={handleAddSubmit}
             title="Gramm hinzufügen"
-            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition cursor-pointer shadow-xs bg-emerald-700 hover:bg-emerald-800"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition cursor-pointer whitespace-nowrap shrink-0 bg-emerald-700 hover:bg-emerald-800"
           >
-            + Hinzufügen
+            + Dazu
           </button>
         </div>
 
@@ -614,17 +584,17 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
 
       {/* TROCKNUNGSPROZESS & VISUELLER TROCKNUNGSBALKEN (exklusiv in vollständiger Ansicht!) */}
       <div
-        className="rounded-xl p-3 text-xs space-y-2 border"
+        className="fh-nest-inner p-3 text-xs space-y-2 border"
         style={{
           backgroundColor: 'var(--app-card-sub)',
           borderColor: amsInfo.isDrying ? '#38bdf8' : (dry.isOverdue ? 'rgba(244, 63, 94, 0.5)' : 'var(--app-border)')
         }}
       >
         {amsInfo.isDrying && (
-          <div className="p-2 rounded-lg bg-sky-500/20 border border-sky-400/50 flex items-center justify-between text-xs text-sky-300 font-bold shadow-xs animate-pulse">
+          <div className="p-2 rounded-lg bg-sky-500/20 border border-sky-400/50 flex items-center justify-between text-xs text-sky-300 font-bold">
             <span className="flex items-center gap-1.5">
               <Sun className="w-3.5 h-3.5 text-sky-400" />
-              <span>☀️ Wird gerade im AMS getrocknet ({amsInfo.dryTemp}°C)</span>
+              <span>Trocknet im AMS ({amsInfo.dryTemp}°C)</span>
             </span>
             <span className="font-mono-num bg-sky-500/30 px-2 py-0.5 rounded text-[11px] border border-sky-400/40">
               Rest: {amsInfo.remainingTime || 'aktiv'}
@@ -642,7 +612,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
         {/* VISUELLER TROCKNUNGSBALKEN */}
         <div className="space-y-1">
           <div className="flex justify-between items-center text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
-            <span>Trocknungsbalken (Intervall: {spool.dryIntervalDays || 30} Tage)</span>
+            <span>Alle {spool.dryIntervalDays || 30} Tage trocknen</span>
             <span
               className={`font-mono-num font-semibold ${
                 dry.isOverdue ? 'text-rose-500' : 'text-sky-500'
@@ -668,15 +638,20 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
         >
           <span>Zuletzt: {dry.lastDriedFormatted}</span>
           <button
-            onClick={() => onMarkDried(spool.id)}
-            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer border"
+            onClick={() => {
+              onMarkDried(spool.id);
+              setDriedOk(true);
+              setTimeout(() => setDriedOk(false), 1600);
+            }}
+            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer border inline-flex items-center gap-1"
             style={{
               backgroundColor: 'var(--app-bg)',
               borderColor: 'var(--app-border)',
               color: 'var(--app-accent-text)'
             }}
           >
-            Jetzt getrocknet
+            {driedOk && <Check key="ok" className="w-3.5 h-3.5 fh-pop" />}
+            {driedOk ? 'Gespeichert' : 'Jetzt getrocknet'}
           </button>
         </div>
       </div>

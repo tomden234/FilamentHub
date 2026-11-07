@@ -58,7 +58,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
                       <span className="text-[10px] font-extrabold uppercase text-orange-400">
                         {activeTargetSpool.brand}
                       </span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold border border-[var(--app-border)]">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--app-card-sub)] text-[var(--app-text)] font-bold border border-[var(--app-border)]">
                         {activeTargetSpool.material}
                       </span>
                     </div>
@@ -108,7 +108,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
               <div className="p-3.5 rounded-xl bg-[var(--app-input-bg)] border border-[var(--app-border)] space-y-3">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="font-bold text-[var(--app-text)] block">
-                    ⚡ Gewicht direkt anpassen (+ / -):
+                    Gewicht direkt anpassen (+ / -):
                   </span>
                   <span className="text-[11px] text-emerald-400 font-mono-num font-extrabold">
                     Aktuell: {Math.round(Number(activeTargetSpool.remainingWeight) || 0)}g
@@ -203,7 +203,7 @@ export const NfcInspectTab: React.FC<NfcInspectTabProps> = ({
                 </div>
 
                 <div className="p-2 rounded-lg bg-[var(--app-card-sub)]/80 border border-[var(--app-border)] text-[10px] text-[var(--app-text-muted)] flex items-center justify-between">
-                  <span>🔄 Direkt synchronisiert:</span>
+                  <span>Direkt synchronisiert:</span>
                   <span className="font-mono-num font-bold text-[var(--app-text)]">
                     {Math.round(Number(activeTargetSpool.remainingWeight) || 0)}g Netto ({Math.round((activeTargetSpool.remainingWeight / (activeTargetSpool.initialWeight || 1000)) * 100)}%)
                   </span>
