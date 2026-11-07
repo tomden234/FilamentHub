@@ -60,7 +60,7 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
         return say(e, false);
       }
       const etag = cur.headers.get('etag') || '';
-      const piDoc = ((await cur.json()) as Record<string, unknown>) || {};
+      const piDoc = ((await cur.json().catch(() => ({}))) as Record<string, unknown>) || {};
       const piHasSpools = Array.isArray(piDoc.spools) && piDoc.spools.length > 0;
       if (!piHasSpools) {
         let old: Record<string, unknown> = {};

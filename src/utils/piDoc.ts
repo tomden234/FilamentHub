@@ -40,6 +40,13 @@ export async function piDocFetch(
         }),
         { status: 401, headers: { "Content-Type": "application/json" } },
       );
+    // Ein alter Pi kennt die Route nicht und liefert die Startseite (HTML, Status 200) statt Daten: klar melden statt später „Unexpected token <“
+    if (!(res.headers.get('content-type') || '').includes('application/json')) {
+      return new Response(JSON.stringify({ error: 'Der Pi kennt diese Funktion noch nicht. Home Assistant → Einstellungen → Apps → FilamentHub Server → auf Version 1.3.9 aktualisieren.' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     return res;
   } catch (e: any) {
     return new Response(

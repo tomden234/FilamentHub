@@ -76,6 +76,8 @@ async function startServer() {
     // Produktion: Statische Dateien aus dist/ ausliefern
     const distPath = path.resolve(rootDir, 'dist');
     app.use(express.static(distPath));
+    // Unbekannte /api-Adressen: JSON-Fehler statt der Startseite (sonst scheitern Apps später mit „Unexpected token <“)
+    app.use('/api', (_req, res) => res.status(404).json({ success: false, error: 'Unbekannte Adresse' }));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
