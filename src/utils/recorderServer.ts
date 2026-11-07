@@ -88,6 +88,20 @@ export async function fetchServerPrints(now = Date.now()): Promise<ServerPrints>
   }
 }
 
+/** 1.243: alle Drucke, die der Pi aufgezeichnet hat (für Fun Facts: Druckzeit). Leer, wenn kein Pi da ist. */
+export async function fetchAllServerPrintSpans(): Promise<{ startMs: number; endMs: number }[]> {
+  if (base() === null) return [];
+  try {
+    const j = await get('/api/recorder/prints?since=0');
+    if (!j?.success || !Array.isArray(j.prints)) return [];
+    return j.prints
+      .map((p: any) => ({ startMs: Number(p.startMs) || Number(p.endMs), endMs: Number(p.endMs) }))
+      .filter((p: { startMs: number; endMs: number }) => Number.isFinite(p.endMs) && p.endMs > p.startMs);
+  } catch {
+    return [];
+  }
+}
+
 interface ServerCheck {
   ok: boolean;
   text: string;

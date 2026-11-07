@@ -6,22 +6,22 @@ import {
   MessageSquare,
   MessagesSquare,
   Layers,
-  GitCommit,
   Printer,
   Flame,
+  Maximize2,
   Package,
   Ruler,
   Palette,
   Nfc,
-  Scale,
-  CalendarDays,
-  Euro
+  CalendarDays
 } from 'lucide-react';
 import { useEscapeClose } from '../hooks/useEscapeClose';
 import type { HistoryEntry, Spool } from '../types/filament';
 import { INITIAL_VERSION_PROFILES } from '../data/versions';
 import { STORAGE_KEY_HISTORY } from '../utils/storageKeys';
-import { printerApi, type PrintTask } from '../api/printerApi';
+import { fetchAllServerPrintSpans } from '../utils/recorderServer';
+import { buckets, topUses, type PrintSpan, type UseEntry } from '../utils/funStats';
+import { PrintStatsModal } from './PrintStatsModal';
 import { APP_REVISION } from '../utils/env';
 
 interface FunFactsModalProps {
@@ -37,12 +37,19 @@ interface FunFactsModalProps {
 //  SCHÄTZUNG = ungefähr, genauer geht es nicht
 type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
-// Von Claude beim Update auf v1.242 gezählt (Commits); Chats, Nachrichten und Wörter zuletzt bei v1.231
-const CHATS = 13; // Chats im Projekt „filament webseite“
+// Von Claude beim Update auf v1.243 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
+const CHATS = 19; // Chats im Projekt „filament webseite“
 const MESSAGES = 466; // deine Nachrichten in diesen Chats (ca.)
 const WORDS = 40250; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 255; // Commits auf GitHub (main)
+const COMMITS = 256; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
+
+const sourceStyle: Record<Source, { bg: string; fg: string; label: string }> = {
+  LIVE: { bg: 'rgba(16,185,129,0.15)', fg: '#10b981', label: '● live' },
+  BAUEN: { bg: 'rgba(59,130,246,0.15)', fg: '#3b82f6', label: 'beim Bauen' },
+  GEZÄHLT: { bg: 'rgba(168,85,247,0.15)', fg: '#a855f7', label: 'gezählt' },
+  SCHÄTZUNG: { bg: 'rgba(245,158,11,0.15)', fg: '#f59e0b', label: 'Schätzung' }
+};
 
 const fmt = (n: number, digits = 0) => n.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits });
 
@@ -66,22 +73,14 @@ function readHistory(): HistoryEntry[] {
 
 export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, spools = [] }) => {
   useEscapeClose(onClose, isOpen);
-  const [tasks, setTasks] = useState<PrintTask[] | null>(null);
-  const [tasksError, setTasksError] = useState<string | null>(null);
+  const [spans, setSpans] = useState<PrintSpan[]>([]);
+  const [showStats, setShowStats] = useState(false);
 
-  // Echte Druckzeit und echter Verbrauch aus der Bambu Cloud
+  // 1.243: Druckzeit selbst gezählt aus den Aufzeichnungen deines Pi (nicht mehr Bambu Cloud)
   useEffect(() => {
     if (!isOpen) return;
     let alive = true;
-    setTasksError(null);
-    printerApi
-      .tasks(200)
-      .then(res => {
-        if (!alive) return;
-        if (res.ok && res.data?.tasks) setTasks(res.data.tasks);
-        else setTasksError(res.data?.error || 'Keine Verbindung zur Bambu Cloud.');
-      })
-      .catch(() => alive && setTasksError('Keine Verbindung zur Bambu Cloud.'));
+    void fetchAllServerPrintSpans().then(r => alive && setSpans(r));
     return () => {
       alive = false;
     };
@@ -102,51 +101,63 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
     const topMaterial = count(s => s.material);
     const topColor = count(s => (s.colorName || '').trim());
     const nfc = spools.filter(s => s.nfcWritten).length;
-    const deducted = readHistory().reduce((a, h) => a + (h.grams > 0 ? h.grams : 0), 0);
+    const byId = new Map(spools.map(s => [s.id, s]));
+    // Jeder Abzug im Verlauf = Gramm mit Material und Farbe der Spule (Spule gelöscht: Name aus dem Verlauf)
+    const uses: UseEntry[] = readHistory()
+      .filter(h => h.grams > 0)
+      .map(h => {
+        const sp = byId.get(h.spoolId);
+        return {
+          ms: Date.parse(h.timestamp) || 0,
+          grams: h.grams,
+          label: sp ? `${sp.material} ${sp.colorName || ''}`.trim() : h.spoolLabel || 'Unbekannt',
+          colorHex: sp?.colorHex || '#9ca3af'
+        };
+      });
+    const deducted = uses.reduce((a, u) => a + u.grams, 0);
     const days = Math.max(1, Math.floor((Date.now() - PROJECT_START.getTime()) / 86400000) + 1);
-    return { grams, value, meters, topMaterial, topColor, nfc, deducted, days };
+    return { grams, value, meters, topMaterial, topColor, nfc, deducted, days, uses };
   }, [spools, isOpen]);
 
   if (!isOpen) return null;
 
-  const done = (tasks || []).filter(t => t.status === 2);
-  const printSeconds = done.reduce((a, t) => a + (t.costTime || 0), 0);
-  const printGrams = done.reduce((a, t) => a + (t.totalGrams || 0), 0);
   const laps = Math.round(stats.meters / 346); // Umfang Fußballfeld ≈ 346 m
+  const week = buckets('Woche', spans, stats.uses, Date.now(), PROJECT_START.getTime());
+  const weekH = week.reduce((a, x) => a + x.hours, 0);
+  const weekMax = Math.max(0.0001, ...week.map(x => x.hours));
+  const totalH = spans.reduce((a, p) => a + (p.endMs - p.startMs), 0) / 3_600_000;
+  const top = topUses(stats.uses, 0, 4);
+  const nfcPct = spools.length ? stats.nfc / spools.length : 0;
+  const RING = 2 * Math.PI * 15;
 
-  const facts: { icon: any; title: string; value: string; desc: string; source: Source; big?: boolean }[] = [
-    {
-      icon: Code2,
-      title: 'Codezeilen',
-      value: `${fmt(typeof __CODE_LINES__ === 'number' && __CODE_LINES__ > 0 ? __CODE_LINES__ : 0)} Zeilen`,
-      desc: 'Beim Bauen dieser Version gezählt: TypeScript, React, Server und die Android-Plugins in Java.',
-      source: 'BAUEN',
-      big: true
-    },
-    {
-      icon: Printer,
-      title: 'Druckzeit laut Bambu Cloud',
-      value: tasks ? `${fmt(printSeconds / 3600, 1)} Std.` : tasksError ? '–' : 'lädt …',
-      desc: tasks
-        ? `Summe aus ${done.length} fertigen Cloud-Druckaufträgen. Drucke von SD-Karte oder im LAN-Modus zählt Bambu hier nicht mit.`
-        : tasksError || 'Wird aus deinen letzten Druckaufträgen geholt.',
-      source: 'LIVE',
-      big: true
-    },
-    {
-      icon: Flame,
-      title: 'Verdruckt laut Bambu Cloud',
-      value: tasks ? `${fmt(printGrams / 1000, 2)} kg` : tasksError ? '–' : 'lädt …',
-      desc: 'Slicer-Gewicht aller fertigen Cloud-Drucke zusammen.',
-      source: 'LIVE'
-    },
-    {
-      icon: Package,
-      title: 'Spulen im Lager',
-      value: `${spools.length} Spulen · ${fmt(stats.grams / 1000, 1)} kg`,
-      desc: 'Restgewicht aller Spulen, ohne Leerspule.',
-      source: 'LIVE'
-    },
+  const tile = 'p-3.5 rounded-2xl border space-y-1.5';
+  const tileStyle = { backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' };
+  const Head: React.FC<{ icon: any; title: string; badge?: Source }> = ({ icon: Icon, title, badge }) => {
+    const src = badge ? sourceStyle[badge] : null;
+    return (
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--app-accent-sub)', color: 'var(--app-accent-text)' }}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className="text-[11px] font-bold truncate" style={{ color: 'var(--app-text-muted)' }}>
+            {title}
+          </span>
+        </div>
+        {src && (
+          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0" style={{ backgroundColor: src.bg, color: src.fg }}>
+            {src.label}
+          </span>
+        )}
+      </div>
+    );
+  };
+  const big = 'text-lg font-extrabold font-mono-num tracking-tight leading-tight';
+  const muted = { color: 'var(--app-text-muted)' };
+  const acc = { color: 'var(--app-accent-text)' };
+
+  // Einfache Kacheln (Zahl + Satz)
+  const simple: { icon: any; title: string; value: string; desc: string; source: Source }[] = [
     {
       icon: Ruler,
       title: 'So lang ist dein Filament',
@@ -155,44 +166,16 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
       source: 'LIVE'
     },
     {
-      icon: Euro,
-      title: 'Wert im Regal',
-      value: `${fmt(stats.value, 0)} €`,
-      desc: 'Restgewicht × Kilopreis jeder Spule.',
-      source: 'LIVE'
-    },
-    {
-      icon: Palette,
-      title: 'Deine Lieblinge',
-      value: `${stats.topMaterial?.[0] || '–'} · ${stats.topColor?.[0] || '–'}`,
-      desc: `${stats.topMaterial?.[1] || 0} Spulen ${stats.topMaterial?.[0] || ''}, ${stats.topColor?.[1] || 0}× die Farbe „${stats.topColor?.[0] || '–'}“.`,
-      source: 'LIVE'
-    },
-    {
-      icon: Nfc,
-      title: 'NFC-Tags beschrieben',
-      value: `${stats.nfc} von ${spools.length}`,
-      desc: stats.nfc === spools.length && spools.length > 0 ? 'Alle Spulen haben einen Tag. Stark!' : `Noch ${spools.length - stats.nfc} Spulen ohne Tag.`,
-      source: 'LIVE'
-    },
-    {
-      icon: Scale,
-      title: 'In der App abgezogen',
-      value: `${fmt(stats.deducted / 1000, 2)} kg`,
-      desc: 'Alle Abzüge aus dem Verlauf (Knöpfe, Waage, Auto-Abzug).',
-      source: 'LIVE'
-    },
-    {
       icon: MessageSquare,
       title: 'Deine Wörter an Claude',
       value: `ca. ${fmt(WORDS)} Wörter`,
-      desc: `Grob gezählt über ${CHATS} Chats mit rund ${MESSAGES} Nachrichten. Deine langen Sprachnachrichten zählen voll mit.`,
+      desc: `Grob gezählt über ${MESSAGES} Nachrichten. Deine langen Sprachnachrichten zählen voll mit.`,
       source: 'SCHÄTZUNG'
     },
     {
       icon: MessagesSquare,
       title: 'Gespräche',
-      value: `${CHATS} Chats · ~${MESSAGES} Nachrichten`,
+      value: `${CHATS} Chats`,
       desc: 'Chats im Projekt „filament webseite“, dieser hier mitgezählt.',
       source: 'GEZÄHLT'
     },
@@ -204,13 +187,6 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
       source: 'LIVE'
     },
     {
-      icon: GitCommit,
-      title: 'GitHub',
-      value: `${COMMITS} Commits`,
-      desc: 'Jeder Push baut automatisch 3 Dinge: Prüfung, Webseite und Android-App.',
-      source: 'GEZÄHLT'
-    },
-    {
       icon: CalendarDays,
       title: 'Projekt-Alter',
       value: `${stats.days} Tage`,
@@ -218,13 +194,6 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
       source: 'LIVE'
     }
   ];
-
-  const sourceStyle: Record<Source, { bg: string; fg: string; label: string }> = {
-    LIVE: { bg: 'rgba(16,185,129,0.15)', fg: '#10b981', label: '● live' },
-    BAUEN: { bg: 'rgba(59,130,246,0.15)', fg: '#3b82f6', label: 'beim Bauen' },
-    GEZÄHLT: { bg: 'rgba(168,85,247,0.15)', fg: '#a855f7', label: 'gezählt' },
-    SCHÄTZUNG: { bg: 'rgba(245,158,11,0.15)', fg: '#f59e0b', label: 'Schätzung' }
-  };
 
   return (
     <div onClick={onClose} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
@@ -255,47 +224,153 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
         </div>
 
         <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {facts.map((fact, idx) => {
-            const Icon = fact.icon;
-            const src = sourceStyle[fact.source];
-            return (
-              <div
-                key={idx}
-                className={`p-3.5 rounded-2xl border space-y-1.5 ${fact.big ? 'sm:col-span-1' : ''}`}
-                style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: 'var(--app-accent-sub)', color: 'var(--app-accent-text)' }}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <span className="text-[11px] font-bold truncate" style={{ color: 'var(--app-text-muted)' }}>
-                      {fact.title}
+          {/* Am meisten verdruckt: breiter Balken mit Farben der Spulen */}
+          <div className={`${tile} sm:col-span-2`} style={tileStyle}>
+            <Head icon={Flame} title="Am meisten verdruckt" badge="LIVE" />
+            {top.length === 0 ? (
+              <p className="text-[11px]" style={muted}>Noch nichts abgezogen. Sobald ein Druck abgezogen wird, siehst du hier, was du am meisten verbrauchst.</p>
+            ) : (
+              <>
+                <div className={`${big} text-xl`} style={acc}>
+                  {top[0].label} · {fmt(top[0].grams / 1000, 2)} kg
+                </div>
+                <div className="flex h-2.5 rounded-full overflow-hidden gap-0.5">
+                  {top.map(t => (
+                    <div key={t.label} style={{ width: `${Math.max(3, t.pct)}%`, backgroundColor: t.colorHex, boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,.25)' }} />
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]" style={muted}>
+                  {top.map(t => (
+                    <span key={t.label} className="flex items-center gap-1">
+                      <i className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: t.colorHex, boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,.3)' }} />
+                      {t.label} {fmt(t.pct, 0)} %
                     </span>
+                  ))}
+                </div>
+                <p className="text-[11px]" style={muted}>Insgesamt {fmt(stats.deducted / 1000, 2)} kg abgezogen (Knöpfe, Waage, Auto-Abzug).</p>
+              </>
+            )}
+          </div>
+
+          {/* Druckzeit: Wochensäulen, antippen = großes Fenster */}
+          <button type="button" onClick={() => setShowStats(true)} className={`${tile} text-left cursor-pointer hover:brightness-110 transition`} style={tileStyle} aria-label="Druckzeit und Gewicht im großen Fenster öffnen">
+            <div className="flex items-start justify-between gap-2">
+              <Head icon={Printer} title="Druckzeit" badge="LIVE" />
+              <Maximize2 className="w-3.5 h-3.5 shrink-0 mt-1" style={muted} />
+            </div>
+            <div className={big} style={acc}>
+              {fmt(weekH)} Std.
+            </div>
+            <p className="text-[11px]" style={muted}>
+              diese Woche · {fmt(week.reduce((a, x) => a + x.grams, 0), 0)} g · gesamt {fmt(totalH, 0)} Std.
+            </p>
+            <div className="flex items-end gap-1 h-10 pt-1">
+              {week.map((x, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-0.5">
+                  <div className="w-full rounded-full transition-all" style={{ height: `${Math.max(8, (x.hours / weekMax) * 100)}%`, backgroundColor: x.current ? '#10b981' : 'var(--app-border)', opacity: x.hours > 0 || x.current ? 1 : 0.5 }} />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-1 text-[9px]" style={muted}>
+              {week.map((x, i) => (
+                <span key={i} className="flex-1 text-center" style={{ fontWeight: x.current ? 800 : 400 }}>
+                  {x.label}
+                </span>
+              ))}
+            </div>
+          </button>
+
+          {/* NFC: Ring */}
+          <div className={tile} style={tileStyle}>
+            <Head icon={Nfc} title="NFC-Tags beschrieben" badge="LIVE" />
+            <div className="flex items-center gap-3">
+              <svg width="56" height="56" viewBox="0 0 36 36" aria-hidden="true">
+                <circle cx="18" cy="18" r="15" fill="none" stroke="var(--app-border)" strokeWidth="4.5" />
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#10b981" strokeWidth="4.5" strokeLinecap="round" strokeDasharray={`${RING * nfcPct} ${RING}`} transform="rotate(-90 18 18)" />
+              </svg>
+              <div>
+                <div className={big} style={acc}>
+                  {stats.nfc} von {spools.length}
+                </div>
+                <p className="text-[11px]" style={muted}>
+                  {stats.nfc === spools.length && spools.length > 0 ? 'Alle Spulen haben einen Tag. Stark!' : `Noch ${spools.length - stats.nfc} Spulen ohne Tag.`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Lager */}
+          <div className={tile} style={tileStyle}>
+            <Head icon={Package} title="Spulen im Lager" badge="LIVE" />
+            <div className={big} style={acc}>
+              {spools.length} Spulen · {fmt(stats.grams / 1000, 1)} kg
+            </div>
+            <p className="text-[11px]" style={muted}>
+              Wert im Regal {fmt(stats.value, 0)} € (Restgewicht × Kilopreis)
+            </p>
+          </div>
+
+          {/* Lieblinge im Bestand */}
+          <div className={tile} style={tileStyle}>
+            <Head icon={Palette} title="Lieblinge im Bestand" badge="LIVE" />
+            <div className={big} style={acc}>
+              {stats.topMaterial?.[0] || '–'} · {stats.topColor?.[0] || '–'}
+            </div>
+            <p className="text-[11px]" style={muted}>
+              {stats.topMaterial?.[1] || 0} Spulen {stats.topMaterial?.[0] || ''}, {stats.topColor?.[1] || 0}× die Farbe „{stats.topColor?.[0] || '–'}“ (nach Bestand, nicht nach Verbrauch).
+            </p>
+          </div>
+
+          {/* Code: große Zahl und drei kleine Kacheln */}
+          <div className={`${tile} sm:col-span-2`} style={tileStyle}>
+            <div className="flex items-center justify-between gap-2">
+              <Head icon={Code2} title="Codezeilen" badge="BAUEN" />
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono border" style={{ borderColor: 'var(--app-border)', ...muted }}>
+                v{APP_REVISION}
+              </span>
+            </div>
+            <div className="text-3xl font-extrabold font-mono-num tracking-tight" style={acc}>
+              {fmt(typeof __CODE_LINES__ === 'number' && __CODE_LINES__ > 0 ? __CODE_LINES__ : 0)}
+            </div>
+            <p className="text-[11px]" style={muted}>Bei jedem Bauen neu gezählt: TypeScript, React, Server und die Android-Plugins in Java.</p>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {[
+                [String(CHATS), 'Chats'],
+                [String(COMMITS), 'Commits'],
+                [String(stats.days), 'Tage']
+              ].map(([v, l]) => (
+                <div key={l} className="rounded-xl py-1.5 text-center" style={{ backgroundColor: 'var(--app-card)' }}>
+                  <div className="text-sm font-extrabold font-mono-num">{v}</div>
+                  <div className="text-[10px]" style={muted}>
+                    {l}
                   </div>
-                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0" style={{ backgroundColor: src.bg, color: src.fg }}>
-                    {src.label}
-                  </span>
                 </div>
-                <div className={`${fact.big ? 'text-2xl' : 'text-lg'} font-extrabold font-mono-num tracking-tight leading-tight`} style={{ color: 'var(--app-accent-text)' }}>
-                  {fact.value}
+              ))}
+            </div>
+          </div>
+
+          {simple.map(f => {
+            const Icon = f.icon;
+            return (
+              <div key={f.title} className={tile} style={tileStyle}>
+                <Head icon={Icon} title={f.title} badge={f.source} />
+                <div className={big} style={acc}>
+                  {f.value}
                 </div>
-                <p className="text-[11px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-                  {fact.desc}
+                <p className="text-[11px] leading-snug" style={muted}>
+                  {f.desc}
                 </p>
               </div>
             );
           })}
         </div>
 
-        <div className="px-4 sm:px-5 pb-5 text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+        <div className="px-4 sm:px-5 pb-5 text-[10px] leading-snug" style={muted}>
           <strong>live</strong> = jedes Öffnen neu berechnet · <strong>beim Bauen</strong> = beim Erstellen der Version gezählt ·{' '}
           <strong>gezählt</strong> = von Claude beim letzten Update gezählt · <strong>Schätzung</strong> = ungefähr
         </div>
       </div>
+      {showStats && <PrintStatsModal onClose={() => setShowStats(false)} prints={spans} uses={stats.uses} projectStart={PROJECT_START.getTime()} />}
     </div>
   );
 };

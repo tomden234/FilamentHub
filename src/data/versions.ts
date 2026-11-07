@@ -3435,5 +3435,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.243',
+    label: '1.243 (Fun Facts neu)',
+    releaseDate: '07.11.2026',
+    description:
+      'Fun Facts im neuen Design mit kleinen Grafiken: „Am meisten verdruckt“ als runder Farbbalken, Druckzeit als Wochensäulen, NFC als Ring, Codezeilen-Kachel mit Chats, Commits und Tagen. Druckzeit und Gewicht werden selbst gezählt (Pi-Aufzeichnung und Verlauf), ohne Bambu Cloud. Antippen der Druckzeit öffnet ein großes Fenster mit weicher Kurve und Umschalter Woche, Monat, Jahr, Gesamt. „Lieblinge“ heißt jetzt „Lieblinge im Bestand“. Chats 19.',
+    features: ['🔥 Am meisten verdruckt', '📈 Großes Druckzeit-Fenster mit weicher Kurve', '🗓️ Woche, Monat, Jahr, Gesamt', '🚫 Ohne Bambu Cloud', '🎨 Neues Fun-Facts-Design'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
