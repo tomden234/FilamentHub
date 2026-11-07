@@ -3457,5 +3457,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.245',
+    label: '1.245 (Warteschlange aufgeräumt)',
+    releaseDate: '07.11.2026',
+    description:
+      'Warteschlangen-Eintrag aufgeräumt: Kopieren und Löschen sitzen oben rechts als runde Knöpfe und verdecken nichts mehr. Balken und Platz-Chips laufen über die volle Breite des Eintrags, die Chips werden nicht mehr abgeschnitten. Die Zeile „PLA, PETG“ ist weg, weil die Chips das schon zeigen. Der Balken ist rund und hat kleine Lücken zwischen den Filamenten.',
+    features: ['🧼 Knöpfe oben rechts, nichts überdeckt', '↔️ Balken und Chips in voller Breite', '🔘 Runder Balken mit Lücken'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
