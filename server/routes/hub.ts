@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
-import { autoScan, autoAddOn, queueDuplicate, queueReprint, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
+import { autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -112,6 +112,7 @@ router.post('/api/hub/esp-sync', async (_req, res) => {
 
 // --- Warteschlange ---
 router.get('/api/hub/queue', (_req, res) => {
+  queueWatch();
   res.json({ success: true, items: queueList(), auto: autoAddOn() });
 });
 
@@ -158,6 +159,11 @@ router.post('/api/hub/queue/duplicate', (req, res) => {
 router.post('/api/hub/queue/remove', (req, res) => {
   queueRemove(String(req.body?.id || ''));
   res.json({ success: true, items: queueList() });
+});
+
+router.post('/api/hub/queue/pick', (req, res) => {
+  const ok = queuePick(String(req.body?.id || ''), Number(req.body?.filament), String(req.body?.tray || ''));
+  res.json({ success: ok, text: ok ? 'Gespeichert.' : 'Platz nicht gefunden (AMS gewechselt?)', items: queueList() });
 });
 
 router.post('/api/hub/queue/reorder', (req, res) => {

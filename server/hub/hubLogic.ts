@@ -123,6 +123,8 @@ export function allTrays(ams: any, vt: any): AmsTray[] {
 }
 
 export interface Mapping {
+  /** Gewählter Platz je Filament-Nummer der Datei (für die Anzeige): Schlüssel „amsId:slotId“ */
+  chosen: Record<number, { key: string; label: string; type: string; colorHex: string; auto: boolean }>;
   amsMapping: number[];
   amsMapping2: { ams_id: number; slot_id: number }[];
   /** Zum Anzeigen: „PLA Weiß → AMS 1 Slot 2“ */
@@ -134,26 +136,33 @@ export interface Mapping {
 export const trayLabel = (t: { amsId: number; slotId: number }) => (t.amsId === 255 ? 'Extern' : `AMS ${t.amsId >= 128 ? `HT ${t.amsId - 127}` : t.amsId + 1} Slot ${t.slotId + 1}`);
 
 /** Für jedes Filament der Datei den passenden Platz suchen: gleiches Grundmaterial, nächste Farbe. */
-export function mapFilaments(filaments: { id: number; type: string; colorHex: string; grams: number }[], trays: AmsTray[]): Mapping {
+/** Schlüssel eines Platzes: „amsId:slotId“ */
+export const trayKey = (t: { amsId: number; slotId: number }) => `${t.amsId}:${t.slotId}`;
+
+export function mapFilaments(filaments: { id: number; type: string; colorHex: string; grams: number }[], trays: AmsTray[], picks: Record<string, string> = {}): Mapping {
   const maxId = Math.max(0, ...filaments.map(f => f.id));
   const amsMapping: number[] = Array.from({ length: maxId }, () => -1);
   const amsMapping2: { ams_id: number; slot_id: number }[] = Array.from({ length: maxId }, () => ({ ams_id: 255, slot_id: 255 }));
   const lines: string[] = [];
   const missing: string[] = [];
+  const chosen: Mapping['chosen'] = {};
   for (const f of filaments) {
+    // 1.239: eigene Wahl in der Warteschlange hat Vorrang (nur wenn der Platz noch belegt ist)
+    const picked = picks[String(f.id)] ? trays.find(t => trayKey(t) === picks[String(f.id)]) : undefined;
     const same = trays.filter(t => baseMaterial(t.type) === baseMaterial(f.type));
-    if (!same.length) {
+    if (!picked && !same.length) {
       missing.push(`${f.type} ${f.colorHex}`);
       continue;
     }
-    const t = same.reduce((a, b) => (colorDistance(a.colorHex, f.colorHex) <= colorDistance(b.colorHex, f.colorHex) ? a : b));
+    const t = picked || same.reduce((a, b) => (colorDistance(a.colorHex, f.colorHex) <= colorDistance(b.colorHex, f.colorHex) ? a : b));
+    chosen[f.id] = { key: trayKey(t), label: trayLabel(t), type: t.type, colorHex: t.colorHex, auto: !picked };
     const idx = f.id - 1;
     if (idx < 0) continue;
     amsMapping[idx] = t.amsId === 255 ? 254 : t.amsId * 4 + t.slotId;
     amsMapping2[idx] = t.amsId === 255 ? { ams_id: 255, slot_id: 0 } : { ams_id: t.amsId, slot_id: t.slotId };
-    lines.push(`${f.type} ${f.colorHex} (${Math.round(f.grams)} g) → ${trayLabel(t)}`);
+    lines.push(`${f.type} ${f.colorHex} (${Math.round(f.grams)} g) → ${trayLabel(t)}${picked ? ' (gewählt)' : ''}`);
   }
-  return { amsMapping, amsMapping2, lines, missing };
+  return { amsMapping, amsMapping2, lines, missing, chosen };
 }
 
 /** Fehlt ein Material der Datei komplett im AMS? (Material-Wächter) */

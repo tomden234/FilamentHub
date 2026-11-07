@@ -342,6 +342,21 @@ export interface PiQueueItem {
   missing: string[];
   addedAt: number;
   thumb?: boolean;
+  /** 1.239: je Filament der Datei: Gramm, gewählter Platz und alle möglichen Plätze */
+  slots?: PiQueueSlot[];
+}
+
+export interface PiQueueSlot {
+  id: number;
+  type: string;
+  colorHex: string;
+  grams: number;
+  tray: string;
+  trayLabel: string;
+  trayType: string;
+  trayColor: string;
+  auto: boolean;
+  options: { key: string; label: string; type: string; colorHex: string }[];
 }
 
 export interface PrinterFile {
@@ -349,6 +364,16 @@ export interface PrinterFile {
   name: string;
   size: number;
   time: number;
+}
+
+/** Auswahl pro Filament speichern: tray = „amsId:slotId“, leer = automatisch */
+export async function piQueuePick(id: string, filament: number, tray: string): Promise<{ ok: boolean; text?: string; items: PiQueueItem[] }> {
+  try {
+    const j = await get('/api/hub/queue/pick', { method: 'POST', body: { id, filament, tray }, timeoutMs: 20000 });
+    return { ok: Boolean(j?.success), text: j?.text, items: Array.isArray(j?.items) ? j.items : [] };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e), items: [] };
+  }
 }
 
 export async function piQueue(): Promise<{ items: PiQueueItem[]; auto: boolean } | null> {

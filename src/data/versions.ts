@@ -3391,5 +3391,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.239',
+    label: '1.239 (Material wählen)',
+    releaseDate: '07.11.2026',
+    description:
+      'Warteschlange: Die Liste lädt alle 2 Sekunden neu. Solange sie offen ist, sucht der Pi alle 8 Sekunden nach neuen Dateien, ein „Senden“ aus Bambu Studio erscheint so nach wenigen Sekunden. Pro Filament einer Datei gibt es ein Auswahlmenü: mit welchem AMS-Platz (Material) gedruckt wird, Standard „Automatisch“. Daneben stehen die Gramm je Filament, darunter die Summe je Material. Die Datei selbst bleibt unverändert, die Wahl gilt beim Start. Das Titelbild wird bei Fehlschlag neu geholt. Pi-Add-on 1.3.14 (muss aktualisiert werden).',
+    features: ['⏱️ Warteschlange lädt alle 2 s neu', '🔎 Pi sucht bei offener Liste alle 8 s', '🎛️ Material je Filament wählbar', '⚖️ Gramm je Filament und Summe je Material', '🖼️ Titelbild wird neu geholt', '🥧 Pi-Add-on 1.3.14'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

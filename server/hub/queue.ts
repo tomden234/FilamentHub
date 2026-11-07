@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { dataDir } from '../paths.js';
 import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
 import { ftpBusy, listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
-import { allTrays, mapFilaments, trayLabel, type Mapping } from './hubLogic.js';
+import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubLogic.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
 
@@ -21,6 +21,8 @@ export interface QueueItem {
   plate: number;
   filaments: JobFilament[];
   addedAt: number;
+  /** Eigene Wahl: Filament-Nummer der Datei → Platz „amsId:slotId“ (leer = automatisch nach Material und Farbe) */
+  pick?: Record<string, string>;
 }
 
 export interface QueuePort {
@@ -185,14 +187,57 @@ function save(): void {
 const printerData = () => port?.getStatus().data || {};
 const currentMapping = (it: QueueItem): Mapping => {
   const d = printerData();
-  return mapFilaments(it.filaments, allTrays(d.ams, d.vt_tray));
+  return mapFilaments(it.filaments, allTrays(d.ams, d.vt_tray), it.pick);
 };
 
-export function queueList(): (QueueItem & { mapping: string[]; missing: string[] })[] {
+export interface SlotChoice {
+  id: number;
+  type: string;
+  colorHex: string;
+  grams: number;
+  /** Gewählter Platz (Schlüssel „amsId:slotId“, leer = keiner passt) und ob er automatisch gewählt wurde */
+  tray: string;
+  trayLabel: string;
+  trayType: string;
+  trayColor: string;
+  auto: boolean;
+  /** Alle belegten Plätze zur Auswahl */
+  options: { key: string; label: string; type: string; colorHex: string }[];
+}
+
+/** Je Filament der Datei: Gramm, gewählter Platz und alle möglichen Plätze (für die Auswahl in der App) */
+function slotChoices(it: QueueItem, m: Mapping): SlotChoice[] {
+  const d = printerData();
+  const options = allTrays(d.ams, d.vt_tray).map(t => ({ key: trayKey(t), label: trayLabel(t), type: t.type, colorHex: t.colorHex }));
+  return it.filaments.map(f => {
+    const c = m.chosen[f.id];
+    return { id: f.id, type: f.type, colorHex: f.colorHex, grams: f.grams, tray: c?.key || '', trayLabel: c?.label || '', trayType: c?.type || '', trayColor: c?.colorHex || '', auto: c ? c.auto : true, options };
+  });
+}
+
+export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[] };
+
+export function queueList(): QueueView[] {
   return load().map(it => {
     const m = currentMapping(it);
-    return { ...it, mapping: m.lines, missing: m.missing };
+    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m) };
   });
+}
+
+/** 1.239: Platz für ein Filament der Datei wählen (tray leer = wieder automatisch). Gilt beim Start, die Datei selbst bleibt unverändert. */
+export function queuePick(id: string, filamentId: number, tray: string): boolean {
+  const it = load().find(x => x.id === id);
+  if (!it || !it.filaments.some(f => f.id === filamentId)) return false;
+  if (tray) {
+    const d = printerData();
+    if (!allTrays(d.ams, d.vt_tray).some(t => trayKey(t) === tray)) return false;
+  }
+  const pick = { ...(it.pick || {}) };
+  if (tray) pick[String(filamentId)] = tray;
+  else delete pick[String(filamentId)];
+  it.pick = Object.keys(pick).length ? pick : undefined;
+  save();
+  return true;
 }
 
 export async function printerFiles() {
@@ -333,6 +378,15 @@ export function scanIntervalMs(printing: boolean, quietRounds: number): number {
   return Math.min(60_000, 20_000 * Math.max(1, Math.min(3, quietRounds)));
 }
 
+/** 1.239: Solange eine App die Warteschlange offen hat (fragt sie alle 2 s ab), sucht der Pi alle 8 s: „Senden“ in Bambu Studio erscheint so nach wenigen Sekunden */
+const WATCH_MS = 15_000;
+const FAST_SCAN_MS = 8_000;
+let watchUntil = 0;
+export const queueWatch = (now = Date.now()): void => {
+  watchUntil = now + WATCH_MS;
+};
+export const scanDelayMs = (printing: boolean, quietRounds: number, watching: boolean): number => (watching ? FAST_SCAN_MS : scanIntervalMs(printing, quietRounds));
+
 const scanLoop = { nextAt: 0, quiet: 0, sig: '' };
 /** Takt der automatischen Suche (alle 5 s aufgerufen, sucht aber nur, wenn fällig). Ändert sich etwas am Drucker, sofort suchen. */
 export async function autoScanTick(now = Date.now()): Promise<void> {
@@ -345,10 +399,10 @@ export async function autoScanTick(now = Date.now()): Promise<void> {
   }
   if (now < scanLoop.nextAt) return;
   const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(gs);
-  scanLoop.nextAt = now + scanIntervalMs(printing, scanLoop.quiet); // vorab setzen: kein zweiter Start, solange einer läuft
+  scanLoop.nextAt = now + scanDelayMs(printing, scanLoop.quiet, now < watchUntil); // vorab setzen: kein zweiter Start, solange einer läuft
   const r = await autoScan();
   scanLoop.quiet = r.added > 0 ? 0 : scanLoop.quiet + 1;
-  scanLoop.nextAt = Date.now() + scanIntervalMs(printing, scanLoop.quiet);
+  scanLoop.nextAt = Date.now() + scanDelayMs(printing, scanLoop.quiet, Date.now() < watchUntil);
 }
 
 /** Eintrag kopieren: gleiche Datei noch einmal direkt darunter einreihen (mit Titelbild) */

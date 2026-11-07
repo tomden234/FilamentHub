@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
-import { piPrinterFiles, piQueueAction, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
+import { piPrinterFiles, piQueueAction, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
 
@@ -10,9 +10,20 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    if (item.thumb) void piQueueThumb(item.id).then(u => alive && setSrc(u));
+    let tries = 0;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    // 1.239: Bild bei Fehlschlag bis zu 5× neu holen (vorher blieb nur das Symbol stehen)
+    const load = () => {
+      void piQueueThumb(item.id).then(u => {
+        if (!alive) return;
+        if (u) setSrc(u);
+        else if (++tries < 5) t = setTimeout(load, 3000);
+      });
+    };
+    if (item.thumb) load();
     return () => {
       alive = false;
+      if (t) clearTimeout(t);
     };
   }, [item.id, item.thumb]);
   return src ? (
@@ -128,6 +139,14 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     setBusy(false);
   };
 
+  const pick = async (id: string, filament: number, tray: string) => {
+    setBusy(true);
+    const r = await piQueuePick(id, filament, tray);
+    if (r.items.length) setItems(r.items);
+    if (!r.ok) setMsg({ ok: false, text: r.text || 'Fehler' });
+    setBusy(false);
+  };
+
   const mats = (it: PiQueueItem) => Array.from(new Set(it.filaments.map(f => f.type).filter(Boolean))).join(', ') || '–';
 
   return (
@@ -205,6 +224,43 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                     </span>
                   </div>
                   {it.missing.length > 0 && <div className="text-[10px] text-amber-400">Im AMS fehlt: {it.missing.join(', ')}</div>}
+                  {it.slots && it.slots.length > 0 && (
+                    <div className="mt-1 space-y-1">
+                      {it.slots.map(s => (
+                        <div key={s.id} className="flex items-center gap-1 text-[10px]">
+                          <span className="w-3 h-3 rounded-full border shrink-0" style={{ backgroundColor: s.colorHex, borderColor: 'var(--app-border)' }} />
+                          <span className="shrink-0 font-bold">{Math.round(s.grams)} g</span>
+                          <span className="shrink-0" style={{ color: 'var(--app-text-muted)' }}>
+                            {s.type}
+                          </span>
+                          <select
+                            className="min-w-0 flex-1 rounded px-1 py-0.5 text-[10px] border cursor-pointer"
+                            style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+                            value={s.auto ? '' : s.tray}
+                            disabled={busy}
+                            onChange={e => void pick(it.id, s.id, e.target.value)}
+                            title="Mit welchem Material gedruckt wird"
+                          >
+                            <option value="">Automatisch{s.auto && s.trayLabel ? ` (${s.trayLabel})` : ''}</option>
+                            {s.options.map(o => (
+                              <option key={o.key} value={o.key}>
+                                {o.label} · {o.type}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                      {it.slots.length > 1 && (
+                        <div className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+                          {Array.from(
+                            it.slots.reduce((m, s) => m.set(s.trayType || s.type, (m.get(s.trayType || s.type) || 0) + s.grams), new Map<string, number>())
+                          )
+                            .map(([t, g]) => `${t} ${Math.round(g)} g`)
+                            .join(' · ')}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
                   <button className="p-1.5 rounded-lg cursor-pointer disabled:opacity-30 hover:bg-white/10" disabled={busy} onClick={() => void act('duplicate', it.id)} title="Kopieren (noch einmal drucken)" aria-label="Kopieren">
