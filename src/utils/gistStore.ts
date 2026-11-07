@@ -1,6 +1,7 @@
 // Cloud-Speicher auf einem privaten GitHub-Gist (Alternative zum Pi-Server; npoint.io ist seit 1.234 abgeschaltet).
 // Die Adresse im Gerät sieht so aus: „gist:<ID>“. Alle Aufrufe laufen über cloudFetch und liefern dasselbe Format wie der Pi-Server:
 // GET gibt das JSON-Dokument zurück, POST ersetzt es. Der Zugang ist ein GitHub-Token mit dem Recht „gist“ (bleibt nur im Gerät).
+import { getServerKey, getServerUrl } from './serverEndpoint';
 import { safeStorage } from './safeStorage';
 
 const TOKEN_KEY = 'filamenthub_gist_token';
@@ -141,10 +142,28 @@ export function parseGistPair(hash: string): { id: string; token: string } | nul
   return m ? { id: m[1], token: m[2] } : null;
 }
 
+/** 1.247: Kopplung mit dem Pi aus dem URL-Teil nach „#“: Adresse und Schlüssel (geht nie an einen Server) */
+export function parsePiPair(hash: string): { url: string; key: string } | null {
+  const m = /[#&]pairPi=([^&]{3,200})&k=([^&]{8,200})/.exec(hash || '');
+  if (!m) return null;
+  try {
+    const url = decodeURIComponent(m[1]);
+    const key = decodeURIComponent(m[2]);
+    return /^https?:\/\/[^\s/]+(:\d+)?\/?$/i.test(url) && key.trim() ? { url, key } : null;
+  } catch {
+    return null;
+  }
+}
+export const piPairFragment = (url: string, key: string): string => (url && key ? `pairPi=${encodeURIComponent(url)}&k=${encodeURIComponent(key)}` : '');
+
 /** Koppel-Link für QR-Code und Kopieren: bei Gist mit Zugang im Teil nach „#“, sonst nur die Seitenadresse (Pi: Adresse + Schlüssel am zweiten Gerät eintragen) */
 export function pairUrlFor(cloudUrl: string): string {
   const base = `${window.location.origin}${window.location.pathname}`;
-  if (cloudUrl === 'pi:') return base; // Pi-Server: Adresse und Schlüssel gibt man am zweiten Gerät unter „FilamentHub Server“ ein
+  // Pi-Server: Adresse und Schlüssel stehen im Teil nach „#“ (1.247), das zweite Gerät übernimmt sie nach Nachfrage
+  if (cloudUrl === 'pi:') {
+    const frag = piPairFragment(getServerUrl(), getServerKey());
+    return frag ? `${base}#${frag}` : base;
+  }
   if (isGistUrl(cloudUrl)) {
     const frag = gistPairFragment(cloudUrl);
     return frag ? `${base}#${frag}` : base;

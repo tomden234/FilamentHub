@@ -3479,5 +3479,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.247',
+    label: '1.247 (Pi per Geräte-Sync)',
+    releaseDate: '08.11.2026',
+    description:
+      'Geräte-Sync überträgt jetzt auch die Pi-Adresse und die Pi-Einstellungen (Strompreis, Ruhezeit, Doppelklick, Material-Wächter). Der Pi-Schlüssel war schon dabei. Außerdem enthält der Koppel-Link (QR-Code und Kopieren) beim Pi jetzt Adresse und Schlüssel im Teil nach dem „#“, der nie an einen Server geht. Auf dem neuen Gerät genügt es, den Link zu öffnen und zu bestätigen, danach den Sync mit dem Passwort anzumelden. Hinweis: Auf einer https-Seite (GitHub Pages, iPad) ist der Pi per http nicht erreichbar.',
+    features: ['🔑 Pi-Adresse im Geräte-Sync', '⚙️ Pi-Einstellungen im Geräte-Sync', '🔗 Koppel-Link trägt Pi-Adresse und Schlüssel'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

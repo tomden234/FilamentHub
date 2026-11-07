@@ -67,7 +67,8 @@ import { useCloudSync } from './hooks/useCloudSync';
 import { isTrustedCloudUrl } from './utils/safeData';
 import { stashLegacyNpoint } from './utils/legacyNpoint';
 import { useLegacyNpointMove } from './hooks/useLegacyNpointMove';
-import { gistUrlOf, parseGistPair, setGistToken } from './utils/gistStore';
+import { gistUrlOf, parseGistPair, parsePiPair, setGistToken } from './utils/gistStore';
+import { SERVER_KEY_KEY, SERVER_URL_KEY, normalizeServerUrl } from './utils/serverEndpoint';
 
 const SPOOLS_AT_KEY = STORAGE_KEY_SPOOLS_AT;
 
@@ -413,6 +414,16 @@ export default function App() {
         setCloudDbUrl(gistUrl);
         safeStorage.setItem(STORAGE_KEY_CLOUD_URL, gistUrl);
         showToast('Gerät mit privatem Cloud-Speicher (GitHub-Gist) gekoppelt!');
+      }
+    }
+    // Pi-Kopplung: Adresse und Schlüssel im Link-Teil nach „#“ (1.247), nur nach Bestätigung
+    const piPair = parsePiPair(window.location.hash);
+    if (piPair) {
+      window.history.replaceState({}, '', window.location.pathname + window.location.search);
+      if (window.confirm(`Dieses Gerät mit dem FilamentHub-Server (Pi) koppeln?\n\n${piPair.url}\n\nAdresse und Schlüssel werden hier gespeichert. Nur bestätigen, wenn du den Link selbst erzeugt hast.`)) {
+        safeStorage.setItem(SERVER_URL_KEY, normalizeServerUrl(piPair.url));
+        safeStorage.setItem(SERVER_KEY_KEY, piPair.key.trim());
+        showToast('Gerät mit dem Pi gekoppelt (Adresse und Schlüssel übernommen).');
       }
     }
     const params = new URLSearchParams(window.location.search);
