@@ -3370,5 +3370,15 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.237',
+    label: '1.237 (Schmaleres Menü)',
+    releaseDate: '07.11.2026',
+    description: 'Das linke Menü ist schmaler: 310 px angedockt (vorher 400) und 340 px als Schublade (vorher 460). Es deckt weniger vom Inhalt ab.',
+    features: ['↔️ Angedocktes Menü 310 statt 400 px', '📱 Schublade 340 statt 460 px'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

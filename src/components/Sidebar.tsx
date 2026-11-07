@@ -442,8 +442,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={e => e.stopPropagation()}
         className={
           docked
-            ? 'fixed left-0 top-0 z-30 w-[400px] max-w-[94vw] border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
-            : `relative z-10 w-[460px] max-w-[94vw] border-r h-full flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-200 ${
+            ? 'fixed left-0 top-0 z-30 w-[310px] max-w-[94vw] border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
+            : `relative z-10 w-[340px] max-w-[88vw] border-r h-full flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-200 ${
                 isThemesTab ? 'backdrop-blur-none' : 'backdrop-blur-2xl'
               }`
         }
