@@ -141,7 +141,7 @@ const BUTTON_ENTITY = 'binary_sensor.filament_ams_platte_frei';
 
 const DOUBLE_ENTITY = 'binary_sensor.filament_ams_taster_doppelt';
 
-const found = { count: QUEUE_COUNT_ENTITY, mode: QUEUE_MODE_ENTITY, button: BUTTON_ENTITY, double: DOUBLE_ENTITY, at: 0 };
+const found = { count: QUEUE_COUNT_ENTITY, mode: QUEUE_MODE_ENTITY, button: BUTTON_ENTITY, double: DOUBLE_ENTITY, long: 'binary_sensor.filament_ams_taster_lang', hasDouble: false, at: 0 };
 /** Echte IDs suchen (höchstens alle 5 Minuten): Home Assistant behält alte IDs, wenn das Gerät früher anders hieß */
 async function resolveIds(force = false): Promise<void> {
   if (!force && Date.now() - found.at < 5 * 60_000) return;
@@ -153,6 +153,9 @@ async function resolveIds(force = false): Promise<void> {
   found.mode = dev.roles.queueMode || QUEUE_MODE_ENTITY;
   found.button = dev.roles.button || BUTTON_ENTITY;
   found.double = dev.roles.buttonDouble || found.button.replace(/platte_frei/, 'taster_doppelt');
+  found.long = dev.roles.buttonLong || found.button.replace(/platte_frei/, 'taster_lang');
+  // Alte Firmware ohne „Taster doppelt“: der Pi erkennt zwei schnelle „Platte frei“ selbst
+  found.hasDouble = Boolean(dev.roles.buttonDouble);
 }
 
 export function attachQueue(p: QueuePort, n: (title: string, text: string) => Promise<unknown>): void {
@@ -633,15 +636,56 @@ async function togglePause(): Promise<void> {
   }
 }
 
+/** Taster 4 s gehalten: laufenden Druck abbrechen (nur wenn gerade gedruckt oder pausiert wird) */
+let cancelling = false;
+async function cancelPrint(): Promise<void> {
+  if (cancelling) return;
+  cancelling = true;
+  try {
+    const d: any = port?.getStatus().data || {};
+    const gs = String(d.gcode_state || '');
+    const name = String(d.subtask_name || 'Druck');
+    if (!port?.command || !['RUNNING', 'PAUSE', 'PREPARE'].includes(gs)) {
+      await showLeds(1); // nichts zum Abbrechen: kurz rot
+      return;
+    }
+    await port.command('stop');
+    await showLeds(1);
+    await notify('🛑 Druck abgebrochen', `${name} (Taster lang gehalten).`);
+  } catch (e) {
+    console.warn('[Warteschlange] Abbrechen fehlgeschlagen:', (e as Error)?.message || e);
+  } finally {
+    cancelling = false;
+  }
+}
+
+/** Ein „Platte frei“ ohne neue Firmware: kurz warten, ob gleich ein zweites kommt (= doppelt) */
+let pendingSingle: ReturnType<typeof setTimeout> | null = null;
+const DOUBLE_WINDOW_MS = 800;
+export function plateEvent(hasDouble = found.hasDouble): void {
+  if (hasDouble) return void startNext('Taster');
+  if (pendingSingle) {
+    clearTimeout(pendingSingle);
+    pendingSingle = null;
+    void togglePause();
+    return;
+  }
+  pendingSingle = setTimeout(() => {
+    pendingSingle = null;
+    void startNext('Taster');
+  }, DOUBLE_WINDOW_MS);
+}
+
 export function onHaEvent(ev: { event_type: string; data: any }): void {
   if (ev.event_type !== 'state_changed') return;
   const id = ev.data?.entity_id;
   const isOn = ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on';
   if (!isOn) return;
-  // Zweiter Taster-Sensor „Taster doppelt“: gleicher Gerätename wie „Platte frei“
-  if (id === found.double && id !== found.button) void togglePause();
+  // Zweiter Taster-Sensor „Taster doppelt“ / „Taster lang“: gleicher Gerätename wie „Platte frei“
+  if (id === found.long && id !== found.button) void cancelPrint();
+  else if (id === found.double && id !== found.button) void togglePause();
   // Auch der erste Druck nach einem ESP-Neustart zählt (alter Zustand dann „unknown“/„unavailable“)
-  else if (id === found.button) void startNext('Taster');
+  else if (id === found.button) plateEvent();
 }
 
 /** Beim Start: LEDs auf den aktuellen Stand bringen */

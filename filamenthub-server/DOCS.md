@@ -42,6 +42,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.16
+
+- Taster 4 s halten = laufenden Druck abbrechen (braucht ESP-Firmware 1.241, Entität „Taster lang“).
+- Doppelklick wird auch ohne neue Firmware erkannt (zwei schnelle „Platte frei“).
+
 ## Neu in 1.3.15
 
 - LED-Test in der App: Pi ignoriert die Warteschlange währenddessen und stellt sie danach wieder her.

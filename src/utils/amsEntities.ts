@@ -27,6 +27,7 @@ export interface AmsRoles {
   button?: string;
   /** Taster zweimal gedrückt (Pause/Weiter) */
   buttonDouble?: string;
+  buttonLong?: string;
   /** Nachtmodus der LED-Streifen */
   nightOn?: string;
   nightFrom?: string;
@@ -110,6 +111,7 @@ export function resolveAms(states: any[]): AmsFound | null {
   roles.queueTest = find('switch', /^warteschlange_test$/);
   roles.button = find('binary_sensor', /^platte_frei$/);
   roles.buttonDouble = find('binary_sensor', /^taster_doppelt$/);
+  roles.buttonLong = find('binary_sensor', /^taster_lang$/);
   roles.nightOn = find('switch', /^led_nachtmodus$/);
   roles.nightFrom = find('number', /^led_nacht_ab$/);
   roles.nightTo = find('number', /^led_nacht_bis$/);

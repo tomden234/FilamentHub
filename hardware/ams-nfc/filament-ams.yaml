@@ -1,4 +1,4 @@
-# Erstellt: 06.11.2026 02:14 Uhr (Revision 1.224)
+# Erstellt: 07.11.2026 18:00 Uhr (Revision 1.241: Taster lang halten = Druck abbrechen)
 # FilamentHub: NFC-Leser im AMS 2 Pro (ESP32 + 5x RC522)
 # Slot 1-4 = AMS-Slots, Slot 5 = externe Spule.
 # In Home Assistant erscheinen die Sensoren sensor.filament_ams_slot_1_tag … slot_5_tag.
@@ -57,7 +57,9 @@ substitutions:
   # Taster: "false" = federt zurück (Standard), "true" = rastet ein (jedes Umschalten zählt als Drücken)
   button_latching: "false"
   # Stand dieser Datei (zeigt die App im Testmenü, damit man sieht, ob die neue Firmware drauf ist)
-  fw_revision: "1.224"
+  fw_revision: "1.241"
+  # Taster so lange halten (Sekunden), bis „Taster lang“ auslöst (Pi bricht den Druck ab)
+  long_press_s: "4"
 
 # Merker für den Test der Warteschlange (Zahl vor dem Test)
 globals:
@@ -68,6 +70,10 @@ globals:
   - id: press_count
     type: int
     initial_value: '0'
+  # Taster wurde lang gehalten (dann zählt das Loslassen nicht als Drücken)
+  - id: long_fired
+    type: bool
+    initial_value: 'false'
   # Helligkeits-Faktor 0-1 für beide Streifen (1 = Tag, sonst Nacht-Helligkeit). Wird alle 5 s aus Uhrzeit und Einstellungen berechnet.
   - id: night_f
     type: float
@@ -429,6 +435,20 @@ script:
                 else:
                   - script.execute: plate_pulse
             - lambda: 'id(press_count) = 0;'
+  # Taster gehalten: nach ${long_press_s} s (nicht im Test) „Taster lang“ melden. Loslassen vorher stoppt das hier.
+  - id: long_watch
+    mode: restart
+    then:
+      - delay: !lambda 'return ${long_press_s} * 1000;'
+      - if:
+          condition:
+            not:
+              switch.is_on: queue_test
+          then:
+            - lambda: 'id(long_fired) = true;'
+            - binary_sensor.template.publish: { id: button_long, state: true }
+            - delay: 500ms
+            - binary_sensor.template.publish: { id: button_long, state: false }
   - id: double_pulse
     mode: single
     then:
@@ -668,13 +688,28 @@ binary_sensor:
       - delayed_on: 40ms
       - delayed_off: 40ms
     on_press:
-      - script.execute: button_pressed
-    on_release:
       - if:
           condition:
             lambda: 'return ${button_latching};'
           then:
             - script.execute: button_pressed
+          else:
+            # Federnder Taster: erst beim Loslassen zählen, damit langes Halten nicht als Drücken gilt
+            - lambda: 'id(long_fired) = false;'
+            - script.execute: long_watch
+    on_release:
+      - script.stop: long_watch
+      - if:
+          condition:
+            lambda: 'return ${button_latching};'
+          then:
+            - script.execute: button_pressed
+          else:
+            - if:
+                condition:
+                  lambda: 'return !id(long_fired);'
+                then:
+                  - script.execute: button_pressed
   # Für Home Assistant und den Pi: 0,5 s „an“ je Drücken (egal ob der Taster federt oder einrastet)
   - platform: template
     id: plate_free
@@ -685,6 +720,11 @@ binary_sensor:
     id: button_double
     name: "Taster doppelt"
     icon: mdi:gesture-double-tap
+  # Taster lang gehalten (4 s): der Pi bricht den laufenden Druck ab
+  - platform: template
+    id: button_long
+    name: "Taster lang"
+    icon: mdi:gesture-tap-hold
   # Ist gerade Nacht (Streifen gedimmt)? Für die Anzeige in der App
   - platform: template
     id: night_active

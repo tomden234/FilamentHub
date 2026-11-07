@@ -3413,5 +3413,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.241',
+    label: '1.241 (Taster: lang = Abbrechen)',
+    releaseDate: '07.11.2026',
+    description:
+      'Taster am ESP: 1× drücken = nächsten Druck starten, 2× schnell = pausieren/fortsetzen, 4 Sekunden halten = Druck abbrechen (rote LEDs, Mitteilung). Doppelklick klappt jetzt auch mit der alten Firmware: der Pi erkennt zwei schnelle Drücke selbst (dann ist der Einzeldruck 0,8 s verzögert). ESP-Firmware 1.241 (neue yaml aufspielen) und Pi-Add-on 1.3.16 (muss aktualisiert werden).',
+    features: ['🛑 Taster 4 s halten = Druck abbrechen', '👆👆 Doppelklick auch mit alter Firmware erkannt', '🔧 ESP-Firmware 1.241', '🥧 Pi-Add-on 1.3.16'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
