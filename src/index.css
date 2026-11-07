@@ -245,7 +245,7 @@ progress {
 .animate-fadeIn,
 .animate-fade-in,
 .animate-in {
-  animation: fh-fade-in 0.18s ease-out both;
+  animation: fh-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-fadeIn,
@@ -909,7 +909,7 @@ input,
 .rounded-xl.border {
   transition-property: background-color, border-color, color, box-shadow, transform, opacity;
   transition-duration: 0.16s;
-  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 button:active:not(:disabled),
 [role='button']:active {
@@ -937,4 +937,19 @@ button:active:not(:disabled),
   [role='button']:active {
     transform: none;
   }
+}
+
+/* Impeccable-Regeln (1.232): Höhe nur einmal ausdrücken (Rand ODER Schatten, nicht beides = „Geisterkarte"),
+   Eckenradius höchstens 16 px. Die Glas-Designs bleiben wie gewählt. */
+:root[data-style="cozy"] .rounded-2xl.border,
+:root[data-style="cozy"] .rounded-t-2xl.border,
+:root[data-style="night"] .rounded-2xl.border,
+:root[data-style="night"] .rounded-t-2xl.border,
+:root[data-style="sand"] .rounded-2xl.border,
+:root[data-style="sand"] .rounded-t-2xl.border,
+:root[data-style="mocha"] .rounded-2xl.border {
+  box-shadow: none;
+}
+:root:not([data-style="glass"]) .rounded-3xl {
+  border-radius: 1rem;
 }

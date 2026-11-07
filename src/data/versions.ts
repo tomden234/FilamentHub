@@ -3288,9 +3288,10 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     label: '1.232 (Ruhiger & weicher)',
     releaseDate: '07.11.2026',
     description:
-      'Design-Feinschliff nach Anregungen aus Design-Videos gegen den typischen „KI-Look“: Serifen nur noch bei der großen Seitenüberschrift, kleine Überschriften und Abschnitts-Labels sind ruhiger (gedämpfte Farbe statt Akzent). Dazu weiche Übergänge: Knöpfe federn beim Antippen leicht ein, Karten, Felder und Links blenden Farben sanft über, Karten bekommen beim Darüberfahren einen feinen Akzentrand. Alles entfällt automatisch bei „Ruhige Bewegung“ oder wenn das Gerät Animationen reduziert. Alle Designs bleiben wählbar.',
+      'Design-Feinschliff nach Anregungen aus Design-Videos gegen den typischen „KI-Look“: Serifen nur noch bei der großen Seitenüberschrift, kleine Überschriften und Abschnitts-Labels sind ruhiger (gedämpfte Farbe statt Akzent). Dazu weiche Übergänge: Knöpfe federn beim Antippen leicht ein, Karten, Felder und Links blenden Farben sanft über, Karten bekommen beim Darüberfahren einen feinen Akzentrand. Alles entfällt automatisch bei „Ruhige Bewegung“ oder wenn das Gerät Animationen reduziert. Außerdem nach den Regeln des Design-Werkzeugs Impeccable: Karten haben nur noch einen Rand statt Rand plus Schatten, Ecken höchstens 16 px, Bewegung mit sanfter Ausklang-Kurve. Alle Designs bleiben wählbar (Glas-Designs unverändert).',
     features: [
       '🔤 Serifen nur noch bei der Seitenüberschrift',
+      '🪟 Karten: Rand statt Rand + Schatten, Ecken max. 16 px',
       '🏷️ Abschnitts-Labels ruhiger statt Akzent-Großbuchstaben',
       '👆 Knöpfe federn beim Antippen leicht ein',
       '🌊 Weiche Farb- und Randübergänge auf Karten und Feldern',

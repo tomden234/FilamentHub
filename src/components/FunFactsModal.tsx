@@ -39,9 +39,9 @@ type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
 // Von Claude beim Update auf v1.231 gezählt
 const CHATS = 13; // Chats im Projekt „filament webseite“
-const MESSAGES = 450; // deine Nachrichten in diesen Chats (ca.)
-const WORDS = 39900; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 244; // Commits auf GitHub (main)
+const MESSAGES = 456; // deine Nachrichten in diesen Chats (ca.)
+const WORDS = 40050; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
+const COMMITS = 245; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
 
 const fmt = (n: number, digits = 0) => n.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits });
