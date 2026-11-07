@@ -3356,5 +3356,19 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.236',
+    label: '1.236 (LED-Test im Testmenü)',
+    releaseDate: '07.11.2026',
+    description:
+      'Der LED-Test der Warteschlange ist aus dem Warteschlangen-Fach ins Testmenü (Punkt 4) umgezogen. Das Fach bleibt aufgeräumt: nur noch die Liste, „Datei vom Drucker vormerken“ und „Nächsten starten“, nichts liegt mehr übereinander. Der Test selbst ist unverändert (Stapel, orange, grün, rot, Legende, Stopp).',
+    features: [
+      '🧪 LED-Test jetzt im Testmenü',
+      '🧹 Warteschlangen-Fach wieder aufgeräumt'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
