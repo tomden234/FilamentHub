@@ -3424,5 +3424,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.242',
+    label: '1.242 (Warteschlange mit Balken)',
+    releaseDate: '07.11.2026',
+    description:
+      'Warteschlangen-Eintrag neu gestaltet: ein farbiger Balken zeigt den Anteil jedes Filaments. Darunter steht je Filament eine Zeile „PLA 149 g“ mit einem Platz-Chip rechts (Farbpunkt und AMS-Platz). Antippen öffnet die Auswahl, „auto“ heißt automatisch gewählt, „fehlt im AMS“ ist orange. Vorher waren die Auswahlfelder winzig und abgeschnitten.',
+    features: ['📊 Balken mit Gramm-Anteilen je Filament', '🎛️ Platz-Chip statt kleinem Auswahlfeld', '🟠 „fehlt im AMS“ gut sichtbar'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

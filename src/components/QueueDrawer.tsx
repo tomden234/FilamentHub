@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { ChevronDown, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { piPrinterFiles, piQueueAction, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
@@ -215,50 +215,51 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                       {it.filaments.length} {it.filaments.length === 1 ? 'Filament' : 'Filamente'} · {mats(it)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {it.filaments.slice(0, 8).map(f => (
-                      <span key={f.id} className="w-3 h-3 rounded-full border" style={{ backgroundColor: f.colorHex, borderColor: 'var(--app-border)' }} title={`${f.type} · ${Math.round(f.grams)} g`} />
-                    ))}
-                    <span className="text-[10px] ml-1" style={{ color: 'var(--app-text-muted)' }}>
-                      {Math.round(it.filaments.reduce((s, f) => s + f.grams, 0))} g
-                    </span>
-                  </div>
                   {it.missing.length > 0 && <div className="text-[10px] text-amber-400">Im AMS fehlt: {it.missing.join(', ')}</div>}
                   {it.slots && it.slots.length > 0 && (
-                    <div className="mt-1 space-y-1">
-                      {it.slots.map(s => (
-                        <div key={s.id} className="flex items-center gap-1 text-[10px]">
-                          <span className="w-3 h-3 rounded-full border shrink-0" style={{ backgroundColor: s.colorHex, borderColor: 'var(--app-border)' }} />
-                          <span className="shrink-0 font-bold">{Math.round(s.grams)} g</span>
-                          <span className="shrink-0" style={{ color: 'var(--app-text-muted)' }}>
-                            {s.type}
-                          </span>
-                          <select
-                            className="min-w-0 flex-1 rounded px-1 py-0.5 text-[10px] border cursor-pointer"
-                            style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
-                            value={s.auto ? '' : s.tray}
-                            disabled={busy}
-                            onChange={e => void pick(it.id, s.id, e.target.value)}
-                            title="Mit welchem Material gedruckt wird"
-                          >
-                            <option value="">Automatisch{s.auto && s.trayLabel ? ` (${s.trayLabel})` : ''}</option>
-                            {s.options.map(o => (
-                              <option key={o.key} value={o.key}>
-                                {o.label} · {o.type}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
-                      {it.slots.length > 1 && (
-                        <div className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
-                          {Array.from(
-                            it.slots.reduce((m, s) => m.set(s.trayType || s.type, (m.get(s.trayType || s.type) || 0) + s.grams), new Map<string, number>())
-                          )
-                            .map(([t, g]) => `${t} ${Math.round(g)} g`)
-                            .join(' · ')}
-                        </div>
-                      )}
+                    <div className="mt-1.5">
+                      {/* Balken: Anteil der Gramm je Filament */}
+                      <div className="flex h-2 rounded overflow-hidden" title={`${Math.round(it.slots.reduce((t, s) => t + s.grams, 0))} g gesamt`}>
+                        {it.slots.map(s => (
+                          <div key={s.id} style={{ width: `${Math.max(2, (s.grams / Math.max(1, it.slots!.reduce((t, x) => t + x.grams, 0))) * 100)}%`, backgroundColor: s.colorHex }} />
+                        ))}
+                      </div>
+                      <div className="mt-1.5 space-y-1">
+                        {it.slots.map(s => (
+                          <div key={s.id} className="flex items-center gap-1.5 text-[11px]">
+                            <span className="w-3 h-3 rounded-full border shrink-0" style={{ backgroundColor: s.colorHex, borderColor: 'var(--app-border)' }} />
+                            <span className="font-bold shrink-0">{s.type}</span>
+                            <span className="shrink-0" style={{ color: 'var(--app-text-muted)' }}>
+                              {Math.round(s.grams)} g
+                            </span>
+                            <span className="flex-1" />
+                            {/* Chip mit Auswahl: das echte Auswahlfeld liegt unsichtbar darüber */}
+                            <span
+                              className="relative inline-flex items-center gap-1 rounded-full border pl-1.5 pr-1 py-0.5 text-[10px] max-w-[55%]"
+                              style={{ borderColor: s.tray ? 'var(--app-border)' : '#fbbf24', backgroundColor: 'var(--app-card)', color: 'var(--app-text)' }}
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full border shrink-0" style={{ backgroundColor: s.trayColor || 'transparent', borderColor: 'var(--app-border)' }} />
+                              <span className="truncate">{s.tray ? s.trayLabel : 'fehlt im AMS'}</span>
+                              {s.auto && s.tray && <span style={{ color: 'var(--app-text-muted)' }}>auto</span>}
+                              <ChevronDown className="w-3 h-3 shrink-0" />
+                              <select
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                value={s.auto ? '' : s.tray}
+                                disabled={busy}
+                                aria-label={`Material für ${s.type} ${Math.round(s.grams)} g wählen`}
+                                onChange={e => void pick(it.id, s.id, e.target.value)}
+                              >
+                                <option value="">Automatisch{s.auto && s.trayLabel ? ` (${s.trayLabel})` : ''}</option>
+                                {s.options.map(o => (
+                                  <option key={o.key} value={o.key}>
+                                    {o.label} · {o.type}
+                                  </option>
+                                ))}
+                              </select>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
