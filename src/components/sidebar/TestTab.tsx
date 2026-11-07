@@ -1,3 +1,4 @@
+import { QueueLedTest } from '../QueueLedTest';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, RefreshCw, Smartphone, ToggleRight, XCircle } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
@@ -362,6 +363,7 @@ export const TestTab: React.FC = () => {
               <p className="text-[11px] leading-snug" style={muted}>
                 Im Test zählt jedes Drücken eine LED runter (kurz grün), es startet kein Druck. Ohne Test startet der Taster den nächsten Druck der Pi-Warteschlange. Zweimal drücken zum Zurückzählen gibt es bewusst nicht (zu leicht aus Versehen).
               </p>
+              <QueueLedTest />
             </>
           )}
         </Section>

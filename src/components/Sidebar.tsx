@@ -26,10 +26,8 @@ import {
   Bell,
   BarChart3,
   QrCode,
-  Printer,
-  Waves,
-  PackageMinus,
-  SlidersHorizontal
+  SlidersHorizontal,
+  BellRing
 } from 'lucide-react';
 import { TestTab } from './sidebar/TestTab';
 import { NoticesTab, type NoticeSection } from './workshop/NoticesTab';
@@ -248,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [showBambuSettings, setShowBambuSettings] = useState<boolean>(false);
   const [settingsSubTab, setSettingsSubTab] = useState<'themes' | 'presets' | 'connections'>('themes');
-  const [noticeSection, setNoticeSection] = useState<NoticeSection>('print');
+  const [noticeSection, setNoticeSection] = useState<NoticeSection | undefined>(undefined);
 
   // Kurze Rückmeldung unten im Menü (z. B. G-Code vom Drucker geholt)
   const [haActionToast, setHaActionToast] = useState<string | null>(null);
@@ -378,7 +376,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Menü als Liste: jeder Punkt öffnet seine Seite, oben links „Zurück“. App = ohne G-Code-Rechner und Material,
   // Windows-App/Browser = alles (im Browser zusätzlich „Handy“).
-  const notice = (ns: NoticeSection) => () => {
+  const notice = (ns: NoticeSection | undefined) => () => {
     setNoticeSection(ns);
     setActiveTab('notices');
   };
@@ -386,32 +384,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setSettingsSubTab(sub);
     setActiveTab('settings');
   };
-  // 1.191: Menü neu sortiert, flach (jeder Punkt öffnet direkt seine Seite). Werkstatt aufgelöst: Statistik/Etiketten hier und
-  // oben in der Leiste, Status-LED bei den Geräten, Mitteilungs-Einstellungen in einzelne Seiten aufgeteilt.
+  // 1.235: Menü gekürzt und nach Wichtigkeit sortiert: oben das, was man täglich braucht (Postfach, Verbindungen, Statistik, Etiketten),
+  // die sechs Mitteilungs-Seiten sind ein Punkt „Mitteilungen“ (innen mit Schnellsprung), Texte kurz.
   const homeItems: { key: string; icon: React.ComponentType<{ className?: string }>; title: string; sub: string; go: () => void; group: string }[] = [
-    { key: 'stats', group: 'Werkzeuge', icon: BarChart3, title: 'Statistik', sub: 'Verbrauch, Drucke, Lager', go: () => onOpenWorkshop?.('stats') },
-    { key: 'labels', group: 'Werkzeuge', icon: QrCode, title: 'Etiketten', sub: 'QR-Etiketten für Spulen drucken', go: () => onOpenWorkshop?.('labels') },
-    ...(APP ? [] : [{ key: 'gcode', group: 'Werkzeuge', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Druckkosten berechnen', go: () => setActiveTab('gcode') }]),
-    { key: 'ai', group: 'Werkzeuge', icon: Bot, title: 'KI-Assistent', sub: 'Fragen zu deinen Spulen stellen', go: () => setActiveTab('ai') },
-    { key: 'inbox', group: 'Mitteilungen', icon: Bell, title: 'Postfach', sub: 'Alle Meldungen ansehen', go: () => onOpenWorkshop?.('inbox') },
-    { key: 'n-print', group: 'Mitteilungen', icon: Printer, title: 'Druck', sub: 'Start, fertig, Fehler, Spulen-Check', go: notice('print') },
-    { key: 'n-dry', group: 'Mitteilungen', icon: Waves, title: 'Trocknen und Feuchte', sub: 'Trockner, Feuchte-Alarm, Sensoren', go: notice('dry') },
-    { key: 'n-spools', group: 'Mitteilungen', icon: PackageMinus, title: 'Fast leere Spulen', sub: 'Grenze und Markierung', go: notice('spools') },
-    { key: 'n-device', group: 'Mitteilungen', icon: Smartphone, title: 'Aufs Handy', sub: 'Benachrichtigungen, Test-Mitteilung', go: notice('device') },
-    { key: 'n-adv', group: 'Mitteilungen', icon: SlidersHorizontal, title: 'Zeiten und Grenzen', sub: 'Wartezeiten und Schwellen', go: notice('advanced') },
-    { key: 'connections', group: 'Geräte', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud, NFC-Leser', go: settings('connections') },
-    { key: 'test', group: 'Geräte', icon: FlaskConical, title: 'Testmenü', sub: 'ESP, NFC-Leser, Tag, Taster, Status-LED', go: () => setActiveTab('test') },
+    { key: 'inbox', group: 'Wichtig', icon: Bell, title: 'Postfach', sub: 'Alle Meldungen', go: () => onOpenWorkshop?.('inbox') },
+    { key: 'connections', group: 'Wichtig', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud', go: settings('connections') },
+    { key: 'stats', group: 'Wichtig', icon: BarChart3, title: 'Statistik', sub: 'Verbrauch und Drucke', go: () => onOpenWorkshop?.('stats') },
+    { key: 'labels', group: 'Wichtig', icon: QrCode, title: 'Etiketten', sub: 'QR-Etiketten drucken', go: () => onOpenWorkshop?.('labels') },
+    ...(APP ? [] : [{ key: 'gcode', group: 'Mehr', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Kosten berechnen', go: () => setActiveTab('gcode') }]),
+    { key: 'ai', group: 'Mehr', icon: Bot, title: 'KI-Assistent', sub: 'Fragen zu deinen Spulen', go: () => setActiveTab('ai') },
+    { key: 'test', group: 'Mehr', icon: FlaskConical, title: 'Testmenü', sub: 'ESP, NFC, Taster, LEDs', go: () => setActiveTab('test') },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
-    ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Geräte', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }]),
-    { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Größe der Kacheln', go: settings('themes') },
-    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: FlaskConical, title: 'Material', sub: 'Trocknung und Leergewichte je Material', go: settings('presets') }]),
-    { key: 'tools', group: 'Einstellungen', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Cloud-Abgleich', go: () => setActiveTab('tools') },
-    { key: 'funfacts', group: 'Info', icon: Sparkles, title: 'Fun Facts', sub: 'Echte Zahlen zu Druckzeit, Lager und Code', go: () => setShowFunFacts(true) }
+    ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Mehr', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }]),
+    { key: 'notices', group: 'Einstellungen', icon: BellRing, title: 'Mitteilungen', sub: 'Was dich wann meldet', go: notice(undefined) },
+    { key: 'themes', group: 'Einstellungen', icon: Palette, title: 'Aussehen', sub: 'Design, Farben, Kachelgröße', go: settings('themes') },
+    ...(APP ? [] : [{ key: 'presets', group: 'Einstellungen', icon: SlidersHorizontal, title: 'Material', sub: 'Trocknung, Leergewichte', go: settings('presets') }]),
+    { key: 'tools', group: 'Einstellungen', icon: DatabaseBackup, title: 'Sichern und Laden', sub: 'Backup, Import, Abgleich', go: () => setActiveTab('tools') },
+    { key: 'funfacts', group: 'Info', icon: Sparkles, title: 'Fun Facts', sub: 'Zahlen zu Druckzeit und Code', go: () => setShowFunFacts(true) }
   ];
   const TONES: Record<string, string> = {
-    Werkzeuge: 'text-violet-400 bg-violet-500/15 border-violet-500/30',
-    Mitteilungen: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
-    'Geräte': 'text-sky-400 bg-sky-500/15 border-sky-500/30',
+    Wichtig: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+    Mehr: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
     Einstellungen: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
     Info: 'text-rose-400 bg-rose-500/15 border-rose-500/30'
   };
@@ -428,7 +421,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     : activeTab === 'tools' ? 'Sichern und Laden'
     : activeTab === 'connect' ? 'Handy'
     : activeTab === 'test' ? 'Testmenü'
-    : activeTab === 'notices' ? NOTICE_TITLES[noticeSection]
+    : activeTab === 'notices' ? (noticeSection ? NOTICE_TITLES[noticeSection] : 'Mitteilungen')
     : settingsSubTab === 'themes' ? 'Aussehen'
     : settingsSubTab === 'presets' ? 'Material'
     : 'Verbindungen';
@@ -449,7 +442,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={e => e.stopPropagation()}
         className={
           docked
-            ? 'sticky top-0 z-20 w-[400px] shrink-0 border-r h-screen flex flex-col justify-between overflow-hidden'
+            ? 'fixed left-0 top-0 z-30 w-[400px] max-w-[94vw] border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
             : `relative z-10 w-[460px] max-w-[94vw] border-r h-full flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-200 ${
                 isThemesTab ? 'backdrop-blur-none' : 'backdrop-blur-2xl'
               }`
@@ -701,7 +694,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <button
                             key={item.key}
                             onClick={item.go}
-                            className="w-full px-3 py-2.5 flex items-center gap-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] transition"
+                            className="w-full px-3 py-2 flex items-center gap-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] transition"
                           >
                             <span
                               className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${TONES[item.group] || TONES.Einstellungen}`}

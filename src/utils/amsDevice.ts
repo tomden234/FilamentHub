@@ -45,6 +45,7 @@ export const ids = (base: string, roles?: AmsRoles) => {
     wifi: r.wifi || d.wifi,
     queue: r.queue || d.queue,
     queueTest: r.queueTest || d.queueTest,
+    queueMode: r.queueMode || d.queueMode,
     button: r.button || d.button,
     boxHum: r.boxHum || d.boxHum,
     boxTemp: r.boxTemp || d.boxTemp,
@@ -62,6 +63,7 @@ const defaultIds = (base: string) => ({
   wifi: `sensor.${base}_wlan_signal`,
   queue: `number.${base}_warteschlange`,
   queueTest: `switch.${base}_warteschlange_test`,
+  queueMode: `number.${base}_warteschlange_modus`,
   button: `binary_sensor.${base}_platte_frei`,
   boxHum: `sensor.${base}_box_feuchte`,
   boxTemp: `sensor.${base}_box_temperatur`,
@@ -79,6 +81,8 @@ async function service(domain: string, svc: string, body: Record<string, unknown
 }
 
 export const setQueueCount = (entity: string, n: number) => service('number', 'set_value', { entity_id: entity, value: Math.max(0, Math.min(10, Math.round(n))) });
+/** LED-Modus der Warteschlange: 0 normal (Stapel blau), 1 rot blinken, 2 grün, 3 Platte räumen (freie LEDs orange) */
+export const setQueueMode = (entity: string, mode: 0 | 1 | 2 | 3) => service('number', 'set_value', { entity_id: entity, value: mode });
 export const setQueueTest = (entity: string, on: boolean) => service('switch', on ? 'turn_on' : 'turn_off', { entity_id: entity });
 
 /** Tag-Nummer vom Handy („04:a1:…“) bewerten: liest der AMS-Leser ihn? */

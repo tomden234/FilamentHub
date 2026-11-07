@@ -1,3 +1,4 @@
+import { QueueLedTest } from './QueueLedTest';
 import React, { useEffect, useRef, useState } from 'react';
 import { Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
@@ -220,6 +221,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
         </div>
 
         <div className="p-3 pb-24 border-t space-y-2" style={{ borderColor: 'var(--app-border)' }}>
+          <QueueLedTest queueLength={items.length} />
           <button
             type="button"
             disabled={filesBusy}

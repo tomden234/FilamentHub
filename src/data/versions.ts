@@ -3338,5 +3338,23 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.235',
+    label: '1.235 (Kurzes Menü, LED-Test)',
+    releaseDate: '07.11.2026',
+    description:
+      'Menü überarbeitet: Das Wichtigste steht oben (Postfach, Verbindungen, Statistik, Etiketten), danach „Mehr“ (G-Code, KI, Testmenü, Handy), Einstellungen und Info. Die sechs Mitteilungs-Seiten sind jetzt ein einziger Punkt „Mitteilungen“ (innen mit Schnellsprung zu Druck, Trocknen, Spulen, Handy, Zeiten). Texte kürzer, Zeilen etwas flacher. Die angedockte Seitenleiste am PC schwebt jetzt über dem Inhalt und schiebt nichts mehr zur Seite. Neu im Warteschlangen-Fach (und im Testmenü): Knopf „LED-Test der Warteschlange“. Er spielt am Streifen der Reihe nach alle Zustände mit den echten Farben ab (blauer Stapel wächst, hellblau fällt rein, orange = Platte räumen, grün = Start, rot blinkt = Fehler), mit Legende, Stopp-Knopf und automatischem Zurücksetzen. Es startet kein Druck.',
+    features: [
+      '⭐ Wichtiges oben im Menü, Gruppen „Wichtig“ und „Mehr“',
+      '🔔 Sechs Mitteilungs-Seiten zu einem Punkt',
+      '🪟 Angedocktes Menü schiebt nichts mehr',
+      '💡 LED-Test der Warteschlange per Knopf',
+      '🎨 Legende mit den echten LED-Farben',
+      '🛑 Stopp-Knopf, danach stellt der ESP die echte Warteschlange her'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
