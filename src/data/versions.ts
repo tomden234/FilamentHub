@@ -3282,5 +3282,22 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.232',
+    label: '1.232 (Ruhiger & weicher)',
+    releaseDate: '07.11.2026',
+    description:
+      'Design-Feinschliff nach Anregungen aus Design-Videos gegen den typischen „KI-Look“: Serifen nur noch bei der großen Seitenüberschrift, kleine Überschriften und Abschnitts-Labels sind ruhiger (gedämpfte Farbe statt Akzent). Dazu weiche Übergänge: Knöpfe federn beim Antippen leicht ein, Karten, Felder und Links blenden Farben sanft über, Karten bekommen beim Darüberfahren einen feinen Akzentrand. Alles entfällt automatisch bei „Ruhige Bewegung“ oder wenn das Gerät Animationen reduziert. Alle Designs bleiben wählbar.',
+    features: [
+      '🔤 Serifen nur noch bei der Seitenüberschrift',
+      '🏷️ Abschnitts-Labels ruhiger statt Akzent-Großbuchstaben',
+      '👆 Knöpfe federn beim Antippen leicht ein',
+      '🌊 Weiche Farb- und Randübergänge auf Karten und Feldern',
+      '♿ Aus bei „Ruhige Bewegung“ / reduzierter Bewegung'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

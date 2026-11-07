@@ -881,3 +881,60 @@ progress {
 
 /* 1.169: Such-Symbol im Creme-Look war zu blass */
 :root[data-style="glass"][data-tone="cream"] svg.lucide-search { color: #4a5a4e !important; opacity: 1; }
+
+/* ───────────── Feinschliff (1.232): weniger „KI-Look“, mehr Bewegung ─────────────
+   - Serifen nur noch für die große Seitenüberschrift, kleinere Überschriften bleiben schlicht
+   - Abschnitts-Labels ruhiger: gedämpfte Farbe, weniger Abstand
+   - Weiche Übergänge und Antipp-Feedback für Knöpfe und Karten */
+:root[data-style="cozy"] :is(h2, h3, h4),
+:root[data-style="night"] :is(h2, h3, h4),
+:root[data-style="sand"] :is(h2, h3, h4) {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+:root[data-style="cozy"] .fh-eyebrow,
+:root[data-style="night"] .fh-eyebrow,
+:root[data-style="sand"] .fh-eyebrow {
+  color: var(--app-text-muted);
+  letter-spacing: 0.12em;
+}
+
+button,
+[role='button'],
+a,
+select,
+input,
+.rounded-2xl.border,
+.rounded-xl.border {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: 0.16s;
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+button:active:not(:disabled),
+[role='button']:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+@media (hover: hover) {
+  .rounded-2xl.border:hover {
+    border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
+  }
+}
+
+/* Weicherer Wechsel zwischen Ansichten (Browser mit View-Transitions) */
+@supports (view-transition-name: none) {
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.18s;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled),
+  [role='button']:active {
+    transform: none;
+  }
+}
