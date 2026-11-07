@@ -34,7 +34,7 @@ Regeln, damit es für alle einfach bleibt:
 - **Klein halten:** ein Pull Request, ein Thema.
 - **Reine Logik testbar machen:** Rechen- und Entscheidungslogik gehört in `src/utils/` (ohne Browser-Zugriff), dazu eine `*.test.ts` daneben. Beispiele: `hmsFilter.ts`, `pushPolicy.ts`.
 - **Sprache:** Oberfläche und Kommentare auf Deutsch, kurz und verständlich. Variablen- und Dateinamen auf Englisch.
-- **Keine Geheimnisse committen:** `.env`, `.git-credentials.json`, `.bambu-config.json`, `.ha-config.json` und `src/data/mySpools.local.ts` stehen in der `.gitignore`. Beispiele heißen `*.example.json`.
+- **Keine Geheimnisse committen:** `.env`, `.bambu-config.json`, `.ha-config.json` und `src/data/mySpools.local.ts` stehen in der `.gitignore`. Beispiele heißen `*.example.json`.
 - **Nicht am Gerät getestet? Sag es.** Schreib in den Pull Request, was du am echten Drucker, Handy oder ESP32 geprüft hast und was nicht.
 - **Neue Revision:** Wer etwas Sichtbares ändert, trägt eine Revision „1.xx (Name)“ in `src/data/defaultSpools.ts` ein und zählt Version in `package.json` hoch (intern `2.0.<Revision>`). Kurzer, verständlicher Name.
 
