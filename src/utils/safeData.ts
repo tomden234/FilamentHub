@@ -15,10 +15,10 @@ export function safeHttpUrl(u: unknown): string | null {
   }
 }
 
-/** Erlaubte Cloud-Speicher: privater Gist, Pi-Server oder die alte npoint-Adresse. Alles andere wird abgelehnt. */
+/** Erlaubte Cloud-Speicher: Pi-Server oder privater Gist (npoint seit 1.234 nicht mehr). Alles andere wird abgelehnt. */
 export function isTrustedCloudUrl(u: unknown): u is string {
   if (typeof u !== 'string') return false;
-  return u === 'pi:' || isGistUrl(u) || /^https:\/\/api\.npoint\.io\/[A-Za-z0-9_-]{1,64}$/.test(u);
+  return u === 'pi:' || isGistUrl(u);
 }
 
 export const MAX_SPOOLS = 2000;

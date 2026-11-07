@@ -1,4 +1,4 @@
-// Spulen-Dokument auf dem Pi-Server (Adresse „pi:“). Gleiches Verhalten wie npoint/Gist: GET liest, POST ersetzt.
+// Spulen-Dokument auf dem Pi-Server (Adresse „pi:“). Gleiches Verhalten wie der Gist-Speicher: GET liest, POST ersetzt.
 // Zusätzlich liefert der Server einen Versionszähler (ETag); mit If-Match schreibt er nur, wenn niemand dazwischen war.
 import { getServerKey, serverBase } from "./serverEndpoint";
 

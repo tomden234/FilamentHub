@@ -98,7 +98,9 @@ export function updateHubConfig(body: any): HubConfig {
   const set = <K extends keyof HubConfig>(k: K, v: HubConfig[K] | undefined) => {
     if (v !== undefined) (c as any)[k] = v;
   };
-  set('cloudUrl', str(body?.cloudUrl, 200));
+  // 1.234: nur „pi:“ oder ein Gist; npoint wird nicht mehr angenommen (leer = Standard, siehe access())
+  const cu = str(body?.cloudUrl, 200);
+  if (cu === '' || (cu !== undefined && validCloudUrl(cu))) set('cloudUrl', cu);
   set('gistToken', str(body?.gistToken, 200));
   set('amsSlots', cleanMap(body?.amsSlots, (x): x is string => typeof x === 'string' && x.length < 100, 10));
   set('jobGrams', cleanMap(body?.jobGrams, (x): x is number => typeof x === 'number' && x > 0 && x < 10000));
@@ -215,7 +217,13 @@ export function setPort(p: PrinterPort): void {
 
 export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 export const durText = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${Math.round(min % 60)} min` : `${Math.round(min)} min`);
-export const access = () => ({ cloudUrl: getHubConfig().cloudUrl, gistToken: getHubConfig().gistToken });
+/** Erlaubte Speicher-Adressen am Pi: die Datei auf dem Pi („pi:“) oder ein privater Gist */
+export const validCloudUrl = (u: string): boolean => u === 'pi:' || /^gist:[0-9a-zA-Z]{6,64}$/.test(u);
+/** 1.234: Im Add-on ist die Datei auf dem Pi der Standard-Speicher (auch wenn noch keine App umgestellt hat oder eine alte npoint-Adresse gespeichert ist) */
+export const access = () => {
+  const c = getHubConfig();
+  return { cloudUrl: validCloudUrl(c.cloudUrl) ? c.cloudUrl : hubEnabled() ? 'pi:' : '', gistToken: c.gistToken };
+};
 export const deductActive = () => hubEnabled() && getHubConfig().deduct && cloudReady(access());
 export const powerActive = () => hubEnabled() && haAvailable();
 

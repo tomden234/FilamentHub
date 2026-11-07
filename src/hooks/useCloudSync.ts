@@ -1,4 +1,4 @@
-// Spulen und Verbrauch mit der Cloud (Pi-Server, Gist oder npoint) abgleichen. 1.231 aus App.tsx herausgelöst.
+// Spulen und Verbrauch mit der Cloud (Pi-Server oder Gist) abgleichen. 1.231 aus App.tsx herausgelöst.
 // Abgleich mit Drei-Wege-Merge (utils/syncMerge): Änderungen von zwei Geräten und Abzüge vom Pi gehen nicht mehr verloren.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HistoryEntry, Spool } from '../types/filament';

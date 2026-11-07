@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Cloud, CheckCircle2, ExternalLink, KeyRound, Server } from 'lucide-react';
 import { safeStorage } from '../../utils/safeStorage';
-import { cloudFetch } from '../../utils/cloudFetch';
 import { PI_URL, isPiUrl, piDocFetch } from '../../utils/piDoc';
-import { serverBase } from '../../utils/serverEndpoint';
+import { clearLegacyNpoint, getLegacyNpoint, isNpointUrl, npointFetch } from '../../utils/legacyNpoint';
+import { moveDataToPi } from '../../utils/moveToPi';
 import { pushHubConfig } from '../../utils/recorderServer';
 import {
   checkGistToken,
@@ -19,8 +19,8 @@ import {
 } from '../../utils/gistStore';
 import { STORAGE_KEY_HISTORY, STORAGE_KEY_SPOOLS, STORAGE_KEY_SPOOLS_AT } from '../../utils/storageKeys';
 
-// Cloud-Speicher: privater GitHub-Gist statt npoint.io (das manche Schul- und Firmennetze sperren).
-// Einmal anlegen, auf dem zweiten Gerät per QR-Code oder ID + Token verbinden.
+// Cloud-Speicher: Pi-Server (Standard) oder privater GitHub-Gist. npoint.io ist seit 1.234 abgeschaltet (nur Umzug und Leeren).
+// Gist: einmal anlegen, auf dem zweiten Gerät per QR-Code oder ID + Token verbinden.
 
 const TOKEN_LINK = 'https://github.com/settings/tokens/new?scopes=gist&description=FilamentHub%20Sync';
 
@@ -40,6 +40,7 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
   const [pairText, setPairText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [legacy, setLegacy] = useState(getLegacyNpoint());
 
   const say = (text: string, ok: boolean) => setMsg({ text, ok });
 
@@ -48,47 +49,13 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
     setBusy(true);
     setMsg(null);
     try {
-      if (serverBase() === null) return say('Erst oben unter „FilamentHub Server (Pi)“ Adresse und Schlüssel eintragen.', false);
-      const cur = await piDocFetch();
-      if (!cur.ok) {
-        let e = `Pi antwortet mit HTTP ${cur.status}.`;
-        try {
-          e = ((await cur.json()) as { error?: string })?.error || e;
-        } catch {
-          /* Text bleibt */
-        }
-        return say(e, false);
-      }
-      const etag = cur.headers.get('etag') || '';
-      const piDoc = ((await cur.json().catch(() => ({}))) as Record<string, unknown>) || {};
-      const piHasSpools = Array.isArray(piDoc.spools) && piDoc.spools.length > 0;
-      if (!piHasSpools) {
-        let old: Record<string, unknown> = {};
-        if (cloudDbUrl && !piActive) {
-          try {
-            const r = await cloudFetch(cloudDbUrl, { cache: 'no-store' });
-            if (r.ok) old = ((await r.json()) as Record<string, unknown>) || {};
-          } catch {
-            old = {}; // alter Speicher nicht erreichbar: Daten dieses Geräts nehmen
-          }
-        }
-        const localAt = Number(safeStorage.getItem(STORAGE_KEY_SPOOLS_AT)) || 0;
-        const oldAt = Number(old.updatedAt) || 0;
-        const useOld = Array.isArray(old.spools) && oldAt > localAt;
-        const doc = {
-          ...old, // enthält auch den verschlüsselten Geräte-Sync („secure“)
-          updatedAt: useOld ? oldAt : localAt || Date.now(),
-          spools: useOld ? old.spools : readJson(STORAGE_KEY_SPOOLS, [] as unknown[]),
-          printHistory: useOld && Array.isArray(old.printHistory) ? old.printHistory : readJson(STORAGE_KEY_HISTORY, [] as unknown[])
-        };
-        const w = await piDocFetch({ method: 'POST', headers: { 'Content-Type': 'application/json', ...(etag ? { 'If-Match': etag } : {}) }, body: JSON.stringify(doc) });
-        if (!w.ok) return say(`Pi hat das Speichern abgelehnt (HTTP ${w.status}).`, false);
-      }
+      const r = await moveDataToPi(piActive ? '' : cloudDbUrl, true);
+      if (!r.ok) return say(r.error, false);
       onCloudUrlChange(PI_URL);
       setGistToken(''); // alter Token wird nicht mehr gebraucht: vom Gerät entfernen (und beim nächsten Abgleich am Pi)
       setToken('');
       void pushHubConfig(true).catch(() => undefined);
-      say(piHasSpools ? 'Fertig. Auf dem Pi lagen schon Daten, die bleiben erhalten.' : 'Fertig. Deine Daten liegen jetzt auf dem Pi. Alte Speicher (npoint/Gist) werden nicht mehr benutzt.', true);
+      say(r.piHadSpools ? 'Fertig. Auf dem Pi lagen schon Daten, die bleiben erhalten.' : 'Fertig. Deine Daten liegen jetzt auf dem Pi. Alte Speicher (npoint/Gist) werden nicht mehr benutzt.', true);
     } finally {
       setBusy(false);
     }
@@ -106,8 +73,9 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
 
       let old: Record<string, unknown> = {};
       try {
-        const r = await cloudFetch(cloudDbUrl, { cache: 'no-store' });
-        if (r.ok) old = ((await r.json()) as Record<string, unknown>) || {};
+        const oldNpoint = getLegacyNpoint();
+        const r = oldNpoint ? await npointFetch(oldNpoint) : null;
+        if (r && r.ok) old = ((await r.json()) as Record<string, unknown>) || {};
       } catch {
         old = {}; // alter Speicher nicht erreichbar (z. B. Schulnetz): Daten dieses Geräts nehmen
       }
@@ -164,26 +132,22 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
     setBusy(false);
   };
 
+  // Alten öffentlichen npoint-Speicher leeren (gespeicherte Adresse, sonst eintippen). Erst nach dem Umzug, sonst fehlen Daten auf anderen Geräten.
   const clearLegacy = async () => {
-    const legacyUrl = (prompt('Adresse des alten npoint-Speichers (https://api.npoint.io/…):') || '').trim();
+    const legacyUrl = getLegacyNpoint() || (prompt('Adresse des alten npoint-Speichers (https://api.npoint.io/…):') || '').trim();
     if (!legacyUrl) return;
-    if (!/^https:\/\/api\.npoint\.io\/[A-Za-z0-9_-]+$/.test(legacyUrl)) {
+    if (!isNpointUrl(legacyUrl)) {
       say('Das ist keine npoint-Adresse.', false);
       return;
     }
-    if (
-      !confirm(
-        'Alten öffentlichen npoint-Speicher leeren?\n\nNur machen, wenn ALLE deine Geräte schon auf den privaten Gist umgestellt sind. Geräte, die noch npoint nutzen, laden sonst ihre Daten wieder dort hoch.'
-      )
-    )
-      return;
+    if (!confirm('Alten öffentlichen npoint-Speicher leeren?\n\nNur machen, wenn ALLE deine Geräte schon auf den Pi (oder Gist) umgestellt sind. Der Inhalt ist danach dort weg.')) return;
     setBusy(true);
     try {
-      const r = await cloudFetch(legacyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ info: 'Nicht mehr genutzt. FilamentHub speichert jetzt in einem privaten GitHub-Gist.' })
-      });
+      const r = await npointFetch(legacyUrl, { method: 'POST', body: JSON.stringify({ info: 'Nicht mehr genutzt. FilamentHub speichert jetzt auf dem eigenen Pi-Server.' }) });
+      if (r.ok) {
+        clearLegacyNpoint();
+        setLegacy('');
+      }
       say(r.ok ? 'Alter npoint-Speicher ist geleert.' : `npoint antwortet mit HTTP ${r.status}.`, r.ok);
     } catch (e: any) {
       say(`npoint nicht erreichbar: ${e?.message || e}`, false);
@@ -209,7 +173,7 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
           }`}
         >
           {(active || piActive) && <CheckCircle2 className="w-3 h-3" />}
-          {piActive ? 'Pi-Server (SSD)' : active ? 'Privater GitHub-Gist' : cloudDbUrl ? 'npoint.io (alt, öffentlich)' : 'Nicht eingerichtet'}
+          {piActive ? 'Pi-Server (SSD)' : active ? 'Privater GitHub-Gist' : 'Nicht eingerichtet'}
         </span>
       </header>
 
@@ -218,9 +182,9 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
           ? 'Deine Daten liegen als Datei auf dem Pi (SSD), nur mit deinem Schlüssel erreichbar. Kein Cloud-Dienst, kein Token. Unterwegs brauchst du Zugriff auf den Pi (z. B. Tailscale).'
           : active
           ? `Deine Daten liegen in einem privaten GitHub-Gist (ID ${gistIdOf(cloudDbUrl)}). Der Zugang zu Drucker und Home Assistant bleibt zusätzlich mit deinem Sync-Passwort verschlüsselt.`
-          : cloudDbUrl
-            ? 'Der alte Speicher npoint.io ist öffentlich lesbar und wird in manchen Schul- und Firmennetzen gesperrt. Ein privater GitHub-Gist ist geschützt und läuft über github.com.'
-            : 'Ohne Cloud bleiben deine Daten nur auf diesem Gerät. Mit einem privaten GitHub-Gist (eigener Zugang, kostenlos) kannst du mehrere Geräte abgleichen.'}
+          : legacy
+            ? 'npoint.io ist abgeschaltet. Deine Daten bleiben auf diesem Gerät, bis du sie auf den Pi umstellst (passiert auch von selbst, sobald der Pi eingetragen ist).'
+            : 'Ohne Cloud bleiben deine Daten nur auf diesem Gerät. Mit dem Pi-Server (eigene SSD, kein Fremddienst) kannst du mehrere Geräte abgleichen.'}
       </p>
 
       <div className="space-y-1.5">
@@ -238,6 +202,11 @@ export const CloudStoreCard: React.FC<{ cloudDbUrl: string; onCloudUrlChange: (u
         <p className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
           Braucht Adresse und Schlüssel des Pi (Zeile „FilamentHub Server (Pi)“). Vorhandene Daten werden einmal übernommen.
         </p>
+        {legacy && (
+          <button type="button" disabled={busy} onClick={clearLegacy} className="w-full py-2 rounded-lg border text-xs font-bold cursor-pointer disabled:opacity-40 text-rose-400" style={{ borderColor: 'var(--app-border)' }}>
+            Alten öffentlichen npoint-Speicher leeren (erst nach dem Umzug)
+          </button>
+        )}
       </div>
 
       <details className="rounded-lg border p-2" style={{ borderColor: 'var(--app-border)' }}>

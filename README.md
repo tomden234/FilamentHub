@@ -17,7 +17,7 @@ Du brauchst nur ein GitHub-Konto, keinen eigenen Server.
 5. **Windows-App:** *Actions → Build Windows App → Run workflow*, Installer im Release `desktop-latest`.
 6. **Drucker und Kamera** brauchen den Server (`npm run build && npm start`, zum Beispiel auf einem Raspberry Pi). Der Bambu-X2D wird im LAN-Modus angebunden (Drucker-IP und LAN-Zugangscode in der App eintragen).
 
-Cloud-Sync ist **aus**, bis du ihn einrichtest (Einstellungen → Verbindungen → Cloud). Dann liegen deine Daten in einem **privaten** GitHub-Gist, nirgends sonst.
+Cloud-Sync ist **aus**, bis du ihn einrichtest (Einstellungen → Verbindungen → Cloud). Dann liegen deine Daten auf deinem **Pi-Server** (oder in einem **privaten** GitHub-Gist), nirgends sonst.
 
 ## Was die App kann (Kurzüberblick)
 
@@ -54,7 +54,7 @@ Cloud-Sync ist **aus**, bis du ihn einrichtest (Einstellungen → Verbindungen �
 - 🟢 **Drucke mit Foto** · Verlauf mit Bild, Dauer, Gramm, Kosten
 - 🟢 **Statistik** · Woche/Monat, Farben, Kosten je Druck
 - 🟢 **Offline-KI** · Fragen zu Bestand und Sparen
-- 🟢 **Cloud-Sync** · privater GitHub-Gist, verschlüsselt, mehrere Geräte
+- 🟢 **Cloud-Sync** · Pi-Server (Standard) oder privater GitHub-Gist, verschlüsselt, mehrere Geräte
 - 🟢 **Android, Windows, Web** · Auto-Update
 
 **Optionale Hardware (selbst gebaut)**
@@ -75,7 +75,7 @@ Cloud-Sync ist **aus**, bis du ihn einrichtest (Einstellungen → Verbindungen �
 4. [NFC-Leser im AMS](#nfc-leser-im-ams)
 5. [Mitteilungen](#mitteilungen)
 6. [Verbindungen](#verbindungen)
-7. [Cloud-Speicher (privater GitHub-Gist)](#cloud-speicher-privater-github-gist)
+7. [Cloud-Speicher (Pi-Server, alternativ privater GitHub-Gist)](#cloud-speicher-pi-server-alternativ-privater-github-gist)
 8. [Webseite, Android, Windows](#webseite-android-windows)
 9. [Umgebungsvariablen](#umgebungsvariablen)
 10. [Zugangsdaten und Sicherheit](#zugangsdaten-und-sicherheit)
@@ -181,18 +181,17 @@ QR-Code öffnet die App direkt bei der Spule (`filamenthub://spool/ID`). Ein NFC
 
 Menü → Einstellungen → **Verbindungen** zeigt eine Liste mit dem Stand auf einen Blick: Bambu-Drucker, Home Assistant, Cloud & Geräte-Sync, NFC-Leser, Mitteilungen und (nur Windows und Browser) Handy koppeln. Details klappen beim Tippen auf. Der Drucker-Status ist live (online, verbindet, offline; Cloud, Heimnetz oder direkt über die App). Anleitungen erscheinen nur, solange etwas nicht eingerichtet ist.
 
-## Cloud-Speicher (privater GitHub-Gist)
+## Cloud-Speicher (Pi-Server, alternativ privater GitHub-Gist)
 
-npoint.io wird in manchen Schul- und Firmennetzen gesperrt und ist öffentlich lesbar. Deshalb speichert FilamentHub jetzt in einem **privaten GitHub-Gist**.
+**npoint.io ist seit 1.234 abgeschaltet.** Die App ruft es nicht mehr auf. Standard ist der **Pi-Server**: die Spulen-Daten liegen als Datei auf der SSD des Pi, kein Fremddienst, kein Token.
 
-1. Token erstellen: https://github.com/settings/tokens/new?scopes=gist (klassisch, nur Haken „gist“).
-2. Einstellungen → Verbindungen → **Cloud & Geräte-Sync** → Token eintragen → „Privaten Gist anlegen und Daten übernehmen“.
-3. Zweites Gerät: „Handy & App“ → QR-Code scannen. Gist-ID und Token stehen im Link nach dem `#` und gehen nie an einen Server.
-4. Alten npoint-Speicher erst leeren, wenn alle Geräte umgestellt sind (Knopf in derselben Karte).
+1. Menü → **FilamentHub Server** → Adresse des Pi und Schlüssel eintragen.
+2. Steht auf dem Gerät noch eine alte npoint-Adresse, zieht die App die Daten **beim Start von selbst** auf den Pi um. Sonst: Einstellungen → Verbindungen → **Cloud & Geräte-Sync** → „Auf Pi-Server umstellen“.
+3. Auf jedem weiteren Gerät dasselbe (Daten auf dem Pi bleiben erhalten). Danach den alten, öffentlich lesbaren npoint-Speicher mit dem Knopf in derselben Karte **leeren**.
 
 Es gewinnt immer der neueste Stand. Der Zugang zu Drucker und Home Assistant bleibt zusätzlich mit deinem Sync-Passwort verschlüsselt (AES-GCM).
 
-Hinweis: Die Verbindung zu `api.github.com` muss im Netz erlaubt sein. Ein Test gegen die echte GitHub-API steht noch aus.
+**Alternative ohne Pi-Zugriff:** privater GitHub-Gist (Einstellungen → Verbindungen → Cloud & Geräte-Sync → Ausklapper). Token: https://github.com/settings/tokens/new?scopes=gist (klassisch, nur Haken „gist“). Zweites Gerät per QR-Code unter „Handy & App“. Die Verbindung zu `api.github.com` muss im Netz erlaubt sein.
 
 ## Webseite, Android, Windows
 

@@ -19,8 +19,6 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
   const [result, setResult] = useState<SyncResult | null>(null);
   const [at, setAt] = useState(lastSyncAt());
   const [detail, setDetail] = useState('');
-  const [cert, setCert] = useState<{ error: string; issuer: string; subject: string; fingerprint: string; validTo: string } | null>(null);
-  const bridge = typeof window !== 'undefined' ? (window as any).desktop : undefined;
   const active = Boolean(getSyncPass());
 
   const run = async () => {
@@ -30,7 +28,6 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
     setResult(r);
     const d = r === 'error' ? syncDetail() : '';
     setDetail(d);
-    setCert(/CERT/i.test(d) && bridge?.cloudCertInfo ? await bridge.cloudCertInfo() : null);
     setAt(lastSyncAt());
     setBusy(false);
     window.dispatchEvent(new CustomEvent('filamenthub:sync-now'));
@@ -43,7 +40,6 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
     const r = await resetSyncPass(cloudDbUrl, pass);
     setResult(r);
     setDetail(r === 'error' ? syncDetail() : '');
-    setCert(null);
     setAt(lastSyncAt());
     setBusy(false);
   };
@@ -98,39 +94,6 @@ export const DeviceSyncCard: React.FC<{ cloudDbUrl: string }> = ({ cloudDbUrl })
         <p className={`text-[11px] font-bold ${MESSAGES[result].ok ? 'text-emerald-400' : 'text-amber-400'}`}>{MESSAGES[result].text}</p>
       )}
       {detail && <p className="text-[10px] break-words" style={{ color: 'var(--app-text-muted)' }}>Grund: {detail}</p>}
-      {cert && (
-        <div className="rounded-xl border p-3 space-y-2 text-[11px]" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-card)' }}>
-          <p style={{ color: 'var(--app-text)' }}>
-            Auf diesem PC kommt für die Cloud ein Zertifikat an, dem Windows nicht vertraut. Meist ist das ein Virenscanner (Web-Schutz),
-            ein Firmen-/Schul-Netz oder ein Router-Filter.
-          </p>
-          <p className="break-words" style={{ color: 'var(--app-text-muted)' }}>
-            Aussteller: <strong>{cert.issuer || 'unbekannt'}</strong>
-            {cert.validTo ? ` · gültig bis ${cert.validTo}` : ''}
-          </p>
-          <p style={{ color: 'var(--app-text-muted)' }}>
-            Kennst du den Aussteller (z. B. dein Virenscanner), kannst du genau diesem Zertifikat für die Cloud-Datenbank vertrauen.
-            Drucker-Zugang und Passwörter bleiben trotzdem Ende-zu-Ende verschlüsselt.
-          </p>
-          <button
-            type="button"
-            onClick={async () => {
-              const ok = await bridge.cloudTrustCert(cert.fingerprint);
-              if (!ok) {
-                setDetail('Zertifikat konnte nicht gespeichert werden. Bitte nochmal „Jetzt abgleichen“ und dann vertrauen.');
-                return;
-              }
-              setCert(null);
-              setDetail('Zertifikat bestätigt. Gleiche ab …');
-              await run();
-            }}
-            className="w-full py-2 rounded-lg border text-xs font-bold cursor-pointer"
-            style={{ borderColor: 'var(--app-accent)', color: 'var(--app-accent-text)' }}
-          >
-            Diesem Zertifikat vertrauen (nur Cloud-Datenbank)
-          </button>
-        </div>
-      )}
       {at > 0 && (
         <p className="text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
           Zuletzt abgeglichen: {new Date(at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}

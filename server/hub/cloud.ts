@@ -1,5 +1,5 @@
 // Cloud-Dokument der App (Spulen, Verlauf, Druckliste) vom Server aus lesen und schreiben.
-// Gleiches Format wie in der App: „pi:“ (Datei auf dem Pi, ab 1.230), npoint-Adresse (GET/POST) oder privater GitHub-Gist („gist:<ID>“, Datei filamenthub.json).
+// Gleiches Format wie in der App: „pi:“ (Datei auf dem Pi, ab 1.230) oder privater GitHub-Gist („gist:<ID>“, Datei filamenthub.json). npoint ist seit 1.234 abgeschaltet.
 import { readLocalDoc, writeLocalDoc } from './localDoc.js';
 const GIST_FILE = 'filamenthub.json';
 
@@ -25,7 +25,7 @@ export function cloudReady(a: Partial<CloudAccess>): boolean {
   const u = String(a.cloudUrl || '');
   if (isLocal(u)) return true;
   if (isGist(u)) return /^[0-9a-zA-Z]{6,64}$/.test(u.slice(5)) && Boolean(a.gistToken);
-  return /^https:\/\/api\.npoint\.io\/[A-Za-z0-9_-]+$/.test(u);
+  return false;
 }
 
 export async function loadDoc(a: CloudAccess): Promise<any> {
@@ -45,9 +45,7 @@ export async function loadDoc(a: CloudAccess): Promise<any> {
     }
     return text ? JSON.parse(text) : {};
   }
-  const r = await fetch(a.cloudUrl, { signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`Cloud antwortet mit ${r.status}`);
-  return r.json();
+  throw new Error('Cloud nicht eingerichtet');
 }
 
 export async function saveDoc(a: CloudAccess, doc: unknown): Promise<void> {
@@ -68,6 +66,5 @@ export async function saveDoc(a: CloudAccess, doc: unknown): Promise<void> {
     if (!r.ok) throw new Error(`GitHub speichert nicht (${r.status})`);
     return;
   }
-  const r = await fetch(a.cloudUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: content, signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`Cloud speichert nicht (${r.status})`);
+  throw new Error('Cloud nicht eingerichtet');
 }

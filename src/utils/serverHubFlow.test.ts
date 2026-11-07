@@ -9,41 +9,38 @@ describe('Pi-Server: Abzug im Ablauf', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hub-'));
     process.env.FILAMENT_DATA_DIR = dir;
     process.env.FILAMENTHUB_HUB = '1';
-    let doc: any = {
+    const local = await import('../../server/hub/localDoc');
+    const seed: any = {
       updatedAt: 1,
       spools: [{ id: 'a', brand: 'Sunlu', name: 'PLA Weiß', material: 'PLA', colorHex: '#FFFFFF', pricePerKg: 20, remainingWeight: 500 }],
       printHistory: [],
       printLog: []
     };
-    let posts = 0;
-    vi.stubGlobal('fetch', async (url: string, init?: any) => {
-      if (!String(url).startsWith('https://api.npoint.io/')) throw new Error('kein Netz');
-      if (init?.method === 'POST') {
-        posts++;
-        await new Promise(r => setTimeout(r, 20));
-        doc = JSON.parse(init.body);
-        return new Response('{}', { status: 200 });
-      }
-      await new Promise(r => setTimeout(r, 10));
-      return new Response(JSON.stringify(doc), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    local.writeLocalDoc(seed);
+    // Speichern auf dem Pi (Datei) zählen: jede Änderung zählt `rev` hoch, so lässt sich die Zahl der Schreibvorgänge ablesen
+    const doc = new Proxy({} as any, { get: (_t, k) => (local.readLocalDoc().doc as any)[k] });
+    const posts0 = local.readLocalDoc().rev;
+    const postsNow = () => local.readLocalDoc().rev - posts0;
+    vi.stubGlobal('fetch', async () => {
+      throw new Error('kein Netz');
     });
     const hub = await import('../../server/hub/hub');
     hub.attachPrinter({ getStatus: () => ({ connected: false }), getLanAccess: () => null, stopDrying: async () => false, command: async () => undefined, resumeAfterError: async () => undefined, delayedResume: () => 0, startProject: async () => undefined });
-    hub.updateHubConfig({ cloudUrl: 'https://api.npoint.io/abc123', amsSlots: { '1': 'a' }, jobGrams: { benchy: 20 } });
+    hub.updateHubConfig({ cloudUrl: 'pi:', amsSlots: { '1': 'a' }, jobGrams: { benchy: 20 } });
     const T = Date.now();
     const rec = { id: 'benchy|s1', name: 'Benchy.gcode.3mf', startMs: T - 3600_000, endMs: T, state: 'FINISH' as const, percent: 100, slots: { '1': 3000 } };
     hub._test.state().prints[rec.id] = { deduct: 'pending', tries: 0, lastTry: 0, photo: false, pushed: false, trays: [{ slot: 1, type: 'PLA', colorHex: '#FFFFFF' }], at: T };
 
     await Promise.all([hub._test.tryDeduct(rec), hub._test.tryDeduct(rec)]);
     expect(doc.spools[0].remainingWeight).toBe(480);
-    expect(posts).toBe(1);
+    expect(postsNow()).toBe(1);
     expect(hub.printMeta(rec.id)?.deduct).toBe('done');
 
     // Später nochmal angestoßen (z. B. nach Neustart, Antwort beim Speichern verloren): nichts mehr abziehen, gilt als erledigt
     hub._test.state().prints[rec.id].deduct = 'pending';
     await hub._test.tryDeduct(rec);
     expect(doc.spools[0].remainingWeight).toBe(480);
-    expect(posts).toBe(1);
+    expect(postsNow()).toBe(1);
     expect(hub.printMeta(rec.id)?.deduct).toBe('done');
     expect(hub.printMeta(rec.id)?.texts?.[0]).toContain('20 g von Sunlu PLA Weiß');
 
@@ -53,7 +50,7 @@ describe('Pi-Server: Abzug im Ablauf', () => {
     hub._test.state().prints[rec2.id] = { deduct: 'pending', tries: 0, lastTry: 0, photo: false, pushed: false, trays: [{ slot: 1, type: 'PLA', colorHex: '#FFFFFF' }], at: T };
     const [, manual] = await Promise.all([hub._test.tryDeduct(rec2), hub.manualDeduct(rec2, [{ spoolId: 'a', grams: 30 }])]);
     expect(doc.spools[0].remainingWeight).toBe(450);
-    expect(posts).toBe(2);
+    expect(postsNow()).toBe(2);
     expect(manual.ok).toBe(false);
 
     // 1.227: Druck OHNE Namen („Druckauftrag“), Drucker danach aus: Gewichte vom Druckstart werden genommen

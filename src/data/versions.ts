@@ -3320,5 +3320,23 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.234',
+    label: '1.234 (Nur Pi, npoint aus)',
+    releaseDate: '07.11.2026',
+    description:
+      'npoint.io ist abgeschaltet, der Pi ist der Speicher. Die App ruft npoint nicht mehr an. Steht auf einem Gerät noch die alte npoint-Adresse, zieht die App die Daten beim Start von selbst auf den Pi um (wenn Adresse und Schlüssel des Pi eingetragen sind), sonst bleiben sie auf dem Gerät und ein Hinweis erscheint einmal. Der alte, öffentlich lesbare npoint-Speicher lässt sich mit einem Knopf leeren. Am Pi ist die Datei auf der SSD jetzt der Standard-Speicher, auch ohne umgestellte App oder mit alter npoint-Adresse in der Einstellung. Weg sind: der Umweg über den Server (/api/cloud-proxy), die Windows-Brücke samt Zertifikat-Vertrauen für npoint, die npoint-Adresse in Koppel-Links und die npoint-Anzeigen im Menü. Der Gist bleibt als Alternative im Ausklapper. Pi-Add-on 1.3.12.',
+    features: [
+      '🚫 npoint.io abgeschaltet, keine Anfragen mehr',
+      '🔁 Alte Daten ziehen beim Start von selbst auf den Pi um',
+      '🧹 Alten öffentlichen npoint-Speicher per Knopf leeren',
+      '🥧 Am Pi ist die Datei auf der SSD der Standard-Speicher',
+      '🛡️ Weniger Angriffsfläche: Cloud-Proxy und Zertifikat-Ausnahme entfernt',
+      '🔗 Koppel-Links ohne npoint-Adresse'
+    ],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

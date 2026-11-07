@@ -1,5 +1,5 @@
-// Cloud-Speicher auf einem privaten GitHub-Gist (Ersatz für npoint.io, das manche Schul-/Firmennetze sperren).
-// Die Adresse im Gerät sieht so aus: „gist:<ID>“. Alle Aufrufe laufen über cloudFetch und liefern dasselbe Format wie npoint:
+// Cloud-Speicher auf einem privaten GitHub-Gist (Alternative zum Pi-Server; npoint.io ist seit 1.234 abgeschaltet).
+// Die Adresse im Gerät sieht so aus: „gist:<ID>“. Alle Aufrufe laufen über cloudFetch und liefern dasselbe Format wie der Pi-Server:
 // GET gibt das JSON-Dokument zurück, POST ersetzt es. Der Zugang ist ein GitHub-Token mit dem Recht „gist“ (bleibt nur im Gerät).
 import { safeStorage } from './safeStorage';
 
@@ -44,7 +44,7 @@ async function failure(r: Response): Promise<Response> {
   return json(r.status, { error: msg || `GitHub antwortet mit HTTP ${r.status}` });
 }
 
-/** Wie fetch auf eine npoint-Adresse: GET lädt das Dokument, POST ersetzt es */
+/** Wie fetch auf den Pi-Speicher: GET lädt das Dokument, POST ersetzt es */
 export async function gistFetch(url: string, init: { method?: string; body?: string } = {}): Promise<Response> {
   const token = getGistToken();
   if (!token) return json(401, { error: 'GitHub-Token fehlt. Bitte unter Einstellungen → Verbindungen eintragen.' });
@@ -141,7 +141,7 @@ export function parseGistPair(hash: string): { id: string; token: string } | nul
   return m ? { id: m[1], token: m[2] } : null;
 }
 
-/** Koppel-Link für QR-Code und Kopieren: bei Gist mit Zugang im Teil nach „#“, sonst die alte npoint-Adresse */
+/** Koppel-Link für QR-Code und Kopieren: bei Gist mit Zugang im Teil nach „#“, sonst nur die Seitenadresse (Pi: Adresse + Schlüssel am zweiten Gerät eintragen) */
 export function pairUrlFor(cloudUrl: string): string {
   const base = `${window.location.origin}${window.location.pathname}`;
   if (cloudUrl === 'pi:') return base; // Pi-Server: Adresse und Schlüssel gibt man am zweiten Gerät unter „FilamentHub Server“ ein
@@ -149,5 +149,5 @@ export function pairUrlFor(cloudUrl: string): string {
     const frag = gistPairFragment(cloudUrl);
     return frag ? `${base}#${frag}` : base;
   }
-  return `${base}?pairCloud=${encodeURIComponent(cloudUrl)}`;
+  return base;
 }

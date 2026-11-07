@@ -75,7 +75,7 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ full = true, onSyncCloud, on
   return (
     <div className="space-y-4">
       <Group title="Abgleich">
-        <Item icon={RefreshCw} tone="text-sky-400 bg-sky-500/15 border-sky-500/30" title="Jetzt mit der Cloud abgleichen" hint={pi ? 'Pi-Server (SSD)' : gist ? 'Privater GitHub-Gist' : 'npoint.io (alt)'} onClick={onSyncCloud}>
+        <Item icon={RefreshCw} tone="text-sky-400 bg-sky-500/15 border-sky-500/30" title="Jetzt mit der Cloud abgleichen" hint={pi ? 'Pi-Server (SSD)' : gist ? 'Privater GitHub-Gist' : 'Nur dieses Gerät'} onClick={onSyncCloud}>
           <Cloud className="w-4 h-4 shrink-0 opacity-50" />
         </Item>
       </Group>

@@ -1,12 +1,10 @@
 // FilamentHub für Windows: startet den eingebauten Server (spricht per LAN/MQTT mit dem Drucker) und zeigt die App im Fenster.
-const { app, BrowserWindow, Menu, shell, session, dialog, ipcMain, net } = require('electron');
+const { app, BrowserWindow, Menu, shell, session, dialog, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
-const https = require('https');
-const tls = require('tls');
 
 const PORT = 38517; // fest, damit die gespeicherten Daten (Spulen, Einstellungen) immer im selben Speicher liegen
 const URL = `http://127.0.0.1:${PORT}`;
@@ -111,128 +109,7 @@ async function createWindow() {
 }
 
 // Automatische Updates (wie bei der Handy-App): neue Version im Hintergrund laden, beim Beenden oder per Klick installieren
-// Cloud-Datenbank über den Netzwerk-Stack von Windows/Chromium abrufen. Der nutzt die Windows-Zertifikate
-// (wichtig, wenn ein Virenscanner HTTPS prüft: Node kennt dessen Zertifikat nicht → UNABLE_TO_VERIFY_LEAF_SIGNATURE).
-// Zertifikat, das auf diesem PC für die Cloud-Datenbank ankommt (z. B. vom Virenscanner/Router). Nur wenn du es ausdrücklich
-// bestätigst, wird genau dieses eine Zertifikat (per Fingerabdruck) für api.npoint.io akzeptiert. Alles andere bleibt streng geprüft.
-const CLOUD_HOST = 'api.npoint.io';
-let lastCloudCert = null;
-function trustFile() {
-  return path.join(app.getPath('userData'), 'trusted-certs.json');
-}
-function trustedList() {
-  try {
-    return JSON.parse(fs.readFileSync(trustFile(), 'utf8'));
-  } catch {
-    return [];
-  }
-}
-
-// Electron-Fingerabdruck „sha256/BASE64“ → Node-Format „AA:BB:…“
-function fpToHex(fp) {
-  const b = Buffer.from(String(fp).replace(/^sha256\//, ''), 'base64');
-  return [...b].map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(':');
-}
-
-function pinnedRequest(url, method, body) {
-  const allowed = trustedList().map(fpToHex);
-  const u = new URL(url);
-  const port = Number(u.port) || 443;
-  return new Promise((resolve, reject) => {
-    // Erst TLS aufbauen und Fingerabdruck prüfen, erst danach wird überhaupt etwas gesendet
-    const sock = tls.connect({ host: u.hostname, port, servername: u.hostname, rejectUnauthorized: false, timeout: 20000 });
-    sock.once('error', reject);
-    sock.once('timeout', () => sock.destroy(new Error('Zeitüberschreitung')));
-    sock.once('secureConnect', () => {
-      const fp = sock.getPeerCertificate() && sock.getPeerCertificate().fingerprint256;
-      if (!fp || !allowed.includes(String(fp).toUpperCase())) {
-        sock.destroy();
-        return reject(new Error('Zertifikat passt nicht zum bestätigten Fingerabdruck'));
-      }
-      const rq = https.request(
-        {
-          host: u.hostname,
-          port,
-          path: u.pathname,
-          method,
-          createConnection: () => sock,
-          headers: body !== undefined ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {}
-        },
-        resp => {
-          const chunks = [];
-          resp.on('data', c => chunks.push(c));
-          resp.on('end', () => resolve({ status: resp.statusCode || 502, text: Buffer.concat(chunks).toString('utf8') }));
-        }
-      );
-      rq.on('error', reject);
-      if (body !== undefined) rq.write(body);
-      rq.end();
-    });
-  });
-}
-
-function setupCloudBridge() {
-  session.defaultSession.setCertificateVerifyProc((request, callback) => {
-    if (request.hostname !== CLOUD_HOST || request.verificationResult === 'net::OK') return callback(-3);
-    const c = request.certificate;
-    lastCloudCert = {
-      error: request.verificationResult,
-      issuer: (c && c.issuerName) || '',
-      subject: (c && c.subjectName) || '',
-      fingerprint: (c && c.fingerprint) || '',
-      validTo: c && c.validExpiry ? new Date(c.validExpiry * 1000).toISOString().slice(0, 10) : ''
-    };
-    if (lastCloudCert.fingerprint && trustedList().includes(lastCloudCert.fingerprint)) return callback(0);
-    return callback(-3);
-  });
-  ipcMain.handle('cloud:cert-info', () => lastCloudCert);
-  ipcMain.handle('cloud:trust-cert', async (e, fp) => {
-    if (!lastCloudCert || fp !== lastCloudCert.fingerprint) return false;
-    // 1.233: Nur aus der eigenen App-Seite und nur nach Bestätigung im Hauptprogramm (ein Skript in der Seite darf das nicht still tun)
-    const from = (e && e.senderFrame && e.senderFrame.url) || '';
-    if (!(from === URL || from.startsWith(URL + '/'))) return false;
-    const answer = await dialog.showMessageBox({
-      type: 'warning',
-      buttons: ['Nicht vertrauen', 'Vertrauen'],
-      defaultId: 0,
-      cancelId: 0,
-      title: 'Zertifikat vertrauen?',
-      message: 'Dem Zertifikat der Cloud-Datenbank (api.npoint.io) vertrauen?',
-      detail: 'Fingerabdruck: ' + fp + '\n\nNur bestätigen, wenn du dem Netzwerk traust (z. B. Firmen-Proxy oder Virenscanner mit eigenem Zertifikat).'
-    });
-    if (answer.response !== 1) return false;
-    const list = trustedList();
-    if (!list.includes(fp)) list.push(fp);
-    fs.writeFileSync(trustFile(), JSON.stringify(list));
-    return true;
-  });
-
-  ipcMain.handle('cloud:fetch', async (_e, req) => {
-    const url = String((req && req.url) || '');
-    if (!/^https:\/\/api\.npoint\.io\/[A-Za-z0-9_-]+$/.test(url)) return { status: 400, text: JSON.stringify({ error: 'Nur api.npoint.io erlaubt.' }) };
-    const method = req.method === 'POST' ? 'POST' : 'GET';
-    try {
-      const r = await net.fetch(url, {
-        method,
-        headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined,
-        body: method === 'POST' ? String(req.body || '') : undefined,
-        cache: 'no-store'
-      });
-      return { status: r.status, text: await r.text() };
-    } catch (e) {
-      const msg = String((e && e.message) || e);
-      // Vom Nutzer bestätigtes Zertifikat (z. B. Firewall mit SSL-Prüfung): direkt verbinden und nur genau diesen Fingerabdruck akzeptieren
-      if (/CERT/i.test(msg) && trustedList().length) {
-        try {
-          return await pinnedRequest(url, method, method === 'POST' ? String(req.body || '') : undefined);
-        } catch (e2) {
-          return { status: 502, text: JSON.stringify({ error: 'Cloud nicht erreichbar: ' + String((e2 && e2.message) || e2) }) };
-        }
-      }
-      return { status: 502, text: JSON.stringify({ error: 'Cloud nicht erreichbar: ' + msg }) };
-    }
-  });
-}
+// 1.234: Die Cloud-Brücke für npoint (Windows-Zertifikate, Fingerabdruck-Vertrauen) ist entfernt: npoint ist abgeschaltet.
 
 function sendStatus(s) {
   if (win && !win.isDestroyed()) win.webContents.send('update:status', s);
@@ -362,7 +239,6 @@ if (!lock) {
     if (process.platform === 'win32') app.setAppUserModelId('de.filamenthub.desktop');
     // Meldungen (Druck fertig, Trocknung fertig) erlauben
     session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'notifications' || permission === 'clipboard-sanitized-write'));
-    setupCloudBridge();
     startServer();
     createWindow();
     setupAutoUpdate();

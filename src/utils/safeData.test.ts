@@ -22,9 +22,10 @@ describe('Schutz vor fremden Daten (1.233)', () => {
   });
   it('erlaubt nur bekannte Cloud-Adressen', () => {
     expect(isTrustedCloudUrl('https://evil.example/doc')).toBe(false);
-    expect(isTrustedCloudUrl('https://api.npoint.io/abc123')).toBe(true);
+    expect(isTrustedCloudUrl('https://api.npoint.io/abc123')).toBe(false); // npoint ist seit 1.234 abgeschaltet
     expect(isTrustedCloudUrl('pi:')).toBe(true);
     expect(isTrustedCloudUrl('https://api.npoint.io/abc/../../x')).toBe(false);
+    expect(isTrustedCloudUrl('gist:abc123XYZ')).toBe(true);
   });
   it('säubert kaputte Spulen', () => {
     expect(sanitizeSpool({ ...base, id: undefined })).toBeNull();

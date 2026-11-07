@@ -66,6 +66,8 @@ import { listenNotificationTaps } from './utils/notify';
 import { useDeviceSync } from './hooks/useDeviceSync';
 import { useCloudSync } from './hooks/useCloudSync';
 import { isTrustedCloudUrl } from './utils/safeData';
+import { stashLegacyNpoint } from './utils/legacyNpoint';
+import { useLegacyNpointMove } from './hooks/useLegacyNpointMove';
 import { gistUrlOf, parseGistPair, setGistToken } from './utils/gistStore';
 
 const SPOOLS_AT_KEY = STORAGE_KEY_SPOOLS_AT;
@@ -247,9 +249,8 @@ export default function App() {
   const [redoStack, setRedoStack] = useState<string[]>([]);
 
   // Cloud Sync
-  const [cloudDbUrl, setCloudDbUrl] = useState<string>(() => {
-    return safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '';
-  });
+  // 1.234: npoint ist abgeschaltet. Eine alte npoint-Adresse wird zur Seite gelegt (Umzug auf den Pi), der aktive Speicher ist dann leer.
+  const [cloudDbUrl, setCloudDbUrl] = useState<string>(() => stashLegacyNpoint());
 
   // Filter & Sortierung
   const [activeMaterialFilter, setActiveMaterialFilter] = useState<string>('ALL');
@@ -418,7 +419,7 @@ export default function App() {
     const pair = params.get('pairCloud');
     if (pair) {
       window.history.replaceState({}, '', window.location.pathname);
-      // Nur bekannte Cloud-Speicher (npoint, Gist, Pi) und nur nach Bestätigung (1.233)
+      // Nur bekannte Cloud-Speicher (Pi, Gist) und nur nach Bestätigung (1.233, npoint seit 1.234 nicht mehr)
       if (!isTrustedCloudUrl(pair)) {
         showToast('Koppel-Link abgelehnt: unbekannte Cloud-Adresse.');
       } else if (window.confirm(`Dieses Gerät mit dieser Cloud-Datenbank koppeln?\n\n${pair}\n\nDer bisherige Cloud-Speicher wird ersetzt. Nur bestätigen, wenn du den Link selbst erzeugt hast.`)) {
@@ -437,7 +438,7 @@ export default function App() {
   // Drucker-Zugang und Einstellungen verschlüsselt zwischen den Geräten abgleichen
   useDeviceSync(cloudDbUrl, showToast);
 
-  // Cloud-Speicher wechseln (z. B. von npoint auf einen privaten GitHub-Gist) und sofort abgleichen
+  // Cloud-Speicher wechseln (z. B. auf den Pi-Server) und sofort abgleichen
   const handleCloudUrlChange = useCallback(
     (url: string) => {
       setCloudDbUrl(url);
@@ -447,6 +448,8 @@ export default function App() {
     },
     [showToast]
   );
+  // npoint-Umzug auf den Pi (1.234)
+  useLegacyNpointMove(cloudDbUrl, handleCloudUrlChange, showToast);
 
   // Einmalige Reparatur alter Daten (v1.71): Brutto statt Netto eingetragen, mehr als die Spule fasst.
   // Läuft nur einmal pro Gerät, damit spätere Eingaben (z. B. leicht überfüllte Spulen laut Waage) nie verändert werden.

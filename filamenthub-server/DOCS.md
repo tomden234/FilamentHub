@@ -42,6 +42,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.12 (npoint aus)
+
+- npoint.io ist abgeschaltet: der Server nimmt keine npoint-Adresse mehr an, die Route `/api/cloud-proxy` ist weg. Im Add-on ist die Datei auf dem Pi (`pi:`) jetzt der **Standard-Speicher**, auch wenn noch keine App umgestellt hat oder in der Einstellung noch eine alte npoint-Adresse steht.
+- Die Apps ziehen ihre Daten beim Start von selbst von npoint auf den Pi um (wenn Adresse und Schlüssel des Pi eingetragen sind).
+
 ## Neu in 1.3.9 (Pi speichert)
 
 - Die Spulen-Daten liegen als Datei im Speicher der App (`/data/filamenthub-doc.json`, Vorversion als `.prev`). In der App unter Cloud & Geräte-Sync auf **Auf Pi-Server umstellen** tippen: vorhandene Daten werden einmal übernommen. Danach braucht es weder npoint noch Gist noch Token. Abzug, Warteschlange und Tages-Sicherung nutzen dieselbe Datei.
