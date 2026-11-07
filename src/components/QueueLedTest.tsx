@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Lightbulb, Loader2, Square } from 'lucide-react';
 import { findAmsDevice, ids, setQueueCount, setQueueMode, setQueueTest } from '../utils/amsDevice';
+import { piQueueLedTest } from '../utils/recorderServer';
 import { LED_LEGEND, ledTestSteps } from '../utils/queueLedTest';
 
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -26,6 +27,7 @@ export const QueueLedTest: React.FC<{ queueLength?: number }> = ({ queueLength }
     setRunning(true);
     stop.current = false;
     setText('Suche den ESP in Home Assistant …');
+    await piQueueLedTest(true); // Pi lässt die Streifen in Ruhe, bis der Test endet
     try {
       const dev = await findAmsDevice();
       if (!dev) {
@@ -58,6 +60,7 @@ export const QueueLedTest: React.FC<{ queueLength?: number }> = ({ queueLength }
         await setQueueMode(u.mode, 0);
         await setQueueTest(u.test, false);
       }
+      await piQueueLedTest(false); // Pi zeigt wieder die echte Warteschlange
       if (alive.current) {
         setRunning(false);
         setText('');

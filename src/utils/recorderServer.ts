@@ -156,9 +156,10 @@ interface HubSettings {
   quietFrom: number;
   quietTo: number;
   materialGuard: boolean;
+  doubleAction: 'pause' | 'rotate' | 'none';
 }
 /** Strompreis: Durchschnitt Nürnberg Nov. 2026 (Grundversorgung 38,6 ct, günstige Tarife ca. 33 ct) */
-const DEFAULT_HUB_SETTINGS: HubSettings = { kwhPrice: 0.35, quietFrom: 22, quietTo: 7, materialGuard: true };
+const DEFAULT_HUB_SETTINGS: HubSettings = { kwhPrice: 0.35, quietFrom: 22, quietTo: 7, materialGuard: true, doubleAction: 'pause' };
 export function getHubSettings(): HubSettings {
   try {
     return { ...DEFAULT_HUB_SETTINGS, ...(JSON.parse(safeStorage.getItem(HUB_SETTINGS_KEY) || '{}') || {}) };
@@ -364,6 +365,16 @@ export interface PrinterFile {
   name: string;
   size: number;
   time: number;
+}
+
+/** LED-Test an/aus: solange er läuft, ignoriert der Pi die Warteschlange; danach zeigt er sie sofort wieder (Fehler egal) */
+export async function piQueueLedTest(on: boolean): Promise<void> {
+  if (!hasServer() || !getHubInfoLite()?.enabled) return;
+  try {
+    await get('/api/hub/queue/ledtest', { method: 'POST', body: { on }, timeoutMs: 8000 });
+  } catch {
+    /* ohne Pi-Hub kein Halten nötig */
+  }
 }
 
 /** Auswahl pro Filament speichern: tray = „amsId:slotId“, leer = automatisch */

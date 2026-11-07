@@ -34,6 +34,8 @@ export interface HubConfig {
   quietTo: number;
   /** Material fehlt im AMS → Druck pausieren */
   materialGuard: boolean;
+  /** Taster doppelt gedrückt: pause = Druck pausieren/fortsetzen, rotate = ersten Eintrag der Warteschlange nach hinten, none = nichts */
+  doubleAction: 'pause' | 'rotate' | 'none';
   updatedAt: number;
 }
 
@@ -54,6 +56,7 @@ const DEFAULT_CFG: HubConfig = {
   quietFrom: 22,
   quietTo: 7,
   materialGuard: true,
+  doubleAction: 'pause',
   updatedAt: 0
 };
 
@@ -116,6 +119,7 @@ export function updateHubConfig(body: any): HubConfig {
   set('quietFrom', num(body?.quietFrom, 0, 23));
   set('quietTo', num(body?.quietTo, 0, 23));
   set('materialGuard', bool(body?.materialGuard));
+  if (body?.doubleAction === 'pause' || body?.doubleAction === 'rotate' || body?.doubleAction === 'none') set('doubleAction', body.doubleAction);
   if (body?.push && typeof body.push === 'object') {
     c.push = { ...c.push };
     for (const k of ['done', 'failed', 'warn', 'low'] as const) if (typeof body.push[k] === 'boolean') c.push[k] = body.push[k];

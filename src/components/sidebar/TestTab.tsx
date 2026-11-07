@@ -78,7 +78,7 @@ export const TestTab: React.FC = () => {
     else setSearching(false);
   }, [hasHa, find]);
 
-  // Live lesen, solange offen (alle 2,5 s die Liste neu holen)
+  // Live lesen, solange offen (jede Sekunde die Liste neu holen)
   const hasDev = Boolean(base);
   useEffect(() => {
     if (!hasDev) return;
@@ -96,7 +96,7 @@ export const TestTab: React.FC = () => {
         busy = false;
       }
     };
-    const iv = setInterval(() => void tick(), 2500);
+    const iv = setInterval(() => void tick(), 1000);
     return () => {
       alive = false;
       clearInterval(iv);

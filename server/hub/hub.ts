@@ -97,6 +97,7 @@ export function hubStatus() {
     quietFrom: c.quietFrom,
     quietTo: c.quietTo,
     materialGuard: c.materialGuard,
+    doubleAction: c.doubleAction,
     energyWeek: energyWeeks().slice(-1)[0] || null,
     esp: espInfoSafe()
   };

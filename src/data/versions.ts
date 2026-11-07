@@ -3402,5 +3402,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.240',
+    label: '1.240 (LED-Test sauber, Doppelklick wählbar)',
+    releaseDate: '07.11.2026',
+    description:
+      'LED-Test: Solange er läuft, ignoriert der Pi die Warteschlange. Danach zeigt er sofort wieder die echten Einträge (vorher blieben falsche LEDs stehen). Taster zweimal drücken ist jetzt in den Pi-Einstellungen wählbar: Druck pausieren/fortsetzen (Standard), ersten Eintrag der Warteschlange nach hinten schieben oder nichts. Das Testmenü und der NFC-Leser aktualisieren sich öfter (jede Sekunde statt alle 2,5 und 4 Sekunden). Pi-Add-on 1.3.15 (muss aktualisiert werden).',
+    features: ['🧪 LED-Test: Warteschlange wird ignoriert und danach wiederhergestellt', '👆👆 Doppelklick wählbar: pausieren, nach hinten schieben, nichts', '🔄 Testmenü und NFC-Leser aktualisieren öfter', '🥧 Pi-Add-on 1.3.15'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

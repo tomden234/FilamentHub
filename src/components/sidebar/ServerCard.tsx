@@ -204,6 +204,19 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
             <input type="checkbox" checked={hs.materialGuard} onChange={e => setSetting({ materialGuard: e.target.checked })} />
             Material-Wächter: Druck anhalten, wenn ein Material im AMS fehlt
           </label>
+          <label className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--app-text)' }}>
+            Taster zweimal drücken:
+            <select
+              className="rounded px-1 py-0.5 text-[11px] border cursor-pointer"
+              style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+              value={hs.doubleAction}
+              onChange={e => setSetting({ doubleAction: e.target.value as 'pause' | 'rotate' | 'none' })}
+            >
+              <option value="pause">Druck pausieren / fortsetzen</option>
+              <option value="rotate">Ersten Eintrag nach hinten schieben</option>
+              <option value="none">Nichts</option>
+            </select>
+          </label>
           <p className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
             Strompreis vorbelegt: 0,35 € (Nürnberg, Nov. 2026: Grundversorgung 38,6 ct, günstige Tarife ca. 33 ct). Pushes in der Ruhezeit kommen lautlos.
           </p>

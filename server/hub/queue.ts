@@ -7,6 +7,7 @@ import { dataDir } from '../paths.js';
 import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
 import { ftpBusy, listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubLogic.js';
+import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
 
@@ -464,6 +465,16 @@ export function queueMove(id: string, dir: -1 | 1): void {
   void showLeds(0);
 }
 
+/** 1.240: Während des LED-Tests in der App schreibt der Pi nichts an die Streifen. Danach zeigt er sofort die echte Warteschlange wieder. Sicherheitsende nach 5 min. */
+let ledTestUntil = 0;
+export function setLedTest(on: boolean): void {
+  ledTestUntil = on ? Date.now() + 5 * 60_000 : 0;
+  if (!on) {
+    if (modeTimer) clearTimeout(modeTimer);
+    void showLeds(0);
+  }
+}
+
 let modeTimer: ReturnType<typeof setTimeout> | null = null;
 /** Druck ist fertig, die Platte ist noch nicht frei: die freien LEDs oben leuchten orange (Modus 3), bis der Taster gedrückt wird oder ein Druck startet */
 let plateClear = false;
@@ -476,7 +487,7 @@ const baseMode = (): 0 | 3 => (plateClear ? 3 : 0);
 
 /** LEDs: Anzahl + Modus (0 = normal, 1 = rot blinken, 2 = grün = startet, 3 = Platte räumen). Modus 1/2 gehen nach 6 s zurück. */
 async function showLeds(mode: 0 | 1 | 2): Promise<void> {
-  if (!haAvailable()) return;
+  if (!haAvailable() || Date.now() < ledTestUntil) return; // 1.240: im LED-Test bleibt die Warteschlange außen vor
   await resolveIds();
   await haSetNumber(found.count, Math.min(10, load().length));
   await haSetNumber(found.mode, mode || baseMode());
@@ -578,7 +589,7 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
 }
 
 /** Taster am ESP gedrückt? (Ereignis aus Home Assistant) */
-/** Doppelt drücken: laufenden Druck pausieren, pausierten fortsetzen */
+/** Doppelt drücken (Einstellung in der App): Druck pausieren/fortsetzen, ersten Eintrag nach hinten schieben oder nichts */
 let toggling = false;
 async function togglePause(): Promise<void> {
   if (toggling) return;
@@ -588,6 +599,20 @@ async function togglePause(): Promise<void> {
     const gs = String(d.gcode_state || '');
     const name = String(d.subtask_name || 'Druck');
     if (!port?.command) return;
+    const act = getHubConfig().doubleAction;
+    if (act === 'none') return;
+    if (act === 'rotate') {
+      const list = load();
+      if (list.length < 2) {
+        await showLeds(1);
+        return;
+      }
+      list.push(list.shift()!);
+      save();
+      await showLeds(2);
+      await notify('🔁 Warteschlange gedreht', `„${list[list.length - 1].name}“ steht jetzt ganz hinten, als Nächstes: „${list[0].name}“.`);
+      return;
+    }
     if (gs === 'RUNNING') {
       await port.command('pause');
       await notify('⏸️ Druck pausiert', `${name} (Taster doppelt gedrückt). Nochmal doppelt drücken = weiter.`);
