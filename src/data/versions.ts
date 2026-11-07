@@ -3380,5 +3380,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.238',
+    label: '1.238 (Blinken endet bei Quittieren)',
+    releaseDate: '07.11.2026',
+    description:
+      'Die Status-LED blinkt bei einem Fehler (zum Beispiel nach einem Abbruch) nur noch, bis der Fehler am Drucker quittiert ist. Vorher blinkte sie weiter, weil der Drucker danach noch „FAILED“ meldet. Der Pi prüft alle 30 Sekunden den Fehlercode und schaltet den Streifen aus, sobald er weg ist. Pi-Add-on 1.3.13 (muss aktualisiert werden).',
+    features: ['🚨 Blinken endet, wenn der Fehler am Drucker quittiert ist', '🥧 Pi-Add-on 1.3.13'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

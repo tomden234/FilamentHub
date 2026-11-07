@@ -42,6 +42,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.13 (Fehler-Blinken aus)
+
+- Die Status-LED hörte nach einem Fehler nicht auf zu blinken, weil der Drucker nach dem Quittieren am Display weiter „FAILED“ meldet. Der Pi schaltet den Streifen jetzt aus, sobald der Fehlercode weg ist (Prüfung alle 30 s). Blinkt er ohne gemeldeten Fehlercode, bleibt er an.
+
 ## Neu in 1.3.12 (npoint aus)
 
 - npoint.io ist abgeschaltet: der Server nimmt keine npoint-Adresse mehr an, die Route `/api/cloud-proxy` ist weg. Im Add-on ist die Datei auf dem Pi (`pi:`) jetzt der **Standard-Speicher**, auch wenn noch keine App umgestellt hat oder in der Einstellung noch eine alte npoint-Adresse steht.

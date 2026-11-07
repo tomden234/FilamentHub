@@ -7,6 +7,7 @@
 //  8. Spulen-Check beim Druckstart (reicht das Filament?)
 // 10. Tägliche Sicherung des Cloud-Dokuments (Spulen, Verlauf, Druckliste) auf dem Pi
 // Die Apps schicken ihre Einstellungen (Cloud-Zugang, Slot-Zuordnung, Steckdose …) über /api/hub/config.
+import { ledGuard } from './ledGuard.js';
 import { cloudReady } from './cloud.js';
 import { haAvailable, haListen } from './ha.js';
 import { attachQueue, autoScanTick, onHaEvent as queueEvent, refreshLeds } from './queue.js';
@@ -56,6 +57,7 @@ export async function tick(now = Date.now()): Promise<void> {
     await energyTick(gs, now, dt);
     await goneWatch(live, now);
     if (live) await errorWatch(gs, d, now);
+    if (live) await ledGuard(gs, d);
     if (live) await watchPrint(gs, d, now, dt);
     await autoOff(gs, d, live, now);
     await dryOff(gs, d, live, now);
