@@ -1,6 +1,5 @@
 import { useNow } from './hooks/useNow';
 import { UpdateBanner } from './components/UpdateBanner';
-import { isAppShell } from './utils/env';
 import { peekIdleTag } from './utils/nativeNfc';
 import { fixSpoolWeights } from './utils/spoolSanity';
 import { normalizeSpools, spoolTara } from './utils/spoolState';
@@ -168,10 +167,11 @@ export default function App() {
 
   // Umschalter: 'desktop' (normale Desktop-Version) vs. 'app' (Smartphone-Modus)
   const [deviceMode, setDeviceMode] = useState<DeviceMode>(() => {
-    // App-Modus ist der Standard: immer in der Android-App, der installierten Web-App und auf dem Handy.
-    // Nur auf großen Bildschirmen im Browser wird die zuletzt gewählte Ansicht beibehalten.
-    if (isAppShell() || window.innerWidth < 768) return 'app';
-    return (safeStorage.getItem('filamenthub_device_mode') as DeviceMode) || 'app';
+    // 1.246: Handy (unter 768 px) = App-Modus. Alles Breitere (PC, Windows-App, iPad, auch als installierte Web-App) = gleiche Ansicht:
+    // die zuletzt gewählte, sonst die Desktop-Ansicht. So sieht das iPad aus wie der PC.
+    if (window.innerWidth < 768) return 'app';
+    const saved = safeStorage.getItem('filamenthub_device_mode');
+    return saved === 'app' || saved === 'desktop' ? saved : 'desktop';
   });
 
   // Am PC (Windows-App oder breiter Browser) sitzt der Drucker als feste Leiste rechts. Das Menü links startet IMMER zu
@@ -185,7 +185,7 @@ export default function App() {
   }, []);
   const [dockPref, setDockPref] = useState<boolean>(false);
   const rightDock = false; // Drucker-Leiste rechts (1.165) wurde in 1.166 wieder entfernt: Drucker steht wieder in der Mitte
-  const canDock = deviceMode === 'desktop' && !isAppShell() && winW >= 1560;
+  const canDock = deviceMode === 'desktop' && winW >= 1560;
   const isDocked = canDock && dockPref;
 
   const handleSetDeviceMode = useCallback((mode: DeviceMode) => {

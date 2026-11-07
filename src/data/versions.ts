@@ -3468,5 +3468,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.246',
+    label: '1.246 (iPad wie PC)',
+    releaseDate: '07.11.2026',
+    description:
+      'Das iPad zeigt jetzt dieselbe Ansicht wie der PC. Bisher zwang die installierte Web-App (Zum Home-Bildschirm) immer die Handy-Ansicht. Jetzt gilt: unter 768 px Breite Handy-Ansicht, alles Breitere (PC, Windows-App, iPad, auch als Web-App) nutzt die zuletzt gewählte Ansicht, ohne Auswahl die Desktop-Ansicht. Umschalten geht weiter oben in der Leiste.',
+    features: ['📱➡️🖥️ iPad = PC-Ansicht', '🏠 Gilt auch als installierte Web-App', '🔀 Umschalter Handy/Desktop bleibt'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
