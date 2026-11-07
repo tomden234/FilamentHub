@@ -11,7 +11,7 @@ const BASE_HASH_KEY = 'filamenthub_sync_hash';
 const AT_KEY = 'filamenthub_sync_at';
 const RELOAD_KEY = 'filamenthub_sync_reload_at';
 
-export const PRINTER_KEYS = [
+const PRINTER_KEYS = [
   'bambu_serial_number',
   'bambu_user_id',
   'bambu_access_token',
@@ -33,7 +33,7 @@ const SETTING_KEYS = [
   'filamenthub_server_key'
 ];
 // Home Assistant (für Kamera, Steckdose und NFC-Leser im AMS)
-export const HA_KEYS = ['ha_nabu_url', 'ha_url', 'ha_long_lived_token', 'ha_token', 'ha_camera_entity', 'ha_switch_entity'];
+const HA_KEYS = ['ha_nabu_url', 'ha_url', 'ha_long_lived_token', 'ha_token', 'ha_camera_entity', 'ha_switch_entity'];
 const ALL_KEYS = [...PRINTER_KEYS, ...SETTING_KEYS, ...HA_KEYS];
 
 export type SyncResult = 'pushed' | 'applied' | 'same' | 'nopass' | 'badpass' | 'error';

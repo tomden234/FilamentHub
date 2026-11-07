@@ -3,7 +3,7 @@ import { NfcFormatPicker } from './NfcFormatPicker';
 import type { NfcWriteFormat } from '../../utils/nfcManager';
 import { Tag, CheckCircle2, AlertCircle, PenTool } from 'lucide-react';
 
-export interface NfcWriteTabProps {
+interface NfcWriteTabProps {
   writeFormat: NfcWriteFormat;
   setWriteFormat: (format: NfcWriteFormat) => void;
   renderSpoolPicker: (...args: any[]) => any;

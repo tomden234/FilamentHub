@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckCircle2, Tag, PenTool } from 'lucide-react';
 import type { NfcModalProps as ParentProps } from '../NfcModal';
 
-export interface NfcWriteDirectTabProps {
+interface NfcWriteDirectTabProps {
   targetSpool: any;
   writeSuccessMessage: any;
   onClose: ParentProps['onClose'];

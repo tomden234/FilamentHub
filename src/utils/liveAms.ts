@@ -1,7 +1,7 @@
 // Echter Stand des AMS vom Drucker (Trocknung), für die Spulen-Liste. Kommt aus dem Live-Status, nicht aus einer lokalen Merkliste.
 // Vorher blieb "Trocknet" stehen, obwohl der Drucker längst nicht mehr trocknete.
 
-export interface LiveAms {
+interface LiveAms {
   connected: boolean;
   drying: boolean;
   /** Restminuten laut Drucker (dry_time), sonst null */

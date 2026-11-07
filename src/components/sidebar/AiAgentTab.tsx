@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 import type { ChatMessage } from './useAgentChat';
 
-export interface AiAgentTabProps {
+interface AiAgentTabProps {
   setAiInput: any;
   chatMessages: ChatMessage[];
   handleAiSubmit: (...args: any[]) => any;

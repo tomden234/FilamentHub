@@ -3,7 +3,7 @@
 import type { BambuMqttCore } from './BambuMqttCore';
 import { bambuLogin } from '../bambuCloudLogin';
 
-export interface RouteResult {
+interface RouteResult {
   status: number;
   body: any;
 }
@@ -11,32 +11,6 @@ export interface RouteResult {
 const ok = (body: any): RouteResult => ({ status: 200, body });
 const fail = (status: number, body: any): RouteResult => ({ status, body });
 const errText = (e: any) => e?.message || String(e);
-
-/** Cloud-Token prüfen und gebundene Drucker auflisten (Verbindungstest mit Token) */
-export async function testCloudToken(svc: BambuMqttCore, accessToken: string): Promise<RouteResult> {
-  try {
-    const bound = await svc.getBoundDevices(accessToken.trim());
-    if (bound.success && bound.devices && bound.devices.length > 0) {
-      const firstDev = bound.devices.find(d => d.online) || bound.devices[0];
-      return ok({
-        success: true,
-        isCloud: true,
-        device: firstDev,
-        devices: bound.devices,
-        userId: bound.userId,
-        account: bound.account,
-        message: `Bambu Cloud Token erfolgreich verifiziert! Gefundener Drucker: ${firstDev.name || firstDev.dev_product_name} (${firstDev.dev_id}, ${firstDev.online ? 'Online' : 'Offline'}).`
-      });
-    }
-    // Token wurde geprüft, aber nicht akzeptiert oder es gibt keinen Drucker: ehrlich melden statt „erfolgreich"
-    return fail(401, {
-      success: false,
-      error: bound.error || 'Token akzeptiert, aber es ist kein Drucker an dein Bambu-Konto gebunden.'
-    });
-  } catch (err: any) {
-    return fail(502, { success: false, error: `Bambu Cloud nicht erreichbar: ${errText(err)}` });
-  }
-}
 
 function bambuStatusCompat(svc: BambuMqttCore): RouteResult {
   const current = svc.getStatus();
@@ -71,7 +45,7 @@ function bambuStatusCompat(svc: BambuMqttCore): RouteResult {
 
 /**
  * Bearbeitet eine Drucker-Anfrage. Gibt null zurück, wenn der Pfad hier nicht behandelt wird
- * (Server: Kamera, Live-Stream, G-Code-Upload und LAN-Test laufen weiterhin über eigene Routen).
+ * (Server: Kamera, Live-Stream und G-Code-Upload laufen weiterhin über eigene Routen).
  */
 export async function handlePrinterRoute(
   svc: BambuMqttCore,
@@ -88,18 +62,6 @@ export async function handlePrinterRoute(
   if (m !== 'POST') return null;
 
   switch (path) {
-    case '/api/printer/devices': {
-      try {
-        const { accessToken } = b;
-        if (!accessToken || !String(accessToken).trim()) {
-          return fail(400, { success: false, error: 'Kein Access Token übergeben.' });
-        }
-        return ok(await svc.getBoundDevices(String(accessToken).trim()));
-      } catch (error: any) {
-        return fail(500, { success: false, error: errText(error) || 'Fehler beim Abrufen der Druckerliste.' });
-      }
-    }
-
     case '/api/printer/tasks': {
       const res = await svc.getRecentTasks(Number(b.limit) || 15);
       return res.success ? ok(res) : fail(502, res);
@@ -279,13 +241,6 @@ export async function handlePrinterRoute(
       } catch (err: any) {
         return fail(500, { success: false, error: errText(err) });
       }
-    }
-
-    case '/api/bambu/test-connection': {
-      // In der App gibt es nur den Cloud-Test mit Token (LAN-/Socket-Tests brauchen den Server)
-      const token = typeof b.accessToken === 'string' ? b.accessToken.trim() : '';
-      if (token) return testCloudToken(svc, token);
-      return null;
     }
 
     default:

@@ -13,14 +13,14 @@ import { resolveAms } from '../utils/amsEntities';
 // und ordnet die passende Spule automatisch zu. Optional werden Material und Farbe an den Drucker geschickt.
 
 /** Tag-Nummer vergleichbar machen: „04-A1-B2“, „04:a1:b2“, „04a1b2“ → „04a1b2“ */
-export const normUid = (s: string) => String(s || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+const normUid = (s: string) => String(s || '').toLowerCase().replace(/[^0-9a-f]/g, '');
 
 // 1.206: Leser, Slots und letzter Tag über resolveAms (auch mit anderem ID-Anfang in Home Assistant)
 const STATUS_MS = 30_000;
 const POLL_MS = 4000;
 const DISCOVER_MS = 5 * 60 * 1000;
 
-export interface NfcReaderState {
+interface NfcReaderState {
   /** gefundene Leser (Slot → entity_id) */
   entities: Record<number, string>;
   /** aktuelle Tag-Nummer je Slot ('' = keiner) */

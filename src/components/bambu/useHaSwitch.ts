@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { type HaCredentials, getHaCredentials, fetchHaSwitchStatus, toggleHaSwitch } from '../../utils/haClient';
 import { addSystemLog } from '../../utils/logService';
 
-export interface useHaSwitchParams {
+interface useHaSwitchParams {
   setActionToast: any;
 }
 

@@ -31,7 +31,7 @@ function readJson<T>(key: string, fb: T): T {
 }
 
 export const getAppliedServerDeducts = (): string[] => readJson<string[]>(APPLIED_KEY, []);
-export const getCachedServerDeducts = (): ServerDeduct[] => readJson<ServerDeduct[]>(CACHE_KEY, []);
+const getCachedServerDeducts = (): ServerDeduct[] => readJson<ServerDeduct[]>(CACHE_KEY, []);
 
 export function cleanServerDeducts(v: unknown): ServerDeduct[] {
   if (!Array.isArray(v)) return [];
@@ -98,7 +98,7 @@ export function printAlreadyDeducted(id: string | undefined, name: string, endMs
 
 // --- Status des Hubs (vom Pi-Server), damit die App weiß, was der Server übernimmt ---
 
-export interface HubInfo {
+interface HubInfo {
   enabled: boolean;
   ha: boolean;
   cloud: boolean;
@@ -150,7 +150,7 @@ export function hubPushActive(): boolean {
 }
 
 /** Server schaltet die Steckdose (Aus nach Druck / Trocknen): die App schaltet dann nicht zusätzlich */
-export function hubPowerActive(): boolean {
+function hubPowerActive(): boolean {
   const h = getHubInfo();
   return Boolean(h && h.power && Date.now() - h.at < FRESH_MS);
 }

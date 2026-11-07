@@ -5,8 +5,8 @@
 import type { MaterialType, Spool } from '../types/filament';
 
 export const OPENTAG3D_MIME = 'application/opentag3d';
-export const OPENTAG3D_VERSION = 2004; // 2.004, drei implizite Dezimalstellen
-export const OPENTAG3D_SIZE = 0xe0; // 224 Byte
+const OPENTAG3D_VERSION = 2004; // 2.004, drei implizite Dezimalstellen
+const OPENTAG3D_SIZE = 0xe0; // 224 Byte
 
 /** Offsets laut Spezifikation */
 const OFF = {
@@ -60,7 +60,7 @@ const PROFILES: Record<MaterialType, MaterialProfile> = {
 };
 
 /** Schneidet einen Text auf höchstens n Byte (UTF-8), ohne ein Zeichen zu zerreißen */
-export function truncateUtf8(text: string, n: number): Uint8Array {
+function truncateUtf8(text: string, n: number): Uint8Array {
   const enc = new TextEncoder();
   let out = '';
   for (const ch of text) {
@@ -126,7 +126,7 @@ export function encodeOpenTag3d(spool: Spool): Uint8Array {
   return buf;
 }
 
-export interface OpenTag3dData {
+interface OpenTag3dData {
   version: number;
   baseMaterial: string;
   modifier: string;
@@ -156,7 +156,7 @@ function getU16(buf: Uint8Array, offset: number): number {
 }
 
 /** Ordnet Basismaterial und Modifier einem Material der App zu */
-export function materialFromOpenTag(base: string, modifier: string): MaterialType {
+function materialFromOpenTag(base: string, modifier: string): MaterialType {
   const b = base.toUpperCase();
   const m = modifier.toUpperCase();
   if (b === 'PLA') return m === '+' || m === 'PLUS' || m === 'PRO' ? 'PLA+' : 'PLA';

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useEscapeClose } from '../hooks/useEscapeClose';
 import type { HistoryEntry, Spool } from '../types/filament';
-import { INITIAL_VERSION_PROFILES } from '../data/defaultSpools';
+import { INITIAL_VERSION_PROFILES } from '../data/versions';
 import { STORAGE_KEY_HISTORY } from '../utils/storageKeys';
 import { printerApi, type PrintTask } from '../api/printerApi';
 import { APP_REVISION } from '../utils/env';
@@ -37,11 +37,11 @@ interface FunFactsModalProps {
 //  SCHÄTZUNG = ungefähr, genauer geht es nicht
 type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
-// Von Claude beim Update auf v1.230 gezählt
-const CHATS = 12; // Chats im Projekt „filament webseite“
-const MESSAGES = 444; // deine Nachrichten in diesen Chats (ca.)
-const WORDS = 39100; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 239; // Commits auf GitHub (main)
+// Von Claude beim Update auf v1.231 gezählt
+const CHATS = 13; // Chats im Projekt „filament webseite“
+const MESSAGES = 446; // deine Nachrichten in diesen Chats (ca.)
+const WORDS = 39800; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
+const COMMITS = 241; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
 
 const fmt = (n: number, digits = 0) => n.toLocaleString('de-DE', { maximumFractionDigits: digits, minimumFractionDigits: digits });

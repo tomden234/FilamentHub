@@ -1,7 +1,7 @@
 // Feuchte-Hinweise pro Material: wie schnell zieht es Wasser und wie oft sollte man trocknen.
 import { normMaterial } from './spoolCheck';
 
-export interface HumidityInfo {
+interface HumidityInfo {
   /** 1 = niedrig, 4 = sehr hoch */
   level: 1 | 2 | 3 | 4;
   short: string;

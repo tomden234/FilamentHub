@@ -106,7 +106,7 @@ export function autoDeductSince(): number {
 // --- LAN-Modus: Der Drucker meldet im Nur-LAN-Betrieb keine Aufträge an die Cloud, darum fehlt das Gewicht je Druck. ---
 // Wir merken uns das Gewicht je Auftragsname (aus einem Hochladen mit bekanntem Gewicht oder deiner einmaligen Eingabe).
 // Beim nächsten Druck mit demselben Namen wird automatisch abgezogen.
-export const JOB_GRAMS_KEY = 'bambu_job_grams';
+const JOB_GRAMS_KEY = 'bambu_job_grams';
 export const PENDING_DEDUCT_KEY = 'bambu_lan_pending_deduct';
 
 export function jobKey(name: string): string {

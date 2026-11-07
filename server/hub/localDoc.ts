@@ -1,15 +1,14 @@
 // Das Spulen-Dokument der App (Spulen, Verlauf, Druckliste) als Datei auf dem Pi (SSD).
 // Ersatz für npoint/Gist: kein Fremddienst, kein Token. Jede Änderung zählt `rev` hoch,
 // damit zwei Geräte sich nicht gegenseitig überschreiben (If-Match → 409).
-import fs from "fs";
 import path from "path";
 import { dataDir } from "../paths.js";
-import { loadJsonConfig, saveJsonConfig } from "../jsonConfig.js";
+import { loadJsonConfig, prevOf, saveJsonConfig } from "../jsonConfig.js";
 
 const file = () => path.join(dataDir, "filamenthub-doc.json");
-const prevFile = () => path.join(dataDir, "filamenthub-doc.prev.json");
+const prevFile = () => prevOf(file());
 
-export interface StoredDoc {
+interface StoredDoc {
   rev: number;
   doc: Record<string, unknown>;
 }
@@ -30,7 +29,7 @@ export function readLocalDoc(): StoredDoc {
   );
 }
 
-export type WriteResult =
+type WriteResult =
   | { ok: true; rev: number }
   | { ok: false; status: 400 | 409 | 500; error: string };
 
@@ -54,17 +53,13 @@ export function writeLocalDoc(doc: unknown, expectedRev?: number): WriteResult {
     : 0;
   if (curSpools > 0 && !Array.isArray(next.spools))
     return { ok: false, status: 400, error: "Dokument ohne Spulen abgelehnt." };
-  try {
-    if (fs.existsSync(file())) fs.copyFileSync(file(), prevFile());
-  } catch {
-    /* Vorversion ist nur ein Zusatz */
-  }
   const rev = cur.rev + 1;
   if (
     !saveJsonConfig(
       file(),
       { rev, doc: next } satisfies StoredDoc,
       "Spulen-Dokument",
+      { keepPrev: true },
     )
   )
     return {

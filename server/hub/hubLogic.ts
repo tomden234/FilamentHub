@@ -50,7 +50,7 @@ export function addEnergy(weeks: Record<string, EnergyWeek>, t: number, watts: n
 
 // ---------- Wochenbericht ----------
 
-export interface ReportInput {
+interface ReportInput {
   now: number;
   prints: { name: string; endMs: number; state: string }[];
   history: { grams: number; timestamp: string; spoolId: string }[];
@@ -94,7 +94,7 @@ export function weeklyReport(i: ReportInput): { title: string; text: string } {
 
 // ---------- Warteschlange: Filament der Datei → AMS-Platz ----------
 
-export interface AmsTray {
+interface AmsTray {
   /** Nummer der AMS-Einheit laut Drucker (0, 1 …; 128+ = AMS HT; 255 = extern) */
   amsId: number;
   /** Platz in der Einheit (0-3) */

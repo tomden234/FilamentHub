@@ -2,8 +2,8 @@
 import QRCode from 'qrcode';
 import type { Spool } from '../../types/filament';
 
-export const DOTS_PER_MM = 8; // 203 dpi
-export const HEAD_DOTS = 96; // E10: 12 mm Druckkopf
+const DOTS_PER_MM = 8; // 203 dpi
+const HEAD_DOTS = 96; // E10: 12 mm Druckkopf
 
 export interface Bitmap {
   width: number;
@@ -22,11 +22,11 @@ export interface LabelOptions {
 }
 
 /** Freier Rand, damit Ränder des Druckkopfs/Bandes nie durch den QR-Code oder den Text laufen */
-export const LABEL_MARGIN_DOTS = 10; // 1,25 mm
-export const LABEL_LEAD_DOTS = 16; // 2 mm leerer Anfang (Bandanfang druckt unsauber)
+const LABEL_MARGIN_DOTS = 10; // 1,25 mm
+const LABEL_LEAD_DOTS = 16; // 2 mm leerer Anfang (Bandanfang druckt unsauber)
 const QR_GAP_DOTS = 8;
-export const LABEL_MIN_MM = 20;
-export const AUTO_MAX_MM = 40;
+const LABEL_MIN_MM = 20;
+const AUTO_MAX_MM = 40;
 
 function makeCanvas(w: number, h: number) {
   const canvas = document.createElement('canvas');
@@ -147,7 +147,7 @@ export function renderTestLabel(lengthMm: number): Bitmap {
   return toBitmap(ctx, w, h);
 }
 
-export interface Orientation {
+interface Orientation {
   rotate180: boolean;
   mirror: boolean;
   offsetDots: number;

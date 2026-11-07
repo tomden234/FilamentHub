@@ -1,5 +1,5 @@
 // Kleine Fenster-Ereignisse, damit Menü, Benachrichtigungen und Hauptfenster sich ohne viele Props verständigen.
-export type WorkshopTabId = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue';
+type WorkshopTabId = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue';
 
 export const OPEN_WORKSHOP_EVENT = 'filamenthub:open-workshop';
 

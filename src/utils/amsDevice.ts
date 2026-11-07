@@ -19,7 +19,7 @@ export interface EntityState {
   available: boolean;
 }
 
-export async function readEntity(id: string): Promise<EntityState | null> {
+async function readEntity(id: string): Promise<EntityState | null> {
   try {
     const r = await haFetch(`/api/states/${id}`);
     if (r.status === 404) return null;

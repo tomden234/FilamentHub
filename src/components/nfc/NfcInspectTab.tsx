@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckCircle2, Minus, Plus, Trash2, RotateCw } from 'lucide-react';
 import { NumInput } from '../ui/NumInput';
 
-export interface NfcInspectTabProps {
+interface NfcInspectTabProps {
   activeTargetSpool: any;
   handleAdjustTargetSpoolWeight: (...args: any[]) => any;
   adjustGramsInput: any;

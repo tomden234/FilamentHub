@@ -5,7 +5,7 @@ import type { Spool } from '../types/filament';
 import { safeStorage } from './safeStorage';
 import { getDryingStatus } from './shopLinks';
 
-export interface DryPlan {
+interface DryPlan {
   armed: boolean;
   temp: number;
   hours: number;

@@ -9,6 +9,7 @@ import { installNativeNfc } from './utils/nativeNfc';
 import { startLiveUpdate } from './utils/liveUpdate';
 import { applyThemeStyle } from './utils/themeStyle';
 import { installBackdropGuard } from './utils/backdropGuard';
+import { refreshMediaToken } from './api/client';
 
 // Design-Stil (Klassisch / Cozy) vor dem ersten Zeichnen setzen, damit nichts aufblitzt
 applyThemeStyle();
@@ -48,6 +49,9 @@ if (!IS_NATIVE && typeof window !== 'undefined' && 'serviceWorker' in navigator)
 
 // Systemleisten passend zum Theme färben (Android-App noch einmal kurz nach dem Start, falls die Brücke später bereit ist)
 setTimeout(applySystemBars, 800);
+
+// 1.231: Medien-Token für Kamera und Live-Stream schon vor dem ersten Bild holen
+void refreshMediaToken();
 
 // Android-App: neue Oberfläche automatisch holen (kein neuer APK-Download nötig)
 startLiveUpdate();

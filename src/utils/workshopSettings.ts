@@ -74,9 +74,9 @@ export interface WorkshopSettings {
   statusLedColors: { print: string; pause: string; finish: string; failed: string };
 }
 
-export const WORKSHOP_SETTINGS_KEY = 'filamenthub_workshop_settings';
+const WORKSHOP_SETTINGS_KEY = 'filamenthub_workshop_settings';
 
-export const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
+const DEFAULT_WORKSHOP_SETTINGS: WorkshopSettings = {
   lowWarning: true,
   lowWeightG: 100,
   alertPrintStart: true,

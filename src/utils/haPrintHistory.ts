@@ -2,9 +2,9 @@
 // werden fertige und abgebrochene Drucke gebaut, auch wenn keine App offen war. Rein (ohne Netz), damit es testbar ist.
 
 import { betterPrintName, samePrint } from './printMatch';
-export type PState = 'RUNNING' | 'PREPARE' | 'PAUSE' | 'FINISH' | 'FAILED' | 'IDLE';
+type PState = 'RUNNING' | 'PREPARE' | 'PAUSE' | 'FINISH' | 'FAILED' | 'IDLE';
 
-export interface HistPoint {
+interface HistPoint {
   t: number;
   state: string;
 }
@@ -72,7 +72,7 @@ function lastNumber(pts: HistPoint[], t: number, ok: (n: number) => boolean): nu
   return v;
 }
 
-export interface HistoryInput {
+interface HistoryInput {
   status: HistPoint[];
   names?: HistPoint[];
   trays?: HistPoint[];

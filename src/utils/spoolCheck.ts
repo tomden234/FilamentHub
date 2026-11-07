@@ -19,7 +19,7 @@ export function normMaterial(m?: string): string {
   return u;
 }
 
-export interface SpoolFit {
+interface SpoolFit {
   spool: Spool;
   /** Benötigte Gramm inklusive Reserve */
   need: number;

@@ -12,7 +12,7 @@ export interface JobFilament {
   grams: number;
 }
 
-export interface JobWeights {
+interface JobWeights {
   fileName: string;
   plate: number;
   filaments: JobFilament[];
@@ -28,7 +28,7 @@ const norm = (s: string) =>
     .trim();
 
 /** slice_info.config lesen (ohne XML-Bibliothek: nur die Filament- und Plate-Zeilen) */
-export function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: JobFilament[] } {
+function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: JobFilament[] } {
   const plates = xml.match(/<plate>[\s\S]*?<\/plate>/g) || [];
   const idxOf = (blk: string) => Number((blk.match(/key="index"\s+value="(\d+)"/) || [])[1]) || 0;
   const blk = plates.find(b => idxOf(b) === plate) || plates[0] || xml;

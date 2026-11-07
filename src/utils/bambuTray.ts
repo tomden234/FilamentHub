@@ -55,7 +55,7 @@ export function readBambuTrays(ams: any): BambuTrayInfo[] {
 }
 
 /** Bambu-Materialname (z. B. „PETG HF“, „PA6-CF“, „PLA-CF“) → Material der App */
-export function materialOf(type: string): MaterialType {
+function materialOf(type: string): MaterialType {
   const t = type.replace(/\s+/g, '').toUpperCase();
   if (/^(PA|PET|PPA|PAHT)[-]?\d*[-]?(CF|GF)/.test(t)) return 'PET-CF / PA-CF';
   if (/^(PA|PPA|NYLON)/.test(t)) return 'PA / Nylon';

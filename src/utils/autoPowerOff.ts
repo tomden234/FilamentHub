@@ -2,7 +2,7 @@
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 
-export interface AutoOffState {
+interface AutoOffState {
   armed: boolean;
   /** Auftrag, für den es gilt */
   jobName: string;
@@ -25,7 +25,7 @@ function read(): AutoOffState {
   return OFF;
 }
 
-export function getAutoOff(): AutoOffState {
+function getAutoOff(): AutoOffState {
   if (!cache) cache = read();
   return cache;
 }

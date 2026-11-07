@@ -11,7 +11,7 @@ export interface LiveState {
 const BASE = `https://github.com/${REPO}/releases/download/apk-latest`;
 const parts = (v: string) => (v.match(/\d+/g) || []).map(Number);
 
-export function isNewer(a: string, b: string): boolean {
+function isNewer(a: string, b: string): boolean {
   const x = parts(a);
   const y = parts(b);
   for (let i = 0; i < Math.max(x.length, y.length); i++) {
@@ -37,7 +37,7 @@ export function subscribeLive(cb: (s: LiveState) => void): () => void {
 
 let busy = false;
 
-export async function checkLiveUpdate(): Promise<void> {
+async function checkLiveUpdate(): Promise<void> {
   const plugin = getNativePlugin('FilamentLive');
   if (!plugin || busy || state.status === 'ready') return;
   busy = true;
@@ -55,7 +55,9 @@ export async function checkLiveUpdate(): Promise<void> {
       return;
     }
     set({ status: 'downloading', version });
-    await plugin.call('download', { url: `${BASE}/live-bundle.zip`, version });
+    // 1.231: Prüfsumme mitgeben (die App prüft das Paket vor dem Umschalten)
+    const sha256 = typeof remote.sha256 === 'string' && /^[0-9a-f]{64}$/i.test(remote.sha256) ? remote.sha256 : undefined;
+    await plugin.call('download', { url: `${BASE}/live-bundle.zip`, version, ...(sha256 ? { sha256 } : {}) });
     set({ status: 'ready', version });
   } catch {
     // offline oder GitHub nicht erreichbar: beim nächsten Start erneut prüfen

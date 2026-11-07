@@ -34,7 +34,7 @@ interface Params {
   notify: (t: { text: string; ok: boolean }) => void;
 }
 
-export function bambuSpoolFor(rfid: string, spools: Spool[]): string {
+function bambuSpoolFor(rfid: string, spools: Spool[]): string {
   if (!rfid) return '';
   const n = rfid.toLowerCase();
   const own = spools.find(s => s.bambuRfid && s.bambuRfid.toLowerCase() === n);

@@ -29,7 +29,7 @@ export function isSealed(s: Pick<Spool, 'sealed' | 'storageNote'>): boolean {
 }
 
 /** Fehlende Felder aus Notiz und Leerspulengewicht füllen (ändert vorhandene Angaben nie) */
-export function normalizeSpool(s: Spool): Spool {
+function normalizeSpool(s: Spool): Spool {
   const out: Spool = { ...s };
   let changed = false;
   if (typeof out.onSpool !== 'boolean') {

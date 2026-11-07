@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SidebarProps as ParentProps } from '../Sidebar';
 
-export interface useCalculatorParams {
+interface useCalculatorParams {
   spools: ParentProps['spools'];
 }
 

@@ -4,7 +4,7 @@ import { ThemeSelector } from '../ThemeSelector';
 import { CustomizePanel } from './CustomizePanel';
 import type { SidebarProps as ParentProps } from '../Sidebar';
 
-export interface SettingsThemesPanelProps {
+interface SettingsThemesPanelProps {
   themeBrightness: ParentProps['themeBrightness'];
   themeAccent: ParentProps['themeAccent'];
   onSetBrightness: ParentProps['onSetBrightness'];

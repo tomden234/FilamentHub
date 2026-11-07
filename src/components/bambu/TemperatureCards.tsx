@@ -3,7 +3,7 @@ import { Flame, Edit3, Thermometer, Wind } from 'lucide-react';
 import type { PrinterExpandedPanelProps as ParentProps } from './PrinterExpandedPanel';
 import { NumInput } from '../ui/NumInput';
 
-export interface TemperatureCardsProps {
+interface TemperatureCardsProps {
   isPrinterConnected: ParentProps['isPrinterConnected'];
   setActionToast: ParentProps['setActionToast'];
   setTempModalTarget: ParentProps['setTempModalTarget'];

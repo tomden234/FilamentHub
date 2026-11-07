@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
-import { apiGuard } from './server/apiGuard.js';
+import { apiGuard, makeMediaToken } from './server/apiGuard.js';
 import { rootDir } from './server/paths.js';
 import storageRoutes from './server/routes/storage.js';
 import recognizeRoutes from './server/routes/recognize.js';
@@ -37,6 +37,14 @@ app.use('/api', apiGuard());
 // JSON-Body: große Bilder/Dateien nur für Foto-Erkennung und G-Code-Upload, sonst höchstens 5 MB
 app.use(['/api/recognize-spool', '/api/printer/upload-gcode'], express.json({ limit: '25mb' }));
 app.use(express.json({ limit: '5mb' }));
+
+// 1.231: Kurzlebiger Token für Bilder und Live-Stream (statt des echten Schlüssels in der Adresse). Ohne Schlüssel (localhost) nicht nötig.
+app.get('/api/media-token', (_req, res) => {
+  const key = process.env.APP_API_KEY || '';
+  if (!key) return res.json({ success: true, token: '', exp: 0 });
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ success: true, ...makeMediaToken(key) });
+});
 
 // Routen (jede Gruppe liegt in server/routes/)
 app.use(storageRoutes);

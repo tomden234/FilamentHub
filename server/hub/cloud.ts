@@ -3,7 +3,7 @@
 import { readLocalDoc, writeLocalDoc } from './localDoc.js';
 const GIST_FILE = 'filamenthub.json';
 
-export interface CloudAccess {
+interface CloudAccess {
   cloudUrl: string;
   gistToken: string;
 }

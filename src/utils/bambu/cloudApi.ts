@@ -115,14 +115,14 @@ export async function getBoundDevices(token: string): Promise<{
   }
 }
 
-export interface BambuTaskFilament {
+interface BambuTaskFilament {
   material: string;
   colorHex: string;
   grams: number;
   slot?: number;
 }
 
-export interface BambuTask {
+interface BambuTask {
   id: string;
   title: string;
   /** Auftragsname wie am Drucker (subtask_name), zum Abgleich mit der Druckliste */

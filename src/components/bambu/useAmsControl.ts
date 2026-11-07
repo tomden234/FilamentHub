@@ -6,7 +6,7 @@ import type { BambuPrinterWidgetProps as ParentProps } from '../BambuPrinterWidg
 import { paramsFromSpool, sendToSlot } from '../../utils/slotAssign';
 import { mismatch, readExternal, readTrays, EXTERNAL_SLOT } from '../../utils/amsMatch';
 
-export interface useAmsControlParams {
+interface useAmsControlParams {
   spools: ParentProps['spools'];
   liveState: any;
   onApplyDryingCredit: ParentProps['onApplyDryingCredit'];

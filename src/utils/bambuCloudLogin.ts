@@ -107,7 +107,7 @@ export async function resolveBambuUserId(token: string): Promise<string | null> 
 }
 
 /** Bestätigungs-E-Mail (6-stelliger Code) anfordern */
-export async function sendBambuEmailCode(email: string): Promise<{ ok: boolean; message?: string; network?: boolean }> {
+async function sendBambuEmailCode(email: string): Promise<{ ok: boolean; message?: string; network?: boolean }> {
   try {
     const r = await postJson(`${API}/v1/user-service/user/sendemail/code`, { email: email.trim(), type: 'codeLogin' });
     if (r.html) return { ok: false, message: blockedMessage(r.status) };

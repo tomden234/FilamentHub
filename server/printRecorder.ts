@@ -1,12 +1,12 @@
 // Druck-Rekorder auf dem Server (läuft im Home-Assistant-Add-on rund um die Uhr):
 // verfolgt den Druckstatus des Druckers und speichert jeden fertigen oder abgebrochenen Druck in eine Datei.
 // Die Apps holen die Liste über /api/recorder/prints und tragen fehlende Drucke nach (Druckliste + Abzug).
-import fs from 'fs';
 import path from 'path';
 import { dataDir } from './paths.js';
+import { readJsonWithPrev, saveJsonConfig } from './jsonConfig.js';
 
-export const ACTIVE = new Set(['RUNNING', 'PREPARE', 'PAUSE']);
-export const ENDED = new Set(['FINISH', 'FAILED']);
+const ACTIVE = new Set(['RUNNING', 'PREPARE', 'PAUSE']);
+const ENDED = new Set(['FINISH', 'FAILED']);
 
 export interface RecordedPrint {
   id: string;
@@ -73,22 +73,15 @@ export class PrintRecorder {
   private idleSince = 0;
 
   constructor(private readonly file: string = path.join(dataDir, 'recorded-prints.json')) {
-    try {
-      const raw = JSON.parse(fs.readFileSync(this.file, 'utf-8'));
-      if (raw && Array.isArray(raw.prints)) this.data = { open: raw.open && typeof raw.open.id === 'string' ? raw.open : null, prints: raw.prints };
-    } catch {
-      /* noch keine Datei */
-    }
+    // 1.231: kaputte Datei (Stromausfall) → Vorversion statt leerer Liste
+    const raw = readJsonWithPrev<any>(this.file, d => Boolean(d && Array.isArray(d.prints)));
+    if (raw) this.data = { open: raw.open && typeof raw.open.id === 'string' ? raw.open : null, prints: raw.prints };
   }
 
   private save(force: boolean, now: number): void {
     if (!force && now - this.lastWrite < 5000) return;
     this.lastWrite = now;
-    try {
-      fs.writeFileSync(this.file, JSON.stringify(this.data), 'utf-8');
-    } catch (e) {
-      console.warn('[Rekorder] Konnte nicht speichern:', (e as Error)?.message || e);
-    }
+    saveJsonConfig(this.file, this.data, 'Druckliste (Rekorder)', { pretty: false, keepPrev: true });
   }
 
   private finish(o: OpenPrint, state: 'FINISH' | 'FAILED', now: number): RecordedPrint | null {

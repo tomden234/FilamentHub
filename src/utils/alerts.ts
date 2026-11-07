@@ -20,7 +20,7 @@ const KIND_SETTING: Record<InboxKind, keyof WorkshopSettings | null> = {
   info: null
 };
 
-export interface AlertInput {
+interface AlertInput {
   kind: InboxKind;
   title: string;
   text: string;

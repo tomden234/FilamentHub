@@ -5,7 +5,7 @@ import type { Spool } from '../types/filament';
 import { getDryingStatus } from './shopLinks';
 import { isSealed, isInEibos } from './spoolState';
 
-export type AssistantAction =
+type AssistantAction =
   | { type: 'deduct'; spoolId: string; grams: number }
   | { type: 'add'; spoolId: string; grams: number }
   | { type: 'dried'; spoolId: string }
@@ -21,13 +21,13 @@ export interface AssistantMemory {
   pending?: { candidates: string[]; intent: 'deduct' | 'add' | 'set' | 'dried' | 'info'; grams?: number };
 }
 
-export interface AssistantResult {
+interface AssistantResult {
   reply: string;
   actions: AssistantAction[];
   memory: AssistantMemory;
 }
 
-export interface AssistantContext {
+interface AssistantContext {
   spools: Spool[];
   lowWeightG: number;
   eibosTara?: number;
@@ -60,7 +60,7 @@ const label = (s: Spool) => `${s.brand} ${s.name}`.trim();
 const eur = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
 
 /** Gramm aus dem Satz (12 g, 1,5 kg, 300gramm). Null = keine Zahl. */
-export function parseGrams(text: string): number | null {
+function parseGrams(text: string): number | null {
   const t = text.toLowerCase().replace(',', '.');
   const kg = t.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo)/);
   if (kg) return Math.round(parseFloat(kg[1]) * 1000);
@@ -76,7 +76,7 @@ function materialIn(q: string): string | null {
 }
 
 /** Spulen nach Ähnlichkeit sortiert (bester Treffer zuerst). Score 0 = kein Bezug. */
-export function rankSpools(spools: Spool[], text: string): { spool: Spool; score: number }[] {
+function rankSpools(spools: Spool[], text: string): { spool: Spool; score: number }[] {
   const words = norm(text)
     .split(' ')
     .filter(w => w && !STOP.has(w) && !/^\d/.test(w));
@@ -170,7 +170,7 @@ function act(ctx: AssistantContext, spool: Spool, intent: NonNullable<AssistantM
 const has = (q: string, ...w: string[]) => w.some(x => q.includes(x));
 
 /** Spar-Tipps aus dem eigenen Bestand: Reste zuerst, doppelte Farben, ungeöffnete Spulen, Vorrat, Preisunterschiede, Trocknen */
-export function savingTips(ctx: AssistantContext): string {
+function savingTips(ctx: AssistantContext): string {
   const spools = ctx.spools.filter(s => (s.remainingWeight || 0) > 0);
   if (!spools.length) return 'Du hast noch keine Spulen eingetragen. Trag sie ein, dann zeige ich dir, wo du sparen kannst.';
   const tips: string[] = [];

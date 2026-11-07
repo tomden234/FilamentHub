@@ -1,7 +1,7 @@
 import React from 'react';
 import type { NfcWriteFormat } from '../../utils/nfcManager';
 
-export interface NfcFormatPickerProps {
+interface NfcFormatPickerProps {
   writeFormat: NfcWriteFormat;
   setWriteFormat: (format: NfcWriteFormat) => void;
 }

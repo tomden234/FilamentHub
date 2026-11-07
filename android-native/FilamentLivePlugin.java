@@ -17,6 +17,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -27,7 +29,21 @@ import java.util.zip.ZipInputStream;
 public class FilamentLivePlugin extends Plugin {
 
     /** Muss mit "nativeApi" in live-version.json (apk.yml) übereinstimmen. Erhöhen, wenn sich Java-Plugins ändern. */
-    public static final int NATIVE_API = 9;
+    public static final int NATIVE_API = 10;
+
+    /**
+     * 1.231: Nur Dateien aus GitHub-Releases (https). Vorher nahm das Plugin jede Adresse an, auch http:
+     * eine fremde Seite in der App hätte so eine eigene Oberfläche dauerhaft einspielen können.
+     */
+    static boolean isAllowedUrl(String url) {
+        return url != null && url.startsWith("https://github.com/") && url.contains("/releases/download/") && !url.contains("..") && !url.contains("@");
+    }
+
+    static String hex(byte[] b) {
+        StringBuilder sb = new StringBuilder();
+        for (byte x : b) sb.append(String.format("%02x", x));
+        return sb.toString();
+    }
 
     static final String PREFS = "filament_live";
 
@@ -97,8 +113,8 @@ public class FilamentLivePlugin extends Plugin {
     @PluginMethod
     public void installApk(final PluginCall call) {
         final String url = call.getString("url");
-        if (url == null) {
-            call.reject("url erforderlich");
+        if (!isAllowedUrl(url)) {
+            call.reject("Adresse nicht erlaubt (nur GitHub-Release)");
             return;
         }
         final Context ctx = getContext();
@@ -142,8 +158,18 @@ public class FilamentLivePlugin extends Plugin {
     public void download(final PluginCall call) {
         final String url = call.getString("url");
         final String version = call.getString("version");
+        // 1.231: Prüfsumme aus live-version.json (SHA-256 des Pakets): halbe oder veränderte Downloads werden verworfen
+        final String sha256 = call.getString("sha256");
         if (url == null || version == null || !version.matches("[0-9A-Za-z._-]+")) {
             call.reject("url und version erforderlich");
+            return;
+        }
+        if (!isAllowedUrl(url)) {
+            call.reject("Adresse nicht erlaubt (nur GitHub-Release)");
+            return;
+        }
+        if (sha256 != null && !sha256.matches("[0-9a-fA-F]{64}")) {
+            call.reject("Prüfsumme ungültig");
             return;
         }
         final Context ctx = getContext();
@@ -160,7 +186,8 @@ public class FilamentLivePlugin extends Plugin {
                 conn.setInstanceFollowRedirects(true);
                 if (conn.getResponseCode() != 200) throw new Exception("HTTP " + conn.getResponseCode());
                 String tmpCanonical = tmp.getCanonicalPath() + File.separator;
-                try (InputStream in = conn.getInputStream(); ZipInputStream zip = new ZipInputStream(in)) {
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
+                try (InputStream raw = conn.getInputStream(); DigestInputStream in = new DigestInputStream(raw, md); ZipInputStream zip = new ZipInputStream(in)) {
                     ZipEntry entry;
                     byte[] buf = new byte[16384];
                     while ((entry = zip.getNextEntry()) != null) {
@@ -176,7 +203,11 @@ public class FilamentLivePlugin extends Plugin {
                             while ((n = zip.read(buf)) > 0) fos.write(buf, 0, n);
                         }
                     }
+                    // Rest des Datenstroms (Zentralverzeichnis) mitlesen, damit die Prüfsumme über die ganze Datei geht
+                    byte[] rest = new byte[16384];
+                    while (in.read(rest) > 0) { }
                 }
+                if (sha256 != null && !hex(md.digest()).equalsIgnoreCase(sha256)) throw new Exception("Prüfsumme stimmt nicht (Download beschädigt oder verändert)");
                 if (!new File(tmp, "index.html").exists()) throw new Exception("index.html fehlt im Paket");
                 deleteRecursive(target);
                 if (!tmp.renameTo(target)) throw new Exception("Umbenennen fehlgeschlagen");

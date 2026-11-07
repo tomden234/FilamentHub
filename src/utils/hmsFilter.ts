@@ -2,7 +2,7 @@
 import { hmsCode, hmsSeverity, type HmsEntry } from './hms';
 
 /** Zustände, in denen ein Druck läuft oder gerade fehlgeschlagen ist */
-export const JOB_STATES: ReadonlySet<string> = new Set(['RUNNING', 'PAUSE', 'FAILED']);
+const JOB_STATES: ReadonlySet<string> = new Set(['RUNNING', 'PAUSE', 'FAILED']);
 /** Abbruch durch dich (kommt schon als „Druck fehlgeschlagen/abgebrochen“) */
 export const CANCELED_PRINT_ERROR = 0x0300400c;
 /** „MQTT command verification failed“: Antwort auf App-Befehle, wird dort angezeigt */

@@ -15,11 +15,11 @@ const RANGE: Record<string, [number, number]> = {
   CF: [260, 290]
 };
 
-export function tempRangeFor(material: string): [number, number] {
+function tempRangeFor(material: string): [number, number] {
   return RANGE[normMaterial(material)] || [190, 250];
 }
 
-export interface SpoolProfile {
+interface SpoolProfile {
   material: string;
   colorHex: string;
   /** Beste Düsentemperatur (gespeichert oder Standard) */

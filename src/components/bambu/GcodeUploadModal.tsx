@@ -4,7 +4,7 @@ import { useEscapeClose } from '../../hooks/useEscapeClose';
 import type { Spool } from '../../types/filament';
 import { SpoolFitList } from '../workshop/SpoolFitList';
 
-export interface GcodeUploadModalProps {
+interface GcodeUploadModalProps {
   setShowGcodeModal: any;
   fileInputRef: React.RefObject<any>;
   handleGcodeFileSelect: (...args: any[]) => any;

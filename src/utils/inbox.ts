@@ -20,7 +20,7 @@ export interface InboxItem {
   items?: { title: string; sub?: string; color?: string }[];
 }
 
-export const INBOX_KEY = 'filamenthub_inbox_v1';
+const INBOX_KEY = 'filamenthub_inbox_v1';
 const MAX_ITEMS = 100;
 /** Gleiche Meldungsart innerhalb dieser Zeit nicht doppelt speichern (z. B. App und Drucker melden dasselbe Ende) */
 const DEDUPE_MS = 10 * 60 * 1000;
@@ -38,7 +38,7 @@ function read(): InboxItem[] {
   }
 }
 
-export function getInbox(): InboxItem[] {
+function getInbox(): InboxItem[] {
   if (!cache) cache = read();
   return cache;
 }

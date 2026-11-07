@@ -15,7 +15,7 @@ export interface QueueItem {
   colorHex?: string;
 }
 
-export interface QueueCheck {
+interface QueueCheck {
   ok: boolean;
   /** Spule, die gedruckt würde (wenn eine passt) */
   spool?: Spool;
@@ -73,7 +73,7 @@ export function loadedSpools(spools: Spool[]): Spool[] {
   }
 }
 
-export function getQueue(): QueueItem[] {
+function getQueue(): QueueItem[] {
   if (!cache) cache = read();
   return cache;
 }

@@ -21,7 +21,7 @@ const MIN_AGE_MS = 3 * 60_000;
 /** Abzug nachträglich nur für Drucke, die nach (erster Start dieser Funktion − 2 Tage) endeten */
 const BACKFILL_MS = 2 * 24 * 3600_000;
 
-export interface HaSyncInfo {
+interface HaSyncInfo {
   at: number;
   ok: boolean;
   text: string;
@@ -65,7 +65,7 @@ async function loadSensors(): Promise<HistorySensors | null> {
 }
 
 /** Aus dem HA-Verlauf gebaute Drucke der letzten 7 Tage (ohne Seiteneffekte) */
-export async function fetchHaPrints(now = Date.now()): Promise<{ prints: HaPrint[]; sensors: HistorySensors | null }> {
+async function fetchHaPrints(now = Date.now()): Promise<{ prints: HaPrint[]; sensors: HistorySensors | null }> {
   const sensors = await loadSensors();
   if (!sensors) return { prints: [], sensors: null };
   const ids = [sensors.status, sensors.name, sensors.tray, sensors.progress, sensors.start].filter(Boolean) as string[];

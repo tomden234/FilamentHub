@@ -1,7 +1,7 @@
 export type ThemeBrightness = 'polar' | 'warm' | 'titanium' | 'slate' | 'midnight';
 export type ThemeAccent = 'orange' | 'blue' | 'emerald' | 'cyan' | 'violet' | 'mono';
 
-export interface BrightnessOption {
+interface BrightnessOption {
   id: ThemeBrightness;
   name: string;
   subtitle: string;
@@ -63,7 +63,7 @@ export const BRIGHTNESS_OPTIONS: BrightnessOption[] = [
 /** Standard-Theme: Soft */
 export const DEFAULT_BRIGHTNESS: ThemeBrightness = 'warm';
 
-export interface AccentOption {
+interface AccentOption {
   id: ThemeAccent;
   name: string;
   colorHex: string;

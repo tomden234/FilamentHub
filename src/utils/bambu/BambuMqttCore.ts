@@ -2,6 +2,7 @@
 // (natives MQTT-Plugin). Alles, was von der Umgebung abhängt (Verbindung, Speicher, Meldung an die Oberfläche),
 // steckt in den drei abstrakten Methoden unten, der Rest ist für beide gleich.
 import * as bambuCloud from './cloudApi';
+import { isLanIp } from '../netCheck';
 
 /** Kleinster gemeinsamer Nenner der MQTT-Clients (Paket "mqtt" im Server, natives Plugin in der App) */
 export interface MqttLike {
@@ -23,17 +24,6 @@ export interface MqttConnectOptions {
   lan?: boolean;
 }
 
-/**
- * Darf diese Adresse für den LAN-Modus genutzt werden? Nur IPv4 im Heimnetz (10.x, 172.16-31.x, 192.168.x)
- * oder Tailscale (100.64-127.x). So kann der LAN-Modus nie an einen fremden Server im Internet geleitet werden.
- */
-export function isLanAddress(raw: string): boolean {
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(String(raw || '').trim());
-  if (!m) return false;
-  const o = m.slice(1).map(Number);
-  if (o.some(n => n > 255)) return false;
-  return o[0] === 10 || (o[0] === 172 && o[1] >= 16 && o[1] <= 31) || (o[0] === 192 && o[1] === 168) || (o[0] === 100 && o[1] >= 64 && o[1] <= 127);
-}
 
 export interface SavedBambuConfig {
   serialNumber?: string;
@@ -241,7 +231,7 @@ export abstract class BambuMqttCore {
         }
         if (parsed.lanIp) this.lanIp = parsed.lanIp;
         if (parsed.lanCode) this.lanCode = parsed.lanCode;
-        this.lanMode = Boolean(parsed.lanMode) && isLanAddress(this.lanIp);
+        this.lanMode = Boolean(parsed.lanMode) && isLanIp(this.lanIp);
       }
     } catch (e) {
       console.warn('Konnte gespeicherte Bambu-Zugangsdaten nicht lesen:', e);
@@ -613,7 +603,7 @@ export abstract class BambuMqttCore {
     const ip = String(params.lanIp || '').trim();
     const code = String(params.lanCode || '').trim();
     if (!serial) throw new Error('Seriennummer ist erforderlich (steht in den Bambu-Einstellungen unter Geräteinfo).');
-    if (!isLanAddress(ip)) {
+    if (!isLanIp(ip)) {
       throw new Error('Bitte die IP-Adresse des Druckers eingeben (z. B. 192.168.1.50). Erlaubt sind Heimnetz- und Tailscale-Adressen.');
     }
     if (!code) throw new Error('Zugangscode fehlt (am Drucker unter Einstellungen → Nur LAN).');
@@ -1021,10 +1011,9 @@ export abstract class BambuMqttCore {
       throw new Error('Drucker ist aktuell nicht verbunden.');
     }
 
-    // Bei "stop" oder wenn Admin-PIN gesetzt ist, PIN nur prüfen wenn explizit eine PIN übergeben wurde
-    if (this.adminPin && pin && pin.trim() !== this.adminPin.trim()) {
-      throw new Error('Ungültige Admin-PIN. Befehl verweigert.');
-    }
+    // 1.231: Die Admin-PIN ist nur eine Sicherheitsabfrage gegen versehentliches Abbrechen in der App (Route /api/printer/command
+    // prüft sie für „stop“). Der echte Schutz ist der Pi-Schlüssel. Hier wird nicht mehr halb geprüft.
+    void pin;
 
     const reqTopic = `device/${this.serialNumber}/request`;
     let messageBody: any = null;
@@ -1299,6 +1288,8 @@ export abstract class BambuMqttCore {
     if (!this.client || !this.connected || !this.serialNumber) {
       throw new Error('Drucker ist nicht verbunden.');
     }
+    // 1.231: Zahl prüfen (vorher ging bei Text „M140 SNaN“ an den Drucker)
+    if (!Number.isFinite(temp)) throw new Error('Temperatur muss eine Zahl sein.');
     const cleanTemp = Math.max(0, Math.min(300, Math.round(temp)));
     let gcode = '';
     let targetLabel = 'Hotend';
@@ -1705,8 +1696,9 @@ export abstract class BambuMqttCore {
     }
 
     const mode = params.mode === 1 ? 1 : 0;
-    const duration = params.duration || 4;
-    const temp = params.temp || 50;
+    // 1.231: Werte begrenzen (keine Fantasiewerte an den Drucker)
+    const duration = Math.max(1, Math.min(24, Math.round(Number(params.duration) || 4)));
+    const temp = Math.max(35, Math.min(85, Math.round(Number(params.temp) || 50)));
 
     const unit = () => (Array.isArray(this.printData.ams?.ams) ? this.printData.ams.ams[0] : null);
     const idRaw = unit()?.id;

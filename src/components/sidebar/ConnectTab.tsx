@@ -4,7 +4,7 @@ import { Smartphone, Download, Check, Copy, ShieldCheck, Share } from 'lucide-re
 import { APK_URL, IS_NATIVE } from '../../utils/env';
 import { installApkInApp } from '../../utils/liveUpdate';
 
-export interface ConnectTabProps {
+interface ConnectTabProps {
   qrCodeDataUrl: any;
   handleCopyPairLink: (...args: any[]) => any;
   copiedLink: any;

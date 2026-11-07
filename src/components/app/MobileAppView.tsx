@@ -5,7 +5,7 @@ import { LocationFilter } from '../workshop/LocationFilter';
 import { SpoolTile } from '../SpoolTile';
 import type { Spool } from '../../types/filament';
 
-export interface MobileAppViewProps {
+interface MobileAppViewProps {
   spools: any;
   totalGrams: any;
   now: number;

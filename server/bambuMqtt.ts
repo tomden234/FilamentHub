@@ -2,7 +2,6 @@
 // Verbindung über das Node-Paket "mqtt", Zugangsdaten in .bambu-config.json, Live-Status per Server-Sent Events.
 import mqtt from 'mqtt';
 import { Response } from 'express';
-import fs from 'fs';
 import path from 'path';
 import {
   BambuMqttCore,
@@ -10,6 +9,7 @@ import {
   type MqttConnectOptions,
   type SavedBambuConfig
 } from '../src/utils/bambu/BambuMqttCore.js';
+import { readJsonWithPrev, saveJsonConfig } from './jsonConfig.js';
 
 import { printRecorder } from './printRecorder.js';
 import { attachPrinter, onPrintEnd, tick as hubTick, hubEnabled } from './hub/hub.js';
@@ -42,12 +42,12 @@ class BambuMqttService extends BambuMqttCore {
   }
 
   protected loadConfig(): SavedBambuConfig | null {
-    if (!fs.existsSync(this.configFilePath)) return null;
-    return JSON.parse(fs.readFileSync(this.configFilePath, 'utf-8'));
+    return readJsonWithPrev<SavedBambuConfig>(this.configFilePath, d => Boolean(d && typeof d === 'object'));
   }
 
+  /** 1.231: Zugangscode/Token nur für den Besitzer lesbar (0600) und nie als halbe Datei */
   protected saveConfig(config: Required<SavedBambuConfig>): void {
-    fs.writeFileSync(this.configFilePath, JSON.stringify(config, null, 2), 'utf-8');
+    saveJsonConfig(this.configFilePath, config, 'Drucker-Zugangsdaten', { keepPrev: true });
   }
 
   protected envOverrides(): SavedBambuConfig {

@@ -4,7 +4,7 @@ import { getLiveAms } from '../utils/liveAms';
 // AMS-Platz und laufende Trocknung einer Spule. Wird jede Sekunde und bei jeder Änderung neu gelesen.
 // Trocknung zählt nur für Slot 1-4 (das AMS trocknet), nicht für Extern (5), und kommt vom Drucker, wenn er verbunden ist.
 
-export interface SpoolAmsInfo {
+interface SpoolAmsInfo {
   slot: number | null;
   isDrying: boolean;
   dryTemp: number;
@@ -13,7 +13,7 @@ export interface SpoolAmsInfo {
 
 const fmt = (ms: number) => `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
 
-export function readSpoolAms(spoolId: string): SpoolAmsInfo {
+function readSpoolAms(spoolId: string): SpoolAmsInfo {
   try {
     const slotsRaw = localStorage.getItem('filamenthub_ams_slots_x2d');
     const slots: Record<string, string> = slotsRaw ? JSON.parse(slotsRaw) : {};

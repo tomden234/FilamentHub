@@ -13,7 +13,7 @@ import { NumInput } from './ui/NumInput';
 // Spulen-Kachel: Spulen-Symbol in der Filamentfarbe (Füllung zeigt den Rest), Name, großes Gewicht, durchgehender Füllstandsbalken.
 // Antippen klappt die Aktionen auf.
 
-export interface SpoolTileProps {
+interface SpoolTileProps {
   spool: Spool;
   now: number;
   appSettings?: AppSettings;

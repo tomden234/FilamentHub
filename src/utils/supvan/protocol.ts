@@ -92,7 +92,7 @@ export function buildDataFrames(data: Uint8Array): Uint8Array[] {
 const BUF_SIZE = 4096;
 const BUF_HEADER = 14;
 const MAX_BUF_DATA = 4074;
-export const MAX_DENSITY = 15;
+const MAX_DENSITY = 15;
 
 function buildPrintBuffer(
   image: Uint8Array,
@@ -141,7 +141,7 @@ export function splitIntoBuffers(raster: Uint8Array, perLineByte: number, totalC
   return out;
 }
 
-export function compressLzma(data: Uint8Array): Uint8Array {
+function compressLzma(data: Uint8Array): Uint8Array {
   if (!lzmaLib) throw new Error("LZMA ist noch nicht geladen (zuerst compressBuffers aufrufen).");
   const out = lzmaLib.compress(data, { s: 13, f: 128, m: 1 }) as number[];
   return Uint8Array.from(out, b => b & 0xff);
@@ -180,7 +180,7 @@ export interface PrinterStatus {
   noLabel: boolean;
 }
 
-export function hasHeader(d: Uint8Array, minLen: number, cmd: number): boolean {
+function hasHeader(d: Uint8Array, minLen: number, cmd: number): boolean {
   return d.length >= minLen && d[0] === M1 && d[1] === M2 && d[7] === cmd;
 }
 

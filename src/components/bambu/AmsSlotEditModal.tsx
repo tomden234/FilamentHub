@@ -20,7 +20,7 @@ const BAMBU_PRESET_COLORS = [
   { name: 'Gold', hex: 'D4AF37' }
 ];
 
-export interface AmsSlotEditModalProps {
+interface AmsSlotEditModalProps {
   setEditingAmsSlot: any;
   editingAmsSlot: any;
   setAmsEditColor: any;

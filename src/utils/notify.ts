@@ -81,7 +81,7 @@ export async function requestNotifyPermission(): Promise<NotifyPermission> {
   }
 }
 
-export interface LocalNotifyOptions {
+interface LocalNotifyOptions {
   tag?: string;
   /** Adresse eines Bildes (z. B. Kamerabild), wird wenn möglich angezeigt */
   image?: string;
@@ -185,7 +185,7 @@ export async function localNotify(title: string, body: string, opts: LocalNotify
   }
 }
 
-export interface OngoingStatus {
+interface OngoingStatus {
   title: string;
   text: string;
   sub: string;

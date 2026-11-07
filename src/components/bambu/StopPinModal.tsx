@@ -2,7 +2,7 @@ import React from 'react';
 import { AlertTriangle, X, RefreshCw, Square } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 
-export interface StopPinModalProps {
+interface StopPinModalProps {
   setShowStopPinModal: any;
   setAdminPinInput: any;
   adminPinInput: any;

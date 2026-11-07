@@ -5,7 +5,7 @@ import { IS_STATIC, IS_NATIVE } from '../utils/env';
 
 const API_KEY_STORAGE = 'app_api_key';
 
-export interface ApiOptions {
+interface ApiOptions {
   method?: string;
   /** Objekte werden automatisch als JSON gesendet */
   body?: unknown;
@@ -41,14 +41,39 @@ function readApiKey(): string | null {
   }
 }
 
+// 1.231: Kurzlebiger Medien-Token (12 h) statt des echten Schlüssels in Bild-/Stream-Adressen (die landen im Browser-Verlauf).
+let media: { key: string; token: string; exp: number } | null = null;
+let mediaLoading: Promise<void> | null = null;
+
+/** Medien-Token beim Server holen (läuft im Hintergrund, Fehler egal: dann gilt der alte Weg) */
+export function refreshMediaToken(): Promise<void> {
+  const key = readApiKey();
+  if (!key || IS_STATIC || IS_NATIVE) return Promise.resolve();
+  if (mediaLoading) return mediaLoading;
+  mediaLoading = fetch('/api/media-token', { headers: { 'x-api-key': key }, cache: 'no-store', signal: AbortSignal.timeout(8000) })
+    .then(r => (r.ok ? r.json() : null))
+    .then((j: any) => {
+      if (j && typeof j.token === 'string' && j.token && Number(j.exp) > Date.now()) media = { key, token: j.token, exp: Number(j.exp) };
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      mediaLoading = null;
+    });
+  return mediaLoading;
+}
+
 /**
- * Für Adressen, die der Browser selbst lädt (<img>, EventSource): die können keinen Header mitschicken,
- * darum hängt der Schlüssel als ?k= dran (der Server erlaubt das nur für Bild- und Stream-Routen).
+ * Für Adressen, die der Browser selbst lädt (<img>, EventSource): die können keinen Header mitschicken.
+ * 1.231: hängt den Medien-Token als ?mt= an. Nur bis der Token da ist (erste Sekunden) oder bei einem alten Server noch ?k=.
  */
 export function withApiKey(path: string): string {
   const key = readApiKey();
   if (!key || !path.startsWith('/api')) return path;
-  return `${path}${path.includes('?') ? '&' : '?'}k=${encodeURIComponent(key)}`;
+  const sep = path.includes('?') ? '&' : '?';
+  const fresh = media && media.key === key && media.exp - Date.now() > 30 * 60_000;
+  if (!fresh) void refreshMediaToken();
+  if (media && media.key === key && media.exp > Date.now()) return `${path}${sep}mt=${encodeURIComponent(media.token)}`;
+  return `${path}${sep}k=${encodeURIComponent(key)}`;
 }
 
 /**
@@ -106,7 +131,7 @@ export function apiFetch(path: string, init: RequestInit & { timeoutMs?: number 
  * Sendet eine Anfrage und liefert Status plus JSON. Wirft nur bei Netzwerkfehlern oder Timeout,
  * nicht bei HTTP-Fehlern (dafür ok/status prüfen).
  */
-export async function apiRequest<T = any>(path: string, options: ApiOptions = {}): Promise<ApiResult<T>> {
+async function apiRequest<T = any>(path: string, options: ApiOptions = {}): Promise<ApiResult<T>> {
   const { method = 'GET', body, timeoutMs, signal, cache } = options;
   const headers: Record<string, string> = {};
   let payload: BodyInit | undefined;

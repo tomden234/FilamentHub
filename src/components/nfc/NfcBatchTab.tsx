@@ -4,7 +4,7 @@ import type { NfcWriteFormat } from '../../utils/nfcManager';
 import { Tag, Sparkles, RotateCcw, CheckCircle2, AlertCircle, Zap, SkipForward, Check } from 'lucide-react';
 import type { NfcModalProps as ParentProps } from '../NfcModal';
 
-export interface NfcBatchTabProps {
+interface NfcBatchTabProps {
   writeFormat: NfcWriteFormat;
   setWriteFormat: (format: NfcWriteFormat) => void;
   writtenCount: any;

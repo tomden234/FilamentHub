@@ -22,7 +22,7 @@ const WORKSHOP_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType
   { id: 'led', label: 'Status-LED', icon: Lightbulb }
 ];
 
-export interface WorkshopModalProps {
+interface WorkshopModalProps {
   isOpen: boolean;
   onClose: () => void;
   /** Vor-Taste der Maus: Fenster wieder öffnen */

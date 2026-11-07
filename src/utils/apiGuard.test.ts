@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideAccess, hostName } from '../../server/apiGuard';
+import { checkMediaToken, decideAccess, hostName, makeMediaToken, isLoopbackAddr } from '../../server/apiGuard';
 import { isLanIp } from '../../server/netCheck';
 
 const base = { expectedKey: 'geheim123', headerKey: undefined, queryKey: undefined, method: 'GET', path: '/api/recorder/status', host: '192.168.68.10:3000' };
@@ -24,13 +24,33 @@ describe('Zugriffsschutz /api (1.229)', () => {
   });
 
   it('ohne eingerichteten Schlüssel nur localhost (Schutz gegen WLAN und DNS-Rebinding)', () => {
-    const open = { ...base, expectedKey: '' };
+    const open = { ...base, expectedKey: '', remoteAddress: '127.0.0.1' };
     expect(decideAccess({ ...open, host: '127.0.0.1:38517' }).ok).toBe(true);
     expect(decideAccess({ ...open, host: 'localhost:3000' }).ok).toBe(true);
     expect(decideAccess({ ...open, host: '[::1]:3000' }).ok).toBe(true);
     expect(decideAccess({ ...open, host: 'boese-seite.de:38517' }).ok).toBe(false);
     expect(decideAccess({ ...open, host: '192.168.68.10:3000' }).ok).toBe(false);
     expect(decideAccess({ ...open, host: undefined }).ok).toBe(false);
+  });
+
+  it('1.231: gefälschter Host-Kopf aus dem WLAN reicht nicht', () => {
+    const open = { ...base, expectedKey: '' };
+    expect(decideAccess({ ...open, host: 'localhost:3000', remoteAddress: '192.168.68.20' }).ok).toBe(false);
+    expect(decideAccess({ ...open, host: 'localhost:3000', remoteAddress: undefined }).ok).toBe(false);
+    expect(decideAccess({ ...open, host: 'localhost:3000', remoteAddress: '::ffff:127.0.0.1' }).ok).toBe(true);
+    expect(isLoopbackAddr('::1')).toBe(true);
+    expect(isLoopbackAddr('::ffff:192.168.1.2')).toBe(false);
+  });
+
+  it('1.231: Medien-Token statt Schlüssel in der Adresse', () => {
+    const now = 1_800_000_000_000;
+    const { token } = makeMediaToken('geheim123', now);
+    expect(checkMediaToken(token, 'geheim123', now + 1000)).toBe(true);
+    expect(checkMediaToken(token, 'anderer', now + 1000)).toBe(false);
+    expect(checkMediaToken(token, 'geheim123', now + 13 * 3600_000)).toBe(false); // abgelaufen
+    expect(checkMediaToken(token.replace(/.$/, c => (c === 'A' ? 'B' : 'A')), 'geheim123', now)).toBe(false);
+    expect(decideAccess({ ...base, path: '/api/printer/stream', mediaToken: token, now: now + 1000 }).ok).toBe(true);
+    expect(decideAccess({ ...base, path: '/api/hub/status', mediaToken: token, now: now + 1000 }).ok).toBe(false);
   });
 
   it('liest den Host-Namen ohne Port', () => {
@@ -56,7 +76,14 @@ describe('Home Assistant: Token geht nie an fremde Adresse', async () => {
     const t = haTarget('https://angreifer.example', '');
     expect(t.url).not.toContain('angreifer');
   });
-  it('fremde Adresse mit eigenem Token ist ok', () => {
-    expect(haTarget('https://ha.example/', 'tok')).toEqual({ url: 'https://ha.example', token: 'tok' });
+  it('eigene Adresse mit eigenem Token: Nabu Casa und Heimnetz ok', () => {
+    expect(haTarget('https://abc.ui.nabu.casa/', 'tok')).toEqual({ url: 'https://abc.ui.nabu.casa', token: 'tok' });
+    expect(haTarget('http://192.168.68.10:8123', 'tok')).toEqual({ url: 'http://192.168.68.10:8123', token: 'tok' });
+    expect(haTarget('http://homeassistant.local:8123', 'tok').url).toBe('http://homeassistant.local:8123');
+  });
+  it('1.231: beliebige Internet-Adresse auch mit eigenem Token nicht (keine offene Weiterleitung)', () => {
+    const t = haTarget('https://irgendwo.example', 'tok');
+    expect(t.url).not.toContain('irgendwo');
+    expect(t.token).not.toBe('tok');
   });
 });

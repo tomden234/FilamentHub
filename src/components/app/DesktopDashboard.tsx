@@ -5,7 +5,7 @@ import { SpoolCard } from '../SpoolCard';
 import { LocationFilter } from '../workshop/LocationFilter';
 import type { Spool } from '../../types/filament';
 
-export interface DesktopDashboardProps {
+interface DesktopDashboardProps {
   spools: Spool[];
   totalGrams: any;
   totalValue: any;

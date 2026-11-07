@@ -4,7 +4,7 @@ import { safeStorage } from '../utils/safeStorage';
 import { STORAGE_KEY_SETTINGS } from '../utils/storageKeys';
 import { DEFAULT_APP_SETTINGS } from '../data/defaultSpools';
 
-export interface useAppSettingsParams {
+interface useAppSettingsParams {
   showToast: any;
 }
 

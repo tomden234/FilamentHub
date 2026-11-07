@@ -5,7 +5,7 @@ import { getSpoolProfile } from './spoolProfile';
 import { safeStorage } from './safeStorage';
 import { connectFromStored } from './deviceSync';
 
-export interface SlotParams {
+interface SlotParams {
   colorHex: string;
   material: string;
   minTemp: number;
@@ -21,7 +21,7 @@ export interface SlotSendResult {
 }
 
 /** AMS kennt nur Grundmaterialien: „PLA+“ → PLA, „PA / Nylon“ → PA */
-export function amsMaterial(material: string): string {
+function amsMaterial(material: string): string {
   const u = String(material || '').toUpperCase();
   if (/CF/.test(u) && /PA|PET/.test(u)) return 'PA-CF';
   const known = ['PETG', 'PLA', 'ABS', 'ASA', 'TPU', 'PCTG', 'PC', 'PA', 'PET', 'PVA', 'HIPS', 'PP'];

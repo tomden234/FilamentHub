@@ -5,7 +5,7 @@ import { BambuPrintProfile, MaterialType } from '../types/filament';
  * Enthält Nozzle-Temperaturen, Betttemperaturen (PEI & Smooth),
  * Max Volumetric Speed (Flow mm³/s), Lüfter und Geschwindigkeiten.
  */
-export const BAMBU_PROFILES: Record<string, BambuPrintProfile> = {
+const BAMBU_PROFILES: Record<string, BambuPrintProfile> = {
   // Bambu Lab
   'Bambu Lab_PLA': {
     brand: 'Bambu Lab',

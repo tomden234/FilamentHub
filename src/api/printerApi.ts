@@ -4,26 +4,26 @@ import type { BambuLoginInput, BambuLoginResult } from '../utils/bambuCloudLogin
 
 // Alle /api/printer/* und /api/bambu/* Aufrufe an einem Ort.
 
-export interface BambuDevice {
+interface BambuDevice {
   dev_id: string;
   name?: string;
   dev_product_name?: string;
   [key: string]: any;
 }
 
-export interface ConnectResponse extends ApiBase {
+interface ConnectResponse extends ApiBase {
   status?: { userId?: string; [key: string]: any };
   [key: string]: any;
 }
 
-export interface AutoConnectResponse extends ApiBase {
+interface AutoConnectResponse extends ApiBase {
   device?: BambuDevice;
   userId?: string | number;
   account?: any;
   [key: string]: any;
 }
 
-export interface BambuStatusResponse extends ApiBase {
+interface BambuStatusResponse extends ApiBase {
   printName?: string;
   subtask_name?: string;
   printGrams?: number;
@@ -31,7 +31,7 @@ export interface BambuStatusResponse extends ApiBase {
   [key: string]: any;
 }
 
-export interface AmsFilamentResponse extends ApiBase {
+interface AmsFilamentResponse extends ApiBase {
   /** Drucker hat den Slot wirklich gesetzt */
   confirmed?: boolean;
   /** Bambu hat den Fremd-Befehl abgelehnt (MQTT command verification failed) */
@@ -143,14 +143,5 @@ export const printerApi = {
   demo: () => apiPost<ApiBase>('/api/printer/demo'),
 
   /** Druckdatei-Infos des laufenden Auftrags */
-  bambuStatus: () => apiGet<BambuStatusResponse>('/api/bambu/status'),
-
-  bambuTestConnection: (payload: {
-    ip: string;
-    connectionType: string;
-    serialNumber: string;
-    accessCode: string;
-    accessToken: string;
-    port: number | string;
-  }) => apiPost<AutoConnectResponse>('/api/bambu/test-connection', payload)
+  bambuStatus: () => apiGet<BambuStatusResponse>('/api/bambu/status')
 };

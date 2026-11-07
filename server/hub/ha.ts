@@ -51,7 +51,7 @@ export async function haStates(): Promise<any[] | null> {
   }
 }
 
-export async function haService(domain: string, service: string, data: Record<string, unknown>): Promise<boolean> {
+async function haService(domain: string, service: string, data: Record<string, unknown>): Promise<boolean> {
   try {
     const r = await call(`/services/${domain}/${service}`, { method: 'POST', body: data });
     return r.ok;
@@ -80,7 +80,7 @@ export async function haCameraJpeg(entity: string): Promise<Buffer | null> {
 let targetsCache: { at: number; list: string[] } | null = null;
 
 /** Ziele für Push: eingestellter Dienst, sonst alle Handys mit der Home-Assistant-App (notify.mobile_app_*) */
-export async function notifyTargets(configured: string): Promise<string[]> {
+async function notifyTargets(configured: string): Promise<string[]> {
   const c = configured.trim().replace(/^notify\./, '');
   if (c) return c.split(',').map(s => s.trim().replace(/^notify\./, '')).filter(Boolean);
   if (targetsCache && Date.now() - targetsCache.at < 3600_000) return targetsCache.list;
@@ -177,36 +177,78 @@ type EventHandler = (ev: { event_type: string; data: any }) => void;
 let ws: any = null;
 let wsHandlers: EventHandler[] = [];
 let wsRetry: ReturnType<typeof setTimeout> | null = null;
+let wsPing: ReturnType<typeof setInterval> | null = null;
+let lastPong = 0;
 
 /** Auf Home-Assistant-Ereignisse hören (Websocket, nur im Add-on). Verbindet sich bei Abbruch neu. */
 export function haListen(handler: EventHandler): void {
   wsHandlers.push(handler);
-  if (!ws) connectWs();
+  if (!ws && !wsRetry) connectWs();
+}
+
+/** 1.231: Neuer Versuch in 30 s – auch wenn schon der Aufbau scheitert (z. B. Supervisor beim Start noch nicht bereit) */
+function scheduleRetry(): void {
+  if (wsPing) clearInterval(wsPing);
+  wsPing = null;
+  ws = null;
+  if (wsRetry) return;
+  wsRetry = setTimeout(() => {
+    wsRetry = null;
+    connectWs();
+  }, 30_000);
+  (wsRetry as any)?.unref?.();
 }
 
 function connectWs(): void {
   const token = process.env.SUPERVISOR_TOKEN;
   const WS = (globalThis as any).WebSocket;
   if (!token || !WS) return;
+  let sock: any;
   try {
-    ws = new WS('ws://supervisor/core/websocket');
-  } catch {
-    ws = null;
+    sock = new WS('ws://supervisor/core/websocket');
+  } catch (e) {
+    console.warn('[Hub] Home-Assistant-Ereignisse: Verbindung nicht möglich, neuer Versuch in 30 s:', (e as Error)?.message || e);
+    scheduleRetry();
     return;
   }
+  ws = sock;
   let id = 1;
-  ws.onmessage = (m: any) => {
+  sock.onmessage = (m: any) => {
     let j: any;
     try {
       j = JSON.parse(String(m.data));
     } catch {
       return;
     }
-    if (j.type === 'auth_required') ws.send(JSON.stringify({ type: 'auth', access_token: token }));
+    if (j.type === 'auth_required') sock.send(JSON.stringify({ type: 'auth', access_token: token }));
     else if (j.type === 'auth_ok') {
-      for (const ev of ['mobile_app_notification_action', 'state_changed']) ws.send(JSON.stringify({ id: id++, type: 'subscribe_events', event_type: ev }));
+      for (const ev of ['mobile_app_notification_action', 'state_changed']) sock.send(JSON.stringify({ id: id++, type: 'subscribe_events', event_type: ev }));
       console.log('[Hub] Home-Assistant-Ereignisse verbunden');
+      // 1.231: Lebenszeichen alle 60 s. Kommt 2 Minuten kein „pong“, ist die Verbindung tot (halb offen) → neu verbinden
+      lastPong = Date.now();
+      if (wsPing) clearInterval(wsPing);
+      wsPing = setInterval(() => {
+        if (Date.now() - lastPong > 130_000) {
+          console.warn('[Hub] Home-Assistant-Ereignisse: keine Antwort, verbinde neu');
+          try {
+            sock.close();
+          } catch {
+            /* egal */
+          }
+          if (ws === sock) scheduleRetry();
+          return;
+        }
+        try {
+          sock.send(JSON.stringify({ id: id++, type: 'ping' }));
+        } catch {
+          /* close folgt */
+        }
+      }, 60_000);
+      (wsPing as any)?.unref?.();
+    } else if (j.type === 'pong') {
+      lastPong = Date.now();
     } else if (j.type === 'event' && j.event) {
+      lastPong = Date.now();
       for (const h of wsHandlers) {
         try {
           h(j.event);
@@ -214,20 +256,16 @@ function connectWs(): void {
           /* weiter */
         }
       }
+    } else if (j.type === 'auth_invalid') {
+      console.warn('[Hub] Home-Assistant-Ereignisse: Anmeldung abgelehnt');
     }
   };
-  const retry = () => {
-    ws = null;
-    if (wsRetry) return;
-    wsRetry = setTimeout(() => {
-      wsRetry = null;
-      connectWs();
-    }, 30_000);
+  sock.onclose = () => {
+    if (ws === sock) scheduleRetry();
   };
-  ws.onclose = retry;
-  ws.onerror = () => {
+  sock.onerror = () => {
     try {
-      ws?.close();
+      sock.close();
     } catch {
       /* egal */
     }

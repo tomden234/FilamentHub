@@ -5,7 +5,7 @@ import { addSystemLog } from '../../utils/logService';
 import { parseGCodeContent } from '../../utils/gcodeParser';
 import type { SidebarProps as ParentProps } from '../Sidebar';
 
-export interface useGcodeImportParams {
+interface useGcodeImportParams {
   setCalcGrams: any;
   setCalcPrintHours: any;
   setHaActionToast: any;

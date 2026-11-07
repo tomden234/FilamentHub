@@ -3,7 +3,7 @@ import { Flame, X, RefreshCw } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 import { NumInput } from '../ui/NumInput';
 
-export interface TemperatureModalProps {
+interface TemperatureModalProps {
   setTempModalTarget: any;
   tempModalTarget: any;
   setTempModalValue: any;

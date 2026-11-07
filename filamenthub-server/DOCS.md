@@ -35,6 +35,13 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - **ESP-Update übers WLAN**: Mit der ESPHome-App in Home Assistant legt der Server die neueste AMS-YAML in den ESPHome-Ordner (eigene Werte bleiben). Dann nur „Installieren“ → „Drahtlos“.
 - **App direkt vom Pi**: Knopf „Web-UI öffnen“ oder `http://<IP des Pi>:3000`. Über http geht im Browser der verschlüsselte Geräte-Sync nicht; Handy- und Windows-App sind davon nicht betroffen.
 
+## Neu in 1.3.10 (Abgleich & Schutz)
+
+- Alle Dateien werden stromausfallsicher geschrieben (Zwischendatei + Umbenennen, Vorversion `.prev`). Ist eine Datei kaputt, liest der Server die Vorversion.
+- Neue Dateien auf dem Drucker werden alle 20-60 s gesucht (vorher alle 3 s), beim Drucken alle 60 s. Taster bei leerer Warteschlange sucht sofort.
+- Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
+- Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
+
 ## Neu in 1.3.9 (Pi speichert)
 
 - Die Spulen-Daten liegen als Datei im Speicher der App (`/data/filamenthub-doc.json`, Vorversion als `.prev`). In der App unter Cloud & Geräte-Sync auf **Auf Pi-Server umstellen** tippen: vorhandene Daten werden einmal übernommen. Danach braucht es weder npoint noch Gist noch Token. Abzug, Warteschlange und Tages-Sicherung nutzen dieselbe Datei.

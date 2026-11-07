@@ -9,7 +9,7 @@ export interface HumidityReading {
   error?: string;
 }
 
-export interface HumidityLive {
+interface HumidityLive {
   ams: HumidityReading | null;
   /** Sensor in der Lagerbox */
   external: HumidityReading | null;
@@ -25,7 +25,7 @@ export function setHumidity(patch: Partial<HumidityLive>): void {
   listeners.forEach(l => l());
 }
 
-export function getHumidity(): HumidityLive {
+function getHumidity(): HumidityLive {
   return live;
 }
 

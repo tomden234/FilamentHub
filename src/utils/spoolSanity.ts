@@ -3,7 +3,7 @@ import type { Spool } from '../types/filament';
 // Unmögliche Restgewichte reparieren. Eine Spule kann nie mehr Filament haben, als sie nominal fasst.
 // Häufiger Fehler beim Einsprechen/Einwiegen: Brutto (mit Spule) statt Netto eingetragen.
 
-export interface WeightFix {
+interface WeightFix {
   id: string;
   label: string;
   from: number;

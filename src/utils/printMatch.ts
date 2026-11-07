@@ -4,7 +4,7 @@
 //  2. eine Quelle kennt den Namen nicht („Druckauftrag“, z. B. Home-Assistant-Verlauf) und das Ende ist nah (5 min), oder
 //  3. die Laufzeiten überlappen sich zum größten Teil (Datei umbenannt, anderer Name in anderer Quelle).
 
-export const printNameKey = (n: string) =>
+const printNameKey = (n: string) =>
   String(n || '')
     .toLowerCase()
     .replace(/\.(gcode\.3mf|3mf|gcode)$/g, '')
@@ -13,7 +13,7 @@ export const printNameKey = (n: string) =>
 /** Name ohne Wissen („Druckauftrag“, leer) */
 export const isGenericPrintName = (n: string): boolean => /^(druckauftrag|druck|print|job|)$/.test(printNameKey(n));
 
-export interface PrintTimes {
+interface PrintTimes {
   name: string;
   endMs: number;
   startMs?: number;

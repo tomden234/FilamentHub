@@ -20,16 +20,17 @@ import { applyDeduction, deductedIn, expectedMinutes, planParts, shortages, tooL
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { haAvailable, haCameraJpeg, haListen, haPowerW, haPush, haState, haSwitch, type PushOptions } from './ha.js';
 import { addEnergy, allTrays, inQuietHours, missingMaterials, stalled, weekKey, weeklyReport, type EnergyWeek } from './hubLogic.js';
-import { attachQueue, autoScan, onHaEvent as queueEvent, refreshLeds, startedJobFilaments, startedJobNear, type QueuePort } from './queue.js';
+import { attachQueue, autoScanTick, onHaEvent as queueEvent, refreshLeds, startedJobFilaments, startedJobNear, type QueuePort } from './queue.js';
 import { isGenericPrintName } from '../../src/utils/printMatch.js';
 import { espInfo as espInfoFn, publishImage, syncEspYaml } from './esphome.js';
 import { rootDir } from '../paths.js';
+import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
 
 export const hubEnabled = (): boolean => process.env.FILAMENTHUB_HUB === '1';
 
 // ---------- Einstellungen (von den Apps) ----------
 
-export interface HubConfig {
+interface HubConfig {
   cloudUrl: string;
   gistToken: string;
   amsSlots: Record<string, string>;
@@ -75,30 +76,20 @@ const DEFAULT_CFG: HubConfig = {
 
 const cfgFile = () => path.join(dataDir, 'hub-config.json');
 const stateFile = () => path.join(dataDir, 'hub-state.json');
-export const photoDir = () => path.join(dataDir, 'photos');
-export const backupDir = () => path.join(dataDir, 'backups');
+const photoDir = () => path.join(dataDir, 'photos');
+const backupDir = () => path.join(dataDir, 'backups');
 
 let cfg: HubConfig | null = null;
 
 export function getHubConfig(): HubConfig {
   if (cfg) return cfg;
-  try {
-    const raw = JSON.parse(fs.readFileSync(cfgFile(), 'utf-8'));
-    cfg = { ...DEFAULT_CFG, ...raw, push: { ...DEFAULT_CFG.push, ...(raw?.push || {}) } };
-  } catch {
-    cfg = { ...DEFAULT_CFG };
-  }
+  const raw = readJsonWithPrev<any>(cfgFile(), d => Boolean(d && typeof d === 'object'));
+  cfg = raw ? { ...DEFAULT_CFG, ...raw, push: { ...DEFAULT_CFG.push, ...(raw?.push || {}) } } : { ...DEFAULT_CFG };
   return cfg!;
 }
 
-function writeJson(file: string, v: unknown): void {
-  try {
-    fs.writeFileSync(file + '.tmp', JSON.stringify(v), 'utf-8');
-    fs.renameSync(file + '.tmp', file);
-  } catch (e) {
-    console.warn('[Hub] Konnte nicht speichern:', (e as Error)?.message || e);
-  }
-}
+/** 1.231: gemeinsamer sicherer Schreib-Helfer (fsync, 0600: enthält z. B. den Gist-Token), Vorversion als Rückfall */
+const writeJson = (file: string, v: unknown): void => void saveJsonConfig(file, v, path.basename(file), { pretty: false, keepPrev: true });
 
 const str = (v: unknown, max = 300) => (typeof v === 'string' ? v.trim().slice(0, max) : undefined);
 const bool = (v: unknown) => (typeof v === 'boolean' ? v : undefined);
@@ -107,7 +98,8 @@ const num = (v: unknown, lo: number, hi: number) => (Number.isFinite(Number(v)) 
 function cleanMap<T>(v: unknown, ok: (x: unknown) => x is T, maxKeys = 300): Record<string, T> | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
   const out: Record<string, T> = {};
-  for (const [k, x] of Object.entries(v as Record<string, unknown>).slice(0, maxKeys)) if (ok(x)) out[String(k).slice(0, 200)] = x;
+  // 1.231: die NEUESTEN behalten (neue Einträge stehen hinten). Vorher slice(0, …): ab 300 Druck-Namen wurde nichts Neues mehr gemerkt.
+  for (const [k, x] of Object.entries(v as Record<string, unknown>).filter(([, x]) => ok(x)).slice(-maxKeys)) out[String(k).slice(0, 200)] = x as T;
   return out;
 }
 
@@ -176,9 +168,9 @@ export function setPower(body: any): HubConfig {
 
 // ---------- Zustand je Druck ----------
 
-export type DeductState = 'pending' | 'working' | 'done' | 'ask' | 'skip' | 'off';
+type DeductState = 'pending' | 'working' | 'done' | 'ask' | 'skip' | 'off';
 
-export interface PrintMeta {
+interface PrintMeta {
   deduct: DeductState;
   tries: number;
   lastTry: number;
@@ -223,12 +215,8 @@ type Fil = { type: string; colorHex: string; grams: number };
 let st: HubState | null = null;
 function state(): HubState {
   if (st) return st;
-  try {
-    const raw = JSON.parse(fs.readFileSync(stateFile(), 'utf-8'));
-    st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0, energy: {}, lastReportWeek: '', printWh: 0, ...raw };
-  } catch {
-    st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0, energy: {}, lastReportWeek: '', printWh: 0 };
-  }
+  const raw = readJsonWithPrev<any>(stateFile(), d => Boolean(d && typeof d === 'object'));
+  st = { prints: {}, lastBackupDay: '', openKey: '', startChecked: false, warned: false, expectedMin: 0, pausedMs: 0, energy: {}, lastReportWeek: '', printWh: 0, ...(raw || {}) };
   return st!;
 }
 function saveState(): void {
@@ -254,7 +242,7 @@ export function resolvePrint(id: string): boolean {
 
 // ---------- Drucker-Zugang (wird von bambuMqtt eingesteckt, kein Kreis-Import) ----------
 
-export interface PrinterPort extends QueuePort {
+interface PrinterPort extends QueuePort {
   stopDrying: () => Promise<boolean>;
   command: (cmd: 'pause' | 'resume' | 'stop') => Promise<unknown>;
   resumeAfterError: (code: number) => Promise<unknown>;
@@ -271,8 +259,8 @@ export function attachPrinter(p: PrinterPort): void {
       onAction(ev);
     });
     setTimeout(() => refreshLeds(), 20_000);
-    // Neue Dateien aus Bambu Studio alle 3 s suchen (eigener Takt; autoScan lässt sich nicht doppelt starten)
-    setInterval(() => void autoScan(), 3_000).unref();
+    // Neue Dateien aus Bambu Studio suchen: 1.231 alle 20-60 s statt alle 3 s (schont den Drucker), bei Änderung am Drucker sofort
+    setInterval(() => void autoScanTick(), 5_000).unref();
   }
 }
 
@@ -281,8 +269,8 @@ export function attachPrinter(p: PrinterPort): void {
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const durText = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${Math.round(min % 60)} min` : `${Math.round(min)} min`);
 const access = () => ({ cloudUrl: getHubConfig().cloudUrl, gistToken: getHubConfig().gistToken });
-export const deductActive = () => hubEnabled() && getHubConfig().deduct && cloudReady(access());
-export const powerActive = () => hubEnabled() && haAvailable();
+const deductActive = () => hubEnabled() && getHubConfig().deduct && cloudReady(access());
+const powerActive = () => hubEnabled() && haAvailable();
 
 let lastPush: { at: number; ok: boolean; text: string } | null = null;
 export async function push(kind: keyof HubConfig['push'] | 'test', title: string, message: string, opts: PushOptions | string = {}): Promise<boolean> {
@@ -356,7 +344,7 @@ async function takePhoto(id: string): Promise<boolean> {
   lastJpeg = jpeg;
   try {
     fs.mkdirSync(photoDir(), { recursive: true });
-    fs.writeFileSync(photoFile(id), jpeg);
+    writeFileAtomic(photoFile(id), jpeg);
     // Höchstens 200 Fotos behalten
     const files = fs.readdirSync(photoDir()).map(f => ({ f, t: fs.statSync(path.join(photoDir(), f)).mtimeMs })).sort((a, b) => b.t - a.t);
     for (const x of files.slice(200)) fs.unlinkSync(path.join(photoDir(), x.f));
@@ -511,7 +499,9 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
     }
     if (filaments && !isGenericPrintName(rec.name)) {
       const total = Math.round(filaments.reduce((a, f) => a + f.grams, 0) * 10) / 10;
-      updateHubConfig({ jobGrams: { ...c.jobGrams, [nameKey(rec.name)]: total } });
+      const k = nameKey(rec.name);
+      const { [k]: _old, ...rest } = c.jobGrams; // gleicher Name rückt ans Ende (= neuester), damit er beim Kürzen nicht rausfällt
+      updateHubConfig({ jobGrams: { ...rest, [k]: total } });
     }
     // Gar nichts bekannt: nach Druckzeit schätzen (deine letzten Drucke), damit trotzdem abgezogen wird
     const durMin = (rec.endMs - rec.startMs) / 60000;
@@ -702,10 +692,9 @@ async function retryDeducts(now: number): Promise<void> {
     // Auch „noch nie versucht“ (Pi startete in der Minute nach dem Druckende neu): sonst bliebe der Abzug für immer liegen
     if (m.deduct === 'pending' && now - (m.lastTry || m.at) > 2 * 60_000) {
       const rec = printRecorder.list().find(p => p.id === id);
-      if (rec) {
-        await tryDeduct(rec);
-        await pushEnd(rec);
-      }
+      // 1.231: nicht warten. Ein Abzug kann über 1 Minute dauern (Druckdatei per FTP, 3 Versuche) und hielt sonst den ganzen Takt auf
+      // (Fehler-Push mit Knöpfen, „Aus nach Druck“). inFlight verhindert doppelte Versuche, withCloudLock doppeltes Schreiben.
+      if (rec) void tryDeduct(rec).then(() => pushEnd(rec)).catch(e => console.warn('[Hub] Abzug im Hintergrund:', (e as Error)?.message || e));
     }
   }
 }
@@ -873,8 +862,13 @@ async function energyTick(gs: string, now: number, dt: number): Promise<void> {
   const s = state();
   s.energy = addEnergy(s.energy || {}, now, w, dt, printing);
   if (printing && dt <= 5 * 60_000) s.printWh = (s.printWh || 0) + (w * dt) / 3600_000;
-  saveState();
+  // 1.231: Strom nur alle 5 Minuten auf die SSD schreiben (vorher alle 30 s die ganze Zustandsdatei). Andere Änderungen speichern sofort mit.
+  if (now - lastEnergySave >= 5 * 60_000) {
+    lastEnergySave = now;
+    saveState();
+  }
 }
+let lastEnergySave = 0;
 
 async function goneWatch(live: boolean, now: number): Promise<void> {
   const open = printRecorder.status().open;
@@ -1053,7 +1047,7 @@ export async function backupNow(now = Date.now()): Promise<{ ok: boolean; name?:
     if (!doc || !Array.isArray(doc.spools)) return { ok: false, error: 'Cloud-Dokument ohne Spulen' };
     fs.mkdirSync(backupDir(), { recursive: true });
     const name = `filamenthub-${dayOf(now)}.json`;
-    fs.writeFileSync(path.join(backupDir(), name), JSON.stringify(doc), 'utf-8');
+    writeFileAtomic(path.join(backupDir(), name), JSON.stringify(doc));
     const files = listBackups();
     for (const f of files.slice(30)) fs.unlinkSync(path.join(backupDir(), f.name));
     state().lastBackupDay = dayOf(now);

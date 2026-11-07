@@ -5,7 +5,7 @@ import { safeStorage } from './safeStorage';
 
 export type PrinterLevel = 'online' | 'connecting' | 'standby' | 'offline' | 'unknown';
 
-export interface PrinterLive {
+interface PrinterLive {
   level: PrinterLevel;
   /** Kurztext, z. B. „Online · Druckt“ */
   text: string;

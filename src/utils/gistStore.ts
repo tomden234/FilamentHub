@@ -6,7 +6,7 @@ import { safeStorage } from './safeStorage';
 const TOKEN_KEY = 'filamenthub_gist_token';
 const API = 'https://api.github.com';
 export const GIST_FILE = 'filamenthub.json';
-export const GIST_PREFIX = 'gist:';
+const GIST_PREFIX = 'gist:';
 
 export const isGistUrl = (u: string): boolean => typeof u === 'string' && u.startsWith(GIST_PREFIX);
 export const gistIdOf = (u: string): string => u.slice(GIST_PREFIX.length).trim();
@@ -77,7 +77,7 @@ export async function gistFetch(url: string, init: { method?: string; body?: str
   }
 }
 
-export type GistResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+type GistResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 /** Token prüfen: gültig? Bei klassischen Tokens zusätzlich: hat er das Recht „gist“? */
 export async function checkGistToken(token: string): Promise<GistResult<{ login: string }>> {
@@ -130,7 +130,7 @@ export async function testGist(url: string): Promise<GistResult> {
 }
 
 /** Kopplungs-Text für ein zweites Gerät (im Link-Teil nach „#“, geht nie an einen Server) */
-export function gistPairFragment(url: string): string {
+function gistPairFragment(url: string): string {
   const token = getGistToken();
   return isGistUrl(url) && token ? `pairGist=${gistIdOf(url)}.${token}` : '';
 }

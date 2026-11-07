@@ -23,7 +23,7 @@ export function getHaDryOffJson(): string {
   return safeStorage.getItem(JSON_KEY) || '';
 }
 
-export interface HaDryOffInfo {
+interface HaDryOffInfo {
   ok: boolean;
   text: string;
   at: number;
@@ -182,7 +182,7 @@ export async function cancelHaDryOffRun(): Promise<void> {
   await callHaService('automation', 'turn_on', { entity_id: entity });
 }
 
-export interface HaDryOffRun {
+interface HaDryOffRun {
   running: boolean;
   /** Wann der Ablauf begann (= Ende der Trocknung), in ms */
   startedAt: number;

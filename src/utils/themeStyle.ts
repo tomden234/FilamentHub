@@ -9,7 +9,7 @@ const KEY = 'filamenthub_theme_style';
 const listeners = new Set<() => void>();
 
 /** Ab 1.162 ist Cozy der Standard. Wer „Klassisch“ wählt, behält das. */
-export function getThemeStyle(): ThemeStyle {
+function getThemeStyle(): ThemeStyle {
   const v = safeStorage.getItem(KEY);
   if (v === 'glass') return 'glass-purple'; // Name aus 1.167
   return v === 'classic' || v === 'sand' || v === 'night' || v === 'mocha' || v === 'glass-green' || v === 'glass-purple' || v === 'glass-cream' ? v : 'cozy';

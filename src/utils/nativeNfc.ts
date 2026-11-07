@@ -25,7 +25,7 @@ function toBytes(data: any): Uint8Array {
   return new Uint8Array();
 }
 
-export interface NativeTagEvent {
+interface NativeTagEvent {
   serialNumber: string;
   message: { records: Array<{ recordType: string; mediaType?: string; encoding: string; data: DataView }> };
 }

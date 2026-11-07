@@ -15,7 +15,7 @@ import { Toggle } from '../workshop/ui';
 import { ThreeDPrinterIcon } from '../ThreeDPrinterIcon';
 import { usePrinterLive, isPrinterConfigured, isPrinterLan } from '../../utils/printerLive';
 
-export interface ConnectionsPanelProps {
+interface ConnectionsPanelProps {
   cloudDbUrl: string;
   onCloudUrlChange: (url: string) => void;
   /** Öffnet das Bambu-Lab-Verbindungsfenster */

@@ -6,7 +6,7 @@ import { safeStorage } from './safeStorage';
 import { ACTIVE_STATES } from './printSession';
 import { getWorkshopSettings } from './workshopSettings';
 
-export interface DryOffState {
+interface DryOffState {
   armed: boolean;
   armedAt: number;
   /** Wann die letzte Trocknung zu Ende ging (0 = keine, die 3 Minuten laufen) */
@@ -26,7 +26,7 @@ export function dryOffSettleMs(): number {
   return Math.max(1, getWorkshopSettings().dryOffDelayMin) * 60_000;
 }
 
-export type DryOffAction = 'wait' | 'switch-off' | 'cancel-print' | 'cancel-socket-off';
+type DryOffAction = 'wait' | 'switch-off' | 'cancel-print' | 'cancel-socket-off';
 
 export interface DryOffInput {
   armedAt: number;

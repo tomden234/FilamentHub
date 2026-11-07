@@ -5,7 +5,7 @@ import type { SidebarProps as ParentProps } from '../Sidebar';
 import { SpoolFitList } from '../workshop/SpoolFitList';
 import { NumInput } from '../ui/NumInput';
 
-export interface GcodeCalcTabProps {
+interface GcodeCalcTabProps {
   handlePullGcodeFromPrinter: (...args: any[]) => any;
   printerFetchLoading: any;
   handleGcodeFileChange: (...args: any[]) => any;

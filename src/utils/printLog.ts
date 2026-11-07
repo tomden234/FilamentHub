@@ -6,7 +6,7 @@ import { safeStorage } from './safeStorage';
 import { getHaCredentials } from './haClient';
 import { betterPrintName, samePrint as samePrintCore } from './printMatch';
 
-export interface PrintRecordSpool {
+interface PrintRecordSpool {
   id: string;
   label: string;
   color: string;
@@ -229,7 +229,7 @@ export async function loadPhoto(id: string): Promise<Blob | null> {
   }
 }
 
-export async function deletePhoto(id: string): Promise<void> {
+async function deletePhoto(id: string): Promise<void> {
   try {
     await tx('readwrite', s => s.delete(id));
   } catch {

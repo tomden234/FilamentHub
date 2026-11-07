@@ -3,7 +3,7 @@ import { MaterialType } from '../../types/filament';
 import { MATERIAL_PRESETS, BRAND_DATABASE } from '../../data/defaultSpools';
 import type { SidebarProps as ParentProps } from '../Sidebar';
 
-export interface usePresetSettingsParams {
+interface usePresetSettingsParams {
   appSettings: ParentProps['appSettings'];
   onUpdateMaterialPreset: ParentProps['onUpdateMaterialPreset'];
   onResetMaterialPreset: ParentProps['onResetMaterialPreset'];

@@ -17,7 +17,7 @@ const MATERIAL_OPTIONS: MaterialType[] = [
   'PET-CF / PA-CF'
 ];
 
-export interface SettingsPresetsPanelProps {
+interface SettingsPresetsPanelProps {
   selectedMaterial: any;
   setSelectedMaterial: any;
   appSettings: ParentProps['appSettings'];

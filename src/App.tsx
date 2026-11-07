@@ -6,8 +6,7 @@ import { fixSpoolWeights } from './utils/spoolSanity';
 import { normalizeSpools, spoolTara } from './utils/spoolState';
 import { MY_SPOOLS_SEED } from './data/mySpools';
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
-import { storageApi, cloudSync } from './api';
-import { mergePrintLog, printLogForCloud, PRINT_LOG_CHANGED } from './utils/printLog';
+import { storageApi } from './api';
 
 import {
   HistoryEntry,
@@ -17,7 +16,8 @@ import {
   ViewMode
 } from './types/filament';
 
-import { DEFAULT_21_SPOOLS, INITIAL_VERSION_PROFILES, LEGACY_REVISION_IDS, isOfficialRevision } from './data/defaultSpools';
+import { DEFAULT_21_SPOOLS } from './data/defaultSpools';
+import { INITIAL_VERSION_PROFILES, LEGACY_REVISION_IDS, isOfficialRevision } from './data/versions';
 import {
   getBrandInfo,
   getDryingStatus,
@@ -40,7 +40,6 @@ import { useBackLayer, closeTopLayer } from './utils/backNav';
 import { HistoryModal } from './components/HistoryModal';
 import { RightLogDrawer } from './components/RightLogDrawer';
 import { addSystemLog } from './utils/logService';
-import { cleanServerDeducts, getAppliedServerDeducts, reconcileServerDeducts, rememberServerDeducts } from './utils/serverDeducts';
 import { EditUsedModal } from './components/app/EditUsedModal';
 import { MobileAppView } from './components/app/MobileAppView';
 import { DesktopDashboard } from './components/app/DesktopDashboard';
@@ -65,6 +64,7 @@ import { raiseAlert } from './utils/alerts';
 import { OPEN_WORKSHOP_EVENT, openSlotAssign, type OpenWorkshopDetail } from './utils/uiEvents';
 import { listenNotificationTaps } from './utils/notify';
 import { useDeviceSync } from './hooks/useDeviceSync';
+import { useCloudSync } from './hooks/useCloudSync';
 import { gistUrlOf, parseGistPair, setGistToken } from './utils/gistStore';
 
 const SPOOLS_AT_KEY = STORAGE_KEY_SPOOLS_AT;
@@ -132,7 +132,7 @@ export default function App() {
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const saved = safeStorage.getItem(STORAGE_KEY_ACTIVE_VER);
-    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.230';
+    const latestId = INITIAL_VERSION_PROFILES[INITIAL_VERSION_PROFILES.length - 1]?.id || 'v1.231';
     const seen = safeStorage.getItem('filamenthub_latest_seen_version');
     // Neue Version erschienen (oder nichts gespeichert): auf die neueste Revision stellen.
     // Danach bleibt die Auswahl aus dem Revisionsmenü erhalten.
@@ -248,11 +248,6 @@ export default function App() {
   // Cloud Sync
   const [cloudDbUrl, setCloudDbUrl] = useState<string>(() => {
     return safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '';
-  });
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [syncStatus, setSyncStatus] = useState<{ label: string; ok: boolean }>({
-    label: 'Gespeichert',
-    ok: true
   });
 
   // Filter & Sortierung
@@ -400,114 +395,8 @@ export default function App() {
     setRedoStack([]);
   }, [spools, printHistory]);
 
-  // Neuester Stand (auch direkt nach einer Änderung, bevor React neu gezeichnet hat): der Cloud-Abgleich darf nie einen alten Stand zurückschreiben
-  const latestData = useRef<{ spools: Spool[]; history: HistoryEntry[] }>({ spools, history: printHistory });
-  latestData.current = { spools, history: printHistory };
-
-  // Speichern in LocalStorage und Cloud
-  const persistState = useCallback(
-    async (newSpools: Spool[], newHistory: HistoryEntry[]) => {
-      latestData.current = { spools: newSpools, history: newHistory };
-      try {
-        safeStorage.setItem(STORAGE_KEY_SPOOLS, JSON.stringify(newSpools));
-        safeStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(newHistory));
-      } catch {}
-
-      const stamp = Date.now();
-      safeStorage.setItem(SPOOLS_AT_KEY, String(stamp)); // lokaler Änderungszeitpunkt (neuester Stand gewinnt beim Abgleich)
-      if (isSyncing) return;
-      setIsSyncing(true);
-      setSyncStatus({ label: 'Speichere...', ok: false });
-      try {
-        const saved = await cloudSync.save(cloudDbUrl, {
-          updatedAt: stamp,
-          spools: newSpools,
-          printHistory: newHistory,
-          ...printLogForCloud()
-        });
-        if (saved) {
-          setSyncStatus({ label: 'Cloud synchron', ok: true });
-        } else {
-          setSyncStatus({ label: 'Lokal gespeichert', ok: false });
-        }
-      } catch {
-        setSyncStatus({ label: 'Lokal gespeichert', ok: false });
-      } finally {
-        setIsSyncing(false);
-      }
-    },
-    [cloudDbUrl, isSyncing]
-  );
-
-  // Synchronisation von Cloud laden
-  const syncWithCloud = useCallback(
-    async (notify = false) => {
-      if (isSyncing) return;
-      setIsSyncing(true);
-      try {
-        const cloud = await cloudSync.load(cloudDbUrl);
-        if (cloud.ok) {
-          const data = cloud.data;
-          // 1.193: Druckliste immer vereinigen (jedes Gerät sieht alle Drucke, auch die, bei denen es zu war)
-          const pl = mergePrintLog(data?.printLog, data?.printLogRemoved);
-          if (pl.localHasMore) void cloudSync.save(cloudDbUrl, printLogForCloud()).catch(() => {});
-          const cloudAt = Number(data?.updatedAt) || 0;
-          const localAt = Number(safeStorage.getItem(SPOOLS_AT_KEY)) || 0;
-          // Abzüge des Pi-Servers: genau einmal übernehmen (auch wenn ein Gerät inzwischen einen alten Stand zurückgeschrieben hat)
-          const sds = cleanServerDeducts((data as any)?.serverDeducts);
-          const reconcile = (sp: Spool[], hist: HistoryEntry[]) => {
-            const r = reconcileServerDeducts(sp, hist, sds, getAppliedServerDeducts());
-            rememberServerDeducts(sds, r.applied);
-            if (r.changed) {
-              addSystemLog('spule', 'Abzug vom Pi-Server übernommen', r.texts.join(', '), 'success');
-              showToast(`Pi-Server hat abgezogen: ${r.texts.join(', ')}`);
-            }
-            return r;
-          };
-          if (data && Array.isArray(data.spools) && cloudAt > localAt) {
-            // Cloud ist neuer (z. B. am anderen Gerät geändert, auch „alles gelöscht“): übernehmen
-            const cloudSpools = normalizeSpools(data.spools as Spool[]);
-            const cloudHistory = Array.isArray(data.printHistory) ? (data.printHistory as HistoryEntry[]) : latestData.current.history;
-            const r = reconcile(cloudSpools, cloudHistory);
-            setSpools(r.spools);
-            setPrintHistory(r.history);
-            safeStorage.setItem(STORAGE_KEY_SPOOLS, JSON.stringify(r.spools));
-            safeStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(r.history));
-            safeStorage.setItem(SPOOLS_AT_KEY, String(cloudAt));
-            setSyncStatus({ label: 'Cloud synchron', ok: true });
-            if (r.changed) {
-              setIsSyncing(false);
-              await persistState(r.spools, r.history);
-            } else if (notify) showToast('Erfolgreich mit Cloud synchronisiert!');
-          } else if (data && Array.isArray(data.spools) && cloudAt === localAt) {
-            const r = reconcile(latestData.current.spools, latestData.current.history);
-            if (r.changed) {
-              setSpools(r.spools);
-              setPrintHistory(r.history);
-              setIsSyncing(false);
-              await persistState(r.spools, r.history);
-            } else {
-              setSyncStatus({ label: 'Cloud synchron', ok: true });
-              if (notify) showToast('Schon synchron.');
-            }
-          } else {
-            const r = reconcile(latestData.current.spools, latestData.current.history);
-            if (r.changed) {
-              setSpools(r.spools);
-              setPrintHistory(r.history);
-            }
-            setIsSyncing(false);
-            await persistState(r.spools, r.history);
-          }
-        }
-      } catch {
-        setSyncStatus({ label: 'Lokal aktiv', ok: false });
-      } finally {
-        setIsSyncing(false);
-      }
-    },
-    [cloudDbUrl, isSyncing, persistState, printHistory, showToast, spools]
-  );
+  // Speichern (Gerät + Cloud) und Cloud-Abgleich mit Drei-Wege-Merge (1.231 in hooks/useCloudSync)
+  const { isSyncing, syncStatus, persistState, syncWithCloud } = useCloudSync({ cloudDbUrl, spools, printHistory, setSpools, setPrintHistory, showToast });
 
   // URL-Parameter prüfen (?pairCloud=...)
   useEffect(() => {
@@ -535,35 +424,6 @@ export default function App() {
     }
     syncWithCloud(false);
   }, []);
-
-  // Spulen und Verlauf laufend abgleichen: alle 60 s und wenn die App wieder sichtbar wird
-  const syncRef = useRef(syncWithCloud);
-  syncRef.current = syncWithCloud;
-  useEffect(() => {
-    const iv = setInterval(() => void syncRef.current(false), 60000);
-    const vis = () => {
-      if (document.visibilityState === 'visible') void syncRef.current(false);
-    };
-    document.addEventListener('visibilitychange', vis);
-    return () => {
-      clearInterval(iv);
-      document.removeEventListener('visibilitychange', vis);
-    };
-  }, []);
-
-  // Neuer oder gelöschter Druck: kurz danach in die Cloud (andere Geräte holen ihn beim nächsten Abgleich)
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const onChange = () => {
-      if (t) clearTimeout(t);
-      t = setTimeout(() => void cloudSync.save(cloudDbUrl, printLogForCloud()).catch(() => {}), 3000);
-    };
-    window.addEventListener(PRINT_LOG_CHANGED, onChange);
-    return () => {
-      if (t) clearTimeout(t);
-      window.removeEventListener(PRINT_LOG_CHANGED, onChange);
-    };
-  }, [cloudDbUrl]);
 
   // Drucker-Zugang und Einstellungen verschlüsselt zwischen den Geräten abgleichen
   useDeviceSync(cloudDbUrl, showToast);

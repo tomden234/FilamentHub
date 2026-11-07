@@ -1,7 +1,7 @@
 // Link, den das QR-Etikett einer Spule enthält. Beim Scannen öffnet die App die Spule.
 import { REPO } from './env';
 
-export function appBaseUrl(): string {
+function appBaseUrl(): string {
   const [owner, repo] = REPO.split('/');
   return `https://${owner}.github.io/${repo}/`;
 }

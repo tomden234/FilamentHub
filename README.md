@@ -242,7 +242,7 @@ Vorlage: `.env.example`.
   - `components/`: Hauptfenster; Unterordner `sidebar/`, `bambu/`, `nfc/`, `app/`, `workshop/`
   - `hooks/`: u. a. `useAmsNfcReaders.ts` (NFC-Leser über Home Assistant)
   - `utils/`: u. a. `spoolState.ts` (Spulen-Zustand), `gistStore.ts` und `cloudFetch.ts` (Cloud), `deviceSync.ts` (verschlüsselter Geräte-Sync), `openTag3d.ts` (NFC-Tag-Format)
-  - `data/`: `defaultSpools.ts` (Revisionen, Marken), `mySpools.ts` (optionale eigene Startliste über `mySpools.local.ts`, nicht im Repo)
+  - `data/`: `versions.ts` (Revisionen), `defaultSpools.ts` (Marken, Materialien), `mySpools.ts` (optionale eigene Startliste über `mySpools.local.ts`, nicht im Repo)
   - `api/`, `types/`
 - `server.ts`, `server/routes/`: Express-Server (Drucker, Kamera, Home Assistant, Git, Speicher, Erkennung); `server/bambuMqtt.ts`, `server/bambuCloudApi.ts`
 - `hardware/ams-nfc/`: NFC-Leser (ESPHome, Pin-Plan, Halter)

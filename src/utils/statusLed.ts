@@ -6,7 +6,7 @@ import { haFetch } from './haAutoOff';
 import { safeStorage } from './safeStorage';
 import { getWorkshopSettings } from './workshopSettings';
 
-export const LED_AUTOMATION_ID = 'filamenthub_status_led';
+const LED_AUTOMATION_ID = 'filamenthub_status_led';
 const ENTITY_KEY = 'filamenthub_ha_led_entity';
 const INFO_KEY = 'filamenthub_ha_led_info';
 const JSON_KEY = 'filamenthub_ha_led_json';
@@ -23,9 +23,9 @@ export const hexToRgb = (hex: string): [number, number, number] => {
 export const rgbToHex = (c: [number, number, number]): string => '#' + c.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
 const currentColors = (): LedColors => ({ ...DEFAULT_LED_COLORS, ...(getWorkshopSettings().statusLedColors || {}) });
 /** Nach „fertig“ oder „Fehler“ so lange leuchten lassen, dann aus */
-export const LED_HOLD_MIN = 30;
+const LED_HOLD_MIN = 30;
 
-export interface LedEntities {
+interface LedEntities {
   light: string;
   effects: string[];
   intensity?: string;
@@ -33,7 +33,7 @@ export interface LedEntities {
   progress?: string;
 }
 
-export interface LedFind {
+interface LedFind {
   entities?: LedEntities;
   /** Was gefunden wurde, für die Fehlermeldung */
   found: { light?: string; status?: string; progress?: string };
@@ -130,7 +130,7 @@ export function buildStatusLedConfig(e: LedEntities, brightnessPct: number, colo
   };
 }
 
-export interface LedInfo {
+interface LedInfo {
   ok: boolean;
   text: string;
   at: number;
@@ -232,7 +232,7 @@ export async function setStatusLed(on: boolean): Promise<boolean> {
 // ---------- Test der Modi (Knöpfe in Werkstatt > Status-LED) ----------
 export type LedTestMode = 'print' | 'pause' | 'finish' | 'failed' | 'colortest' | 'off';
 
-export interface LedTestKit {
+interface LedTestKit {
   light: string;
   effects: string[];
   intensity?: string;
@@ -274,7 +274,7 @@ export function findLedTestKit(states: any[]): LedTestKit | null {
 /** Druckfortschritt in Prozent → Reglerwert 0-255 */
 export const ledIntensityValue = (pct: number): number => Math.round((Math.max(0, Math.min(100, pct)) * 255) / 100);
 
-export interface LedCall {
+interface LedCall {
   domain: string;
   service: string;
   data: Record<string, any>;
@@ -300,7 +300,7 @@ export function buildLedTestCalls(kit: LedTestKit, mode: LedTestMode, brightness
   return calls;
 }
 
-export interface LedTestResult {
+interface LedTestResult {
   ok: boolean;
   text: string;
 }

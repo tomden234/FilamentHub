@@ -11,7 +11,7 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export interface useAgentChatParams {
+interface useAgentChatParams {
   spools: ParentProps['spools'];
   onOpenCamera: ParentProps['onOpenCamera'];
   onSetViewMode: ParentProps['onSetViewMode'];

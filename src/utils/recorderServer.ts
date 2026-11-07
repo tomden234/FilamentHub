@@ -46,13 +46,13 @@ async function get(path: string, init: { method?: string; body?: unknown; timeou
 /** Stand des Abzugs auf dem Server: done = erledigt, ask = App soll fragen, pending/working = Server arbeitet noch, off/skip = App wie bisher */
 export type ServerDeductState = 'pending' | 'working' | 'done' | 'ask' | 'skip' | 'off';
 
-export interface ServerPrint extends HaPrint {
+interface ServerPrint extends HaPrint {
   deduct: ServerDeductState;
   resolved: boolean;
   photo: boolean;
 }
 
-export interface ServerPrints {
+interface ServerPrints {
   /** Adresse eingetragen (oder eigener Server vorhanden) */
   configured: boolean;
   prints: ServerPrint[] | null;
@@ -88,7 +88,7 @@ export async function fetchServerPrints(now = Date.now()): Promise<ServerPrints>
   }
 }
 
-export interface ServerCheck {
+interface ServerCheck {
   ok: boolean;
   text: string;
 }
@@ -130,7 +130,7 @@ function readSlots(): Record<string, string> {
 }
 
 /** Was der Pi braucht, um ohne App abzuziehen, zu schalten und zu warnen */
-export function hubConfigPayload() {
+function hubConfigPayload() {
   const ha = getHaCredentials();
   const ws = getWorkshopSettings();
   const cloudUrl = safeStorage.getItem(STORAGE_KEY_CLOUD_URL) || '';
@@ -151,14 +151,14 @@ export function hubConfigPayload() {
 
 // --- Einstellungen nur für den Pi (Strompreis, Ruhezeit, Material-Wächter) ---
 const HUB_SETTINGS_KEY = 'filamenthub_hub_settings';
-export interface HubSettings {
+interface HubSettings {
   kwhPrice: number;
   quietFrom: number;
   quietTo: number;
   materialGuard: boolean;
 }
 /** Strompreis: Durchschnitt Nürnberg Nov. 2026 (Grundversorgung 38,6 ct, günstige Tarife ca. 33 ct) */
-export const DEFAULT_HUB_SETTINGS: HubSettings = { kwhPrice: 0.35, quietFrom: 22, quietTo: 7, materialGuard: true };
+const DEFAULT_HUB_SETTINGS: HubSettings = { kwhPrice: 0.35, quietFrom: 22, quietTo: 7, materialGuard: true };
 export function getHubSettings(): HubSettings {
   try {
     return { ...DEFAULT_HUB_SETTINGS, ...(JSON.parse(safeStorage.getItem(HUB_SETTINGS_KEY) || '{}') || {}) };
@@ -417,7 +417,7 @@ export async function piQueueAction(action: 'add' | 'remove' | 'move' | 'start' 
   }
 }
 
-export interface DeductSuggestion {
+interface DeductSuggestion {
   filaments: { type: string; colorHex: string; grams: number }[] | null;
   parts: { spoolId: string; grams: number }[];
 }

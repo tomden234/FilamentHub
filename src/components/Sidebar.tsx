@@ -60,7 +60,7 @@ import { usePresetSettings } from './sidebar/usePresetSettings';
 import { useGcodeImport } from './sidebar/useGcodeImport';
 import { useAgentChat } from './sidebar/useAgentChat';
 import { pairUrlFor } from '../utils/gistStore';
-import { isOfficialRevision } from '../data/defaultSpools';
+import { isOfficialRevision } from '../data/versions';
 
 const FunFactsModal = lazy(() => import('./FunFactsModal').then(m => ({ default: m.FunFactsModal })));
 const BambuSettingsModal = lazy(() => import('./BambuSettingsModal').then(m => ({ default: m.BambuSettingsModal })));

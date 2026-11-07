@@ -1,7 +1,7 @@
 import React from 'react';
 import { Camera, Tag, Plus } from 'lucide-react';
 
-export interface MobileAppBarProps {
+interface MobileAppBarProps {
   onCamera: () => void;
   onNfc: () => void;
   onNewSpool: () => void;

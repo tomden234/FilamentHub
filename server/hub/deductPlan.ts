@@ -6,7 +6,7 @@ import { baseMaterial, colorDistance, EXTERNAL_SLOT } from '../../src/utils/amsM
 import { bestSpool } from '../../src/utils/printUsage.js';
 import { samePrint as samePrintCore } from '../../src/utils/printMatch.js';
 
-export interface SpoolLite {
+interface SpoolLite {
   id: string;
   brand?: string;
   name?: string;
@@ -29,7 +29,7 @@ export interface Part {
   grams: number;
 }
 
-export interface PlanInput {
+interface PlanInput {
   /** Gewicht je Filament aus der Druckdatei (null = unbekannt) */
   filaments: { type: string; colorHex: string; grams: number }[] | null;
   /** Fächer laut Drucker (AMS 1-4, extern 5) */
@@ -48,7 +48,7 @@ export interface PlanInput {
 const round1 = (g: number) => Math.round(g * 10) / 10;
 
 /** Spule des Hauptslots: zugewiesen, sonst über Material und Farbe */
-export function mainSpoolId(i: Pick<PlanInput, 'mainSlot' | 'amsSlots' | 'spools' | 'trays'>): string {
+function mainSpoolId(i: Pick<PlanInput, 'mainSlot' | 'amsSlots' | 'spools' | 'trays'>): string {
   if (!i.mainSlot) return '';
   const assigned = i.amsSlots[String(i.mainSlot)];
   if (assigned && i.spools.some(s => s.id === assigned)) return assigned;

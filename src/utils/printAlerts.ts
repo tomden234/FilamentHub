@@ -10,7 +10,7 @@ const AMS_SLOTS_KEY = 'filamenthub_ams_slots_x2d';
 
 const clock = (ms: number) => new Date(ms).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' Uhr';
 
-export function fmtMinutes(m: number): string {
+function fmtMinutes(m: number): string {
   const v = Math.max(0, Math.round(m));
   return v >= 60 ? `${Math.floor(v / 60)} h ${v % 60} min` : `${v} min`;
 }

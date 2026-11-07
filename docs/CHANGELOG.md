@@ -1,6 +1,6 @@
 # Änderungsverlauf (Auszug)
 
-Die ausführliche Liste aller Revisionen (1.xx) steht in der App im Revisionsmenü (`src/data/defaultSpools.ts`).
+Die ausführliche Liste aller Revisionen (1.xx) steht in der App im Revisionsmenü (`src/data/versions.ts`).
 Hier der Abschnitt zu den großen Ergänzungen vom 29./30.10.2026.
 
 ## Neu am 29./30.10.2026 (1.105 bis 1.138)

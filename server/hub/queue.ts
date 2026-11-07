@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { dataDir } from '../paths.js';
+import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
 import { ftpBusy, listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayLabel, type Mapping } from './hubLogic.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
@@ -66,25 +67,16 @@ interface StartedJob {
 const startedFile = () => path.join(dataDir, 'hub-started.json');
 const jobKey = (n: string) => String(n || '').toLowerCase().replace(/\.gcode\.3mf$|\.3mf$|\.gcode$/i, '').trim();
 function loadStarted(): StartedJob[] {
-  try {
-    const v = JSON.parse(fs.readFileSync(startedFile(), 'utf-8'));
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
+  return readJsonWithPrev<StartedJob[]>(startedFile(), v => Array.isArray(v)) || [];
 }
 function rememberStarted(it: QueueItem): void {
   const now = Date.now();
   const names = Array.from(new Set([jobKey(it.name), jobKey(path.posix.basename(it.path))]));
   const list = [{ path: it.path, names, filaments: it.filaments, at: now }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
-  try {
-    fs.writeFileSync(startedFile(), JSON.stringify(list), 'utf-8');
-  } catch {
-    /* egal */
-  }
+  saveJsonConfig(startedFile(), list, 'gestartete Drucke', { pretty: false, keepPrev: true });
 }
 /** Pfad der Datei eines Drucks, den die Warteschlange gestartet hat (auch nach dem Umbenennen) */
-export function startedJobPath(name: string): string | null {
+function startedJobPath(name: string): string | null {
   const k = jobKey(name);
   return (k && loadStarted().find(x => x.names.includes(k))?.path) || null;
 }
@@ -104,7 +96,7 @@ export function startedJobFilaments(name: string): JobFilament[] | null {
 
 function saveUrlKey(k: string): void {
   try {
-    fs.writeFileSync(urlKeyFile(), k, 'utf-8');
+    writeFileAtomic(urlKeyFile(), k);
   } catch {
     /* egal */
   }
@@ -119,7 +111,7 @@ function saveThumb(id: string, bytes: Uint8Array | null): boolean {
   if (!bytes || bytes.length < 100 || bytes.length > 2_000_000) return false;
   try {
     fs.mkdirSync(thumbDir(), { recursive: true });
-    fs.writeFileSync(path.join(thumbDir(), `${id}.png`), bytes);
+    writeFileAtomic(path.join(thumbDir(), `${id}.png`), bytes, { mode: 0o644 });
     return true;
   } catch {
     return false;
@@ -140,11 +132,11 @@ let port: QueuePort | null = null;
 let notify: (title: string, text: string) => Promise<unknown> = async () => undefined;
 
 /** Übliche Namen der ESPHome-Regler (Gerät „Filament AMS“). Die echten werden in Home Assistant gesucht (resolveAms). */
-export const QUEUE_COUNT_ENTITY = 'number.filament_ams_warteschlange';
-export const QUEUE_MODE_ENTITY = 'number.filament_ams_warteschlange_modus';
-export const BUTTON_ENTITY = 'binary_sensor.filament_ams_platte_frei';
+const QUEUE_COUNT_ENTITY = 'number.filament_ams_warteschlange';
+const QUEUE_MODE_ENTITY = 'number.filament_ams_warteschlange_modus';
+const BUTTON_ENTITY = 'binary_sensor.filament_ams_platte_frei';
 
-export const DOUBLE_ENTITY = 'binary_sensor.filament_ams_taster_doppelt';
+const DOUBLE_ENTITY = 'binary_sensor.filament_ams_taster_doppelt';
 
 const found = { count: QUEUE_COUNT_ENTITY, mode: QUEUE_MODE_ENTITY, button: BUTTON_ENTITY, double: DOUBLE_ENTITY, at: 0 };
 /** Echte IDs suchen (höchstens alle 5 Minuten): Home Assistant behält alte IDs, wenn das Gerät früher anders hieß */
@@ -178,23 +170,16 @@ export function attachQueue(p: QueuePort, n: (title: string, text: string) => Pr
 
 function load(): QueueItem[] {
   if (items) return items;
-  try {
-    const v = JSON.parse(fs.readFileSync(file(), 'utf-8'));
-    items = Array.isArray(v?.items) ? v.items : [];
-    seen = Array.isArray(v?.seen) ? new Set<string>(v.seen) : null;
-    autoOn = v?.auto !== false;
-  } catch {
-    items = [];
-  }
+  // 1.231: kaputte Datei (Stromausfall) → Vorversion
+  const v = readJsonWithPrev<any>(file(), d => Boolean(d && Array.isArray(d.items)));
+  items = Array.isArray(v?.items) ? v.items : [];
+  seen = Array.isArray(v?.seen) ? new Set<string>(v.seen) : null;
+  autoOn = v?.auto !== false;
   return items!;
 }
 
 function save(): void {
-  try {
-    fs.writeFileSync(file(), JSON.stringify({ items: load(), seen: seen ? Array.from(seen).slice(-500) : undefined, auto: autoOn }), 'utf-8');
-  } catch (e) {
-    console.warn('[Warteschlange] Speichern fehlgeschlagen:', (e as Error)?.message || e);
-  }
+  saveJsonConfig(file(), { items: load(), seen: seen ? Array.from(seen).slice(-500) : undefined, auto: autoOn }, 'Warteschlange', { pretty: false, keepPrev: true });
 }
 
 const printerData = () => port?.getStatus().data || {};
@@ -275,7 +260,7 @@ let scanning = false;
 let starting = false;
 let scanStarted = 0;
 let scanBlockedUntil = 0;
-export interface ScanResult {
+interface ScanResult {
   ok: boolean;
   text: string;
   added: number;
@@ -337,6 +322,33 @@ export async function autoScan(force = false): Promise<ScanResult> {
   } finally {
     scanning = false;
   }
+}
+
+/**
+ * 1.231: Wie lange bis zur nächsten automatischen Suche? Vorher alle 3 s eine FTPS-Anmeldung am Drucker (~28.800 am Tag,
+ * Hauptgrund für „421 too many connections“). Jetzt: 20 s, ohne Neues langsamer bis 60 s, während des Druckens 60 s.
+ */
+export function scanIntervalMs(printing: boolean, quietRounds: number): number {
+  if (printing) return 60_000;
+  return Math.min(60_000, 20_000 * Math.max(1, Math.min(3, quietRounds)));
+}
+
+const scanLoop = { nextAt: 0, quiet: 0, sig: '' };
+/** Takt der automatischen Suche (alle 5 s aufgerufen, sucht aber nur, wenn fällig). Ändert sich etwas am Drucker, sofort suchen. */
+export async function autoScanTick(now = Date.now()): Promise<void> {
+  const d: any = port?.getStatus().data || {};
+  const gs = String(d.gcode_state || '');
+  const sig = `${gs}|${d.gcode_file || ''}|${d.subtask_name || ''}`;
+  if (sig !== scanLoop.sig) {
+    scanLoop.sig = sig;
+    scanLoop.nextAt = Math.min(scanLoop.nextAt, now + 3_000);
+  }
+  if (now < scanLoop.nextAt) return;
+  const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(gs);
+  scanLoop.nextAt = now + scanIntervalMs(printing, scanLoop.quiet); // vorab setzen: kein zweiter Start, solange einer läuft
+  const r = await autoScan();
+  scanLoop.quiet = r.added > 0 ? 0 : scanLoop.quiet + 1;
+  scanLoop.nextAt = Date.now() + scanIntervalMs(printing, scanLoop.quiet);
 }
 
 /** Eintrag kopieren: gleiche Datei noch einmal direkt darunter einreihen (mit Titelbild) */
@@ -424,6 +436,8 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
   setPlateClear(false); // Taster/Knopf = Platte ist frei
   starting = true;
   try {
+    // 1.231: Leere Warteschlange: erst kurz auf dem Drucker nach neuen Dateien suchen (die Suche läuft nicht mehr alle 3 s)
+    if (!load().length) await autoScan(true).catch(() => undefined);
     const list = load();
     const st = port?.getStatus();
     const live = Boolean(st?.connected && st?.receivingData !== false);

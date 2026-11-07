@@ -29,19 +29,19 @@ export function okLedIntensityBody(b: unknown): boolean {
 }
 
 /** Warteschlangen-LEDs am AMS-ESP: number.*ams*warteschlange, Wert 0-10 */
-export function okQueueBody(b: unknown): boolean {
+function okQueueBody(b: unknown): boolean {
   if (!isObj(b) || !hasOnly(b, ['entity_id', 'value'])) return false;
   if (typeof b.entity_id !== 'string' || !/^number\.[a-z0-9_]*_warteschlange(_modus)?(_\d+)?$/.test(b.entity_id)) return false;
   return typeof b.value === 'number' && Number.isInteger(b.value) && b.value >= 0 && b.value <= 10;
 }
 
 /** Test-Modus des Tasters: genau switch.*ams*_warteschlange_test */
-export function okQueueTestBody(b: unknown): boolean {
+function okQueueTestBody(b: unknown): boolean {
   return isObj(b) && hasOnly(b, ['entity_id']) && typeof b.entity_id === 'string' && /^switch\.[a-z0-9_]*_warteschlange_test(_\d+)?$/.test(b.entity_id);
 }
 
 /** Nachtmodus der LED-Streifen am AMS-ESP: number.*_led_nacht_ab/_bis (0-23) und *_led_nacht_helligkeit (5-100) */
-export function okNightBody(b: unknown): boolean {
+function okNightBody(b: unknown): boolean {
   if (!isObj(b) || !hasOnly(b, ['entity_id', 'value'])) return false;
   if (typeof b.entity_id !== 'string' || typeof b.value !== 'number' || !Number.isInteger(b.value)) return false;
   if (/^number\.[a-z0-9_]*_led_nacht_(ab|bis)(_\d+)?$/.test(b.entity_id)) return b.value >= 0 && b.value <= 23;
@@ -50,7 +50,7 @@ export function okNightBody(b: unknown): boolean {
 }
 
 /** Nachtmodus an/aus: genau switch.*_led_nachtmodus */
-export function okNightSwitchBody(b: unknown): boolean {
+function okNightSwitchBody(b: unknown): boolean {
   return isObj(b) && hasOnly(b, ['entity_id']) && typeof b.entity_id === 'string' && /^switch\.[a-z0-9_]*_led_nachtmodus(_\d+)?$/.test(b.entity_id);
 }
 

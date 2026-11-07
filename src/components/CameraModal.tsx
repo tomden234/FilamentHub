@@ -108,26 +108,11 @@ export const CameraModal: React.FC<CameraModalProps> = ({
           return;
         }
       }
-      throw new Error('Server-Analyse nicht verfügbar.');
+      // 1.231: ehrlich melden statt eine erfundene „Erkennung“ anzuzeigen
+      const why = res.data?.error || (res.status === 503 ? 'Foto-Erkennung braucht den Server.' : 'Erkennung nicht möglich.');
+      setErrorMessage(`${why} Bitte die Spule von Hand anlegen.`);
     } catch {
-      // Fallback: Wenn offline oder ohne Server-Antwort, intelligente Standard-Erkennung
-      const fallbackSpool: Partial<Spool> = {
-        brand: 'Bambu Lab',
-        material: 'PLA',
-        name: 'PLA Basic Filament (Kamera-Erkennung)',
-        colorName: 'Standard',
-        colorHex: '#f97316',
-        initialWeight: 1000,
-        remainingWeight: 1000,
-        emptySpoolWeight: 250,
-        pricePerKg: 19.99,
-        dryTemp: 50,
-        dryHours: 5,
-        dryIntervalDays: 30,
-        storageNote: 'Per Smartphone-Kamera erfasst'
-      };
-      setRecognizedData(fallbackSpool);
-      setDetectedConfidence(75);
+      setErrorMessage('Server nicht erreichbar. Bitte die Spule von Hand anlegen.');
     } finally {
       setIsAnalyzing(false);
     }

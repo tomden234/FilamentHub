@@ -48,7 +48,7 @@ export function mapTagToSpool(serialNumber: string, spoolId: string): void {
 }
 
 // Tag-UID Verknüpfung entfernen (Löschen)
-export function unmapTag(serialNumber: string): void {
+function unmapTag(serialNumber: string): void {
   if (!serialNumber) return;
   const mappings = getTagMappings();
   delete mappings[serialNumber.trim().toLowerCase()];
@@ -138,7 +138,7 @@ export async function writeSpoolToNfcTag(
  * Schreibt die Spule im offenen OpenTag3D-Format (NDEF-MIME application/opentag3d, 224 Byte).
  * Dieses Format können auch andere Programme und Drucker-Software lesen, die OpenTag3D unterstützen.
  */
-export async function writeOpenTag3dToNfcTag(
+async function writeOpenTag3dToNfcTag(
   spool: Spool,
   signal?: AbortSignal
 ): Promise<{ success: boolean; message: string }> {
@@ -219,7 +219,7 @@ export function playNfcSuccessChime(): void {
 /**
  * Akustisches Feedback beim Löschen/Leeren eines NFC-Tags (abfallende Doppel-Töne)
  */
-export function playNfcDeleteSound(): void {
+function playNfcDeleteSound(): void {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;

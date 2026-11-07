@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { printerApi } from '../../api';
 import { findGcodeWeight } from '../../utils/gcodeParser';
 
-export interface useGcodeUploadParams {
+interface useGcodeUploadParams {
   setActionToast: any;
   handleRefreshLiveState: any;
 }

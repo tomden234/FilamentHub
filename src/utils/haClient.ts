@@ -11,8 +11,8 @@ const KEY_SWITCH_ENTITY = 'ha_switch_entity';
 
 // Fallback Nabu Casa URL aus Benutzer-Konfiguration
 export const DEFAULT_NABU_URL = 'https://tylfgfybmxzyfz2lycc0ea6ozjeja4w5.ui.nabu.casa';
-export const DEFAULT_CAMERA_ENTITY = 'camera.bambu_x2d';
-export const DEFAULT_SWITCH_ENTITY = 'switch.3d_drucker_steckdose';
+const DEFAULT_CAMERA_ENTITY = 'camera.bambu_x2d';
+const DEFAULT_SWITCH_ENTITY = 'switch.3d_drucker_steckdose';
 
 export interface HaCredentials {
   url: string;

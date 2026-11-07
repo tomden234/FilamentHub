@@ -4,7 +4,7 @@ import type { NfcModalProps as ParentProps } from '../NfcModal';
 import { LabelPrintButton } from '../LabelPrintButton';
 import { NumInput } from '../ui/NumInput';
 
-export interface NfcReadTabProps {
+interface NfcReadTabProps {
   unwrittenTagDetected: any;
   setUnwrittenTagDetected: any;
   startNfcScan: (...args: any[]) => any;

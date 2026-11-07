@@ -6,7 +6,7 @@ import { getPrinterCameraError } from '../../utils/printerCamera';
 import { withApiKey } from '../../api/client';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 
-export interface PrinterCameraPanelProps {
+interface PrinterCameraPanelProps {
   setCameraSnapshotKey: any;
   handleToggleLight: (...args: any[]) => any;
   isLightOn: any;

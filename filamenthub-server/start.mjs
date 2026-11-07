@@ -18,8 +18,14 @@ if (ip && serial && code) {
   // LAN-Modus: direkt zum Drucker, ohne Bambu Cloud
   fs.writeFileSync(
     '/data/.bambu-config.json',
-    JSON.stringify({ serialNumber: serial, userId: '', accessToken: '', brokerHost: '', adminPin: '', lanMode: true, lanIp: ip, lanCode: code }, null, 2)
+    JSON.stringify({ serialNumber: serial, userId: '', accessToken: '', brokerHost: '', adminPin: '', lanMode: true, lanIp: ip, lanCode: code }, null, 2),
+    { mode: 0o600 }
   );
+  try {
+    fs.chmodSync('/data/.bambu-config.json', 0o600); // 1.231: Zugangscode nur für den Besitzer lesbar (auch bei alter Datei)
+  } catch {
+    /* egal */
+  }
   console.log(`[FilamentHub] Drucker ${ip} (${serial}), LAN-Modus.`);
 } else {
   console.warn('[FilamentHub] Drucker-IP, Seriennummer oder Zugangscode fehlt. Bitte in der Konfiguration der App eintragen und neu starten.');

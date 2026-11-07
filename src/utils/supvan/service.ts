@@ -12,7 +12,7 @@ import type { Spool } from '../../types/filament';
 const KEY_DEVICE = 'filamenthub_label_printer';
 const KEY_SETTINGS = 'filamenthub_label_settings';
 
-export interface LabelSettings {
+interface LabelSettings {
   density: number; // 1..15
   rotate180: boolean;
   mirror: boolean;
@@ -35,7 +35,7 @@ const DEFAULTS: LabelSettings = {
   autoShorten: true
 };
 
-export type PrinterPhase = 'off' | 'connecting' | 'ready' | 'printing';
+type PrinterPhase = 'off' | 'connecting' | 'ready' | 'printing';
 
 interface State {
   phase: PrinterPhase;
@@ -114,12 +114,6 @@ export function printerSupport(): 'native' | 'web' | 'none' {
   if (IS_NATIVE && nativeBle()) return 'native';
   if (webBleSupported()) return 'web';
   return 'none';
-}
-
-export async function bleStatus(): Promise<{ available: boolean; enabled: boolean; granted: boolean }> {
-  const p = nativeBle();
-  if (!p) return { available: false, enabled: false, granted: false };
-  return p.call('status');
 }
 
 /** Bluetooth-Geräte in der Nähe suchen (nur Android-App) */
@@ -201,13 +195,13 @@ export function forgetPrinter() {
 }
 
 /** Etikettenlänge: vom Drucker gemeldet, sonst aus den Einstellungen */
-export function labelLengthMm(): number {
+function labelLengthMm(): number {
   const m = state.info?.material;
   return m && m.lengthMm > 0 ? m.lengthMm : state.settings.lengthMm;
 }
 
 /** Meldet die Rolle eine feste Etikettenlänge (vorgestanzte Etiketten)? */
-export function labelLengthFixed(): boolean {
+function labelLengthFixed(): boolean {
   const m = state.info?.material;
   return Boolean(m && m.lengthMm > 0);
 }

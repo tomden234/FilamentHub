@@ -6,7 +6,7 @@ import { isGistUrl } from '../../utils/gistStore';
 import { isPiUrl } from '../../utils/piDoc';
 import { STORAGE_KEY_CLOUD_URL } from '../../utils/storageKeys';
 
-export interface ToolsTabProps {
+interface ToolsTabProps {
   /** Windows-App/Browser: mit Backup und Beispiel-Spulen. Android-App: nur Abgleich und Bestand. */
   full?: boolean;
   onSyncCloud: ParentProps['onSyncCloud'];

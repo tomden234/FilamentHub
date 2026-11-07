@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 
-export interface PrintPlan {
+interface PrintPlan {
   /** Auftrag, für den der Plan gilt */
   jobId: string;
   jobName: string;

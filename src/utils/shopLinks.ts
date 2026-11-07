@@ -76,7 +76,7 @@ export function getSpoolLink(spool: Spool): { url: string; label: string; auto: 
   return { url, label, auto: true };
 }
 
-export function extractAsin(urlStr: string): string | null {
+function extractAsin(urlStr: string): string | null {
   const m = (urlStr || '').match(/(?:\/dp\/|\/gp\/product\/)([A-Z0-9]{10})/i);
   return m ? m[1].toUpperCase() : null;
 }

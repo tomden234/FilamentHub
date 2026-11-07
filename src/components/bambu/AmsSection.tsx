@@ -13,7 +13,7 @@ import { cancelHaDryOffRun, getHaDryOffInfo, getHaDryOffJson, installHaDryOff, s
 import { updateWorkshopSettings, useWorkshopSettings } from '../../utils/workshopSettings';
 import { Toggle } from '../workshop/ui';
 
-export interface AmsSectionProps {
+interface AmsSectionProps {
   compact?: boolean;
   setAmsSlots: ParentProps['setAmsSlots'];
   setActionToast: ParentProps['setActionToast'];

@@ -1,13 +1,14 @@
 import path from 'path';
 import { rootDir, dataDir } from './paths.js';
 import { loadJsonConfig, saveJsonConfig } from './jsonConfig.js';
+import { isAllowedHaUrl } from './netCheck.js';
 
 // --- HOME ASSISTANT INTEGRATION (Lokales Netzwerk / Nabu Casa) ---
 const haDataConfigPath = path.join(dataDir, 'ha-config.json');
 /** Alter Speicherort (nur noch lesen) */
 const haLegacyConfigPath = path.resolve(rootDir, '.ha-config.json');
 
-export interface HaConfig {
+interface HaConfig {
   haUrl: string;
   haToken: string;
   cameraEntity: string;
@@ -41,12 +42,14 @@ export function saveHaConfig(config: { haUrl: string; haToken: string; cameraEnt
 
 /**
  * Ziel für einen Aufruf an Home Assistant. Eine Adresse aus der Anfrage gilt nur zusammen mit einem Token aus der Anfrage,
- * sonst würde der gespeicherte Token an eine fremde Adresse geschickt (1.229).
+ * sonst würde der gespeicherte Token an eine fremde Adresse geschickt (1.229). Fremde Adressen nur im Heimnetz/Nabu Casa (1.231).
  */
 export function haTarget(urlOverride: unknown, tokenOverride: unknown): { url: string; token: string } {
   const cfg = loadHaConfig();
   const tok = typeof tokenOverride === 'string' ? tokenOverride.trim() : '';
   const u = typeof urlOverride === 'string' ? urlOverride.trim() : '';
-  const url = (tok && u ? u : cfg.haUrl || '').trim().replace(/\/+$/, '');
-  return { url, token: tok || cfg.haToken || '' };
+  // 1.231: fremde Adresse nur Nabu Casa / Heimnetz / *.local (kein Weiterleiten an beliebige Server im Internet)
+  const own = tok && u && isAllowedHaUrl(u);
+  const url = (own ? u : cfg.haUrl || '').trim().replace(/\/+$/, '');
+  return { url, token: own ? tok : cfg.haToken || '' };
 }

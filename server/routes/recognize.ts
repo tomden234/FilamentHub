@@ -11,8 +11,8 @@ const ai = process.env.GEMINI_API_KEY
 // API-Route: Spule per Foto (Kamera) erkennen
 router.post('/api/recognize-spool', async (req, res) => {
   try {
-    const { imageBase64, mimeType } = req.body;
-    if (!imageBase64) {
+    const { imageBase64, mimeType } = req.body || {};
+    if (typeof imageBase64 !== 'string' || !imageBase64) {
       return res.status(400).json({ error: 'Kein Bild empfangen.' });
     }
 
@@ -40,76 +40,31 @@ Extrahiere folgende Angaben im exakten JSON-Format:
 Antworte AUSSCHLIESSLICH mit gültigem JSON ohne Markdown-Codeblöcke.
     `.trim();
 
-    let outputText = '{}';
-    if (ai) {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                inlineData: {
-                  data: cleanBase64,
-                  mimeType: mimeType || 'image/jpeg'
-                }
-              },
-              {
-                text: promptText
-              }
-            ]
-          }
-        ],
-        config: {
-          responseMimeType: 'application/json'
+    // 1.231: Ohne Schlüssel ehrlich „nicht verfügbar“ (vorher kam eine erfundene ELEGOO-Erkennung mit 85 %)
+    if (!ai) return res.status(503).json({ success: false, offline: true, error: 'Foto-Erkennung ist nicht eingerichtet (kein GEMINI_API_KEY).' });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [{ inlineData: { data: cleanBase64, mimeType: typeof mimeType === 'string' && /^image\/(jpeg|png|webp|heic)$/.test(mimeType) ? mimeType : 'image/jpeg' } }, { text: promptText }]
         }
-      });
-      outputText = response.text || '{}';
-    } else {
-      outputText = JSON.stringify({
-        brand: 'ELEGOO',
-        material: 'PLA',
-        name: 'Color Marble PLA',
-        colorName: 'Marmor',
-        colorHex: '#e2e8f0',
-        initialWeight: 1000,
-        emptySpoolWeight: 160,
-        pricePerKg: 16.99,
-        dryTemp: 50,
-        dryHours: 5,
-        dryIntervalDays: 30,
-        confidence: 85,
-        detectedText: 'ELEGOO PLA Marble 1.75mm (Offline-Erkennung ohne API-Credits)'
-      });
-    }
-    let parsedData = {};
+      ],
+      config: { responseMimeType: 'application/json' }
+    });
+    let parsedData: unknown;
     try {
-      parsedData = JSON.parse(outputText);
+      parsedData = JSON.parse(response.text || '');
     } catch {
-      // Fallback
-      parsedData = {
-        brand: 'Bambu Lab',
-        material: 'PLA',
-        name: 'PLA Filament',
-        colorName: 'Standard',
-        colorHex: '#f97316',
-        initialWeight: 1000,
-        emptySpoolWeight: 250,
-        pricePerKg: 19.99,
-        dryTemp: 50,
-        dryHours: 5,
-        dryIntervalDays: 30,
-        confidence: 60
-      };
+      return res.status(502).json({ success: false, error: 'Die KI hat keine lesbare Antwort geliefert. Bitte nochmal versuchen.' });
     }
+    if (!parsedData || typeof parsedData !== 'object') return res.status(502).json({ success: false, error: 'Keine Spule erkannt.' });
 
     return res.json({ success: true, spool: parsedData });
   } catch (error: any) {
     console.error('Fehler bei der Bilderkennung:', error);
-    return res.status(500).json({
-      error: 'Fehler bei der visuellen Spulenerkennung.',
-      details: error?.message || String(error)
-    });
+    // 1.231: keine internen Fehlertexte nach außen
+    return res.status(500).json({ success: false, error: 'Fehler bei der Spulenerkennung.' });
   }
 });
 

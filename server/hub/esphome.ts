@@ -3,11 +3,12 @@
 import fs from 'fs';
 import path from 'path';
 import { mergeEspYaml, yamlRevision } from './hubLogic.js';
+import { writeFileAtomic } from '../jsonConfig.js';
 
 const RAW = 'https://raw.githubusercontent.com/tomden234/filament-website-google-ai/main/hardware/ams-nfc/filament-ams.yaml';
 const DIRS = ['/homeassistant/esphome', '/config/esphome'];
 
-export interface EspSyncInfo {
+interface EspSyncInfo {
   at: number;
   ok: boolean;
   text: string;
@@ -57,8 +58,8 @@ export async function syncEspYaml(): Promise<{ changed: boolean; info: EspSyncIn
       info = { at: Date.now(), ok: true, text: `Aktuell (Revision ${rev || '?'})`, revision: rev, file: target };
       return { changed: false, info };
     }
-    if (old) fs.writeFileSync(target + '.bak', old, 'utf-8');
-    fs.writeFileSync(target, merged, 'utf-8');
+    if (old) writeFileAtomic(target + '.bak', old, { mode: 0o644 });
+    writeFileAtomic(target, merged, { mode: 0o644 });
     info = { at: Date.now(), ok: true, text: `Neue Fassung (Revision ${rev || '?'}) abgelegt: ${path.basename(target)}`, revision: rev, file: target };
     console.log(`[Hub] ESP-YAML aktualisiert: ${target} (Revision ${rev})`);
     return { changed: true, info };
@@ -79,7 +80,7 @@ export function publishImage(jpeg: Buffer, name: string): string | null {
   const dir = path.join(base, 'filamenthub');
   try {
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, name), jpeg);
+    writeFileAtomic(path.join(dir, name), jpeg, { mode: 0o644 });
     const files = fs
       .readdirSync(dir)
       .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))

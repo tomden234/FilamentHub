@@ -3,7 +3,7 @@ import { Edit3 } from 'lucide-react';
 import { useEscapeClose } from '../../hooks/useEscapeClose';
 import { NumInput } from '../ui/NumInput';
 
-export interface EditUsedModalProps {
+interface EditUsedModalProps {
   setIsEditUsedModalOpen: any;
   editUsedInputValue: any;
   setEditUsedInputValue: any;
