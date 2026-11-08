@@ -537,7 +537,11 @@ export default function App() {
           const t = (e.target as HTMLElement)?.tagName;
           if (isNfcModalOpen) setIsNfcModalOpen(false);
           else if (isDocked) setDockPref(false); // 1.250: Esc klappt die feste Seitenleiste ein
-          else if (t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' && !isDocked) setIsSidebarOpen(true);
+          // 1.252: Esc öffnet das Menü genau wie der Menü-Knopf (am breiten PC als feste Leiste, sonst als Fenster)
+          else if (t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT') {
+            if (canDock) setDockPref(true);
+            else setIsSidebarOpen(true);
+          }
         }
       }
       const tag = (e.target as HTMLElement)?.tagName;
@@ -575,7 +579,7 @@ export default function App() {
         showToast('Rückgängig gemacht.');
       }
     } catch {}
-  }, [undoStack, spools, printHistory, persistState, showToast, isDocked, isNfcModalOpen]);
+  }, [undoStack, spools, printHistory, persistState, showToast, isDocked, canDock, isNfcModalOpen]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return;

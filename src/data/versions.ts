@@ -3534,5 +3534,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.252',
+    label: '1.252 (Esc wie Menü-Knopf)',
+    releaseDate: '08.11.2026',
+    description:
+      'Esc öffnet das Menü jetzt genau wie der Menü-Knopf: am breiten PC als feste Leiste links (ohne Unschärfe), sonst als Fenster. Vorher kam am PC bei Esc das unscharfe Fenster-Menü.',
+    features: ['⌨️ Esc = Menü-Knopf'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
