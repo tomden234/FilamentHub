@@ -30,7 +30,7 @@ export const ApkUpdateRow: React.FC = () => {
       return;
     }
     if (IS_DESKTOP) {
-      window.open(DESKTOP_URL, '_blank');
+      window.open(DESKTOP_URL, '_blank', 'noopener,noreferrer');
       setNote('Installer wird geladen. Danach ausführen, die App aktualisiert sich.');
       return;
     }

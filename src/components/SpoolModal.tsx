@@ -6,6 +6,7 @@ import { COMMON_LOCATIONS } from '../utils/spoolAlerts';
 import { getBambuProfile } from '../data/bambuParameters';
 import { generateAutoShopUrl, getBrandInfo, parseFilamentText } from '../utils/shopLinks';
 import { hasSpoolBody, isInEibos, isSealed } from '../utils/spoolState';
+import { safeHttpUrl } from '../utils/safeData';
 import { NumInput } from './ui/NumInput';
 
 interface SpoolModalProps {
@@ -282,7 +283,8 @@ export const SpoolModal: React.FC<SpoolModalProps> = ({
     onSave(finalSpool);
   };
 
-  const currentShopUrl = productUrl.trim() || generateAutoShopUrl(brand, material, name, colorName);
+  // 1.249: Nur echte http(s)-Links als Link anbieten (kein „javascript:“ aus dem Eingabefeld)
+  const currentShopUrl = safeHttpUrl(productUrl.trim()) || generateAutoShopUrl(brand, material, name, colorName);
 
   return (
     <div

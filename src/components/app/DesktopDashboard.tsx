@@ -12,6 +12,7 @@ interface DesktopDashboardProps {
   dueDryingCount: any;
   setEditUsedInputValue: any;
   totalUsedGrams: any;
+  usedWeek?: { week: number; prev: number; diff: number };
   setIsEditUsedModalOpen: any;
   viewMode: any;
   handleDeductWeight: (...args: any[]) => any;
@@ -52,6 +53,7 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
   dueDryingCount,
   setEditUsedInputValue,
   totalUsedGrams,
+  usedWeek,
   setIsEditUsedModalOpen,
   viewMode,
   handleDeductWeight,
@@ -121,6 +123,18 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                 <div className="text-lg sm:text-xl font-extrabold font-mono-num mt-0.5 leading-tight" style={{ color: 'var(--app-accent-text)' }}>
                   {totalUsedGrams.toLocaleString('de-DE')} g
                 </div>
+                {usedWeek && (usedWeek.week > 0 || usedWeek.prev > 0) && (
+                  <div
+                    className="text-[11px] font-semibold font-mono-num mt-1 flex items-center gap-1"
+                    style={{ color: 'var(--app-text-muted)' }}
+                    title={`Letzte 7 Tage: ${usedWeek.week} g · 7 Tage davor: ${usedWeek.prev} g`}
+                  >
+                    <span style={{ color: usedWeek.diff > 0 ? 'var(--app-accent-text)' : usedWeek.diff < 0 ? 'var(--app-danger-text)' : undefined }}>
+                      {usedWeek.diff > 0 ? '▲' : usedWeek.diff < 0 ? '▼' : '='}
+                    </span>
+                    {usedWeek.week.toLocaleString('de-DE')} g diese Woche
+                  </div>
+                )}
               </button>
             </section>
 

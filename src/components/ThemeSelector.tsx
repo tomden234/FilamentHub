@@ -89,7 +89,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
               { id: 'glass-cream', name: 'Glas Creme', sub: 'Hell, Salbeigrün', bg: 'linear-gradient(135deg,#f3d9b8,#ece3d0 55%,#cfe3d2)', card: 'rgba(255,252,244,.7)', ink: '#2b281f', acc: '#4d7a5b', serif: false },
               { id: 'night', name: 'Nacht', sub: 'Dunkles Lila', bg: '#16132a', card: '#201c38', ink: '#e6e2f4', acc: '#9484e6', serif: true },
               { id: 'mocha', name: 'Mocha', sub: 'Kaffeebraun, Orange', bg: '#2a160d', card: '#3d2114', ink: '#f3e2d2', acc: '#FE4D03', serif: false },
-              { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#3f8a5c', serif: true }
+              { id: 'sand', name: 'Sand', sub: 'Warm hell', bg: '#e9e2d3', card: '#f5f0e4', ink: '#2f2b23', acc: '#3f8a5c', serif: true },
+              { id: 'mint', name: 'Mint', sub: 'Frisch hell, Petrol', bg: '#e3f3ed', card: '#f7fcfa', ink: '#10302a', acc: '#0f7d68', serif: false },
+              { id: 'brass', name: 'Messing', sub: 'Hell, Schwarz und Gold', bg: '#ebe9e2', card: '#f8f7f3', ink: '#111214', acc: '#d9a93a', serif: false }
             ] as const
           ).map(o => {
             const active = style === o.id;
@@ -126,7 +128,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         </div>
         {cozy && (
           <p className="text-[10.5px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Cozy, Glas, Nacht und Sand haben feste Farben. Feinabstimmung (Helligkeit, Farbton, Glas) machst du unten bei „Farbe und Helligkeit“. Die 5 Helligkeiten und die Akzentfarbe hier gelten nur bei „Klassisch“.
+            Alle Designs außer „Klassisch“ haben feste Farben. Feinabstimmung (Helligkeit, Farbton, Glas) machst du unten bei „Farbe und Helligkeit“. Die 5 Helligkeiten und die Akzentfarbe hier gelten nur bei „Klassisch“.
           </p>
         )}
       </div>

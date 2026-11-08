@@ -100,14 +100,14 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border transition-colors ${dry.isOverdue ? 'border-rose-500/60' : ''}`}
+      className={`fh-lift relative overflow-hidden rounded-2xl border ${dry.isOverdue ? 'border-rose-500/60' : ''}`}
       style={{
         backgroundColor: 'var(--app-card)',
         borderColor: dry.isOverdue ? undefined : 'var(--app-border)',
         color: 'var(--app-text)'
       }}
     >
-      <button type="button" onClick={() => setOpen(o => !o)} className="w-full text-left pl-3 pr-3.5 py-3 flex items-center gap-3 cursor-pointer" aria-expanded={open}>
+      <button type="button" onClick={() => setOpen(o => !o)} className="w-full text-left pl-3 pr-4 py-3 flex items-center gap-3 cursor-pointer" aria-expanded={open}>
         <SpoolIcon hex={hex} pct={pct} />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
       </button>
 
       {(ams.slot !== null || ams.isDrying || dry.isOverdue || spool.needsDrying || low) && !open && (
-        <div className="pl-[5.25rem] pr-3.5 pb-3 -mt-0.5 flex flex-wrap items-center gap-1">
+        <div className="pl-[5.25rem] pr-4 pb-3 -mt-0.5 flex flex-wrap items-center gap-1">
           {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">{slotLabel(ams.slot)}</span>}
           {ams.isDrying && (
             <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-500/20 text-sky-400 border border-sky-500/40 inline-flex items-center gap-1">
@@ -161,12 +161,12 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
       )}
 
       {open && (
-        <div className="pl-3 pr-3.5 pb-3.5 space-y-2.5 border-t pt-3" style={{ borderColor: 'var(--app-border)' }} onClick={stop}>
+        <div className="pl-3 pr-4 pb-4 space-y-3 border-t pt-3" style={{ borderColor: 'var(--app-border)' }} onClick={stop}>
           <div className="flex flex-wrap items-center gap-1 empty:hidden">
             {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">{slotLabel(ams.slot)}</span>}
             <SpoolBadges spool={spool} />
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-4 gap-2">
             {quick.map(g => (
               <button key={`m${g}`} onClick={() => onDeduct(spool.id, g)} className="py-1.5 rounded-lg border text-[11px] font-mono-num font-bold cursor-pointer active:scale-95 text-rose-400 bg-rose-500/10 border-rose-500/30">
                 −{g}
@@ -178,7 +178,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <NumInput
               type="number"
               inputMode="numeric"
@@ -211,7 +211,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             {onMarkDried && (
               <button
                 onClick={() => {

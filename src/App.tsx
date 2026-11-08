@@ -22,6 +22,7 @@ import {
   getDryingStatus,
   parseFilamentText
 } from './utils/shopLinks';
+import { weekDelta } from './utils/weekDelta';
 import { safeStorage } from './utils/safeStorage';
 import { spoolIdFromHash } from './utils/spoolLink';
 import { decodeRecords } from './utils/nfcRead';
@@ -1044,6 +1045,9 @@ export default function App() {
     return printHistory.reduce((acc, h) => acc + (h.grams || 0), 0);
   }, [printHistory, manualUsedGrams]);
 
+  // 1.249: Verbrauch diese Woche vs. Vorwoche für die Zahlen-Leiste
+  const usedWeek = useMemo(() => weekDelta(printHistory, now), [printHistory, now]);
+
   const handleSaveUsedGrams = async (val: number) => {
     setManualUsedGrams(val);
     safeStorage.setItem('filamenthub_manual_used_grams', String(val));
@@ -1237,7 +1241,7 @@ export default function App() {
           /* ============================================================== */
           /* DESKTOP-MODUS: VOLLE WERKSTATT-DASHBOARD VERSION               */
           /* ============================================================== */
-          <DesktopDashboard spools={spools} totalGrams={totalGrams} totalValue={totalValue} dueDryingCount={dueDryingCount} setEditUsedInputValue={setEditUsedInputValue} totalUsedGrams={totalUsedGrams} setIsEditUsedModalOpen={setIsEditUsedModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} setIsCameraModalOpen={setIsCameraModalOpen} quickLinkText={quickLinkText} setQuickLinkText={setQuickLinkText} handleQuickScan={handleQuickScan} isQuickScanning={isQuickScanning} searchQuery={searchQuery} setSearchQuery={setSearchQuery} sortBy={sortBy} setSortBy={setSortBy} activeMaterialFilter={activeMaterialFilter} setActiveMaterialFilter={setActiveMaterialFilter} filteredSpools={filteredSpools} appSettings={appSettings} now={now} handleApplyScale={handleApplyScale} handleMarkDried={handleMarkDried} handleDuplicateSpool={handleDuplicateSpool} handleDeleteSpool={handleDeleteSpool} handleOpenSpoolNfc={handleOpenSpoolNfc} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} hidePrinter={rightDock} />
+          <DesktopDashboard spools={spools} totalGrams={totalGrams} totalValue={totalValue} dueDryingCount={dueDryingCount} setEditUsedInputValue={setEditUsedInputValue} totalUsedGrams={totalUsedGrams} usedWeek={usedWeek} setIsEditUsedModalOpen={setIsEditUsedModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} setIsCameraModalOpen={setIsCameraModalOpen} quickLinkText={quickLinkText} setQuickLinkText={setQuickLinkText} handleQuickScan={handleQuickScan} isQuickScanning={isQuickScanning} searchQuery={searchQuery} setSearchQuery={setSearchQuery} sortBy={sortBy} setSortBy={setSortBy} activeMaterialFilter={activeMaterialFilter} setActiveMaterialFilter={setActiveMaterialFilter} filteredSpools={filteredSpools} appSettings={appSettings} now={now} handleApplyScale={handleApplyScale} handleMarkDried={handleMarkDried} handleDuplicateSpool={handleDuplicateSpool} handleDeleteSpool={handleDeleteSpool} handleOpenSpoolNfc={handleOpenSpoolNfc} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} hidePrinter={rightDock} />
         )}
       </main>
       </div>

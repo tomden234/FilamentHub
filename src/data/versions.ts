@@ -3501,5 +3501,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.249',
+    label: '1.249 (Reel-Ideen)',
+    releaseDate: '08.11.2026',
+    description:
+      'Ideen aus den Design-Reels: Knöpfe geben beim Drücken nach (ohne zu springen), Spulen-Karten heben sich beim Drüberfahren leicht an. Die Zahlen-Leiste zeigt unter „Verdruckt“, wie viel diese Woche verdruckt wurde, mit ▲/▼ im Vergleich zur Vorwoche. Zwei neue helle Designs: Mint (Petrol) und Messing (Schwarz und Gold). Abstände der Spulen-Kachel auf ein festes 4-px-Raster gebracht. Sicherheits-Check: eingetippte Shop-Links werden nur als echte http(s)-Links geöffnet, Download-Fenster öffnet ohne Zugriff auf die App.',
+    features: ['👆 Press- und Hover-Effekt', '📈 Wochen-Verbrauch mit ▲/▼', '🎨 Neue Designs Mint und Messing'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

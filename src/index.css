@@ -448,7 +448,9 @@ progress {
 :root[data-style="cozy"],
 :root[data-style="night"],
 :root[data-style="mocha"],
-:root[data-style="sand"] {
+:root[data-style="sand"],
+:root[data-style="mint"],
+:root[data-style="brass"] {
   --radius-lg: 0.8rem;
   --radius-xl: 1.05rem;
   --radius-2xl: 1.45rem;
@@ -877,7 +879,7 @@ progress {
 }
 
 /* Der Hintergrund-Glanz liegt auf dem body: die App-Hülle darf ihn nicht zudecken */
-:root:is([data-style="glass"], [data-style="cozy"], [data-style="night"], [data-style="mocha"], [data-style="sand"], [data-custom]) .fh-root {
+:root:is([data-style="glass"], [data-style="cozy"], [data-style="night"], [data-style="mocha"], [data-style="sand"], [data-style="mint"], [data-style="brass"], [data-custom]) .fh-root {
   background-color: transparent !important;
 }
 
@@ -909,13 +911,14 @@ select,
 input,
 .rounded-2xl.border,
 .rounded-xl.border {
-  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-property: background-color, border-color, color, box-shadow, transform, scale, translate, opacity;
   transition-duration: 0.16s;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* 1.249: Press-Effekt über „scale“ statt „transform“, damit Knöpfe mit eigener Verschiebung (z. B. zentriert) nicht springen */
 button:active:not(:disabled),
 [role='button']:active {
-  transform: scale(0.97);
+  scale: 0.97;
   transition-duration: 0.08s;
 }
 @media (hover: hover) {
@@ -937,7 +940,7 @@ button:active:not(:disabled),
 @media (prefers-reduced-motion: reduce) {
   button:active:not(:disabled),
   [role='button']:active {
-    transform: none;
+    scale: none;
   }
 }
 
@@ -1097,3 +1100,83 @@ a svg.lucide {
     animation: none;
   }
 }
+
+/* ───────────── Ruhige Bewegung & neue Designs (1.249) ─────────────
+   Ideen aus den Reels: Apple-Press-Effekt, Karten heben sich leicht, Farbpaletten mit genau einem Akzent. */
+
+/* Spulen-Karten heben sich beim Drüberfahren um 2 px (nur Maus, nicht bei „weniger Bewegung“) */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .fh-lift {
+    transition: translate 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.16s;
+  }
+  .fh-lift:hover {
+    translate: 0 -2px;
+    box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.45);
+  }
+}
+:root[data-calm] .fh-lift:hover {
+  translate: none;
+}
+
+/* Mint: frisch hell, Petrol als einziger Akzent */
+:root[data-style="mint"] {
+  color-scheme: light;
+  --fh-glow-hue: 165;
+  --app-bg: #e3f3ed;
+  --app-card: #f7fcfa;
+  --app-card-sub: #ecf7f2;
+  --app-border: #c4e1d6;
+  --app-text: #10302a;
+  --app-text-muted: #43625a;
+  --app-input-bg: #fbfefd;
+  --app-accent: #0f7d68;
+  --app-accent-hover: #0b6654;
+  --app-accent-sub: rgba(15, 125, 104, 0.13);
+  --app-accent-bar: #2fb39a;
+  --app-accent-gradient: linear-gradient(90deg, #2fb39a, #2fb39a);
+  --app-accent-text: #0b5f4f;
+  --app-danger-text: #b4372f;
+  --a-100: #dcf3ec;
+  --a-300: #0b5f4f;
+  --a-400: #0b5f4f;
+  --a-500: #0f7d68;
+  --a-600: #0b6654;
+  --a-700: #084d40;
+}
+
+/* Messing: hell, Schwarz für die Haupt-Aktion, Gold als Hervorhebung */
+:root[data-style="brass"] {
+  color-scheme: light;
+  --fh-glow-hue: 42;
+  --app-bg: #ebe9e2;
+  --app-card: #f8f7f3;
+  --app-card-sub: #f0eee7;
+  --app-border: #d8d3c6;
+  --app-text: #111214;
+  --app-text-muted: #55524a;
+  --app-input-bg: #fcfbf8;
+  --app-accent: #17181b;
+  --app-accent-hover: #000000;
+  --app-accent-sub: rgba(217, 169, 58, 0.22);
+  --app-accent-bar: #d9a93a;
+  --app-accent-gradient: linear-gradient(90deg, #d9a93a, #d9a93a);
+  --app-accent-text: #7a5a12;
+  --app-danger-text: #b4372f;
+  --a-100: #f6ecd0;
+  --a-300: #7a5a12;
+  --a-400: #7a5a12;
+  --a-500: #8f6a1f;
+  --a-600: #6b4f12;
+  --a-700: #57400e;
+}
+:root[data-style="mint"] body,
+:root[data-style="brass"] body {
+  background:
+    radial-gradient(1000px 560px at 6% -10%, rgba(255, 255, 255, calc(0.3 + var(--fh-glow) * 0.5)), transparent 62%),
+    radial-gradient(900px 600px at 108% 2%, hsl(var(--fh-glow-hue) 70% 60% / calc(var(--fh-glow) * 0.14)), transparent 60%),
+    var(--app-bg);
+  background-attachment: fixed;
+}
+:root[data-style="mint"] .bg-black\/75 { background-color: rgba(16, 48, 42, 0.45); }
+:root[data-style="brass"] .bg-black\/75 { background-color: rgba(17, 18, 20, 0.5); }
+:root[data-style="brass"] .fh-cta { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 6px 16px -10px rgba(0, 0, 0, 0.6); }
