@@ -13,6 +13,7 @@ import { syncEspYaml } from './esphome.js';
 import { rootDir } from '../paths.js';
 import { access, durText, getHubConfig, port, push, saveState, state, traysOf } from './core.js';
 import { snapshotForPush } from './photo.js';
+import { addReport, reportUrl } from './reports.js';
 import { jobWeights } from './deduct.js';
 
 export async function watchPrint(gs: string, d: any, now: number, dt: number): Promise<void> {
@@ -227,7 +228,8 @@ export async function weeklyTick(now: number): Promise<void> {
     kwhPrice: c.kwhPrice,
     lowWeightG: c.lowWeightG
   });
-  await push('done', r.title, r.text, { tag: 'weekly' });
+  const rep = addReport(r.title, r.text, now);
+  await push('done', r.title, r.text, { tag: 'weekly', url: reportUrl(rep.id) });
 }
 
 export async function espTick(now: number): Promise<void> {
@@ -255,7 +257,7 @@ export function energyWeeks(): { week: string; totalWh: number; printWh: number;
     .map(k => ({ week: k, totalWh: Math.round(e[k].totalWh), printWh: Math.round(e[k].printWh), cost: Math.round((e[k].totalWh / 1000) * price * 100) / 100 }));
 }
 
-export async function weeklyReportNow(): Promise<{ title: string; text: string }> {
+export async function weeklyReportNow(): Promise<{ title: string; text: string; id: string; url: string }> {
   let doc: any = {};
   try {
     if (cloudReady(access())) doc = await loadDoc(access());
@@ -273,6 +275,8 @@ export async function weeklyReportNow(): Promise<{ title: string; text: string }
     kwhPrice: c.kwhPrice,
     lowWeightG: c.lowWeightG
   });
-  await push('test', r.title, r.text, { tag: 'weekly' });
-  return r;
+  const rep = addReport(r.title, r.text, now);
+  const url = reportUrl(rep.id);
+  await push('test', r.title, r.text, { tag: 'weekly', url });
+  return { ...r, id: rep.id, url };
 }

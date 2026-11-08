@@ -392,7 +392,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { key: 'labels', group: 'Wichtig', icon: QrCode, title: 'Etiketten', sub: 'QR-Etiketten drucken', go: () => onOpenWorkshop?.('labels') },
     ...(APP ? [] : [{ key: 'gcode', group: 'Mehr', icon: FileCode2, title: 'G-Code und Kosten', sub: 'Filament und Kosten berechnen', go: () => setActiveTab('gcode') }]),
     { key: 'ai', group: 'Mehr', icon: Bot, title: 'KI-Assistent', sub: 'Fragen zu deinen Spulen', go: () => setActiveTab('ai') },
-    { key: 'test', group: 'Mehr', icon: FlaskConical, title: 'Testmenü', sub: 'ESP, NFC, Taster, LEDs', go: () => setActiveTab('test') },
+    { key: 'test', group: 'Mehr', icon: FlaskConical, title: 'Testmenü', sub: 'ESP, NFC, Taster, LEDs, Push', go: () => setActiveTab('test') },
     // „Handy“ (App installieren, QR) nur im Browser: in den Apps steckt es unter Verbindungen
     ...(APP || IS_DESKTOP ? [] : [{ key: 'connect', group: 'Mehr', icon: Smartphone, title: 'Handy', sub: 'App installieren, QR-Code', go: () => setActiveTab('connect') }]),
     { key: 'notices', group: 'Einstellungen', icon: BellRing, title: 'Mitteilungen', sub: 'Was dich wann meldet', go: notice(undefined) },

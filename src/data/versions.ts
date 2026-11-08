@@ -3633,5 +3633,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.261',
+    label: '1.261 (Push-Test & Wochenbericht-Seite)',
+    releaseDate: '08.11.2026',
+    description:
+      'Testmenü, neuer Punkt 6 „Push-Meldungen & Wochenbericht“: jede Push-Art des Pi (Druck fertig/abgebrochen, Warteschlange mit Knöpfen, Spule fast leer, Filament reicht nicht, Druck dauert länger, Drucker antwortet nicht, Drucker wartet, Ausschalten, ESP-Update, Wochenbericht) einzeln oder alle nacheinander aufs Handy schicken. Der Wochenbericht wird jetzt gespeichert (die letzten 12). Tipp auf den Wochenbericht-Push öffnet eine eigene Seite direkt vom Pi, dieselben Berichte kann man im Testmenü in der App lesen. Der Pi merkt sich dafür seine Heimnetz-Adresse aus den App-Anfragen (Heimnetz vor Tailscale). Pi-Add-on 1.3.20.',
+    features: ['🧪 Alle Push-Meldungen im Testmenü auslösen', '📊 Wochenbericht als Seite (Tipp auf den Push)', '📖 Letzte 12 Berichte in der App lesen', '🥧 Pi-Add-on 1.3.20 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

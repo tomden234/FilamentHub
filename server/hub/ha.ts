@@ -109,6 +109,8 @@ export interface PushOptions {
   image?: string;
   /** Knöpfe in der Meldung (Home-Assistant-App) */
   actions?: { action: string; title: string }[];
+  /** Tipp auf die Meldung öffnet diese Adresse (http/https) */
+  url?: string;
 }
 
 /** Zusatzdaten für die Home-Assistant-App (Android und iPhone) */
@@ -118,6 +120,8 @@ export function pushData(o: PushOptions): Record<string, unknown> {
     ...(o.tag ? { tag: o.tag } : {}),
     ...(o.image ? { image: o.image } : {}),
     ...(o.actions?.length ? { actions: o.actions } : {}),
+    // 1.261: Tipp auf die Meldung öffnet eine Seite (iPhone: url, Android: clickAction)
+    ...(o.url && /^https?:\/\//.test(o.url) ? { url: o.url, clickAction: o.url } : {}),
     // Android: eigener Kanal je Lautstärke; iPhone: passive Meldung = ohne Ton
     ...(o.silent ? { channel: 'FilamentHub leise', importance: 'low', push: { 'interruption-level': 'passive' } } : { channel: 'FilamentHub', importance: 'high', ttl: 0, priority: 'high' })
   };

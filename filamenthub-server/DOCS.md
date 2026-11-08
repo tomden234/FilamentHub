@@ -43,6 +43,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.20
+
+- **Push-Test**: In der App Testmenü → 6. Push-Meldungen: jede Art Push einzeln oder alle nacheinander auslösen, dazu „Wochenbericht jetzt senden“.
+- **Wochenbericht als Seite**: Die letzten 12 Berichte bleiben gespeichert. Tipp auf den Wochenbericht-Push öffnet `http://<Pi>:3000/bericht/<Kennung>` (Heimnetz oder Tailscale). Der Pi lernt seine Adresse aus den Anfragen der App, einmal die App mit dem Pi verbinden genügt.
+
 ## Neu in 1.3.19
 
 - **Reicht die Spule?** Beim Einreihen und Starten rechnet der Pi die Gramm je Filament (plus 10 %) gegen den Rest der Spule im gewählten Platz. Reicht es nicht, steht es im Push und die Karte in der App wird rot (mit Ersatz-Spulen und Nachkauf-Link). Gestartet wird trotzdem, der Rest ist eine Schätzung.

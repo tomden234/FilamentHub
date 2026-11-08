@@ -1,12 +1,13 @@
 import { QueueLedTest } from '../QueueLedTest';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, RefreshCw, Smartphone, ToggleRight, XCircle } from 'lucide-react';
+import { BellRing, CheckCircle2, ChevronDown, CircleHelp, Cpu, Lightbulb, Loader2, Nfc, RefreshCw, Smartphone, ToggleRight, XCircle } from 'lucide-react';
 import { getHaCredentials } from '../../utils/haClient';
 import { findAmsDevice, ids, type AmsDevice, judgeReader, judgeTag, setQueueCount, setQueueTest, type EntityState } from '../../utils/amsDevice';
 import { useNfcTags } from '../../utils/nfcRead';
 import { StatusLedCard } from './StatusLedCard';
+import { PushTestCard } from './PushTestCard';
 
-// Testmenü: alles am AMS-ESP Schritt für Schritt prüfen (Verbindung, NFC-Leser, Tag, Taster + Warteschlangen-LEDs, Status-LED; Feuchte steckt bei 1). Fünf aufklappbare Punkte, es ist immer nur einer offen.
+// Testmenü: alles am AMS-ESP Schritt für Schritt prüfen (Verbindung, NFC-Leser, Tag, Taster + Warteschlangen-LEDs, Status-LED; Feuchte steckt bei 1) plus Push-Meldungen (6). Sechs aufklappbare Punkte, es ist immer nur einer offen.
 // Liest live über Home Assistant (alle 2 Sekunden), solange das Menü offen ist.
 
 const WANT_FW = '1.224';
@@ -372,6 +373,11 @@ export const TestTab: React.FC = () => {
       {/* 6. Status-LED */}
       <Section id="s5" open={open} onToggle={toggle} icon={<Lightbulb className="w-4 h-4 text-yellow-400" />} title="5. Status-LED-Streifen">
         <StatusLedCard />
+      </Section>
+
+      {/* 6. Push-Meldungen und Wochenbericht */}
+      <Section id="s6" open={open} onToggle={toggle} icon={<BellRing className="w-4 h-4 text-rose-400" />} title="6. Push-Meldungen & Wochenbericht">
+        <PushTestCard />
       </Section>
     </div>
   );

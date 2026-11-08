@@ -1,10 +1,18 @@
 import { Router } from 'express';
 import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
+import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
+import { findPushTest, pushTestList } from '../hub/pushTests.js';
 import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
+
+// 1.261: Adresse des Pi aus angemeldeten Anfragen merken (für den Link „Bericht öffnen“ im Push)
+router.use('/api/hub', (req, _res, next) => {
+  rememberBase(req.headers.host);
+  next();
+});
 
 router.get('/api/hub/status', (_req, res) => {
   res.json({ success: true, ...hubStatus() });
@@ -69,9 +77,34 @@ router.post('/api/hub/deduct/manual', async (req, res) => {
   }
 });
 
-router.post('/api/hub/test-push', async (_req, res) => {
-  const ok = await push('test', '🧪 FilamentHub', 'Test vom Pi-Server: Push klappt.', 'test');
+// 1.261: Testmenü: jede Art Push einzeln auslösen (kind). Ohne kind: einfacher Test wie bisher.
+router.get('/api/hub/push-tests', (_req, res) => {
+  res.json({ success: true, tests: pushTestList() });
+});
+
+router.post('/api/hub/test-push', async (req, res) => {
+  const kind = String(req.body?.kind || 'basic');
+  if (kind === 'weekly') {
+    const r = await weeklyReportNow();
+    return res.json({ success: true, ...hubStatus(), report: { id: r.id, url: r.url } });
+  }
+  const t = findPushTest(kind);
+  if (!t) return res.status(400).json({ success: false, error: 'Unbekannte Test-Meldung' });
+  const ok = await push('test', t.title, t.text, t.opts);
   res.json({ success: ok, ...hubStatus() });
+});
+
+// 1.261: letzte Wochenberichte (für die App) und die Berichtsseite (Tipp auf den Push). Die Seite hat keine Anmeldung, die Kennung ist zufällig.
+router.get('/api/hub/reports', (_req, res) => {
+  res.json({ success: true, reports: listReports().map(r => ({ ...r, url: reportUrl(r.id) })) });
+});
+
+router.get('/bericht/:id', (req, res) => {
+  const r = getReport(String(req.params.id));
+  if (!r) return res.status(404).type('text/plain; charset=utf-8').send('Bericht nicht gefunden.');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
+  res.type('text/html; charset=utf-8').send(reportPage(r, listReports()));
 });
 
 router.post('/api/hub/backup-now', async (_req, res) => {

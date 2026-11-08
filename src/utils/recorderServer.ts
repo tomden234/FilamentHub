@@ -253,9 +253,38 @@ export async function fetchServerPhoto(id: string): Promise<Blob | null> {
   }
 }
 
-export async function testServerPush(): Promise<ServerCheck> {
+/** Alle Test-Meldungen, die der Pi kennt (1.261) */
+export async function pushTestKinds(): Promise<{ id: string; label: string }[]> {
   try {
-    const j = await get('/api/hub/test-push', { method: 'POST', body: {}, timeoutMs: 20000 });
+    const j = await get('/api/hub/push-tests');
+    return Array.isArray(j?.tests) ? j.tests : [];
+  } catch {
+    return [];
+  }
+}
+
+export interface ServerReport {
+  id: string;
+  at: number;
+  title: string;
+  text: string;
+  /** Adresse der Berichtsseite am Pi (leer, wenn der Pi seine Adresse noch nicht kennt) */
+  url: string;
+}
+
+/** Letzte Wochenberichte vom Pi, neueste zuerst (1.261) */
+export async function serverReports(): Promise<ServerReport[]> {
+  try {
+    const j = await get('/api/hub/reports');
+    return Array.isArray(j?.reports) ? j.reports : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function testServerPush(kind = 'basic'): Promise<ServerCheck> {
+  try {
+    const j = await get('/api/hub/test-push', { method: 'POST', body: { kind }, timeoutMs: 30000 });
     if (j) saveHubInfo(j);
     if (!j?.enabled) return { ok: false, text: 'Der Server ist zu alt. In Home Assistant die App „FilamentHub Server“ aktualisieren.' };
     if (!j.ha) return { ok: false, text: 'Der Server erreicht Home Assistant nicht. App „FilamentHub Server“ aktualisieren und neu starten.' };
