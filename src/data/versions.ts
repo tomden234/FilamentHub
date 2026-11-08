@@ -3567,5 +3567,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.255',
+    label: '1.255 (Schneller einreihen)',
+    releaseDate: '08.11.2026',
+    description:
+      'Neue Dateien aus Bambu Studio erscheinen schneller in der Warteschlange: Der Pi sucht ohne App höchstens alle 30 s (vorher bis 60 s). Die Zeit für Datei lesen und Vormerken steht jetzt im Pi-Protokoll.',
+    features: ['⏱️ Warteschlange findet neue Dateien schneller'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

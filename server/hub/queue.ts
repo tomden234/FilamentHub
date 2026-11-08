@@ -353,7 +353,9 @@ export async function autoScan(force = false): Promise<ScanResult> {
       if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
       if (load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
       try {
+        const t0 = Date.now();
         const it = await queueAdd(f.path, 1, fileKey(f));
+        console.log(`[Warteschlange] Datei lesen + vormerken: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         added++;
         await notify('➕ In der Warteschlange', `${it.name} (automatisch aus Bambu Studio)\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}`);
         console.log(`[Warteschlange] automatisch vorgemerkt: ${it.name}`);
@@ -375,11 +377,12 @@ export async function autoScan(force = false): Promise<ScanResult> {
 
 /**
  * 1.231: Wie lange bis zur nächsten automatischen Suche? Vorher alle 3 s eine FTPS-Anmeldung am Drucker (~28.800 am Tag,
- * Hauptgrund für „421 too many connections“). Jetzt: 20 s, ohne Neues langsamer bis 60 s, während des Druckens 60 s.
+ * Hauptgrund für „421 too many connections“). Jetzt: 20 s, ohne Neues 30 s, während des Druckens 60 s.
  */
 export function scanIntervalMs(printing: boolean, quietRounds: number): number {
   if (printing) return 60_000;
-  return Math.min(60_000, 20_000 * Math.max(1, Math.min(3, quietRounds)));
+  // 1.255: ohne Neues höchstens 30 s warten (vorher bis 60 s): neue Datei erscheint schneller, 2.880 Anmeldungen/Tag statt 28.800
+  return quietRounds >= 3 ? 30_000 : 20_000;
 }
 
 /** 1.239: Solange eine App die Warteschlange offen hat (fragt sie alle 2 s ab), sucht der Pi alle 8 s: „Senden“ in Bambu Studio erscheint so nach wenigen Sekunden */

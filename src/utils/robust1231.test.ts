@@ -51,8 +51,9 @@ describe('1.231: Drucker schonen', () => {
   it('sucht neue Dateien höchstens alle 20 s, ohne Neues langsamer, beim Drucken alle 60 s', () => {
     expect(scanIntervalMs(false, 0)).toBe(20_000);
     expect(scanIntervalMs(false, 1)).toBe(20_000);
-    expect(scanIntervalMs(false, 2)).toBe(40_000);
-    expect(scanIntervalMs(false, 9)).toBe(60_000);
+    expect(scanIntervalMs(false, 2)).toBe(20_000);
+    expect(scanIntervalMs(false, 3)).toBe(30_000);
+    expect(scanIntervalMs(false, 9)).toBe(30_000);
     expect(scanIntervalMs(true, 0)).toBe(60_000);
   });
 });
