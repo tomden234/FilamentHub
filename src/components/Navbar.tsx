@@ -108,21 +108,22 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2">
         {/* Zone 1: Brand & Menu Trigger & Eingebettete Version oben */}
         <div className="flex items-center gap-2">
-          {!menuDocked && (
-            <button
-              onClick={onOpenMenu}
-              title="Menü: KI-Assistent, Tools, Einstellungen, Versionen"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition shadow-sm cursor-pointer"
-              style={{
-                backgroundColor: 'var(--app-card-sub)',
-                borderColor: 'var(--app-border)',
-                color: 'var(--app-text)'
-              }}
-            >
-              <Menu className="w-4 h-4 text-orange-400" />
-              <span className="text-xs font-bold hidden sm:inline">Menü</span>
-            </button>
-          )}
+          {/* 1.253: Knopf bleibt immer stehen (auch bei offener Seitenleiste), damit Logo und Leiste nicht nach links springen.
+              Bei offener Leiste klappt er sie wieder ein. */}
+          <button
+            onClick={onOpenMenu}
+            title={menuDocked ? 'Menü schließen (Esc)' : 'Menü: KI-Assistent, Tools, Einstellungen, Versionen'}
+            aria-pressed={menuDocked}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition shadow-sm cursor-pointer"
+            style={{
+              backgroundColor: menuDocked ? 'var(--app-accent-sub)' : 'var(--app-card-sub)',
+              borderColor: 'var(--app-border)',
+              color: 'var(--app-text)'
+            }}
+          >
+            <Menu className="w-4 h-4 text-orange-400" />
+            <span className="text-xs font-bold hidden sm:inline">Menü</span>
+          </button>
 
           <img
             src={`${import.meta.env.BASE_URL || '/'}pwa-192x192.png`}

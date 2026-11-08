@@ -3545,5 +3545,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.253',
+    label: '1.253 (Kein Springen)',
+    releaseDate: '08.11.2026',
+    description:
+      'Beim Öffnen der Seitenleiste am PC verschwand der Menü-Knopf oben, dadurch sprangen Logo und Kopfleiste nach links. Der Knopf bleibt jetzt immer stehen (bei offenem Menü leicht eingefärbt) und klappt das Menü auch wieder ein.',
+    features: ['📌 Kopfleiste springt nicht mehr'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
