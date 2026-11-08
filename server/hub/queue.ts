@@ -305,6 +305,8 @@ const baseOf = (n: string) => n.replace(/\.gcode\.3mf$|\.3mf$/i, '').toLowerCase
  * Der erste Durchlauf merkt sich nur, was schon da ist. Eine Datei, die gerade gedruckt wird („Drucken“ statt „Senden“), kommt nicht in die Warteschlange.
  */
 let scanning = false;
+let lastPaths: Set<string> | null = null;
+let seenPaths: Set<string> | null = null;
 /** Start läuft (Taster/App) */
 let starting = false;
 let scanStarted = 0;
@@ -342,7 +344,12 @@ export async function autoScan(force = false): Promise<ScanResult> {
       return quiet(`Erster Abgleich: ${files.length} Dateien auf dem Drucker gemerkt. Neue Dateien kommen jetzt automatisch.`);
     }
     const known = seen;
-    const fresh = files.filter(f => !known.has(fileKey(f)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name) && !/^fh_[0-9a-f]{12}\.gcode\.3mf$/i.test(f.name)); // fh_… = von uns umbenannt
+    // 1.256: gleicher Name noch einmal gesendet: war der Pfad in der letzten Runde weg (Datei wurde umbenannt/gelöscht), zählt er als neu, auch bei gleicher Größe/Zeit
+    const nowPaths = new Set(files.map(f => f.path));
+    const gone = lastPaths ? new Set([...(seenPaths || [])].filter(p => !lastPaths!.has(p))) : new Set<string>();
+    lastPaths = nowPaths;
+    seenPaths = new Set([...(seenPaths || []), ...nowPaths]);
+    const fresh = files.filter(f => (!known.has(fileKey(f)) || (gone.has(f.path) && Math.abs(Date.now() - f.time) < 15 * 60_000)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name) && !/^fh_[0-9a-f]{12}\.gcode\.3mf$/i.test(f.name)); // fh_… = von uns umbenannt
     if (!fresh.length) return quiet(`Nichts Neues (${files.length} Dateien auf dem Drucker geprüft)`);
     const d: any = st.data || {};
     const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(String(d.gcode_state || ''));
@@ -352,6 +359,9 @@ export async function autoScan(force = false): Promise<ScanResult> {
       known.add(fileKey(f));
       if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
       if (load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
+      // 1.256: dieselbe Datei wurde überschrieben: alten Eintrag ersetzen (Filament kann anders sein)
+      const dup = load().find(x => x.path === f.path);
+      if (dup) queueRemove(dup.id);
       try {
         const t0 = Date.now();
         const it = await queueAdd(f.path, 1, fileKey(f));

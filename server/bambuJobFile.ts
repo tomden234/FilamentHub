@@ -23,6 +23,8 @@ interface JobWeights {
 }
 
 const DIRS = ['/', '/cache', '/sdcard', '/sdcard/cache'];
+const SKIP_DIRS = /^(timelapse|ipcam|logs?|recorder|image|firmware|model|system|\.)/i;
+let lastDirs = '';
 
 const norm = (s: string) =>
   s
@@ -193,7 +195,23 @@ async function withFtp<T>(ip: string, code: string, fn: (c: Client) => Promise<T
 export async function listJobFiles(ip: string, code: string): Promise<{ path: string; name: string; size: number; time: number }[]> {
   return withFtp(ip, code, async client => {
     const out: { path: string; name: string; size: number; time: number }[] = [];
-    for (const dir of DIRS) {
+    // 1.256: auch USB-Stick & weitere Ordner (eine Ebene unter „/“) durchsuchen, nicht nur feste Pfade
+    const dirs = [...DIRS];
+    try {
+      const root = await client.list('/');
+      for (const e of root) {
+        if (!e.isDirectory || SKIP_DIRS.test(e.name)) continue;
+        const d = '/' + e.name;
+        if (!dirs.includes(d) && dirs.length < 12) dirs.push(d);
+      }
+    } catch {
+      /* feste Ordner reichen */
+    }
+    if (dirs.join('|') !== lastDirs) {
+      lastDirs = dirs.join('|');
+      console.log(`[Warteschlange] Suche in: ${lastDirs}`);
+    }
+    for (const dir of dirs) {
       let list;
       try {
         list = await client.list(dir);

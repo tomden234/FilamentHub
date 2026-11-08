@@ -3578,5 +3578,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.256',
+    label: '1.256 (USB & gleicher Name)',
+    releaseDate: '08.11.2026',
+    description:
+      'Dateien, die in Bambu Studio auf den USB-Stick (oder einen anderen Ordner) des Druckers gesendet werden, findet der Pi jetzt auch. Wird dieselbe Datei mit gleichem Namen noch einmal gesendet, kommt sie wieder in die Warteschlange (ein alter Eintrag derselben Datei wird ersetzt).',
+    features: ['💾 USB-Stick wird durchsucht', '♻️ Gleicher Dateiname wird erkannt'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
