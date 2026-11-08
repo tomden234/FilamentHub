@@ -19,7 +19,6 @@ import {
   Palette,
   FlaskConical,
   Plug,
-  PanelLeftClose,
   ChevronRight,
   ChevronLeft,
   DatabaseBackup,
@@ -442,7 +441,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={e => e.stopPropagation()}
         className={
           docked
-            ? 'fixed left-0 top-0 z-30 w-[310px] max-w-[94vw] border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
+            ? 'fixed left-0 top-0 z-40 w-[310px] max-w-[94vw] border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
             : `relative z-10 w-[340px] max-w-[88vw] border-r h-full flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-200 ${
                 isThemesTab ? 'backdrop-blur-none' : 'backdrop-blur-2xl'
               }`
@@ -486,10 +485,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={onToggleDock}
                 className="p-1 rounded-lg hover:opacity-80 transition cursor-pointer"
                 style={{ color: 'var(--app-text-muted)' }}
-                title="Seitenleiste einklappen"
-                aria-label="Seitenleiste einklappen"
+                title="Menü schließen (Esc)"
+                aria-label="Menü schließen"
               >
-                <PanelLeftClose className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </button>
             ) : (
               <button

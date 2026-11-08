@@ -3512,5 +3512,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.250',
+    label: '1.250 (Menü schließt)',
+    releaseDate: '08.11.2026',
+    description:
+      'Fix: Am breiten PC-Bildschirm (feste Seitenleiste) lag die Kopfleiste über dem Menü, dadurch war der Schließen-Knopf verdeckt und das Menü ließ sich nicht mehr schließen. Das Menü liegt jetzt über der Kopfleiste, der Knopf ist ein klares X, und Esc klappt es ebenfalls ein.',
+    features: ['🔧 Menü am PC wieder schließbar (X oder Esc)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

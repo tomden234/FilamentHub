@@ -536,6 +536,7 @@ export default function App() {
         if (!closeTopLayer()) {
           const t = (e.target as HTMLElement)?.tagName;
           if (isNfcModalOpen) setIsNfcModalOpen(false);
+          else if (isDocked) setDockPref(false); // 1.250: Esc klappt die feste Seitenleiste ein
           else if (t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT' && !isDocked) setIsSidebarOpen(true);
         }
       }
@@ -574,7 +575,7 @@ export default function App() {
         showToast('Rückgängig gemacht.');
       }
     } catch {}
-  }, [undoStack, spools, printHistory, persistState, showToast]);
+  }, [undoStack, spools, printHistory, persistState, showToast, isDocked, isNfcModalOpen]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return;
