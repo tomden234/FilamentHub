@@ -3,16 +3,16 @@ import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { STORAGE_KEY_THEME_BRIGHT } from './storageKeys';
 import { applyCustomize, setActiveCustomizeStyle } from './customize';
+import { normalizeThemeStyle } from './themeStyleNames';
+export { normalizeThemeStyle, VISIBLE_STYLES } from './themeStyleNames';
 
-export type ThemeStyle = 'classic' | 'cozy' | 'night' | 'mocha' | 'glass-green' | 'glass-purple' | 'glass-cream' | 'sand' | 'mint' | 'brass';
+export type { ThemeStyle } from './themeStyleNames';
+import type { ThemeStyle } from './themeStyleNames';
 const KEY = 'filamenthub_theme_style';
 const listeners = new Set<() => void>();
 
-/** Ab 1.162 ist Cozy der Standard. Wer „Klassisch“ wählt, behält das. */
 function getThemeStyle(): ThemeStyle {
-  const v = safeStorage.getItem(KEY);
-  if (v === 'glass') return 'glass-purple'; // Name aus 1.167
-  return v === 'classic' || v === 'sand' || v === 'mint' || v === 'brass' || v === 'night' || v === 'mocha' || v === 'glass-green' || v === 'glass-purple' || v === 'glass-cream' ? v : 'cozy';
+  return normalizeThemeStyle(safeStorage.getItem(KEY));
 }
 
 /** data-theme, das wirklich gesetzt wird: Cozy nutzt die dunklen Grundregeln (Graphit) und legt seine Farben darüber */

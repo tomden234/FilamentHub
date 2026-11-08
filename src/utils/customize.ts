@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { safeStorage } from './safeStorage';
 import { applySystemBars } from './systemBars';
 import type { ThemeStyle } from './themeStyle';
+import { normalizeThemeStyle } from './themeStyleNames';
 
 export interface Customize {
   color: number; // Farbanteil 0..100: wie viel Farbe (z. B. Lila) in Flächen und Hintergrundlicht steckt
@@ -47,8 +48,7 @@ let activeStyle: string | null = null;
 
 function currentStyle(): string {
   if (activeStyle) return activeStyle;
-  let v = safeStorage.getItem(STYLE_KEY) || 'cozy';
-  if (v === 'glass') v = 'glass-purple';
+  const v = normalizeThemeStyle(safeStorage.getItem(STYLE_KEY));
   activeStyle = v;
   return v;
 }

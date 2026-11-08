@@ -3523,5 +3523,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.251',
+    label: '1.251 (Bunte Zahlen)',
+    releaseDate: '08.11.2026',
+    description:
+      'Die Zahlen oben (Spulen, Filament, Wert, Trocknen, Verdruckt) sind jetzt 5 eigene Kacheln mit farbigem Symbol, leicht getönter Fläche und normal geschriebenem Wort statt kleiner Großbuchstaben. Darunter steht ein kurzer Hinweis (Ø je Spule, „jetzt trocknen“, Wochen-Verbrauch). Designs aufgeräumt: Sand, Messing, Mint, Klassisch und Nacht als einziges dunkles. Wer vorher Cozy, Glas oder Mocha hatte, landet automatisch bei Nacht (dunkel) oder Sand (hell).',
+    features: ['🎨 Zahlen-Kacheln mit Farbe', '🧹 5 statt 10 Designs'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

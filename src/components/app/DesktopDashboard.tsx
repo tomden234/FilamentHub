@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit3, Wand2, Camera, Search, X, ArrowUpDown } from 'lucide-react';
+import { Edit3, Wand2, Camera, Search, X, ArrowUpDown, Disc3, Weight, Euro, Sun, Printer } from 'lucide-react';
 import { BambuPrinterWidget } from '../BambuPrinterWidget';
 import { SpoolCard } from '../SpoolCard';
 import { LocationFilter } from '../workshop/LocationFilter';
@@ -87,56 +87,87 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
 }) => {
   return (
 <>
-            {/* Zahlen: eine schlanke Zeile statt fünf großer Kacheln */}
-            <section
-              className="rounded-2xl border grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y lg:divide-y-0 overflow-hidden"
-              style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', ['--tw-divide-color' as any]: 'var(--app-border)' }}
-            >
-              {[
-                { label: 'Spulen', value: String(spools.length), tone: 'var(--app-text)' },
-                { label: 'Filament', value: `${(totalGrams / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg`, tone: 'var(--app-text)' },
-                { label: 'Wert ca.', value: `${totalValue.toFixed(2).replace('.', ',')} €`, tone: 'var(--app-text)' },
-                { label: 'Trocknen fällig', value: String(dueDryingCount), tone: dueDryingCount > 0 ? 'var(--app-danger-text)' : 'var(--app-text)' }
-              ].map(k => (
-                <div key={k.label} className="px-4 py-3" style={{ borderColor: 'var(--app-border)' }}>
-                  <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--app-text-muted)' }}>
-                    {k.label}
-                  </div>
-                  <div className="text-lg sm:text-xl font-extrabold font-mono-num mt-0.5 leading-tight" style={{ color: k.tone }}>
-                    {k.value}
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  setEditUsedInputValue(String(totalUsedGrams));
-                  setIsEditUsedModalOpen(true);
-                }}
-                className="px-4 py-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition col-span-2 sm:col-span-1"
-                style={{ borderColor: 'var(--app-border)' }}
-                title="Klicken zum Überschreiben des verdruckten Filaments (z.B. auf 0 g setzen)"
-              >
-                <div className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: 'var(--app-text-muted)' }}>
-                  Verdruckt <Edit3 className="w-2.5 h-2.5" />
-                </div>
-                <div className="text-lg sm:text-xl font-extrabold font-mono-num mt-0.5 leading-tight" style={{ color: 'var(--app-accent-text)' }}>
-                  {totalUsedGrams.toLocaleString('de-DE')} g
-                </div>
-                {usedWeek && (usedWeek.week > 0 || usedWeek.prev > 0) && (
-                  <div
-                    className="text-[11px] font-semibold font-mono-num mt-1 flex items-center gap-1"
-                    style={{ color: 'var(--app-text-muted)' }}
-                    title={`Letzte 7 Tage: ${usedWeek.week} g · 7 Tage davor: ${usedWeek.prev} g`}
-                  >
-                    <span style={{ color: usedWeek.diff > 0 ? 'var(--app-accent-text)' : usedWeek.diff < 0 ? 'var(--app-danger-text)' : undefined }}>
-                      {usedWeek.diff > 0 ? '▲' : usedWeek.diff < 0 ? '▼' : '='}
-                    </span>
-                    {usedWeek.week.toLocaleString('de-DE')} g diese Woche
-                  </div>
-                )}
-              </button>
-            </section>
+            {/* 1.251: Zahlen als 5 Kacheln mit farbigem Symbol (Option C), Wort oben normal geschrieben, Zahl groß darunter */}
+            {(() => {
+              const due = dueDryingCount > 0;
+              const items = [
+                { key: 'spulen', label: 'Spulen', value: String(spools.length), unit: '', Icon: Disc3, color: 'var(--app-accent-bar)', tone: 'var(--app-text)' },
+                { key: 'filament', label: 'Filament', value: (totalGrams / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }), unit: 'kg', Icon: Weight, color: '#3b82f6', tone: 'var(--app-text)' },
+                { key: 'wert', label: 'Wert', value: totalValue.toFixed(2).replace('.', ','), unit: '€', Icon: Euro, color: '#10b981', tone: 'var(--app-text)' },
+                { key: 'trocknen', label: 'Trocknen fällig', value: String(dueDryingCount), unit: '', Icon: Sun, color: due ? '#ef4444' : '#f59e0b', tone: due ? 'var(--app-danger-text)' : 'var(--app-text)' },
+                { key: 'verdruckt', label: 'Verdruckt', value: totalUsedGrams.toLocaleString('de-DE'), unit: 'g', Icon: Printer, color: '#8b5cf6', tone: 'var(--app-text)' }
+              ];
+              const muted = { color: 'var(--app-text-muted)' };
+              return (
+                <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {items.map(k => {
+                    const isUsed = k.key === 'verdruckt';
+                    const inner = (
+                      <>
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: `color-mix(in srgb, ${k.color} 16%, transparent)`, color: k.color }}
+                          >
+                            <k.Icon className="w-4 h-4" />
+                          </span>
+                          <span className="text-[13px] font-semibold flex-1 min-w-0 truncate" style={muted}>
+                            {k.label}
+                          </span>
+                          {isUsed && <Edit3 className="w-3.5 h-3.5 shrink-0" style={muted} />}
+                        </div>
+                        <div className="font-mono-num font-extrabold text-[26px] leading-none tracking-tight mt-3" style={{ color: k.tone }}>
+                          {k.value}
+                          {k.unit && (
+                            <span className="text-sm font-bold ml-1" style={muted}>
+                              {k.unit}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] font-medium mt-2 min-h-[1rem] font-mono-num" style={muted}>
+                          {isUsed && usedWeek && (usedWeek.week > 0 || usedWeek.prev > 0) ? (
+                            <span title={`Letzte 7 Tage: ${usedWeek.week} g · 7 Tage davor: ${usedWeek.prev} g`}>
+                              <span style={{ color: usedWeek.diff > 0 ? '#8b5cf6' : usedWeek.diff < 0 ? 'var(--app-danger-text)' : undefined }}>
+                                {usedWeek.diff > 0 ? '▲' : usedWeek.diff < 0 ? '▼' : '='}
+                              </span>{' '}
+                              {usedWeek.week.toLocaleString('de-DE')} g diese Woche
+                            </span>
+                          ) : k.key === 'trocknen' ? (
+                            due ? 'jetzt trocknen' : 'alles trocken'
+                          ) : k.key === 'filament' && spools.length > 0 ? (
+                            `Ø ${Math.round(totalGrams / spools.length).toLocaleString('de-DE')} g je Spule`
+                          ) : null}
+                        </div>
+                      </>
+                    );
+                    const cls = 'rounded-2xl border px-4 pt-3.5 pb-3 text-left';
+                    const st = {
+                      backgroundColor: `color-mix(in srgb, ${k.color} 5%, var(--app-card))`,
+                      borderColor: k.key === 'trocknen' && due ? 'color-mix(in srgb, #ef4444 45%, var(--app-border))' : 'var(--app-border)'
+                    };
+                    return isUsed ? (
+                      <button
+                        key={k.key}
+                        type="button"
+                        onClick={() => {
+                          setEditUsedInputValue(String(totalUsedGrams));
+                          setIsEditUsedModalOpen(true);
+                        }}
+                        className={`${cls} fh-lift cursor-pointer col-span-2 sm:col-span-1`}
+                        style={st}
+                        title="Klicken zum Überschreiben des verdruckten Filaments (z.B. auf 0 g setzen)"
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      <div key={k.key} className={cls} style={st}>
+                        {inner}
+                      </div>
+                    );
+                  })}
+                </section>
+              );
+            })()}
 
             {/* Bambu Lab Live-Drucker-Monitor (am breiten PC in der Leiste rechts) */}
             {!hidePrinter && <BambuPrinterWidget
