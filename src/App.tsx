@@ -33,7 +33,7 @@ import { Navbar, DeviceMode } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { QueueDrawer } from './components/QueueDrawer';
 import { usePiQueue } from './hooks/usePiQueue';
-import { toggleQueueDock } from './utils/queueDock';
+import { toggleQueueDock, useQueueDock, useDruckerOpen } from './utils/queueDock';
 import { useBackLayer, closeTopLayer } from './utils/backNav';
 
 
@@ -189,6 +189,15 @@ export default function App() {
   const rightDock = false; // Drucker-Leiste rechts (1.165) wurde in 1.166 wieder entfernt: Drucker steht wieder in der Mitte
   const canDock = deviceMode === 'desktop' && winW >= 1560;
   const isDocked = canDock && dockPref;
+  // 1.258: Inhalt passt sich automatisch an: feste Seitenleiste links und Warteschlange/Drucker rechts verdecken ihn nicht mehr
+  const queueOpen = useQueueDock();
+  const druckerOpenDock = useDruckerOpen();
+  useEffect(() => {
+    const r = document.documentElement.style;
+    r.setProperty('--fh-inset-l', isDocked ? '310px' : '0px');
+    const side = winW < 700 ? '0px' : druckerOpenDock ? 'min(100vw, 420px)' : queueOpen ? 'min(72vw, 18rem)' : '0px';
+    r.setProperty('--fh-inset-r', side);
+  }, [isDocked, queueOpen, druckerOpenDock, winW]);
 
   const handleSetDeviceMode = useCallback((mode: DeviceMode) => {
     setDeviceMode(mode);
@@ -1227,7 +1236,7 @@ export default function App() {
       />
 
       {/* Hauptbereich */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5 ${deviceMode === 'app' ? 'pb-28' : 'pb-10'} space-y-4 sm:space-y-5`}>
+      <main className={`fh-fit flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-5 ${deviceMode === 'app' ? 'pb-28' : 'pb-10'} space-y-4 sm:space-y-5`}>
         {/* Rest-Warnung: fast leere Spulen */}
         <LowStockBanner
           spools={spools}

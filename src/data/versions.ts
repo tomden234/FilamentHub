@@ -3600,5 +3600,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.258',
+    label: '1.258 (Passt zur Fenstergröße)',
+    releaseDate: '08.11.2026',
+    description:
+      'Der Inhalt passt sich automatisch an: Ist die Seitenleiste links oder die Warteschlange/der Drucker rechts offen, wird er schmaler bzw. rückt zur Seite, statt darunter abgeschnitten zu werden (Kacheln, Kopfleiste, „Neu“-Knopf). Bei viel Platz bleibt alles mittig.',
+    features: ['📐 Inhalt passt sich Fenster und offenen Fächern an'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

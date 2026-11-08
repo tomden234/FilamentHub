@@ -1180,3 +1180,15 @@ a svg.lucide {
 :root[data-style="mint"] .bg-black\/75 { background-color: rgba(16, 48, 42, 0.45); }
 :root[data-style="brass"] .bg-black\/75 { background-color: rgba(17, 18, 20, 0.5); }
 :root[data-style="brass"] .fh-cta { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 6px 16px -10px rgba(0, 0, 0, 0.6); }
+
+/* 1.258: Inhaltsbreite passt sich an Fenster und offene Seitenfächer an (max. 80 rem, mittig, wird nur schmaler/verschoben wenn nötig) */
+.fh-fit {
+  --_l: max(var(--fh-inset-l, 0px), calc((100% - 80rem) / 2));
+  width: min(80rem, calc(100% - var(--fh-inset-r, 0px) - var(--_l)));
+  margin-left: var(--_l);
+  margin-right: auto;
+  box-sizing: border-box;
+}
+@media (max-width: 1279px) {
+  .fh-fit { --_l: var(--fh-inset-l, 0px); }
+}

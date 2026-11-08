@@ -105,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         color: 'var(--app-text)'
       }}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="fh-fit px-3 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2">
         {/* Zone 1: Brand & Menu Trigger & Eingebettete Version oben */}
         <div className="flex items-center gap-2">
           {/* 1.253: Knopf bleibt immer stehen (auch bei offener Seitenleiste), damit Logo und Leiste nicht nach links springen.
