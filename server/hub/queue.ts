@@ -676,9 +676,23 @@ export function plateEvent(hasDouble = found.hasDouble): void {
   }, DOUBLE_WINDOW_MS);
 }
 
+let ledResync: ReturnType<typeof setTimeout> | null = null;
 export function onHaEvent(ev: { event_type: string; data: any }): void {
   if (ev.event_type !== 'state_changed') return;
   const id = ev.data?.entity_id;
+  // 1.254: ESP kommt wieder (war „unavailable“/„unknown“) oder zeigt eine falsche Zahl → LEDs sofort auf die echte Warteschlange setzen
+  if (id && (id === found.count || id === found.mode)) {
+    const ns = ev.data?.new_state?.state;
+    const os = ev.data?.old_state?.state;
+    const bad = (x: unknown) => x === undefined || x === 'unavailable' || x === 'unknown';
+    const back = !bad(ns) && bad(os);
+    const wrong = id === found.count && !bad(ns) && Number(ns) !== Math.min(10, load().length) && Date.now() >= ledTestUntil;
+    if (back || wrong) {
+      if (ledResync) clearTimeout(ledResync);
+      ledResync = setTimeout(() => void showLeds(0), 2000);
+    }
+    return;
+  }
   const isOn = ev.data?.new_state?.state === 'on' && ev.data?.old_state?.state !== 'on';
   if (!isOn) return;
   // Zweiter Taster-Sensor „Taster doppelt“ / „Taster lang“: gleicher Gerätename wie „Platte frei“
@@ -691,6 +705,8 @@ export function onHaEvent(ev: { event_type: string; data: any }): void {
 /** Beim Start: LEDs auf den aktuellen Stand bringen */
 export function refreshLeds(): void {
   void resolveIds(true).then(() => showLeds(0));
+  // 1.254: zusätzlich jede Minute abgleichen (falls ein Ereignis verpasst wurde, z. B. ESP war beim Einreihen aus)
+  setInterval(() => void showLeds(0), 60_000).unref();
 }
 
 export { trayLabel };

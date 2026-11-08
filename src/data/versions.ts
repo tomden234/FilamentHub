@@ -3556,5 +3556,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.254',
+    label: '1.254 (LEDs gleichen sich ab)',
+    releaseDate: '08.11.2026',
+    description:
+      'War der ESP beim Einreihen aus, blieb der Warteschlangen-Streifen leer. Jetzt setzt der Pi die LEDs sofort neu, sobald der ESP wieder online ist oder eine falsche Zahl zeigt, und gleicht zusätzlich jede Minute ab.',
+    features: ['💡 Warteschlangen-LEDs holen sich den Stand selbst'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
