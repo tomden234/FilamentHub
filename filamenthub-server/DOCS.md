@@ -9,6 +9,7 @@ Läuft rund um die Uhr auf deinem Pi. Er hört am Drucker mit (LAN-Modus) und sp
    - **Seriennummer**: steht am Drucker (Einstellungen → Gerät) oder in Bambu Studio.
    - **Zugangscode**: am Drucker unter Einstellungen → WLAN/LAN → Zugangscode.
    - **API-Key** (optional): eigenes Passwort. Leer lassen: der Pi erzeugt selbst einen Schlüssel (ab 1.3.8 Pflicht).
+   - **gemini_api_key** (optional, ab 1.3.19): Schlüssel für die Foto-Erkennung. In der App ein Foto vom Spulen-Etikett machen, die Spule wird ausgefüllt. Kostenlosen Schlüssel holst du auf aistudio.google.com. Leer = Foto-Erkennung aus.
 2. Am Drucker müssen **Nur-LAN-Modus** und **Entwicklermodus** an sein.
 3. Reiter **Info**: „Beim Systemstart starten“ und „Watchdog“ einschalten, dann **Starten**.
 4. Im Reiter **Protokoll** muss stehen: `Drucker ... LAN-Modus` und `FilamentHub Server läuft`.
@@ -41,6 +42,12 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Neue Dateien auf dem Drucker werden alle 20-60 s gesucht (vorher alle 3 s), beim Drucken alle 60 s. Taster bei leerer Warteschlange sucht sofort.
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
+
+## Neu in 1.3.19
+
+- **Reicht die Spule?** Beim Einreihen und Starten rechnet der Pi die Gramm je Filament (plus 10 %) gegen den Rest der Spule im gewählten Platz. Reicht es nicht, steht es im Push und die Karte in der App wird rot (mit Ersatz-Spulen und Nachkauf-Link). Gestartet wird trotzdem, der Rest ist eine Schätzung.
+- **Push-Knöpfe** bei „In der Warteschlange“: Jetzt starten, Löschen, Später. „Jetzt starten“ geht nur bei freier Platte, sonst fragt der Pi erst „Platte ist frei, starten“.
+- **gemini_api_key** (optional): schaltet die Foto-Erkennung der Spulen am Pi ein.
 
 ## Neu in 1.3.18
 

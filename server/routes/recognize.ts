@@ -43,7 +43,7 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON ohne Markdown-Codeblöcke.
     // 1.231: Ohne Schlüssel ehrlich „nicht verfügbar“ (vorher kam eine erfundene ELEGOO-Erkennung mit 85 %)
     if (!ai) return res.status(503).json({ success: false, offline: true, error: 'Foto-Erkennung ist nicht eingerichtet (kein GEMINI_API_KEY).' });
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
       contents: [
         {
           role: 'user',

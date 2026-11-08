@@ -3622,5 +3622,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.260',
+    label: '1.260 (Reicht die Spule? & Push-Knöpfe)',
+    releaseDate: '08.11.2026',
+    description:
+      'Warteschlange: Der Pi prüft beim Einreihen und Starten, ob die Spule im gewählten Platz für den Druck reicht (Gramm + 10 % Puffer, bei zwei Filamenten auf einer Spule die Summe). Reicht sie nicht, wird die Karte rot mit Fehlbetrag, Ersatz-Spulen (gleiches Material, ähnliche Farbe, kleinster passender Rest zuerst) und Nachkauf-Link; dazu eine Zeile im Push. Push „In der Warteschlange“ hat jetzt die Knöpfe „Jetzt starten“, „Löschen“ und „Später“: Starten geht nur bei freier Platte, sonst kommt erst die Rückfrage „Platte ist frei, starten“. Foto-Erkennung der Spule läuft jetzt auch am Pi: neue Add-on-Option gemini_api_key (kostenloser Schlüssel von aistudio.google.com). Pi-Add-on 1.3.19.',
+    features: ['📉 Spulen-Check beim Einreihen (rot, Ersatz, Nachkaufen)', '🔔 Push-Knöpfe: Jetzt starten, Löschen, Später', '📷 Foto-Erkennung am Pi (gemini_api_key)', '🥧 Pi-Add-on 1.3.19 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

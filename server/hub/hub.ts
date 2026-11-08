@@ -10,7 +10,7 @@
 import { ledGuard } from './ledGuard.js';
 import { cloudReady } from './cloud.js';
 import { haAvailable, haListen } from './ha.js';
-import { attachQueue, autoScanTick, onHaEvent as queueEvent, refreshLeds } from './queue.js';
+import { attachQueue, autoScanTick, onHaEvent as queueEvent, onQueueAction, refreshLeds } from './queue.js';
 import { espInfo as espInfoFn } from './esphome.js';
 import { type PrinterPort, access, deductActive, getHubConfig, hubEnabled, lastPush, port, powerActive, setPort, push, state } from './core.js';
 import { retryDeducts, tryDeduct } from './deduct.js';
@@ -28,11 +28,12 @@ export { backupNow, listBackups, readBackup } from './backup.js';
 
 export function attachPrinter(p: PrinterPort): void {
   setPort(p);
-  attachQueue(p, (title, text) => push('done', title, text, { tag: 'queue' }));
+  attachQueue(p, (title, text, opts) => push('done', title, text, { tag: 'queue', ...opts }));
   if (hubEnabled()) {
     haListen(ev => {
       queueEvent(ev);
       onAction(ev);
+      onQueueAction(ev);
     });
     setTimeout(() => refreshLeds(), 20_000);
     // Neue Dateien aus Bambu Studio suchen: 1.231 alle 20-60 s statt alle 3 s (schont den Drucker), bei Änderung am Drucker sofort

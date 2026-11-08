@@ -10,6 +10,8 @@ import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubL
 import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
+import { readLocalDoc } from './localDoc.js';
+import { checkEnough, enoughLines, type EnoughInfo } from './enough.js';
 
 export interface QueueItem {
   id: string;
@@ -132,7 +134,12 @@ let items: QueueItem[] | null = null;
 let seen: Set<string> | null = null;
 let autoOn = true;
 let port: QueuePort | null = null;
-let notify: (title: string, text: string) => Promise<unknown> = async () => undefined;
+/** Knöpfe in der Push-Meldung (Home-Assistant-App) und Tag (gleicher Tag ersetzt die alte Meldung) */
+export interface NotifyOpts {
+  tag?: string;
+  actions?: { action: string; title: string }[];
+}
+let notify: (title: string, text: string, opts?: NotifyOpts) => Promise<unknown> = async () => undefined;
 
 /** Übliche Namen der ESPHome-Regler (Gerät „Filament AMS“). Die echten werden in Home Assistant gesucht (resolveAms). */
 const QUEUE_COUNT_ENTITY = 'number.filament_ams_warteschlange';
@@ -158,7 +165,7 @@ async function resolveIds(force = false): Promise<void> {
   found.hasDouble = Boolean(dev.roles.buttonDouble);
 }
 
-export function attachQueue(p: QueuePort, n: (title: string, text: string) => Promise<unknown>): void {
+export function attachQueue(p: QueuePort, n: (title: string, text: string, opts?: NotifyOpts) => Promise<unknown>): void {
   port = p;
   notify = n;
   // Druckende erkennen: danach leuchtet „Platte räumen“, bis der Taster gedrückt wird oder der nächste Druck startet
@@ -219,12 +226,22 @@ function slotChoices(it: QueueItem, m: Mapping): SlotChoice[] {
   });
 }
 
-export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[] };
+/** 1.260: Reicht die Spule im gewählten Platz für diesen Druck? (Spulen und Zuordnung liegen auf dem Pi) */
+function enoughFor(it: QueueItem, m: Mapping): EnoughInfo[] {
+  try {
+    const spools = readLocalDoc().doc.spools;
+    return checkEnough({ filaments: it.filaments, chosen: m.chosen, amsSlots: getHubConfig().amsSlots || {}, spools: Array.isArray(spools) ? (spools as any[]) : [] });
+  } catch {
+    return [];
+  }
+}
+
+export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[]; enough: EnoughInfo[] };
 
 export function queueList(): QueueView[] {
   return load().map(it => {
     const m = currentMapping(it);
-    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m) };
+    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m), enough: enoughFor(it, m) };
   });
 }
 
@@ -367,7 +384,8 @@ export async function autoScan(force = false): Promise<ScanResult> {
         const it = await queueAdd(f.path, 1, fileKey(f));
         console.log(`[Warteschlange] Datei lesen + vormerken: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         added++;
-        await notify('➕ In der Warteschlange', `${it.name} (automatisch aus Bambu Studio)\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}`);
+        const short = enoughLines(enoughFor(it, currentMapping(it)));
+        await notify('➕ In der Warteschlange', `${it.name} (automatisch aus Bambu Studio)\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}${short.length ? `\n${short.join('\n')}` : ''}`, queueActions(it.id));
         console.log(`[Warteschlange] automatisch vorgemerkt: ${it.name}`);
       } catch (e) {
         console.warn('[Warteschlange] Auto-Vormerken fehlgeschlagen:', (e as Error)?.message || e);
@@ -593,7 +611,8 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
     save();
     await showLeds(2);
     const rest = items.length ? ` Noch ${items.length} in der Warteschlange.` : '';
-    await notify('▶️ Nächster Druck gestartet', `${it.name} (${source})\n${m!.lines.join('\n')}${rest}`);
+    const short = enoughLines(enoughFor(it, m!));
+    await notify('▶️ Nächster Druck gestartet', `${it.name} (${source})\n${m!.lines.join('\n')}${short.length ? `\n${short.join('\n')}` : ''}${rest}`);
     console.log(`[Warteschlange] gestartet: ${it.name} (${source})`);
     return { ok: true, text: `„${it.name}“ gestartet.${rest}` };
   } catch (e) {
@@ -687,6 +706,50 @@ export function plateEvent(hasDouble = found.hasDouble): void {
     pendingSingle = null;
     void startNext('Taster');
   }, DOUBLE_WINDOW_MS);
+}
+
+// ---------- 1.261: Knöpfe in der Push-Meldung „In der Warteschlange“ ----------
+
+const ACTION_RE = /^FH_Q_(START|GO|DEL|LATER)_([0-9a-f]{12})$/;
+/** Knöpfe für einen neuen Eintrag: Jetzt starten, Löschen, Später (Tag je Eintrag: spätere Antwort ersetzt die Meldung samt Knöpfen) */
+export const queueActions = (id: string): NotifyOpts => ({
+  tag: `queue-${id}`,
+  actions: [
+    { action: `FH_Q_START_${id}`, title: '▶️ Jetzt starten' },
+    { action: `FH_Q_DEL_${id}`, title: '🗑️ Löschen' },
+    { action: `FH_Q_LATER_${id}`, title: '⏳ Später' }
+  ]
+});
+
+/** Knopf gedrückt. Start nur, wenn die Platte frei ist: sonst erst eine Rückfrage „Platte ist frei, starten“. */
+export function onQueueAction(ev: { event_type: string; data: any }): void {
+  if (ev.event_type !== 'mobile_app_notification_action') return;
+  const m = String(ev.data?.action || '').match(ACTION_RE);
+  if (!m) return;
+  const [, kind, id] = m;
+  void (async () => {
+    const tag = { tag: `queue-${id}` };
+    const it = load().find(x => x.id === id);
+    if (!it) return void notify('ℹ️ Nicht mehr da', 'Der Eintrag ist nicht mehr in der Warteschlange.', tag);
+    if (kind === 'LATER') return void notify('⏳ Bleibt in der Warteschlange', `${it.name} wartet auf den Taster oder die App.`, tag);
+    if (kind === 'DEL') {
+      queueRemove(id);
+      return void notify('🗑️ Gelöscht', `${it.name} ist aus der Warteschlange raus.`, tag);
+    }
+    if (kind === 'START' && plateClear) {
+      return void notify('🧹 Platte frei?', `${it.name}: Der letzte Druck ist noch nicht abgeräumt. Erst Platte räumen, dann „Platte ist frei“.`, {
+        tag: `queue-${id}`,
+        actions: [
+          { action: `FH_Q_GO_${id}`, title: '✅ Platte ist frei, starten' },
+          { action: `FH_Q_LATER_${id}`, title: '⏳ Später' }
+        ]
+      });
+    }
+    // START (Platte frei) oder GO (bestätigt): diesen Eintrag nach vorn, dann starten
+    queueReorder([id, ...load().filter(x => x.id !== id).map(x => x.id)]);
+    const r = await startNext('App');
+    if (!r.ok) await notify('⛔ Nicht gestartet', `${it.name}: ${r.text}`, tag);
+  })();
 }
 
 let ledResync: ReturnType<typeof setTimeout> | null = null;

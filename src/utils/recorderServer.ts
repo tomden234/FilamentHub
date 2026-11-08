@@ -363,6 +363,20 @@ export interface PiQueueItem {
   thumb?: boolean;
   /** 1.239: je Filament der Datei: Gramm, gewählter Platz und alle möglichen Plätze */
   slots?: PiQueueSlot[];
+  /** 1.260: reicht die Spule im gewählten Platz? */
+  enough?: PiQueueEnough[];
+}
+
+export interface PiQueueEnough {
+  id: number;
+  need: number;
+  have: number | null;
+  ok: boolean;
+  spoolId: string;
+  spoolLabel: string;
+  missing: number;
+  alternatives: { id: string; label: string; remaining: number; colorHex: string }[];
+  buy?: { brand: string; material: string; name: string; colorName: string; url: string };
 }
 
 export interface PiQueueSlot {

@@ -1,8 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown, Sparkles, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ExternalLink, Sparkles, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
+import { generateAutoShopUrl } from '../utils/shopLinks';
+import { safeHttpUrl } from '../utils/safeData';
 import { piPrinterFiles, piQueueAction, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
@@ -374,6 +376,43 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                   </button>
                 </div>
                 {it.missing.length > 0 && <div className="text-[10px] text-amber-400 mt-1.5">Im AMS fehlt: {it.missing.join(', ')}</div>}
+                {it.enough && it.enough.some(e => !e.ok) && (
+                  <div className="mt-2 space-y-1.5" role="alert">
+                    {it.enough
+                      .filter(e => !e.ok)
+                      .map(e => {
+                        const buy = e.buy && (safeHttpUrl(e.buy.url) || generateAutoShopUrl(e.buy.brand, e.buy.material, e.buy.name, e.buy.colorName));
+                        return (
+                          <div key={e.id} className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-2.5 py-1.5 text-[11px]">
+                            <div className="font-bold text-rose-400">
+                              {e.spoolLabel}: reicht nicht
+                            </div>
+                            <div style={{ color: 'var(--app-text-muted)' }}>
+                              Braucht ca. {e.need} g, da {e.have} g (fehlen {e.missing} g)
+                            </div>
+                            {e.alternatives.length > 0 ? (
+                              <div className="mt-1 space-y-0.5">
+                                {e.alternatives.map(a => (
+                                  <div key={a.id} className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: a.colorHex, boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,.3)' }} />
+                                    <span className="truncate">Besser: {a.label}</span>
+                                    <span className="shrink-0" style={{ color: 'var(--app-text-muted)' }}>{a.remaining} g</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-1" style={{ color: 'var(--app-text-muted)' }}>Keine passende Ersatz-Spule da.</div>
+                            )}
+                            {buy && (
+                              <a href={buy} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-bold underline" style={{ color: 'var(--app-accent)' }}>
+                                Nachkaufen <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
                 {it.slots && it.slots.length > 0 && (
                   <div className="mt-2.5">
                     {/* Runder Balken über die volle Breite: Anteil der Gramm je Filament */}
