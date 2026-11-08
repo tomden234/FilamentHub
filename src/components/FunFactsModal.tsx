@@ -36,11 +36,11 @@ interface FunFactsModalProps {
 //  SCHÄTZUNG = ungefähr, genauer geht es nicht
 type Source = 'LIVE' | 'BAUEN' | 'GEZÄHLT' | 'SCHÄTZUNG';
 
-// Von Claude beim Update auf v1.258 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
+// Von Claude beim Update auf v1.259 gezählt (Commits, Chats); Nachrichten und Wörter zuletzt bei v1.231
 const CHATS = 20; // Chats im Projekt „filament webseite“
 const MESSAGES = 466; // deine Nachrichten in diesen Chats (ca.)
 const WORDS = 40250; // deine Wörter (ca., lange Sprachnachrichten zählen voll)
-const COMMITS = 272; // Commits auf GitHub (main)
+const COMMITS = 273; // Commits auf GitHub (main)
 const PROJECT_START = new Date('2026-10-19T00:00:00');
 
 const sourceStyle: Record<Source, { bg: string; fg: string; label: string }> = {
@@ -279,12 +279,25 @@ export const FunFactsModal: React.FC<FunFactsModalProps> = ({ isOpen, onClose, s
                 </p>
               </>
             )}
-            <div className="flex items-end gap-1 h-10 pt-1">
-              {week.map((x, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-0.5">
-                  <div className="w-full rounded-full transition-all" style={{ height: `${Math.max(8, (x.hours / weekMax) * 100)}%`, backgroundColor: x.current ? '#10b981' : 'var(--app-border)', opacity: x.hours > 0 || x.current ? 1 : 0.5 }} />
-                </div>
-              ))}
+            {/* 1.259: runde Säulen mit weicher Schiene; feste Breite, Fläche wächst von unten (kein Kreis mehr bei großer Säule) */}
+            <div className="flex items-end gap-1 h-16 pt-1">
+              {week.map((x, i) => {
+                const pct = x.hours > 0 ? Math.max(14, (x.hours / weekMax) * 100) : 0;
+                return (
+                  <div key={i} className="flex-1 flex justify-center h-full" title={`${x.label}: ${fmt(x.hours)} Std.`}>
+                    <div className="relative w-4 h-full rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--app-border) 55%, transparent)' }}>
+                      <div
+                        className="absolute inset-x-0 bottom-0 rounded-full transition-all duration-500"
+                        style={{
+                          height: x.hours > 0 ? `${pct}%` : '0.25rem',
+                          background: x.current ? 'linear-gradient(180deg,#34d399,#10b981)' : 'color-mix(in srgb, var(--app-accent-bar) 45%, var(--app-border))',
+                          opacity: x.hours > 0 || x.current ? 1 : 0.7
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div className="flex gap-1 text-[10px]" style={muted}>
               {week.map((x, i) => (

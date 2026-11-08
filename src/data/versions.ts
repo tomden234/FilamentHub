@@ -3611,5 +3611,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.259',
+    label: '1.259 (Schöne Auswahl & Säulen)',
+    releaseDate: '08.11.2026',
+    description:
+      'Warteschlange: Die Slot-Auswahl ist jetzt eine eigene, runde Liste im Design der App mit Farbpunkt je Spule, Material und Haken, statt der grauen Browser-Liste. Druckzeit-Kachel (Fun Facts): runde Wochensäulen mit weicher Schiene, kein großer Kreis mehr.',
+    features: ['🎨 Slot-Auswahl mit Spulenfarben', '📊 Runde Wochensäulen bei Druckzeit'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

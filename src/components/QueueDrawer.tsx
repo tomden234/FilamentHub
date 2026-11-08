@@ -1,10 +1,158 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Check, ChevronDown, Sparkles, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { piPrinterFiles, piQueueAction, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
+
+type SlotOpt = { key: string; label: string; type: string; colorHex: string };
+/** 1.259: eigene Auswahl statt Browser-Liste: Farbpunkt je Spule, passt zum Design. Liste liegt über allem (Portal), wird nie abgeschnitten. */
+const SlotPicker: React.FC<{
+  value: string; // '' = automatisch
+  auto: boolean;
+  tray: string;
+  trayLabel: string;
+  trayColor: string;
+  options: SlotOpt[];
+  disabled: boolean;
+  label: string;
+  onPick: (key: string) => void;
+}> = ({ value, auto, tray, trayLabel, trayColor, options, disabled, label, onPick }) => {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number; width: number; maxH: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useBackLayer(open, () => setOpen(false), 'queue-slot');
+  useLayoutEffect(() => {
+    if (!open || !btn.current) return;
+    const r = btn.current.getBoundingClientRect();
+    const width = Math.min(Math.max(230, r.width), window.innerWidth - 16);
+    const left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8));
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    if (below >= 200 || below >= above) setPos({ left, top: r.bottom + 6, width, maxH: Math.max(140, below) });
+    else setPos({ left, bottom: window.innerHeight - r.top + 6, width, maxH: Math.max(140, above) });
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => {
+      const t = e.target as Node;
+      if (menu.current?.contains(t) || btn.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const close = (e: Event) => {
+      if (menu.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener('pointerdown', away, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      document.removeEventListener('pointerdown', away, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [open]);
+  const choose = (k: string) => {
+    setOpen(false);
+    if (k !== value) onPick(k);
+  };
+  const row = (k: string, active: boolean, children: React.ReactNode) => (
+    <button
+      key={k || 'auto'}
+      type="button"
+      role="option"
+      aria-selected={active}
+      onClick={() => choose(k)}
+      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-[12px] rounded-xl transition-colors hover:bg-[var(--app-card-sub)]"
+      style={{ backgroundColor: active ? 'var(--app-accent-sub)' : undefined, color: 'var(--app-text)' }}
+    >
+      {children}
+      <Check className="w-3.5 h-3.5 ml-auto shrink-0" style={{ color: 'var(--app-accent-bar)', opacity: active ? 1 : 0 }} />
+    </button>
+  );
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        disabled={disabled}
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
+        className="ml-auto inline-flex items-center gap-1.5 rounded-full border pl-2 pr-2 py-1 text-[11px] min-w-0 max-w-[62%] transition-colors hover:bg-[var(--app-card-sub)] disabled:opacity-60"
+        style={{ borderColor: tray ? 'var(--app-border)' : '#fbbf24', backgroundColor: 'var(--app-card)', color: 'var(--app-text)' }}
+      >
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: trayColor || 'transparent', boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,.3)' }} />
+        <span className="truncate">{tray ? trayLabel : 'fehlt im AMS'}</span>
+        {auto && tray && (
+          <span className="text-[10px] shrink-0" style={{ color: 'var(--app-text-muted)' }}>
+            auto
+          </span>
+        )}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open &&
+        pos &&
+        createPortal(
+          <div
+            ref={menu}
+            role="listbox"
+            className="fixed z-[80] overflow-y-auto rounded-2xl border p-1.5"
+            style={{
+              left: pos.left,
+              top: pos.top,
+              bottom: pos.bottom,
+              width: pos.width,
+              maxHeight: pos.maxH,
+              backgroundColor: 'var(--app-card)',
+              borderColor: 'var(--app-border)',
+              color: 'var(--app-text)',
+              boxShadow: '0 18px 40px -12px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.12)'
+            }}
+          >
+            {row(
+              '',
+              auto,
+              <>
+                <span className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center" style={{ backgroundColor: 'var(--app-card-sub)', color: 'var(--app-text-muted)' }}>
+                  <Sparkles className="w-3 h-3" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-semibold">Automatisch</span>
+                  {auto && trayLabel && (
+                    <span className="block text-[10px] truncate" style={{ color: 'var(--app-text-muted)' }}>
+                      {trayLabel}
+                    </span>
+                  )}
+                </span>
+              </>
+            )}
+            <div className="my-1 h-px" style={{ backgroundColor: 'var(--app-border)' }} />
+            {options.map(o =>
+              row(
+                o.key,
+                !auto && o.key === value,
+                <>
+                  <span className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: o.colorHex, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.25), inset 0 0 0 3px rgba(255,255,255,.18)' }} />
+                  <span className="min-w-0">
+                    <span className="block font-semibold truncate">{o.label}</span>
+                    <span className="block text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+                      {o.type}
+                    </span>
+                  </span>
+                </>
+              )
+            )}
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};
 
 const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
   const [src, setSrc] = useState<string | null>(null);
@@ -242,34 +390,17 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                           <span className="shrink-0" style={{ color: 'var(--app-text-muted)' }}>
                             {Math.round(sl.grams)} g
                           </span>
-                          {/* Chip mit Auswahl: das echte Auswahlfeld liegt unsichtbar darüber */}
-                          <span
-                            className="relative ml-auto inline-flex items-center gap-1 rounded-full border pl-1.5 pr-1.5 py-1 text-[11px] min-w-0 max-w-[62%]"
-                            style={{ borderColor: sl.tray ? 'var(--app-border)' : '#fbbf24', backgroundColor: 'var(--app-card)', color: 'var(--app-text)' }}
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: sl.trayColor || 'transparent', boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,.3)' }} />
-                            <span className="truncate">{sl.tray ? sl.trayLabel : 'fehlt im AMS'}</span>
-                            {sl.auto && sl.tray && (
-                              <span className="text-[10px] shrink-0" style={{ color: 'var(--app-text-muted)' }}>
-                                auto
-                              </span>
-                            )}
-                            <ChevronDown className="w-3 h-3 shrink-0" />
-                            <select
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              value={sl.auto ? '' : sl.tray}
-                              disabled={busy}
-                              aria-label={`Material für ${sl.type} ${Math.round(sl.grams)} g wählen`}
-                              onChange={e => void pick(it.id, sl.id, e.target.value)}
-                            >
-                              <option value="">Automatisch{sl.auto && sl.trayLabel ? ` (${sl.trayLabel})` : ''}</option>
-                              {sl.options.map(o => (
-                                <option key={o.key} value={o.key}>
-                                  {o.label} · {o.type}
-                                </option>
-                              ))}
-                            </select>
-                          </span>
+                          <SlotPicker
+                            value={sl.auto ? '' : sl.tray}
+                            auto={sl.auto}
+                            tray={sl.tray}
+                            trayLabel={sl.trayLabel}
+                            trayColor={sl.trayColor}
+                            options={sl.options}
+                            disabled={busy}
+                            label={`Material für ${sl.type} ${Math.round(sl.grams)} g wählen`}
+                            onPick={k => void pick(it.id, sl.id, k)}
+                          />
                         </div>
                       ))}
                     </div>
