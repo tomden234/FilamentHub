@@ -3589,5 +3589,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.257',
+    label: '1.257 (Pi-Add-on 1.3.18)',
+    releaseDate: '08.11.2026',
+    description:
+      'Die Pi-Änderungen aus 1.254 bis 1.256 (LED-Abgleich, schnelleres Einreihen, USB-Stick, gleicher Dateiname) kamen nicht auf den Pi, weil die Add-on-Versionsnummer gleich blieb. Jetzt Pi-Add-on 1.3.18: in Home Assistant erscheint das Update.',
+    features: ['🥧 Pi-Add-on 1.3.18 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -42,6 +42,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.18
+
+- Warteschlangen-LEDs gleichen sich selbst ab (ESP wieder online, falsche Zahl, jede Minute).
+- Neue Dateien: ohne Neues alle 20-30 s suchen; USB-Stick und weitere Ordner werden durchsucht; gleicher Dateiname wird als neu erkannt.
+
 ## Neu in 1.3.17
 
 - Dauer-Protokoll `print-stats.json` (Start, Ende, Gramm je Material je Druck, bis 100.000 Drucke) für die Fun Facts. Übernimmt beim ersten Start die schon aufgezeichneten Drucke.
