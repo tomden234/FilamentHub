@@ -3886,5 +3886,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.284',
+    label: '1.284 (FTP-Platz für Home Assistant frei)',
+    releaseDate: '09.11.2026',
+    description:
+      'Gegen „421 zu viele Verbindungen“: der Pi hielt die Datei-Verbindung zum Drucker 2 Minuten offen und damit bei der Suche alle 20-30 s dauerhaft belegt. Jetzt nur noch 6 Sekunden, danach ist der Platz für Home Assistant frei. Bei 421 wartet der Pi 4 Sekunden und versucht es einmal sofort nochmal. Bei Wiederholung länger Pause (5, 10, 20, max. 30 Min). Die Meldung ist jetzt gelb statt rot und sagt, dass Start und Taster trotzdem gehen. Pi-Add-on 1.3.39.',
+    features: ['🔌 Verbindung nur 6 s offen', '🔁 Sofort-Wiederholung bei 421', '🟡 Weiche Meldung statt rot', '🥧 Pi-Add-on 1.3.39 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

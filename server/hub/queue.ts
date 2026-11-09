@@ -462,6 +462,7 @@ let seenPaths: Set<string> | null = null;
 let starting = false;
 let scanStarted = 0;
 let scanBlockedUntil = 0;
+let tooManyStreak = 0;
 let lastScanErr = { sig: '', at: 0 };
 interface ScanResult {
   ok: boolean;
@@ -490,6 +491,7 @@ export async function autoScan(force = false): Promise<ScanResult> {
       listJobFiles(lan.ip, lan.code),
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Drucker antwortet nicht (Zeitüberschreitung)')), 40_000))
     ]);
+    tooManyStreak = 0;
     if (seen === null) {
       seen = new Set(files.map(fileKey));
       save();
@@ -533,10 +535,12 @@ export async function autoScan(force = false): Promise<ScanResult> {
     const msg = (e as Error)?.message || String(e);
     // 1.279: „421 zu viele Verbindungen“: 5 Min Pause, damit der Drucker alte Sitzungen freigibt; sonst 90 s
     const full = isTooMany(msg);
-    const wait = full ? 5 * 60_000 : 90_000;
+    // 1.284: bei Wiederholung länger warten (5, 10, 20, max. 30 Min); nach Erfolg wieder von vorn
+    tooManyStreak = full ? tooManyStreak + 1 : 0;
+    const wait = full ? Math.min(30, 5 * 2 ** (tooManyStreak - 1)) * 60_000 : 90_000;
     scanBlockedUntil = Date.now() + wait;
     const text = full
-      ? 'Drucker lässt gerade keine weitere FTP-Verbindung zu (zu viele von dieser IP, Home Assistant läuft auf derselben). Nächster Versuch in 5 Min.'
+      ? `Der Drucker nimmt gerade keine weitere Datei-Verbindung an (Home Assistant belegt sie). Start und Taster gehen trotzdem. Nächster Versuch in ${Math.round(wait / 60_000)} Min, oder gleich nochmal drücken.`
       : `Scan fehlgeschlagen (nächster Versuch in 90 s): ${msg}`;
     // Gleiche Meldung höchstens alle 30 Min ins Protokoll
     const sigErr = full ? '421' : msg.slice(0, 80);
@@ -544,7 +548,8 @@ export async function autoScan(force = false): Promise<ScanResult> {
       lastScanErr = { sig: sigErr, at: Date.now() };
       console.warn('[Warteschlange]', text);
     }
-    return { ok: false, added, text };
+    // 421 ist kein Defekt, nur Warten: weich anzeigen (nicht rot)
+    return { ok: full, added, text };
   } finally {
     scanning = false;
   }

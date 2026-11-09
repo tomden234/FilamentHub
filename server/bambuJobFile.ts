@@ -230,12 +230,13 @@ async function ftp(ip: string, code: string): Promise<Client> {
 
 // Immer nur EINE FTP-Sitzung zum Drucker gleichzeitig (Suche, Datei lesen, Umbenennen, Gewicht holen).
 // 1.279: Die Sitzung bleibt offen und wird wiederverwendet (vorher: neue Anmeldung bei jeder Suche, bis zu 10.000 am Tag).
-// Der Drucker zählt Verbindungen je IP; Home Assistant läuft auf derselben IP. Nach 2 Min ohne Nutzung wird sie sauber beendet.
+// Der Drucker zählt Verbindungen je IP; Home Assistant läuft auf derselben IP. Nach 6 s ohne Nutzung wird sie sauber beendet.
 let ftpChain: Promise<unknown> = Promise.resolve();
 let ftpUsers = 0;
 let shared: { client: Client; key: string } | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
-const IDLE_MS = 120_000;
+// 1.284: nur 6 s offen halten (vorher 2 Min = bei Suche alle 20-30 s dauerhaft belegt): so bleibt für Home Assistant ein Platz frei
+const IDLE_MS = 6_000;
 /** Läuft gerade eine FTP-Sitzung oder wartet eine? (Die Suche lässt dann eine Runde aus.) */
 export const ftpBusy = (): boolean => ftpUsers > 0;
 /** Drucker hat „zu viele Verbindungen“ gemeldet */
@@ -257,7 +258,16 @@ async function withFtp<T>(ip: string, code: string, fn: (c: Client) => Promise<T
     const key = `${ip}|${code}`;
     if (shared && (shared.key !== key || shared.client.closed)) await dropShared();
     let reused = Boolean(shared);
-    if (!shared) shared = { client: await ftp(ip, code), key };
+    if (!shared) {
+      try {
+        shared = { client: await ftp(ip, code), key };
+      } catch (e) {
+        // 421: ein anderer Zugriff (Home Assistant) belegt gerade den Platz: 4 s warten, einmal nochmal
+        if (!isTooMany(String((e as Error)?.message))) throw e;
+        await new Promise(r => setTimeout(r, 4_000));
+        shared = { client: await ftp(ip, code), key };
+      }
+    }
     // Notbremse: hängt eine Sitzung über 3 Minuten, wird sie getrennt, sonst warteten alle anderen für immer
     const guard = setTimeout(() => void dropShared(), 180_000);
     try {
