@@ -2,6 +2,7 @@
 //  1. Marken mit eigenem Shop (Bambu, Prusa, SUNLU, 3DJake): der Pi liest die offizielle Produktliste (Sitemap) und nimmt die passendste Seite.
 //  2. Alle anderen: der Pi holt die Amazon-Treffer (echte ASINs), Gemini wählt das passende Produkt. Reserve: Gemini mit Google-Suche.
 // Ergebnis wird gemerkt (product-links.json). Ein Takt füllt nach und nach die Links aller Spulen im Spulen-Dokument.
+import { SEED_CATALOG } from './seedCatalog.js';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -324,11 +325,17 @@ export interface CatalogEntry {
   at: number;
 }
 const catalogFile = () => path.join(dataDir, 'product-catalog.json');
-export const readCatalog = (): CatalogEntry[] => loadJsonConfig<CatalogEntry[]>([catalogFile()], d => Array.isArray(d)) || [];
+/** Pi-Katalog (aus Bestell-Mails) + fest eingebaute Bestellhistorie; gleiche ASIN: Pi-Eintrag gewinnt. */
+export const readCatalog = (): CatalogEntry[] => {
+  const file = loadJsonConfig<CatalogEntry[]>([catalogFile()], d => Array.isArray(d)) || [];
+  const have = new Set(file.map(e => e.asin));
+  return [...file, ...SEED_CATALOG.filter(s => !have.has(s.asin)).map(s => ({ ...s, at: 0 }))];
+};
+const readLearned = (): CatalogEntry[] => loadJsonConfig<CatalogEntry[]>([catalogFile()], d => Array.isArray(d)) || [];
 
 /** Produkte einer Bestellung merken (gleiche ASIN wird aktualisiert). Gibt die Zahl neuer Einträge zurück. */
 export function learnCatalog(items: { brand: string; material: string; name: string; colorName: string; asin?: string }[]): number {
-  const list = readCatalog();
+  const list = readLearned();
   let added = 0;
   for (const it of items) {
     if (!it.asin || !/^[A-Z0-9]{10}$/.test(it.asin)) continue;

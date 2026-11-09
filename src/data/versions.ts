@@ -3842,5 +3842,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.280',
+    label: '1.280 (Amazon-Links fest aus Bestellhistorie)',
+    releaseDate: '09.11.2026',
+    description:
+      'Deine 12 Filament-Bestellungen (ELEGOO, EONO, YXPOLYMER, eSUN, OVERTURE, JAYO, GEEETECH, ERYONE, ENISINA) sind mit genauer Amazon-Nummer fest im Pi-Katalog. Passende Spulen bekommen den Link zur echten Produktseite, ohne Mail-Weiterleitung. Neue Bestell-Mails ergänzen den Katalog weiter. Pi-Add-on 1.3.36.',
+    features: ['🔗 12 Amazon-Produkte fest hinterlegt', '🥧 Pi-Add-on 1.3.36 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
