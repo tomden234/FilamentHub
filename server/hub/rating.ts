@@ -87,3 +87,12 @@ export function onRatingAction(ev: { event_type: string; data: any }): void {
   const what = r.entry.fils.join(' + ') || 'Filament unbekannt';
   void push('done', m[1] === 'UP' ? '👍 Gemerkt: lief gut' : '👎 Gemerkt: lief schlecht', `${r.entry.name} mit ${what}`, { tag: `print-${r.entry.id}` });
 }
+
+/** Bewertung aus der App (gleiche Wirkung wie der Push-Knopf, ohne neue Meldung) */
+export function rateFromApp(h: string, up: boolean): boolean {
+  if (!/^[0-9a-f]{12}$/.test(h)) return false;
+  const r = withRating(readRatings(), h, up);
+  if (!r.entry) return false;
+  save(r.list);
+  return true;
+}

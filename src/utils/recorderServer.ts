@@ -677,6 +677,16 @@ export async function piOrderStatus(check = false): Promise<OrderMailStatus | nu
   }
 }
 
+// 1.282: 👍/👎-Bewertungen der Drucke (Pi merkt sie sich)
+export async function piRatings(rate?: { h: string; up: boolean }): Promise<import('./printRatings').PrintRating[] | null> {
+  try {
+    const j = await get('/api/hub/ratings', rate ? { method: 'POST', body: rate, timeoutMs: 15000 } : { timeoutMs: 15000 });
+    return j?.success !== false && Array.isArray(j?.ratings) ? j.ratings : null;
+  } catch {
+    return null;
+  }
+}
+
 // 1.276/1.278: Produktseite am Pi suchen lassen (url null = nichts gefunden, error sagt warum)
 export async function piProductLink(spec: { brand: string; material: string; name: string; colorName: string; refill?: boolean; hits?: { asin: string; title: string; sponsored?: boolean }[] }): Promise<{ url: string | null; error?: string }> {
   try {

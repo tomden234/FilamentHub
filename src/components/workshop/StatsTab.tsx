@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Zap } from 'lucide-react';
-import { fetchEnergyWeeks, type EnergyWeekInfo } from '../../utils/recorderServer';
+import { ThumbsDown, ThumbsUp, Zap } from 'lucide-react';
+import { fetchEnergyWeeks, hasServer, piRatings, type EnergyWeekInfo } from '../../utils/recorderServer';
+import { byFilament, byModel, unrated, type PrintRating } from '../../utils/printRatings';
 import { BarChart3, CalendarDays, Palette, Printer, Wallet } from 'lucide-react';
 import { monthlyUse, successRate, weeklyPrints } from '../../utils/printStats';
 import type { HistoryEntry, Spool } from '../../types/filament';
@@ -44,6 +45,71 @@ const Tile: React.FC<{ label: string; value: string; sub?: string }> = ({ label,
     )}
   </div>
 );
+
+const RatingsCard: React.FC = () => {
+  const [list, setList] = useState<PrintRating[] | null>(null);
+  useEffect(() => {
+    if (hasServer()) void piRatings().then(setList);
+  }, []);
+  if (!list) return null;
+  const models = byModel(list);
+  const fils = byFilament(list);
+  const open = unrated(list);
+  if (!models.length && !open.length) return null;
+  const rate = async (h: string, up: boolean) => setList((await piRatings({ h, up })) || list);
+  return (
+    <Card>
+      <div className="flex items-center gap-2 text-xs font-extrabold">
+        <ThumbsUp className="w-4 h-4 text-emerald-400" />
+        <span>Was lief gut?</span>
+      </div>
+      {fils.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {fils.slice(0, 6).map(f => (
+            <span key={f.fil} className="text-[11px] font-bold px-2 py-1 rounded-lg border" style={{ borderColor: 'var(--app-border)' }}>
+              {f.fil} · 👍 {f.up} · 👎 {f.down}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="space-y-1.5">
+        {models.slice(0, 8).map(m => (
+          <div key={m.model} className="text-[11px]">
+            <span className="font-bold">{m.name}</span>
+            {m.combos.map(c => (
+              <div key={c.fils} style={{ color: 'var(--app-text-muted)' }}>
+                {c.up > 0 && `👍 ${c.up}× `}
+                {c.down > 0 && `👎 ${c.down}× `}
+                {c.fils}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      {open.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--app-text-muted)' }}>
+            Noch nicht bewertet
+          </div>
+          {open.map(e => (
+            <div key={e.h} className="flex items-center gap-2 text-[11px]">
+              <span className="flex-1 truncate">
+                {e.name}
+                {e.fils.length > 0 && <span style={{ color: 'var(--app-text-muted)' }}> · {e.fils.join(' + ')}</span>}
+              </span>
+              <button aria-label="Lief gut" className="p-1.5 rounded-lg border cursor-pointer" style={{ borderColor: 'var(--app-border)' }} onClick={() => void rate(e.h, true)}>
+                <ThumbsUp className="w-3.5 h-3.5" />
+              </button>
+              <button aria-label="Lief schlecht" className="p-1.5 rounded-lg border cursor-pointer" style={{ borderColor: 'var(--app-border)' }} onClick={() => void rate(e.h, false)}>
+                <ThumbsDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+};
 
 export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
   const prints = usePrintLog();
@@ -197,6 +263,8 @@ export const StatsTab: React.FC<{ spools: Spool[] }> = ({ spools }) => {
           </p>
         </Card>
       )}
+
+      <RatingsCard />
 
       <Card>
         <div className="flex items-center gap-2 text-xs font-extrabold">

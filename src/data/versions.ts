@@ -3864,5 +3864,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.282',
+    label: '1.282 (Bewertungen in der Statistik)',
+    releaseDate: '09.11.2026',
+    description:
+      'Neue Karte „Was lief gut?“ in der Statistik: Filamente nach 👍/👎 sortiert, je Modell welches Filament wie oft gut oder schlecht lief, dazu „Noch nicht bewertet“ mit 👍/👎-Knöpfen direkt in der App (gleiche Wirkung wie der Push-Knopf). Pi-Add-on 1.3.38.',
+    features: ['👍👎 Karte „Was lief gut?“ in der Statistik', '✋ Bewerten direkt in der App', '🥧 Pi-Add-on 1.3.38 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

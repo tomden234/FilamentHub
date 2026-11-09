@@ -34,3 +34,16 @@ describe('Lieferstatus-Push', () => {
     expect(r.doc.spools[1].incoming).toBeTruthy();
   });
 });
+
+import { byFilament, byModel, unrated } from './printRatings';
+describe('Bewertungs-Ansicht', () => {
+  const e = (h: string, name: string, fils: string[], rating: 0 | 1 | -1, at: number) => ({ h, id: h, model: name.toLowerCase(), name, fils, rating, at });
+  const l = [e('a', 'Vase', ['ELEGOO PLA Weiß'], 1, 1), e('b', 'Vase', ['ELEGOO PLA Weiß'], 1, 2), e('c', 'Vase', ['JAYO PLA'], -1, 3), e('d', 'Box', ['JAYO PLA'], 0, 4)];
+  it('gruppiert nach Modell und Filament', () => {
+    const m = byModel(l);
+    expect(m).toHaveLength(1);
+    expect(m[0].combos.find(c => c.fils === 'ELEGOO PLA Weiß')).toMatchObject({ up: 2, down: 0 });
+    expect(byFilament(l)[0].fil).toBe('ELEGOO PLA Weiß');
+    expect(unrated(l).map(x => x.h)).toEqual(['d']);
+  });
+});
