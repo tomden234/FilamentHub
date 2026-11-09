@@ -3875,5 +3875,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.283',
+    label: '1.283 (Bewertungs-Karte schöner)',
+    releaseDate: '09.11.2026',
+    description:
+      'Karte „Was lief gut?“ neu angeordnet: Filamente als Balken (grün 👍, rot 👎) mit Zähler, Modelle als eigene Kästchen mit den Filament-Kombis, offene Drucke mit großen 👍/👎-Knöpfen, oben die Zahl bewerteter Drucke.',
+    features: ['📊 Balken je Filament', '🗂️ Modelle als Kästchen', '👍👎 größere Knöpfe'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

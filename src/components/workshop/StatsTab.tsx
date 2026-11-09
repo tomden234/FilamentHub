@@ -46,6 +46,19 @@ const Tile: React.FC<{ label: string; value: string; sub?: string }> = ({ label,
   </div>
 );
 
+const Votes: React.FC<{ up: number; down: number }> = ({ up, down }) => (
+  <span className="flex items-center gap-1 shrink-0 text-[11px] font-bold font-mono-num">
+    {up > 0 && <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400">👍 {up}</span>}
+    {down > 0 && <span className="px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-400">👎 {down}</span>}
+  </span>
+);
+
+const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--app-text-muted)' }}>
+    {children}
+  </div>
+);
+
 const RatingsCard: React.FC = () => {
   const [list, setList] = useState<PrintRating[] | null>(null);
   useEffect(() => {
@@ -57,51 +70,68 @@ const RatingsCard: React.FC = () => {
   const open = unrated(list);
   if (!models.length && !open.length) return null;
   const rate = async (h: string, up: boolean) => setList((await piRatings({ h, up })) || list);
+  const rated = list.filter(e => e.rating).length;
   return (
     <Card>
       <div className="flex items-center gap-2 text-xs font-extrabold">
         <ThumbsUp className="w-4 h-4 text-emerald-400" />
-        <span>Was lief gut?</span>
+        <span className="flex-1">Was lief gut?</span>
+        <span className="text-[10px] font-bold" style={{ color: 'var(--app-text-muted)' }}>
+          {rated} bewertet
+        </span>
       </div>
+
       {fils.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="space-y-1.5">
+          <Label>Filamente</Label>
           {fils.slice(0, 6).map(f => (
-            <span key={f.fil} className="text-[11px] font-bold px-2 py-1 rounded-lg border" style={{ borderColor: 'var(--app-border)' }}>
-              {f.fil} · 👍 {f.up} · 👎 {f.down}
-            </span>
+            <div key={f.fil} className="flex items-center gap-2 text-[11px]">
+              <span className="w-28 sm:w-40 truncate font-bold">{f.fil}</span>
+              <div className="flex-1 h-2 rounded-full overflow-hidden flex" style={{ backgroundColor: 'var(--app-border)' }}>
+                <div className="h-full bg-emerald-500" style={{ width: `${(f.up / (f.up + f.down)) * 100}%` }} />
+                <div className="h-full bg-rose-500" style={{ width: `${(f.down / (f.up + f.down)) * 100}%` }} />
+              </div>
+              <Votes up={f.up} down={f.down} />
+            </div>
           ))}
         </div>
       )}
-      <div className="space-y-1.5">
-        {models.slice(0, 8).map(m => (
-          <div key={m.model} className="text-[11px]">
-            <span className="font-bold">{m.name}</span>
-            {m.combos.map(c => (
-              <div key={c.fils} style={{ color: 'var(--app-text-muted)' }}>
-                {c.up > 0 && `👍 ${c.up}× `}
-                {c.down > 0 && `👎 ${c.down}× `}
-                {c.fils}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+
+      {models.length > 0 && (
+        <div className="space-y-1.5">
+          <Label>Modelle</Label>
+          {models.slice(0, 8).map(m => (
+            <div key={m.model} className="rounded-xl border p-2 space-y-1" style={{ borderColor: 'var(--app-border)' }}>
+              <div className="text-[11px] font-extrabold truncate">{m.name}</div>
+              {m.combos.map(c => (
+                <div key={c.fils} className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--app-text-muted)' }}>
+                  <span className="flex-1 truncate">{c.fils}</span>
+                  <Votes up={c.up} down={c.down} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
       {open.length > 0 && (
         <div className="space-y-1.5">
-          <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--app-text-muted)' }}>
-            Noch nicht bewertet
-          </div>
+          <Label>Noch nicht bewertet</Label>
           {open.map(e => (
-            <div key={e.h} className="flex items-center gap-2 text-[11px]">
-              <span className="flex-1 truncate">
-                {e.name}
-                {e.fils.length > 0 && <span style={{ color: 'var(--app-text-muted)' }}> · {e.fils.join(' + ')}</span>}
-              </span>
-              <button aria-label="Lief gut" className="p-1.5 rounded-lg border cursor-pointer" style={{ borderColor: 'var(--app-border)' }} onClick={() => void rate(e.h, true)}>
-                <ThumbsUp className="w-3.5 h-3.5" />
+            <div key={e.h} className="flex items-center gap-2 rounded-xl border p-2 text-[11px]" style={{ borderColor: 'var(--app-border)' }}>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold truncate">{e.name}</div>
+                {e.fils.length > 0 && (
+                  <div className="truncate" style={{ color: 'var(--app-text-muted)' }}>
+                    {e.fils.join(' + ')}
+                  </div>
+                )}
+              </div>
+              <button aria-label="Lief gut" className="p-2 rounded-lg border cursor-pointer text-emerald-400 hover:bg-emerald-500/10" style={{ borderColor: 'var(--app-border)' }} onClick={() => void rate(e.h, true)}>
+                <ThumbsUp className="w-4 h-4" />
               </button>
-              <button aria-label="Lief schlecht" className="p-1.5 rounded-lg border cursor-pointer" style={{ borderColor: 'var(--app-border)' }} onClick={() => void rate(e.h, false)}>
-                <ThumbsDown className="w-3.5 h-3.5" />
+              <button aria-label="Lief schlecht" className="p-2 rounded-lg border cursor-pointer text-rose-400 hover:bg-rose-500/10" style={{ borderColor: 'var(--app-border)' }} onClick={() => void rate(e.h, false)}>
+                <ThumbsDown className="w-4 h-4" />
               </button>
             </div>
           ))}
