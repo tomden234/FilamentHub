@@ -11,6 +11,7 @@ import { publishImage } from './esphome.js';
 import { type Fil, access, deductActive, durText, getHubConfig, hubEnabled, mainSlotOf, port, push, saveState, sleep, state, traysOf, updateHubConfig } from './core.js';
 import { lastJpeg, readPhoto, takePhoto } from './photo.js';
 import { statsGrams, statsPrint, type StatGram } from './printStats.js';
+import { ratingForEnd } from './rating.js';
 
 /** Gramm je Material und Farbe für das Dauer-Protokoll (Fun Facts) */
 const gramsOf = (parts: Part[], spools: any[]): StatGram[] =>
@@ -108,7 +109,18 @@ async function pushEnd(rec: RecordedPrint): Promise<void> {
   const image = m.photo && lastJpeg ? publishImage(lastJpeg, `${crypto.randomBytes(8).toString('hex')}.jpg`) || undefined : undefined;
   if (rec.state === 'FINISH') {
     const extra = m.deduct === 'done' && m.texts?.length ? `\nAbgezogen: ${m.texts.join(', ')}` : m.deduct === 'ask' ? '\nBitte in der App bestätigen: Spule abziehen?' : '';
-    await push('done', '✅ Druck fertig', `${rec.name} · ${dur}${extra}`, { tag: `print-${rec.id}`, image });
+    // 1.280: 👍/👎 + was bei diesem Modell früher gut oder schlecht lief
+    let actions: { action: string; title: string }[] | undefined;
+    let hint = '';
+    try {
+      const fils = m.fils?.length ? m.fils : m.trays?.filter(t => !t.empty && t.slot === mainSlotOf(rec.slots)).map(t => t.type) || [];
+      const r = ratingForEnd({ id: rec.id, name: rec.name, fils });
+      actions = r.actions;
+      hint = r.hint ? `\n${r.hint}` : '';
+    } catch {
+      /* ohne Knöpfe weiter */
+    }
+    await push('done', '✅ Druck fertig', `${rec.name} · ${dur}${extra}${hint}`, { tag: `print-${rec.id}`, image, actions });
   } else {
     await push('failed', '❌ Druck abgebrochen', `${rec.name} bei ${rec.percent} % · ${dur}\nIn der App: Spule anteilig abziehen?`, { tag: `print-${rec.id}`, image });
   }
@@ -247,6 +259,17 @@ async function tryDeductOnce(rec: RecordedPrint): Promise<void> {
     if (!res) return;
     const { r, parts, before } = res;
     console.log(`[Hub] Abgezogen: ${rec.name}: ${r.texts.join(', ')}`);
+    try {
+      const mm = state().prints[rec.id];
+      if (mm)
+        mm.fils = parts
+          .map(pt => r.doc.spools.find((x: any) => x.id === pt.spoolId))
+          .filter(Boolean)
+          .map((sp: any) => `${sp.brand || ''} ${sp.material || ''} ${sp.colorName || ''}`.replace(/\s+/g, ' ').trim());
+      saveState();
+    } catch {
+      /* 👍/👎 ist nur Zugabe */
+    }
     try {
       statsGrams(rec, gramsOf(parts, r.doc.spools as any[]));
     } catch {

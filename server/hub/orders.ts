@@ -10,6 +10,7 @@ import { access, hubEnabled, push } from './core.js';
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { withCloudLock } from './deduct.js';
 import { geminiJson, geminiReady } from './gemini.js';
+import { confirmArrival } from '../../src/utils/incoming.js';
 import { applyCatalogToSpools, learnCatalog, readCatalog } from './productLink.js';
 
 export type OrderKind = 'ordered' | 'shipped' | 'delivered';
@@ -172,6 +173,8 @@ export interface ApplyResult {
   doc: any;
   added: number;
   arrived: string[];
+  /** Bestellnummern der gerade zugestellten Spulen (für den Knopf „Habe ich“) */
+  arrivedOrders?: string[];
   /** Zustellung ohne passende Bestellung: wird nie neu angelegt (sonst doppelte Spulen) */
   unmatched: number;
   changed: boolean;
@@ -206,6 +209,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
   let unmatched = 0;
   let changed = false;
   const arrived: string[] = [];
+  const arrivedOrders: string[] = [];
   for (const it of o.items) {
     for (let n = 0; n < it.quantity; n++) {
       const key = `${o.orderId}:${itemIdent(it)}:${n}`;
@@ -225,6 +229,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
         if (spools[idx].incoming.status === 'delivered') continue;
         spools[idx] = { ...spools[idx], incoming: { ...spools[idx].incoming, status: 'delivered' } };
         arrived.push(`${it.brand} ${it.name}`);
+        if (!arrivedOrders.includes(o.orderId)) arrivedOrders.push(o.orderId);
         changed = true;
       } else if (idx >= 0) {
         const cur = spools[idx].incoming;
@@ -245,7 +250,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
       }
     }
   }
-  return { doc: changed ? { ...doc, spools } : doc, added, arrived, unmatched, changed };
+  return { doc: changed ? { ...doc, spools } : doc, added, arrived, arrivedOrders, unmatched, changed };
 }
 
 // ---------- Eine Mail verarbeiten (ohne Netz testbar) ----------
@@ -253,7 +258,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
 export interface MailDeps {
   extract: (from: string, subject: string, text: string, products: { asin: string; label: string }[]) => Promise<ParsedOrder | null>;
   apply: (o: ParsedOrder) => Promise<ApplyResult>;
-  notify: (title: string, message: string, tag: string) => Promise<unknown>;
+  notify: (title: string, message: string, tag: string, actions?: { action: string; title: string }[]) => Promise<unknown>;
   /** Alte Bestellung (als Anhang weitergeleitet): nur Produkte + Links lernen, keine Spulen anlegen */
   learn: (o: ParsedOrder) => Promise<number>;
 }
@@ -311,7 +316,7 @@ export async function processMail(source: Uint8Array | Buffer, seen: string[], d
   await deps.learn(order);
   const res = await deps.apply(order);
   const tag = `order-${order.orderId}`;
-  if (order.kind === 'delivered' && res.arrived.length) await deps.notify('📦 Filament zugestellt', `${res.arrived.join(', ')}. In der App bestätigen, wenn du die Spule hast.`, tag);
+  if (order.kind === 'delivered' && res.arrived.length) await deps.notify('📦 Spule ist da?', `${res.arrived.join(', ')}. Hast du sie in der Hand?`, tag, orderActions(order.orderId));
   else if (order.kind === 'ordered' && res.added) await deps.notify('🛒 Bestellung erkannt', `${res.added} Spule(n) als „Bestellt“ angelegt.`, tag);
   else if (order.kind === 'shipped' && res.added) await deps.notify('🚚 Versand erkannt', `${res.added} Spule(n) als „Unterwegs“ angelegt.`, tag);
   return { outcome: 'applied', id, added: res.added, arrived: res.arrived.length };
@@ -368,7 +373,7 @@ const deps = (): MailDeps => ({
       if (r.changed) await saveDoc(access(), r.doc);
       return r;
     }),
-  notify: (title, message, tag) => push('done', title, message, { tag }),
+  notify: (title, message, tag, actions) => push('done', title, message, { tag, ...(actions ? { actions } : {}) }),
   learn: async o => {
     const n = learnCatalog(o.items);
     // Gelernte Links gleich an passende Spulen ohne Produktseite schreiben
@@ -502,4 +507,81 @@ export async function testOrderExtraction(): Promise<{ ok: boolean; text: string
   } catch (e) {
     return { ok: false, text: (e as Error).message.slice(0, 160) };
   }
+}
+
+// ---------- 1.280: Lieferstatus-Push mit Knopf ----------
+const orderHash = (orderId: string) => crypto.createHash('sha1').update(orderId).digest('hex').slice(0, 12);
+export const orderActions = (orderId: string) => [
+  { action: `FH_O_HAVE_${orderHash(orderId)}`, title: '✅ Habe ich' },
+  { action: `FH_O_LATER_${orderHash(orderId)}`, title: '⏳ Noch nicht' }
+];
+
+/** Zugestellte Spulen einer Bestellung zu normalen Spulen machen (rein, testbar) */
+export function confirmOrder(doc: any, h: string): { doc: any; names: string[] } {
+  const names: string[] = [];
+  const spools = (Array.isArray(doc?.spools) ? doc.spools : []).map((s: any) => {
+    if (s?.incoming?.status !== 'delivered' || orderHash(String(s.incoming.orderId)) !== h) return s;
+    names.push(`${s.brand || ''} ${s.name || ''}`.trim());
+    return confirmArrival(s);
+  });
+  return { doc: names.length ? { ...doc, spools } : doc, names };
+}
+
+/** Knopf „Habe ich“ / „Noch nicht“ in der Zustell-Meldung */
+export function onOrderAction(ev: { event_type: string; data: any }): void {
+  if (!hubEnabled() || ev.event_type !== 'mobile_app_notification_action') return;
+  const m = String(ev.data?.action || '').match(/^FH_O_(HAVE|LATER)_([0-9a-f]{12})$/);
+  if (!m) return;
+  void (async () => {
+    try {
+      if (m[1] === 'LATER') return void (await push('done', '⏳ Okay', 'Die Spule bleibt als „zugestellt“ markiert. Bestätige sie später in der App.', { tag: `order-${m[2]}` }));
+      const names = await withCloudLock(async () => {
+        const doc = await loadDoc(access());
+        const r = confirmOrder(doc, m[2]);
+        if (r.names.length) await saveDoc(access(), r.doc);
+        return r.names;
+      });
+      await push('done', names.length ? '✅ Spule ist da' : 'ℹ️ Nichts zu tun', names.length ? `${names.join(', ')} ist jetzt in deinem Bestand.` : 'Diese Lieferung ist schon bestätigt.', { tag: `order-${m[2]}` });
+    } catch (e) {
+      console.warn('[Orders] Knopf:', (e as Error)?.message || e);
+    }
+  })();
+}
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Spulen, die morgen kommen und noch nicht gemeldet wurden (rein, testbar) */
+export function dueTomorrow(spools: any[], now = new Date()): number[] {
+  const t = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const out: number[] = [];
+  spools.forEach((s, i) => {
+    const inc = s?.incoming;
+    if (inc && inc.status !== 'delivered' && inc.eta === t && inc.etaPushed !== t) out.push(i);
+  });
+  return out;
+}
+
+/** Einmal pro Spule: „kommt morgen“ (tagsüber, nachts nie) */
+export async function etaTick(now = new Date()): Promise<void> {
+  if (!hubEnabled() || !cloudReady(access()) || now.getHours() < 8 || now.getHours() >= 20) return;
+  try {
+    const names = await withCloudLock(async () => {
+      const doc = await loadDoc(access());
+      const spools: any[] = Array.isArray(doc?.spools) ? [...doc.spools] : [];
+      const idx = dueTomorrow(spools, now);
+      if (!idx.length) return [];
+      for (const i of idx) spools[i] = { ...spools[i], incoming: { ...spools[i].incoming, etaPushed: spools[i].incoming.eta } };
+      await saveDoc(access(), { ...doc, spools });
+      return idx.map(i => `${spools[i].brand || ''} ${spools[i].name || ''}`.trim());
+    });
+    if (names.length) await push('done', '🚚 Spule kommt morgen', `${names.join(', ')}. Platz im Regal frei?`, { tag: 'order-eta' });
+  } catch (e) {
+    console.warn('[Orders] Lieferdatum:', (e as Error)?.message || e);
+  }
+}
+
+export function startOrderPush(): void {
+  if (!hubEnabled()) return;
+  setTimeout(() => void etaTick(), 90_000).unref();
+  setInterval(() => void etaTick(), 30 * 60_000).unref();
 }

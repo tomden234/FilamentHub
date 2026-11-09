@@ -3853,5 +3853,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.281',
+    label: '1.281 (Lieferstatus-Push & 👍/👎 nach dem Druck)',
+    releaseDate: '09.11.2026',
+    description:
+      'Lieferstatus: Push „Spule kommt morgen“ (einmal pro Spule, nur tagsüber). Bei „zugestellt“ kommt „Spule ist da?“ mit Knopf „Habe ich“: der Pi macht die Spule direkt zur normalen Spule im Bestand (oder „Noch nicht“). Nach dem Druck: „Druck fertig“ hat jetzt 👍 Lief gut / 👎 Lief schlecht. Der Pi merkt sich Modell + Filament + Urteil und schreibt beim nächsten Druck desselben Modells dazu, womit es gut oder schlecht lief. Pi-Add-on 1.3.37.',
+    features: ['🚚 Push „kommt morgen“', '✅ Knopf „Habe ich“ in der Zustell-Meldung', '👍👎 Bewertung nach dem Druck', '🥧 Pi-Add-on 1.3.37 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

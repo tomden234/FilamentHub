@@ -139,6 +139,8 @@ interface PrintMeta {
   lastTry: number;
   reason?: string;
   texts?: string[];
+  /** Filament-Namen dieses Drucks (Marke Material Farbe), für 👍/👎 */
+  fils?: string[];
   parts?: Part[];
   photo: boolean;
   pushed: boolean;

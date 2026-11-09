@@ -10,6 +10,7 @@
 import { ledGuard } from './ledGuard.js';
 import { cloudReady } from './cloud.js';
 import { haAvailable, haListen } from './ha.js';
+import { onRatingAction } from './rating.js';
 import { attachQueue, autoScanTick, onHaEvent as queueEvent, onQueueAction, refreshLeds } from './queue.js';
 import { espInfo as espInfoFn } from './esphome.js';
 import { type PrinterPort, access, deductActive, getHubConfig, hubEnabled, lastPush, port, powerActive, setPort, push, state } from './core.js';
@@ -17,7 +18,7 @@ import { retryDeducts, tryDeduct } from './deduct.js';
 import { autoOff, dryOff, rt } from './power.js';
 import { energyTick, energyWeeks, errorWatch, espTick, goneWatch, onAction, watchPrint, weeklyTick } from './watch.js';
 import { dailyBackup, listBackups } from './backup.js';
-import { startOrderMail } from './orders.js';
+import { onOrderAction, startOrderMail, startOrderPush } from './orders.js';
 import { startProductLinks } from './productLink.js';
 
 // Öffentliche Schnittstelle des Hubs (Routen, bambuMqtt, Tests): alles weiter über hub.js erreichbar
@@ -36,11 +37,14 @@ export function attachPrinter(p: PrinterPort): void {
       queueEvent(ev);
       onAction(ev);
       onQueueAction(ev);
+      onRatingAction(ev);
+      onOrderAction(ev);
     });
     setTimeout(() => refreshLeds(), 20_000);
     // Neue Dateien aus Bambu Studio suchen: 1.231 alle 20-60 s statt alle 3 s (schont den Drucker), bei Änderung am Drucker sofort
     setInterval(() => void autoScanTick(), 5_000).unref();
     startOrderMail();
+    startOrderPush();
     startProductLinks();
   }
 }
