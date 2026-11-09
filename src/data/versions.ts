@@ -3721,5 +3721,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.269',
+    label: '1.269 (Foto-Erkennung schneller)',
+    releaseDate: '09.11.2026',
+    description:
+      'Foto-Erkennung dauerte sehr lange. Der Pi nimmt jetzt zuerst das schnelle Modell Gemini 3.5 Flash-Lite (ein Etikett lesen braucht kein großes Modell) und erst danach den Alias gemini-flash-latest. Im Pi-Protokoll steht, wie lange die Erkennung gedauert hat. Pi-Add-on 1.3.25 (muss aktualisiert werden).',
+    features: ['⚡ Foto-Erkennung mit schnellem Modell', '⏱️ Dauer im Pi-Protokoll', '🥧 Pi-Add-on 1.3.25 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

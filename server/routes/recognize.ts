@@ -42,18 +42,20 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON ohne Markdown-Codeblöcke.
 
     // 1.231: Ohne Schlüssel ehrlich „nicht verfügbar“ (vorher kam eine erfundene ELEGOO-Erkennung mit 85 %)
     if (!ai) return res.status(503).json({ success: false, offline: true, error: 'Foto-Erkennung ist nicht eingerichtet (kein GEMINI_API_KEY).' });
-    // 1.267: „gemini-3.8-flash“ gibt es nicht. Erst der Alias auf das neueste Flash-Modell, dann feste Namen als Reserve.
-    const models = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
+    // 1.267: „gemini-3.8-flash“ gibt es nicht. 1.269: erst das schnelle Flash-Lite (Etikett lesen braucht kein großes Modell), dann Alias und feste Namen als Reserve.
+    const models = [process.env.GEMINI_MODEL, 'gemini-3.5-flash-lite', 'gemini-flash-latest', 'gemini-3.6-flash'].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
     const mime = typeof mimeType === 'string' && /^image\/(jpeg|png|webp|heic)$/.test(mimeType) ? mimeType : 'image/jpeg';
     let response: Awaited<ReturnType<typeof ai.models.generateContent>> | null = null;
     let lastErr: any = null;
     for (const model of models) {
+      const t0 = Date.now();
       try {
         response = await ai.models.generateContent({
           model,
           contents: [{ role: 'user', parts: [{ inlineData: { data: cleanBase64, mimeType: mime } }, { text: promptText }] }],
           config: { responseMimeType: 'application/json' }
         });
+        console.log(`Gemini ${model} fertig in ${Math.round((Date.now() - t0) / 100) / 10} s`);
         break;
       } catch (e: any) {
         lastErr = e;

@@ -43,6 +43,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.25
+
+- **Foto-Erkennung schneller**: Der Pi nimmt zuerst das schnelle Modell Gemini 3.5 Flash-Lite. Im Protokoll steht jetzt, wie lange die Erkennung gedauert hat („Gemini … fertig in … s“).
+
 ## Neu in 1.3.24
 
 - **Foto-Erkennung**: Ist das Gemini-Guthaben leer (Code 402), sagt die App das jetzt klar und nennt den Ausweg.
