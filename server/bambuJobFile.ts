@@ -85,6 +85,8 @@ export interface JobSetup {
   bed: string;
   /** Düsendurchmesser in mm, je Extruder (leer = unbekannt) */
   nozzles: number[];
+  /** 1.273: Düsentemperatur je Filament der Datei (Reihenfolge = Filament-Nummer, leer = unbekannt) */
+  temps: number[];
 }
 
 const BEDS: [RegExp, string][] = [
@@ -107,9 +109,11 @@ export function parseSetup(json: string): JobSetup {
     const raw = j?.curr_bed_type ?? j?.bed_type ?? '';
     const nd = Array.isArray(j?.nozzle_diameter) ? j.nozzle_diameter : j?.nozzle_diameter != null ? [j.nozzle_diameter] : [];
     const nozzles = nd.map((x: unknown) => Math.round(parseFloat(String(x)) * 100) / 100).filter((x: number) => x > 0 && x < 3);
-    return { bed: bedLabel(String(raw)), nozzles };
+    const tr = Array.isArray(j?.nozzle_temperature) ? j.nozzle_temperature : [];
+    const temps = tr.map((x: unknown) => Math.round(parseFloat(String(x)))).map((x: number) => (x >= 150 && x <= 400 ? x : 0));
+    return { bed: bedLabel(String(raw)), nozzles, temps: temps.some((x: number) => x > 0) ? temps : [] };
   } catch {
-    return { bed: '', nozzles: [] };
+    return { bed: '', nozzles: [], temps: [] };
   }
 }
 
@@ -119,7 +123,7 @@ export function setupFromThreeMf(data: Uint8Array): JobSetup | null {
   const key = Object.keys(files).find(k => k.toLowerCase().endsWith('project_settings.config'));
   if (!key) return null;
   const r = parseSetup(strFromU8(files[key]));
-  return r.bed || r.nozzles.length ? r : null;
+  return r.bed || r.nozzles.length || r.temps.length ? r : null;
 }
 
 /** Aus den Bytes einer .3mf das Gewicht lesen */

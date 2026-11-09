@@ -8,7 +8,7 @@ import { useBackLayer } from '../utils/backNav';
 import { generateAutoShopUrl } from '../utils/shopLinks';
 import { safeHttpUrl } from '../utils/safeData';
 import { fmtDur } from '../utils/printTimeFmt';
-import { piPrinterFiles, piQueueAction, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
+import { piPrinterFiles, piQueueAction, piQueueOptimize, type PiQueuePlan, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
 
@@ -274,6 +274,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
   const [files, setFiles] = useState<PrinterFile[] | null>(null);
   const [filesBusy, setFilesBusy] = useState(false);
   const [fileQuery, setFileQuery] = useState('');
+  const [plan, setPlan] = useState<PiQueuePlan | null>(null);
 
   const count = items ? items.length : 0;
   // Esc und Zurück schließen das Fach (wie die anderen Fenster: immer nur eine Ebene)
@@ -312,6 +313,23 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     setMsg(null);
     const r = await piQueueAction('remove', { project });
     if (r.items) setItems(r.items);
+    setBusy(false);
+  };
+
+  // 1.273: Smart sortieren: erst Vorschlag zeigen, dann auf Wunsch übernehmen
+  const optimizeQueue = async (apply: boolean) => {
+    setBusy(true);
+    setMsg(null);
+    const r = await piQueueOptimize(apply);
+    if (r.items.length) setItems(r.items);
+    if (!r.ok || !r.plan) setMsg({ ok: false, text: r.text || 'Fehler' });
+    else if (apply) {
+      setPlan(null);
+      setMsg({ ok: true, text: 'Neu sortiert.' });
+    } else if (!r.plan.changed) {
+      setPlan(null);
+      setMsg({ ok: true, text: 'Schon gut sortiert, nichts zu verbessern.' });
+    } else setPlan(r.plan);
     setBusy(false);
   };
 
@@ -358,6 +376,11 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
         <div className="flex items-center gap-2 px-3 py-3 border-b" style={{ borderColor: 'var(--app-border)' }}>
           <ListOrdered className="w-4 h-4 text-emerald-400" />
           <span className="text-sm font-extrabold flex-1">Warteschlange ({items.length})</span>
+          {items.length > 1 && (
+            <button disabled={busy} onClick={() => void optimizeQueue(false)} className="p-1.5 rounded-lg cursor-pointer disabled:opacity-40" title="Smart sortieren: wenig Platten- und Spulenwechsel, lange Drucke nachts" aria-label="Smart sortieren">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+            </button>
+          )}
           <button disabled={busy} onClick={() => void act('refresh')} className="p-1.5 rounded-lg cursor-pointer disabled:opacity-40" title="Auf dem Drucker nach neuen Dateien suchen" aria-label="Aktualisieren">
             <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} />
           </button>
@@ -367,6 +390,27 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
         </div>
 
         <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2">
+          {plan && (
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px]" role="status">
+              <div className="font-extrabold text-amber-400">Vorschlag: smart sortiert</div>
+              <div className="mt-0.5">{plan.reasons.length ? plan.reasons.join(' · ') : 'Bessere Reihenfolge'}</div>
+              <ol className="mt-1.5 list-decimal pl-4 space-y-0.5" style={{ color: 'var(--app-text-muted)' }}>
+                {plan.names.map((n, k) => (
+                  <li key={plan.order[k]} className="truncate">
+                    {n}
+                  </li>
+                ))}
+              </ol>
+              <div className="flex gap-2 mt-2">
+                <button disabled={busy} onClick={() => void optimizeQueue(true)} className="px-3 py-1 rounded-lg font-bold bg-amber-500 text-black disabled:opacity-40">
+                  Übernehmen
+                </button>
+                <button disabled={busy} onClick={() => setPlan(null)} className="px-3 py-1 rounded-lg font-bold border" style={{ borderColor: 'var(--app-border)' }}>
+                  Verwerfen
+                </button>
+              </div>
+            </div>
+          )}
           {items.length === 0 ? (
             <p className="text-xs leading-snug" style={{ color: 'var(--app-text-muted)' }}>
               Leer. In Bambu Studio „Senden“ drücken: die Datei kommt nach wenigen Sekunden hierher.
@@ -447,6 +491,18 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                   </div>
                 )}
                 {it.missing.length > 0 && <div className="text-[10px] text-amber-400 mt-1.5">Im AMS fehlt: {it.missing.join(', ')}</div>}
+                {it.enough && it.enough.some(e => e.tempNote) && (
+                  <div className="mt-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-400" role="alert">
+                    <div className="font-bold">Temperatur passt nicht</div>
+                    {it.enough
+                      .filter(e => e.tempNote)
+                      .map(e => (
+                        <div key={e.id}>
+                          {e.spoolLabel}: {e.tempNote}
+                        </div>
+                      ))}
+                  </div>
+                )}
                 {it.enough && it.enough.some(e => !e.ok) && (
                   <div className="mt-2 space-y-1.5" role="alert">
                     {it.enough

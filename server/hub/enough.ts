@@ -12,6 +12,8 @@ export interface EnoughSpool {
   colorName?: string;
   productUrl?: string;
   remainingWeight: number;
+  /** Beste Düsentemperatur laut Spule (°C) */
+  nozzleTemp?: number;
 }
 
 /** Angaben für den Kauf-Link der App */
@@ -44,11 +46,15 @@ export interface EnoughInfo {
   /** Fehlbetrag in g (0 = reicht) */
   missing: number;
   alternatives: EnoughAlt[];
+  /** 1.273: Temperatur der Datei weicht stark von der Spule ab (Profil in Studio prüfen) */
+  tempNote?: string;
   /** Nur wenn es nicht reicht: Angaben zum Nachkaufen derselben Spule */
   buy?: EnoughBuy;
 }
 
 export const BUFFER = 1.1;
+/** Abweichung (°C) zwischen Datei und Spule, ab der gewarnt wird */
+export const TEMP_DIFF = 15;
 /** Farbabstand (0-441), bis zu dem eine Ersatzspule noch „ähnlich“ gilt */
 export const ALT_COLOR_MAX = 60;
 
@@ -72,6 +78,8 @@ export function checkEnough(i: {
   /** Platz-Nummer → Spulen-ID (aus der App) */
   amsSlots: Record<string, string>;
   spools: EnoughSpool[];
+  /** 1.273: Düsentemperatur je Filament der Datei (Index = Filament-Nummer − 1) */
+  temps?: number[];
 }): EnoughInfo[] {
   // Gramm je Spule zusammenzählen: zwei Filamente der Datei können dieselbe Spule nutzen
   const sums = new Map<string, number>();
@@ -85,6 +93,9 @@ export function checkEnough(i: {
   }
   return i.filaments.map(f => {
     const sp = spoolOf.get(f.id);
+    const ft = Number(i.temps?.[f.id - 1]) || 0;
+    const st = Number(sp?.nozzleTemp) || 0;
+    const tempNote = ft && st && Math.abs(ft - st) >= TEMP_DIFF ? `Datei ${ft} °C, Spule will ${st} °C (Profil in Studio prüfen)` : undefined;
     if (!sp) return { id: f.id, need: Math.round(f.grams * BUFFER), have: null, ok: true, spoolId: '', spoolLabel: '', missing: 0, alternatives: [] };
     const need = Math.round((sums.get(sp.id) || 0) * BUFFER);
     const have = Math.round(Number(sp.remainingWeight) || 0);
@@ -96,7 +107,7 @@ export function checkEnough(i: {
           .sort((a, b) => a.remainingWeight - b.remainingWeight)
           .slice(0, 3)
           .map(s => ({ id: s.id, label: label(s), remaining: Math.round(s.remainingWeight), colorHex: s.colorHex || '#888888' }));
-    return { id: f.id, need, have, ok, spoolId: sp.id, spoolLabel: label(sp), missing: ok ? 0 : need - have, alternatives, ...(ok ? {} : { buy: { brand: String(sp.brand || ''), material: String(sp.material || ''), name: String(sp.name || ''), colorName: String(sp.colorName || ''), url: String(sp.productUrl || '') } }) };
+    return { id: f.id, need, have, ok, spoolId: sp.id, spoolLabel: label(sp), missing: ok ? 0 : need - have, alternatives, ...(tempNote ? { tempNote } : {}), ...(ok ? {} : { buy: { brand: String(sp.brand || ''), material: String(sp.material || ''), name: String(sp.name || ''), colorName: String(sp.colorName || ''), url: String(sp.productUrl || '') } }) };
   });
 }
 

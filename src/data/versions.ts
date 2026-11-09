@@ -3765,5 +3765,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.273',
+    label: '1.273 (Smart sortieren & Temperatur-Wächter)',
+    releaseDate: '09.11.2026',
+    description:
+      'Warteschlange: Neuer Knopf ✨ „Smart sortieren“. Der Pi schlägt eine neue Reihenfolge vor: gleiche Druckplatte hintereinander, wenige Düsen- und Spulenwechsel, lange Drucke (ab 3 Stunden) möglichst in die Nacht (Wachzeit 7 bis 22 Uhr, mit der berechneten Zeit aus 1.271). Du siehst erst die Begründung („Plattenwechsel 3 → 1“) und die neue Liste, dann „Übernehmen“ oder „Verwerfen“. Platten eines Projekts bleiben zusammen und in Reihenfolge. Ist die Liste schon gut, ändert sich nichts. Temperatur-Wächter: Die Düsentemperatur aus der Datei wird mit der Temperatur an der Spule im Platz verglichen. Ab 15 °C Unterschied wird die Karte gelb („Datei 220 °C, Spule will 245 °C, Profil in Studio prüfen“). Neue Datei server/hub/queueOptimize.ts. Pi-Add-on 1.3.29.',
+    features: ['✨ Smart sortieren mit Vorschau und Begründung', '🌙 Lange Drucke in die Nacht', '🌡️ Temperatur-Wächter: Datei gegen Spule', '🥧 Pi-Add-on 1.3.29 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

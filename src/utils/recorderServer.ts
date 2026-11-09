@@ -431,6 +431,8 @@ export interface PiQueueEnough {
   missing: number;
   alternatives: { id: string; label: string; remaining: number; colorHex: string }[];
   buy?: { brand: string; material: string; name: string; colorName: string; url: string };
+  /** 1.273: Temperatur der Datei weicht von der Spule ab */
+  tempNote?: string;
 }
 
 export interface PiQueueSlot {
@@ -527,6 +529,22 @@ export async function piPrinterFiles(): Promise<{ files: PrinterFile[]; error?: 
     return j?.success ? { files: j.files || [] } : { files: [], error: j?.error || 'Fehler' };
   } catch (e: any) {
     return { files: [], error: String(e?.message || e) };
+  }
+}
+
+/** 1.273: Smart sortieren (apply=false: nur Vorschlag) */
+export interface PiQueuePlan {
+  order: string[];
+  names: string[];
+  changed: boolean;
+  reasons: string[];
+}
+export async function piQueueOptimize(apply: boolean): Promise<{ ok: boolean; plan?: PiQueuePlan; text?: string; items: PiQueueItem[] }> {
+  try {
+    const j = await get('/api/hub/queue/optimize', { method: 'POST', body: { apply }, timeoutMs: 30000 });
+    return { ok: Boolean(j?.success), plan: j?.plan, text: j?.error, items: Array.isArray(j?.items) ? j.items : [] };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e), items: [] };
   }
 }
 

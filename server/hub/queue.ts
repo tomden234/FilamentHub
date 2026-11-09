@@ -12,7 +12,8 @@ import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { readLocalDoc } from './localDoc.js';
 import { loadFactors, mainMaterial, timeInfo, type TimeInfo } from './printTime.js';
-import { setupInfo, type SetupInfo } from './setupCheck.js';
+import { filamentKey, optimize, type OptItem, type OptPlan } from './queueOptimize.js';
+import { nozzleText, setupInfo, type SetupInfo } from './setupCheck.js';
 import { checkEnough, enoughLines, type EnoughInfo } from './enough.js';
 
 export interface QueueItem {
@@ -31,6 +32,8 @@ export interface QueueItem {
   /** 1.270: Druckplatte und Düse(n), die die Datei braucht */
   bed?: string;
   nozzles?: number[];
+  /** 1.273: Düsentemperatur je Filament der Datei */
+  temps?: number[];
   /** 1.271: Druckzeit laut Slicer in Sekunden */
   predSec?: number;
   /** 1.272: gehört zu einer Datei mit mehreren Platten (id = gemeinsame Kennung, total = Anzahl Platten, part = Nummer) */
@@ -250,7 +253,7 @@ function slotChoices(it: QueueItem, m: Mapping): SlotChoice[] {
 function enoughFor(it: QueueItem, m: Mapping): EnoughInfo[] {
   try {
     const spools = readLocalDoc().doc.spools;
-    return checkEnough({ filaments: it.filaments, chosen: m.chosen, amsSlots: getHubConfig().amsSlots || {}, spools: Array.isArray(spools) ? (spools as any[]) : [] });
+    return checkEnough({ filaments: it.filaments, chosen: m.chosen, amsSlots: getHubConfig().amsSlots || {}, spools: Array.isArray(spools) ? (spools as any[]) : [], temps: it.temps });
   } catch {
     return [];
   }
@@ -324,6 +327,7 @@ function makeItem(r: JobRead, filePath: string, plate: { plate: number; filament
     addedAt: Date.now(),
     bed: r.setup?.bed || undefined,
     nozzles: r.setup?.nozzles?.length ? r.setup.nozzles : undefined,
+    temps: r.setup?.temps?.length ? r.setup.temps : undefined,
     predSec: plate.predSec,
     project
   };
@@ -594,6 +598,28 @@ export function queueReorder(order: string[]): void {
   items = next;
   save();
   void showLeds(0);
+}
+
+/** 1.273: Smart sortieren. apply=false zeigt nur den Vorschlag, apply=true übernimmt ihn. Der erste Eintrag ist der nächste Druck und wird mit einbezogen. */
+export function queueOptimize(apply: boolean): OptPlan & { names: string[] } {
+  const list = load();
+  const pd = printerData();
+  const running = ['RUNNING', 'PAUSE', 'PREPARE'].includes(String(pd.gcode_state || ''));
+  const start = Date.now() + (running ? Math.max(0, Number(pd.mc_remaining_time) || 0) * 60_000 : 0);
+  const factors = loadFactors();
+  const opt: OptItem[] = list.map(it => ({
+    id: it.id,
+    bed: it.bed || '',
+    nozzle: it.nozzles?.length ? nozzleText(it.nozzles) : '',
+    keys: it.filaments.map(f => filamentKey(f.type, f.colorHex)),
+    sec: it.predSec ? timeInfo(it.predSec, mainMaterial(it.filaments), factors).calcSec : 0,
+    project: it.project?.id,
+    part: it.project?.part
+  }));
+  const plan = optimize(opt, start);
+  const byId = new Map(list.map(x => [x.id, x]));
+  if (apply && plan.changed) queueReorder(plan.order);
+  return { ...plan, names: plan.order.map(id => byId.get(id)?.name || '') };
 }
 
 export function queueMove(id: string, dir: -1 | 1): void {

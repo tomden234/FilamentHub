@@ -3,7 +3,7 @@ import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHub
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
-import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueList, queueMove, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
+import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueList, queueMove, queueOptimize, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -212,6 +212,11 @@ router.post('/api/hub/queue/remove', (req, res) => {
   if (req.body?.project) queueRemoveProject(String(req.body.project));
   else queueRemove(String(req.body?.id || ''));
   res.json({ success: true, items: queueList() });
+});
+
+router.post('/api/hub/queue/optimize', (req, res) => {
+  const plan = queueOptimize(Boolean(req.body?.apply));
+  res.json({ success: true, plan, items: queueList() });
 });
 
 router.post('/api/hub/queue/pick', (req, res) => {
