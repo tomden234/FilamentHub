@@ -10,6 +10,7 @@ import { access, hubEnabled, push } from './core.js';
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { withCloudLock } from './deduct.js';
 import { geminiJson, geminiReady } from './gemini.js';
+import { applyCatalogToSpools, learnCatalog, readCatalog } from './productLink.js';
 
 export type OrderKind = 'ordered' | 'shipped' | 'delivered';
 export interface OrderItem {
@@ -253,25 +254,61 @@ export interface MailDeps {
   extract: (from: string, subject: string, text: string, products: { asin: string; label: string }[]) => Promise<ParsedOrder | null>;
   apply: (o: ParsedOrder) => Promise<ApplyResult>;
   notify: (title: string, message: string, tag: string) => Promise<unknown>;
+  /** Alte Bestellung (als Anhang weitergeleitet): nur Produkte + Links lernen, keine Spulen anlegen */
+  learn: (o: ParsedOrder) => Promise<number>;
 }
 export interface MailOutcome {
-  outcome: 'skipped' | 'duplicate' | 'other' | 'applied';
+  outcome: 'skipped' | 'duplicate' | 'other' | 'applied' | 'learned';
   id: string;
   added: number;
   arrived: number;
+  /** Aus weitergeleiteten alten Bestellungen gelernte Produkte */
+  learned?: number;
+  /** IDs angehängter Mails, die erledigt sind */
+  done?: string[];
 }
 
-/** Wirft bei Netz-/Gemini-Fehlern: dann bleibt die Mail ungelesen und wird beim nächsten Takt noch mal versucht. */
+const mailId = (m: any, fallback: string) => crypto.createHash('sha1').update(String(m?.messageId || fallback)).digest('hex').slice(0, 16);
+const mailText = (m: any) => String(m?.text || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+const mailHtml = (m: any) => (typeof m?.html === 'string' ? m.html : '');
+
+/**
+ * Wirft bei Netz-/Gemini-Fehlern: dann bleibt die Mail ungelesen und wird beim nächsten Takt noch mal versucht.
+ * 1.279: Hängen Mails als Anhang dran (Gmail „Als Anhang weiterleiten“), sind das alte Bestellungen: daraus nur Produkte
+ * und Amazon-Links lernen, keine Spulen anlegen.
+ */
 export async function processMail(source: Uint8Array | Buffer, seen: string[], deps: MailDeps, fallbackId = ''): Promise<MailOutcome> {
   const mail = await simpleParser(Buffer.from(source));
   const subject = String(mail.subject || '');
-  const html = typeof mail.html === 'string' ? mail.html : '';
-  const text = String(mail.text || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-  const id = crypto.createHash('sha1').update(String(mail.messageId || `${fallbackId}${subject}`)).digest('hex').slice(0, 16);
+  const id = mailId(mail, `${fallbackId}${subject}`);
   if (seen.includes(id)) return { outcome: 'duplicate', id, added: 0, arrived: 0 };
+
+  const attached = (mail.attachments || []).filter(a => /message\/rfc822/i.test(a.contentType) || /\.eml$/i.test(a.filename || ''));
+  if (attached.length) {
+    let learned = 0;
+    const done: string[] = [];
+    for (const a of attached.slice(0, 200)) {
+      const inner = await simpleParser(a.content);
+      const iid = mailId(inner, `${id}:${a.filename || ''}:${inner.subject || ''}`);
+      if (seen.includes(iid)) continue;
+      const isub = String(inner.subject || '');
+      const itext = mailText(inner);
+      if (looksLikeFilamentOrder(isub, itext)) {
+        const o = await deps.extract(String(inner.from?.text || ''), isub, itext, mailProducts(mailHtml(inner)));
+        if (o) learned += await deps.learn(o);
+      }
+      done.push(iid);
+    }
+    if (learned) await deps.notify('🔗 Bestellungen gelernt', `${learned} Produkt(e) mit Amazon-Link aus ${attached.length} weitergeleiteten Mails. Passende Spulen bekommen den Link.`, `learn-${id}`);
+    return { outcome: 'learned', id, added: 0, arrived: 0, learned, done };
+  }
+
+  const html = mailHtml(mail);
+  const text = mailText(mail);
   if (!looksLikeFilamentOrder(subject, text)) return { outcome: 'skipped', id, added: 0, arrived: 0 };
   const order = await deps.extract(String(mail.from?.text || ''), subject, text, mailProducts(html));
   if (!order) return { outcome: 'other', id, added: 0, arrived: 0 };
+  await deps.learn(order);
   const res = await deps.apply(order);
   const tag = `order-${order.orderId}`;
   if (order.kind === 'delivered' && res.arrived.length) await deps.notify('📦 Filament zugestellt', `${res.arrived.join(', ')}. In der App bestätigen, wenn du die Spule hast.`, tag);
@@ -331,7 +368,17 @@ const deps = (): MailDeps => ({
       if (r.changed) await saveDoc(access(), r.doc);
       return r;
     }),
-  notify: (title, message, tag) => push('done', title, message, { tag })
+  notify: (title, message, tag) => push('done', title, message, { tag }),
+  learn: async o => {
+    const n = learnCatalog(o.items);
+    // Gelernte Links gleich an passende Spulen ohne Produktseite schreiben
+    await withCloudLock(async () => {
+      const doc = await loadDoc(access());
+      const r = applyCatalogToSpools(Array.isArray(doc?.spools) ? doc.spools : [], readCatalog());
+      if (r.changed) await saveDoc(access(), { ...doc, spools: r.spools });
+    });
+    return n;
+  }
 });
 
 /** Alle neuen Mails prüfen (Eingang und Spam-Ordner). Fehler werden als Text gemerkt (nie mit Passwort), der Takt läuft weiter. */
@@ -351,6 +398,7 @@ export async function checkMail(): Promise<Status> {
     const st = loadState();
     let added = 0;
     let arrived = 0;
+    let learned = 0;
     // Weitergeleitete Mails landen beim ersten Mal manchmal im Spam: beide Ordner lesen
     const boxes = ['INBOX'];
     try {
@@ -378,7 +426,8 @@ export async function checkMail(): Promise<Status> {
             const rkey = `${boxName}:${validity}:${uid}`;
             try {
               const r = await processMail(msg.source, st.seen, d, String(uid));
-              if (r.outcome === 'applied' || r.outcome === 'other') st.seen = [...st.seen, r.id].slice(-300);
+              if (r.outcome === 'applied' || r.outcome === 'other' || r.outcome === 'learned') st.seen = [...st.seen, r.id, ...(r.done || [])].slice(-1000);
+              learned += r.learned || 0;
               added += r.added;
               arrived += r.arrived;
               delete st.retry[rkey];
@@ -404,7 +453,7 @@ export async function checkMail(): Promise<Status> {
     status.lastOk = true;
     status.added += added;
     status.arrived += arrived;
-    status.text = added || arrived ? `Geprüft: ${added} neu, ${arrived} angekommen` : 'Geprüft, nichts Neues';
+    status.text = added || arrived || learned ? `Geprüft: ${added} neu, ${arrived} zugestellt${learned ? `, ${learned} Produkte aus alten Bestellungen gelernt` : ''}` : 'Geprüft, nichts Neues';
   } catch (e: any) {
     status.lastOk = false;
     const m = String(e?.responseText || e?.message || e).replace(/\s+/g, ' ');

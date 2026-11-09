@@ -60,7 +60,7 @@ import { useKeepAlive } from './hooks/useKeepAlive';
 import { LowStockBanner } from './components/workshop/LowStockBanner';
 import { registerSpoolLinks } from './utils/shopLinks';
 import { CONFIRM_ARRIVAL_EVENT, confirmArrival } from './utils/incoming';
-import { SET_PRODUCT_URL_EVENT } from './utils/productPage';
+import { SET_PRODUCT_URL_EVENT, SHOP_TOAST_EVENT } from './utils/productPage';
 import { isSearchUrl } from './utils/shopLinks';
 import type { WorkshopTab } from './components/workshop/WorkshopModal';
 import { getLocationStats } from './utils/spoolAlerts';
@@ -834,8 +834,13 @@ export default function App() {
       setSpools(updated);
       persistState(updated, printHistory);
     };
+    const onToast = (e: Event) => showToast(String((e as CustomEvent).detail || ''));
     window.addEventListener(SET_PRODUCT_URL_EVENT, on);
-    return () => window.removeEventListener(SET_PRODUCT_URL_EVENT, on);
+    window.addEventListener(SHOP_TOAST_EVENT, onToast);
+    return () => {
+      window.removeEventListener(SET_PRODUCT_URL_EVENT, on);
+      window.removeEventListener(SHOP_TOAST_EVENT, onToast);
+    };
   });
 
   const handleMarkDried = (spoolId: string) => {

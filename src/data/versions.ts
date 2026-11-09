@@ -3831,5 +3831,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.279',
+    label: '1.279 (Amazon-Links aus Bestellungen & FTP-Fix)',
+    releaseDate: '09.11.2026',
+    description:
+      'Amazon-Links: Der Pi lernt aus jeder Bestell-Mail Produkt und Amazon-Nummer (ASIN) und schreibt den Link an passende Spulen (Marke, Material, Farbe; andere Farbe nie). Alte Bestellungen: in Gmail alle Amazon-Filament-Mails markieren, „Als Anhang weiterleiten“ an das Bestell-Postfach, der Pi lernt daraus nur die Links und legt keine Spulen an. Windows-App: beim Klick liest ein unsichtbares Fenster die Amazon-Treffer wie ein normaler Browser (Amazon blockt den Pi oft), der Pi wählt das passende Produkt, Meldung unten in der App. FTP-Fix für „421 too many connections“: der Pi hält eine FTP-Sitzung zum Drucker offen und nutzt sie weiter (vorher neue Anmeldung bei jeder Suche), merkt sich die Ordnerliste 10 Minuten, wartet nach 421 fünf Minuten und schreibt die Meldung höchstens alle 30 Minuten ins Protokoll. Pi-Add-on 1.3.35, Windows-App neu.',
+    features: ['🔗 Amazon-Links aus deinen Bestellungen', '🖥️ Windows-App liest Amazon-Treffer selbst', '🔌 Drucker-FTP: eine Sitzung statt tausender', '🥧 Pi-Add-on 1.3.35 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

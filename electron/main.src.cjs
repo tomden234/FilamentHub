@@ -133,6 +133,55 @@ const isNetError = e => /ERR_HTTP2|ERR_CONNECTION|ERR_NETWORK|ERR_SSL|ERR_TIMED_
 const isRateLimit = e => /\b429\b|Too Many Requests/i.test(String((e && e.message) || e));
 const isChecksumError = e => /checksum|sha512|sha256/i.test(String((e && e.message) || e));
 
+// 1.279: Amazon-Treffer für den Produktlink. Amazon blockt Abfragen vom Pi oft; ein unsichtbares Fenster ist ein normaler
+// Browser in deinem Netz. Es liest nur die Trefferliste (ASIN + Titel), der Pi wählt das passende Produkt.
+let amazonBusy = Promise.resolve();
+function setupAmazonSearch() {
+  ipcMain.handle('amazon:search', (_e, query) => {
+    const q = String(query || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 160);
+    if (!q) return [];
+    const job = amazonBusy.then(() => amazonSearch(q)).catch(() => []);
+    amazonBusy = job.then(() => undefined);
+    return job;
+  });
+}
+function amazonSearch(q) {
+  return new Promise(resolve => {
+    const w = new BrowserWindow({
+      show: false,
+      width: 1280,
+      height: 900,
+      webPreferences: { partition: 'persist:amazon', contextIsolation: true, nodeIntegration: false, sandbox: true }
+    });
+    w.webContents.setAudioMuted(true);
+    w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    w.webContents.setUserAgent(w.webContents.getUserAgent().replace(/\s(Electron|FilamentHub|filamenthub)\/\S+/gi, ''));
+    let done = false;
+    const finish = hits => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (!w.isDestroyed()) w.destroy();
+      resolve(Array.isArray(hits) ? hits : []);
+    };
+    const timer = setTimeout(() => finish([]), 25000);
+    const read = () =>
+      w.webContents
+        .executeJavaScript(
+          `Array.from(document.querySelectorAll('[data-component-type="s-search-result"]')).slice(0, 12).map(el => ({
+            asin: el.getAttribute('data-asin') || '',
+            title: ((el.querySelector('h2') || {}).innerText || (el.querySelector('img.s-image') || {}).alt || '').trim().slice(0, 200),
+            sponsored: /AdHolder/.test(el.className) || !!el.querySelector('.puis-sponsored-label-text, .s-sponsored-label-text')
+          })).filter(h => /^[A-Z0-9]{10}$/.test(h.asin) && h.title)`,
+          true
+        )
+        .then(finish, () => finish([]));
+    w.webContents.once('did-finish-load', () => setTimeout(read, 800));
+    w.webContents.once('did-fail-load', () => finish([]));
+    w.loadURL('https://www.amazon.de/s?k=' + encodeURIComponent(q)).catch(() => finish([]));
+  });
+}
+
 function setupAutoUpdate() {
   try {
     autoUpdater.disableDifferentialDownload = true;
@@ -260,6 +309,7 @@ if (!lock) {
     startServer();
     createWindow();
     setupAutoUpdate();
+    setupAmazonSearch();
   });
   app.on('before-quit', () => {
     app.isQuitting = true;

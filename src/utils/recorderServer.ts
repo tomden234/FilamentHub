@@ -678,7 +678,7 @@ export async function piOrderStatus(check = false): Promise<OrderMailStatus | nu
 }
 
 // 1.276/1.278: Produktseite am Pi suchen lassen (url null = nichts gefunden, error sagt warum)
-export async function piProductLink(spec: { brand: string; material: string; name: string; colorName: string; refill?: boolean }): Promise<{ url: string | null; error?: string }> {
+export async function piProductLink(spec: { brand: string; material: string; name: string; colorName: string; refill?: boolean; hits?: { asin: string; title: string; sponsored?: boolean }[] }): Promise<{ url: string | null; error?: string }> {
   try {
     const j = await get('/api/hub/product-link', { method: 'POST', body: spec, timeoutMs: 45000 });
     if (!j?.success) return { url: null, error: 'Pi zu alt: Add-on aktualisieren' };
@@ -693,6 +693,7 @@ export interface ProductFillStatus {
   filled: number;
   failed: number;
   open: number;
+  learned?: number;
   text: string;
 }
 export async function piProductFill(run = false): Promise<ProductFillStatus | null> {

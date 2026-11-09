@@ -23,7 +23,7 @@ export interface ProductSpec {
 export interface FindResult {
   url: string | null;
   cached: boolean;
-  source?: 'shop' | 'amazon' | 'google' | 'cache';
+  source?: 'shop' | 'amazon' | 'google' | 'cache' | 'order' | 'app';
   error?: string;
 }
 
@@ -216,14 +216,8 @@ export function pickAmazonHit(hits: AmazonHit[], spec: ProductSpec): AmazonHit |
   return best && best.score >= 3 ? best.h : null;
 }
 
-async function fromAmazon(spec: ProductSpec): Promise<{ url: string | null; note?: string }> {
-  const r = await fetch(`https://www.amazon.de/s?k=${encodeURIComponent(amazonQuery(spec))}`, {
-    headers: { 'User-Agent': UA, 'Accept-Language': 'de-DE,de;q=0.9', Accept: 'text/html' },
-    signal: AbortSignal.timeout(15_000)
-  });
-  const html = await r.text();
-  const hits = r.ok ? parseAmazonResults(html) : [];
-  if (!hits.length) return { url: null, note: r.ok ? 'Amazon-Seite ohne Treffer (evtl. Bot-Schutz)' : `Amazon antwortet ${r.status}` };
+/** Gemini wählt aus echten Amazon-Treffern, ohne Gemini der Wort-Abgleich */
+async function chooseHit(hits: AmazonHit[], spec: ProductSpec): Promise<AmazonHit | null> {
   let pick: AmazonHit | null = null;
   if (geminiReady()) {
     try {
@@ -240,7 +234,25 @@ ${list}`
       console.warn('[Produktlink] Gemini-Auswahl:', (e as Error).message);
     }
   }
-  pick ||= pickAmazonHit(hits, spec);
+  return pick || pickAmazonHit(hits, spec);
+}
+
+/** Treffer aus der App säubern (fremde Eingabe) */
+export const cleanHits = (v: unknown): AmazonHit[] =>
+  (Array.isArray(v) ? v : [])
+    .slice(0, 15)
+    .map((h: any) => ({ asin: String(h?.asin || '').toUpperCase(), title: clean(h?.title, 200), sponsored: h?.sponsored === true }))
+    .filter(h => /^[A-Z0-9]{10}$/.test(h.asin) && h.title);
+
+async function fromAmazon(spec: ProductSpec): Promise<{ url: string | null; note?: string }> {
+  const r = await fetch(`https://www.amazon.de/s?k=${encodeURIComponent(amazonQuery(spec))}`, {
+    headers: { 'User-Agent': UA, 'Accept-Language': 'de-DE,de;q=0.9,en;q=0.5', Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Upgrade-Insecure-Requests': '1', 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none' },
+    signal: AbortSignal.timeout(15_000)
+  });
+  const html = await r.text();
+  const hits = r.ok ? parseAmazonResults(html) : [];
+  if (!hits.length) return { url: null, note: r.ok ? 'Amazon-Seite ohne Treffer (evtl. Bot-Schutz)' : `Amazon antwortet ${r.status}` };
+  const pick = await chooseHit(hits, spec);
   return pick ? { url: `https://www.amazon.de/dp/${pick.asin}` } : { url: null, note: `Kein passender Amazon-Treffer unter ${hits.length}` };
 }
 
@@ -302,6 +314,61 @@ async function fromGoogle(spec: ProductSpec): Promise<string | null> {
   return pickProductUrl(real, spec.brand);
 }
 
+// ---------- 0. Gelernt aus deinen Bestell-Mails (genaue ASIN) ----------
+export interface CatalogEntry {
+  brand: string;
+  material: string;
+  name: string;
+  colorName: string;
+  asin: string;
+  at: number;
+}
+const catalogFile = () => path.join(dataDir, 'product-catalog.json');
+export const readCatalog = (): CatalogEntry[] => loadJsonConfig<CatalogEntry[]>([catalogFile()], d => Array.isArray(d)) || [];
+
+/** Produkte einer Bestellung merken (gleiche ASIN wird aktualisiert). Gibt die Zahl neuer Einträge zurück. */
+export function learnCatalog(items: { brand: string; material: string; name: string; colorName: string; asin?: string }[]): number {
+  const list = readCatalog();
+  let added = 0;
+  for (const it of items) {
+    if (!it.asin || !/^[A-Z0-9]{10}$/.test(it.asin)) continue;
+    const e: CatalogEntry = { brand: clean(it.brand, 40), material: clean(it.material, 30), name: clean(it.name), colorName: clean(it.colorName, 40), asin: it.asin, at: Date.now() };
+    const i = list.findIndex(x => x.asin === it.asin);
+    if (i >= 0) list[i] = e;
+    else {
+      list.push(e);
+      added++;
+    }
+  }
+  if (added || items.length) saveJsonConfig(catalogFile(), list.slice(-2000), 'product-catalog.json', { pretty: false, keepPrev: true });
+  return added;
+}
+
+/** Passt ein gelerntes Produkt zur Spule? Marke muss stimmen, dazu Farbe oder genug vom Namen (rein, testbar). */
+export function matchCatalog(entries: CatalogEntry[], spec: ProductSpec): CatalogEntry | null {
+  const brand = words(spec.brand);
+  if (!brand.length) return null;
+  const sw = specWords(spec);
+  const color = new Set(specWords({ brand: '', material: '', name: '', colorName: spec.colorName }).all);
+  let best: { e: CatalogEntry; score: number } | null = null;
+  for (const e of entries) {
+    const eb = words(e.brand);
+    if (!eb.length || !(brand.every(b => eb.includes(b)) || eb.every(b => brand.includes(b)))) continue;
+    const ew = specWords({ brand: '', material: e.material, name: e.name, colorName: e.colorName });
+    const em = words(e.material);
+    if (!sw.mat.some(m => em.includes(m) || ew.all.has(m))) continue;
+    const ec = specWords({ brand: '', material: '', name: '', colorName: e.colorName }).all;
+    const colorHit = [...color].some(c => ec.has(c) || ew.all.has(c));
+    let nameHit = 0;
+    for (const w of sw.named) if (ew.all.has(w) && !GENERIC.has(w)) nameHit++;
+    // Andere Farbe genannt? Dann ist es nicht dieselbe Spule
+    if (color.size && ec.size && !colorHit) continue;
+    const score = (colorHit ? 3 : 0) + nameHit;
+    if (score >= 3 && (!best || score > best.score)) best = { e, score };
+  }
+  return best?.e || null;
+}
+
 // ---------- Zusammen, mit Merkzettel ----------
 const cacheFile = () => path.join(dataDir, 'product-links.json');
 type Cache = Record<string, { url: string; at: number; source?: string } | { fail: string; at: number }>;
@@ -313,9 +380,11 @@ const writeCache = (key: string, v: Cache[string]) => {
 };
 const FAIL_RETRY_MS = 3 * 86_400_000;
 
-export async function findProductPage(spec: ProductSpec, opts: { force?: boolean } = {}): Promise<FindResult> {
+export async function findProductPage(spec: ProductSpec, opts: { force?: boolean; hits?: AmazonHit[] } = {}): Promise<FindResult> {
   if (!spec.brand && !spec.name) return { url: null, cached: false, error: 'Marke oder Name fehlt' };
   const key = specKey(spec);
+  const learned = matchCatalog(readCatalog(), spec);
+  if (learned) return { url: `https://www.amazon.de/dp/${learned.asin}`, cached: true, source: 'order' };
   const hit = readCache()[key];
   if (hit && 'url' in hit && hit.url) return { url: hit.url, cached: true, source: 'cache' };
   if (!opts.force && hit && 'fail' in hit && Date.now() - hit.at < FAIL_RETRY_MS) return { url: null, cached: true, error: hit.fail };
@@ -331,6 +400,11 @@ export async function findProductPage(spec: ProductSpec, opts: { force?: boolean
     if (shopFor(spec.brand)) notes.push('im Shop nichts Passendes');
   } catch (e) {
     notes.push(`Shop-Liste: ${(e as Error).message}`);
+  }
+  if (opts.hits?.length) {
+    const p = await chooseHit(opts.hits, spec);
+    if (p) return done(`https://www.amazon.de/dp/${p.asin}`, 'app');
+    notes.push(`kein passender Treffer unter ${opts.hits.length} (App)`);
   }
   try {
     const a = await fromAmazon(spec);
@@ -354,13 +428,27 @@ export async function findProductPage(spec: ProductSpec, opts: { force?: boolean
   return { url: null, cached: false, error: fail };
 }
 
+// ---------- Gelernte Produkte direkt an passende Spulen schreiben ----------
+/** Spulen ohne echte Produktseite bekommen den Link aus dem Katalog (rein, testbar). */
+export function applyCatalogToSpools(spools: any[], entries: CatalogEntry[]): { spools: any[]; changed: number } {
+  let changed = 0;
+  const out = spools.map(sp => {
+    if (!sp || hasRealLink(sp.productUrl)) return sp;
+    const e = matchCatalog(entries, cleanSpec({ ...sp, refill: sp.onSpool === false }));
+    if (!e) return sp;
+    changed++;
+    return { ...sp, productUrl: `https://www.amazon.de/dp/${e.asin}` };
+  });
+  return { spools: out, changed };
+}
+
 // ---------- Takt: Links aller Spulen nach und nach füllen ----------
 export const hasRealLink = (u: unknown) => {
   const s = String(u || '');
   return /^https:\/\//i.test(s) && !isSearchUrl(s);
 };
 const fillState = { running: false, lastAt: 0, filled: 0, failed: 0, open: 0, text: 'Noch nicht gelaufen' };
-export const productFillStatus = () => ({ ...fillState });
+export const productFillStatus = () => ({ ...fillState, learned: readCatalog().length });
 
 /** Eine Spule pro Takt: sucht die Produktseite und schreibt sie ins Spulen-Dokument (nur wenn noch kein echter Link da ist). */
 export async function productLinkTick(): Promise<void> {
@@ -368,6 +456,19 @@ export async function productLinkTick(): Promise<void> {
   fillState.running = true;
   fillState.lastAt = Date.now();
   try {
+    const cat = readCatalog();
+    if (cat.length) {
+      const n = await withCloudLock(async () => {
+        const fresh = await loadDoc(access());
+        const r = applyCatalogToSpools(Array.isArray(fresh?.spools) ? fresh.spools : [], cat);
+        if (r.changed) await saveDoc(access(), { ...fresh, spools: r.spools });
+        return r.changed;
+      });
+      if (n) {
+        fillState.filled += n;
+        fillState.text = `${n} Spule(n) bekamen den Link aus deinen Bestellungen`;
+      }
+    }
     const doc = await loadDoc(access());
     const spools: any[] = Array.isArray(doc?.spools) ? doc.spools : [];
     const cache = readCache();

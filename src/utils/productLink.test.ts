@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amazonQuery, bestShopUrl, cleanSpec, hasRealLink, isSearchUrl, parseAmazonResults, pickAmazonHit, pickProductUrl, specKey } from '../../server/hub/productLink';
+import { amazonQuery, applyCatalogToSpools, bestShopUrl, cleanHits, matchCatalog, cleanSpec, hasRealLink, isSearchUrl, parseAmazonResults, pickAmazonHit, pickProductUrl, specKey } from '../../server/hub/productLink';
 import { getSpoolLink, isSearchUrl as clientIsSearch, parseFilamentText, shopQuery } from './shopLinks';
 import type { Spool } from '../types/filament';
 
@@ -91,5 +91,38 @@ describe('Such-Treffer von Google', () => {
     expect(s.brand).not.toContain('<');
     expect(s.name).toHaveLength(80);
     expect(specKey(cleanSpec({ brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic', colorName: 'Schwarz' }))).toBe(specKey(cleanSpec({ brand: 'bambu  lab', material: 'pla', name: 'PLA-Basic', colorName: 'schwarz' })));
+  });
+});
+
+describe('Gelernte Produkte aus Bestellungen', () => {
+  const cat = [
+    { brand: 'ERYONE', material: 'PLA', name: 'PLA Glow in the Dark Blau', colorName: 'Blau', asin: 'B0ERYGLOWB', at: 1 },
+    { brand: 'ERYONE', material: 'PLA', name: 'PLA Glow in the Dark Grün', colorName: 'Grün', asin: 'B0ERYGLOWG', at: 1 },
+    { brand: 'yxpolyer', material: 'PET-CF / PA-CF', name: 'PA6-CF Schwarz', colorName: 'Schwarz', asin: 'B0DRCR8FZP', at: 1 }
+  ];
+  it('findet die Spule über Marke + Farbe, andere Farbe nie', () => {
+    expect(matchCatalog(cat, sp({ brand: 'Eryone', name: 'Glow in the Dark Blau', colorName: 'Glow Blau' }))?.asin).toBe('B0ERYGLOWB');
+    expect(matchCatalog(cat, sp({ brand: 'Eryone', name: 'PLA Glow', colorName: 'Grün' }))?.asin).toBe('B0ERYGLOWG');
+    expect(matchCatalog(cat, sp({ brand: 'Eryone', name: 'PLA Glow', colorName: 'Rot' }))).toBeNull();
+    expect(matchCatalog(cat, sp({ brand: 'YXPOLYER', material: 'PET-CF / PA-CF', name: 'PA6-CF', colorName: 'Schwarz' }))?.asin).toBe('B0DRCR8FZP');
+    expect(matchCatalog(cat, sp({ brand: 'Sunlu', name: 'PLA Glow', colorName: 'Blau' }))).toBeNull();
+  });
+  it('schreibt Links nur an Spulen ohne echte Produktseite', () => {
+    const spools = [
+      { id: 1, brand: 'Eryone', material: 'PLA', name: 'Glow Blau', colorName: 'Blau', productUrl: 'https://www.amazon.de/s?k=eryone' },
+      { id: 2, brand: 'Eryone', material: 'PLA', name: 'Glow Blau', colorName: 'Blau', productUrl: 'https://www.amazon.de/dp/B0OTHER123' },
+      { id: 3, brand: 'Elegoo', material: 'PLA', name: 'Rapid', colorName: 'Rot' }
+    ];
+    const r = applyCatalogToSpools(spools, cat);
+    expect(r.changed).toBe(1);
+    expect(r.spools[0].productUrl).toBe('https://www.amazon.de/dp/B0ERYGLOWB');
+    expect(r.spools[1].productUrl).toBe('https://www.amazon.de/dp/B0OTHER123');
+    expect(r.spools[2].productUrl).toBeUndefined();
+  });
+  it('Treffer aus der App werden gesäubert', () => {
+    const h = cleanHits([{ asin: 'b0eryglowb', title: 'ERYONE <b>Glow</b>' }, { asin: 'x', title: 'y' }, null]);
+    expect(h).toHaveLength(1);
+    expect(h[0].asin).toBe('B0ERYGLOWB');
+    expect(h[0].title).not.toMatch(/[<>]/);
   });
 });

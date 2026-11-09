@@ -5,7 +5,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { dataDir } from '../paths.js';
 import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
-import { ftpBusy, listJobFiles, platesFromThreeMf, readJobFile, renameJobFile, thumbFromThreeMf, uploadJobFile, type JobFilament } from '../bambuJobFile.js';
+import { ftpBusy, isTooMany, listJobFiles, platesFromThreeMf, readJobFile, renameJobFile, thumbFromThreeMf, uploadJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubLogic.js';
 import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
@@ -462,6 +462,7 @@ let seenPaths: Set<string> | null = null;
 let starting = false;
 let scanStarted = 0;
 let scanBlockedUntil = 0;
+let lastScanErr = { sig: '', at: 0 };
 interface ScanResult {
   ok: boolean;
   text: string;
@@ -530,9 +531,20 @@ export async function autoScan(force = false): Promise<ScanResult> {
     return { ok: true, added, text: added ? `${added} neue Datei(en) vorgemerkt` : 'Neue Datei war schon in der Warteschlange oder wird gerade gedruckt' };
   } catch (e) {
     const msg = (e as Error)?.message || String(e);
-    scanBlockedUntil = Date.now() + 90_000; // nach Fehler 90 s Pause, damit der Drucker seine Sitzungen freigeben kann
-    console.warn('[Warteschlange] Scan fehlgeschlagen (nächster Versuch in 90 s):', msg);
-    return { ok: false, added, text: msg };
+    // 1.279: „421 zu viele Verbindungen“: 5 Min Pause, damit der Drucker alte Sitzungen freigibt; sonst 90 s
+    const full = isTooMany(msg);
+    const wait = full ? 5 * 60_000 : 90_000;
+    scanBlockedUntil = Date.now() + wait;
+    const text = full
+      ? 'Drucker lässt gerade keine weitere FTP-Verbindung zu (zu viele von dieser IP, Home Assistant läuft auf derselben). Nächster Versuch in 5 Min.'
+      : `Scan fehlgeschlagen (nächster Versuch in 90 s): ${msg}`;
+    // Gleiche Meldung höchstens alle 30 Min ins Protokoll
+    const sigErr = full ? '421' : msg.slice(0, 80);
+    if (sigErr !== lastScanErr.sig || Date.now() - lastScanErr.at > 30 * 60_000) {
+      lastScanErr = { sig: sigErr, at: Date.now() };
+      console.warn('[Warteschlange]', text);
+    }
+    return { ok: false, added, text };
   } finally {
     scanning = false;
   }

@@ -3,7 +3,7 @@ import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHub
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { checkMail, orderMailStatus, testOrderExtraction } from '../hub/orders.js';
-import { cleanSpec, findProductPage, productFillStatus, productLinkTick } from '../hub/productLink.js';
+import { cleanHits, cleanSpec, findProductPage, productFillStatus, productLinkTick } from '../hub/productLink.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
 import { archiveFav, archiveRemove, archiveRename, archiveThumbPath, loadArchive } from '../hub/archive.js';
 import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueFromArchive, queueList, queueMove, queueOptimize, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
@@ -112,7 +112,7 @@ router.post('/api/hub/orders/check', async (_req, res) => {
 
 // 1.276: Produktseite einer Spule über Gemini-Suche (mit Merkzettel auf dem Pi)
 router.post('/api/hub/product-link', async (req, res) => {
-  const r = await findProductPage(cleanSpec(req.body), { force: req.body?.force === true });
+  const r = await findProductPage(cleanSpec(req.body), { force: req.body?.force === true, hits: cleanHits(req.body?.hits) });
   res.json({ success: true, ...r });
 });
 // 1.278: Links aller Spulen nach und nach füllen (Status, eine Runde sofort)

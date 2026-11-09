@@ -25,6 +25,7 @@ interface JobWeights {
 const DIRS = ['/', '/cache', '/sdcard', '/sdcard/cache'];
 const SKIP_DIRS = /^(timelapse|ipcam|logs?|recorder|image|firmware|model|system|\.)/i;
 let lastDirs = '';
+let dirCache: { at: number; dirs: string[] } | null = null;
 
 const norm = (s: string) =>
   s
@@ -227,23 +228,55 @@ async function ftp(ip: string, code: string): Promise<Client> {
   throw new Error(`FTP zum Drucker ${ip} nicht möglich → ${errs.join(' | ')}`);
 }
 
-// Immer nur EINE FTP-Sitzung zum Drucker gleichzeitig (Suche alle 3 s, Datei lesen, Umbenennen, Gewicht holen).
-// Der Drucker erlaubt nur wenige Sitzungen; mehrere parallel führen zu „421 too many connections“.
+// Immer nur EINE FTP-Sitzung zum Drucker gleichzeitig (Suche, Datei lesen, Umbenennen, Gewicht holen).
+// 1.279: Die Sitzung bleibt offen und wird wiederverwendet (vorher: neue Anmeldung bei jeder Suche, bis zu 10.000 am Tag).
+// Der Drucker zählt Verbindungen je IP; Home Assistant läuft auf derselben IP. Nach 2 Min ohne Nutzung wird sie sauber beendet.
 let ftpChain: Promise<unknown> = Promise.resolve();
 let ftpUsers = 0;
-/** Läuft gerade eine FTP-Sitzung oder wartet eine? (Die 3-s-Suche lässt dann eine Runde aus.) */
+let shared: { client: Client; key: string } | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+const IDLE_MS = 120_000;
+/** Läuft gerade eine FTP-Sitzung oder wartet eine? (Die Suche lässt dann eine Runde aus.) */
 export const ftpBusy = (): boolean => ftpUsers > 0;
+/** Drucker hat „zu viele Verbindungen“ gemeldet */
+export const isTooMany = (m: string) => /\b421\b|too many connections/i.test(m);
+
+async function dropShared(): Promise<void> {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = null;
+  const s = shared;
+  shared = null;
+  if (s) await closeFtp(s.client);
+}
+
 async function withFtp<T>(ip: string, code: string, fn: (c: Client) => Promise<T>): Promise<T> {
   ftpUsers++;
   const run = ftpChain.then(async () => {
-    const client = await ftp(ip, code);
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = null;
+    const key = `${ip}|${code}`;
+    if (shared && (shared.key !== key || shared.client.closed)) await dropShared();
+    let reused = Boolean(shared);
+    if (!shared) shared = { client: await ftp(ip, code), key };
     // Notbremse: hängt eine Sitzung über 3 Minuten, wird sie getrennt, sonst warteten alle anderen für immer
-    const guard = setTimeout(() => client.close(), 180_000);
+    const guard = setTimeout(() => void dropShared(), 180_000);
     try {
-      return await fn(client);
+      try {
+        return await fn(shared.client);
+      } catch (e) {
+        // Wiederverwendete Sitzung war vom Drucker schon beendet: einmal frisch anmelden und nochmal
+        if (!reused || isTooMany(String((e as Error)?.message))) throw e;
+        await dropShared();
+        reused = false;
+        shared = { client: await ftp(ip, code), key };
+        return await fn(shared.client);
+      }
+    } catch (e) {
+      await dropShared();
+      throw e;
     } finally {
       clearTimeout(guard);
-      await closeFtp(client);
+      if (shared) idleTimer = setTimeout(() => void dropShared(), IDLE_MS);
     }
   });
   ftpChain = run.catch(() => undefined);
@@ -259,16 +292,23 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
   return withFtp(ip, code, async client => {
     const out: { path: string; name: string; size: number; time: number }[] = [];
     // 1.256: auch USB-Stick & weitere Ordner (eine Ebene unter „/“) durchsuchen, nicht nur feste Pfade
-    const dirs = [...DIRS];
-    try {
-      const root = await client.list('/');
-      for (const e of root) {
-        if (!e.isDirectory || SKIP_DIRS.test(e.name)) continue;
-        const d = '/' + e.name;
-        if (!dirs.includes(d) && dirs.length < 12) dirs.push(d);
+    // 1.279: Ordnerliste 10 Min merken; jede Liste ist eine eigene Datenverbindung zum Drucker
+    let dirs = dirCache && Date.now() - dirCache.at < 10 * 60_000 ? dirCache.dirs : null;
+    if (!dirs) {
+      dirs = [...DIRS];
+      try {
+        const root = await client.list('/');
+        const have = new Set(root.filter(e => e.isDirectory).map(e => '/' + e.name));
+        dirs = dirs.filter(d => d === '/' || have.has(d) || (d.startsWith('/sdcard/') && have.has('/sdcard')));
+        for (const e of root) {
+          if (!e.isDirectory || SKIP_DIRS.test(e.name)) continue;
+          const d = '/' + e.name;
+          if (!dirs.includes(d) && dirs.length < 12) dirs.push(d);
+        }
+      } catch {
+        /* feste Ordner reichen */
       }
-    } catch {
-      /* feste Ordner reichen */
+      dirCache = { at: Date.now(), dirs };
     }
     if (dirs.join('|') !== lastDirs) {
       lastDirs = dirs.join('|');

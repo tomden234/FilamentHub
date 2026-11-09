@@ -70,7 +70,7 @@ export const OrderMailCard: React.FC = () => {
       </div>
       {fill && (
         <div className={box(fill.open === 0 ? true : null)}>
-          {fill.filled} gefunden{fill.failed ? `, ${fill.failed} ohne Treffer` : ''}, {fill.open} offen. {fill.text}
+          {fill.filled} gefunden{fill.failed ? `, ${fill.failed} ohne Treffer` : ''}, {fill.open} offen{fill.learned ? `, ${fill.learned} Produkte aus Bestellungen gelernt` : ''}. {fill.text}
           {fill.lastAt > 0 && ` · ${time(fill.lastAt)} Uhr`}
         </div>
       )}

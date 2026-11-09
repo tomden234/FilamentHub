@@ -43,6 +43,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.35
+
+- **FTP zum Drucker**: eine Sitzung wird offen gehalten und wiederverwendet (gegen „421 too many connections“), nach 421 fünf Minuten Pause.
+- **Amazon-Links aus Bestellungen**: jede Bestell-Mail füllt `product-catalog.json`. Alte Bestellungen in Gmail markieren und „Als Anhang weiterleiten“ an das Bestell-Postfach: der Pi lernt nur die Links, legt keine Spulen an.
+
 ## Neu in 1.3.34
 
 - **Spulen-Links**: Produktseite aus der offiziellen Produktliste (Bambu, Prusa, SUNLU, 3DJake) bzw. aus den Amazon-Treffern (Gemini wählt). Der Pi füllt alle 3 Minuten den Link der nächsten Spule ohne Produktseite (`product-links.json`, Ordner `sitemaps`).

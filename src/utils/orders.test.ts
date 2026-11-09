@@ -104,7 +104,11 @@ describe('Mail-Verarbeitung mit echtem Parser', () => {
       return extracted;
     },
     apply: async o => applyOrder({ spools: [] }, o),
-    notify: async (t, m) => void log.push(`push:${t}`)
+    notify: async (t, _m) => void log.push(`push:${t}`),
+    learn: async o => {
+      log.push(`learn:${o.items.map(i => i.asin || '-').join(',')}`);
+      return o.items.filter(i => i.asin).length;
+    }
   });
   it('findet die ASIN im Weiterleitungslink', () => {
     expect(mailProducts(amazonHtml)).toEqual([{ asin: 'B0DRCR8FZP', label: 'Nylon kohlefaser Filament PA6-CF 1,75 mm 1 kg' }]);
@@ -147,5 +151,36 @@ describe('Lieferzeit-Text', () => {
   it('ohne Datum und zugestellt', () => {
     expect(incomingInfo(inc('ordered'), now).text).toContain('Lieferdatum offen');
     expect(incomingInfo(inc('delivered'), now)).toMatchObject({ tone: 'here' });
+  });
+});
+
+describe('Alte Bestellungen als Anhang weitergeleitet', () => {
+  const inner = (id: string) => `From: Amazon.de <bestellbestaetigung@amazon.de>\r\nSubject: Ihre Bestellung: Filament\r\nMessage-ID: <${id}@amazon>\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${amazonHtml}`;
+  const fwd = Buffer.from(
+    `From: Tom <t@x.de>\r\nTo: filamenthub@x.de\r\nSubject: Weitergeleitete Nachrichten\r\nMessage-ID: <fwd1@x>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="B"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nHier meine Bestellungen\r\n--B\r\nContent-Type: message/rfc822; name="a.eml"\r\nContent-Disposition: attachment; filename="a.eml"\r\n\r\n${inner('a1')}\r\n--B\r\nContent-Type: message/rfc822; name="b.eml"\r\nContent-Disposition: attachment; filename="b.eml"\r\n\r\n${inner('b2')}\r\n--B--\r\n`
+  );
+  const o: ParsedOrder = { kind: 'ordered', orderId: '302-1', items: [{ ...item, quantity: 1, asin: 'B0DRCR8FZP' }] };
+  it('lernt nur, legt keine Spulen an, merkt erledigte Anhänge', async () => {
+    const log: string[] = [];
+    const deps: MailDeps = {
+      extract: async () => o,
+      apply: async () => {
+        log.push('apply');
+        return applyOrder({ spools: [] }, o);
+      },
+      notify: async t => void log.push(`push:${t}`),
+      learn: async x => (log.push('learn'), x.items.length)
+    };
+    const r = await processMail(fwd, [], deps);
+    expect(r.outcome).toBe('learned');
+    expect(r.learned).toBe(2);
+    expect(r.done).toHaveLength(2);
+    expect(log).not.toContain('apply');
+    expect(log.filter(l => l === 'learn')).toHaveLength(2);
+    // zweiter Lauf: bekannte Anhänge werden übersprungen
+    const log2: string[] = [];
+    const r2 = await processMail(fwd, r.done!, { ...deps, learn: async () => (log2.push('learn'), 1) });
+    expect(log2).toHaveLength(0);
+    expect(r2.learned).toBe(0);
   });
 });
