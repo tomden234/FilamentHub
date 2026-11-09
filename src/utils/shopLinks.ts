@@ -31,6 +31,26 @@ export function getBrandInfo(brandName: string, settings?: AppSettings) {
 
 // 1.275: Gemerkte Produktseiten. Die App sammelt die Links, die du an deinen Spulen gespeichert hast (auch aus Bestell-Mails),
 // und nimmt sie für gleiche Sorten wieder: gleiche Marke + Material + Farbe → genau diese Produktseite statt einer Suche.
+// Vom Pi gefundene Produktseiten, je Gerät gemerkt (damit der nächste Klick sofort direkt öffnet)
+const LS_KEY = 'fh-product-links';
+let learned: Record<string, string> = {};
+try {
+  learned = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {};
+} catch {
+  learned = {};
+}
+export const productKey = (brand: string, material: string, name: string, colorName: string) => [brand, material, name, colorName].map(x => (x || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim()).join('|');
+export function rememberProductUrl(brand: string, material: string, name: string, colorName: string, url: string) {
+  const safe = safeHttpUrl(url);
+  if (!safe) return;
+  learned[productKey(brand, material, name, colorName)] = safe;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(learned));
+  } catch {
+    /* ohne Speicher: nur für diese Sitzung */
+  }
+}
+
 let linkPool: Pick<Spool, 'brand' | 'material' | 'name' | 'colorName' | 'productUrl'>[] = [];
 export function registerSpoolLinks(list: Spool[]) {
   linkPool = list.filter(s => safeHttpUrl(s.productUrl));
@@ -42,6 +62,8 @@ export function findKnownProductUrl(brand: string, material: string, name: strin
   const m = norm(material);
   const c = norm(colorName);
   const n = norm(name);
+  const mine = safeHttpUrl(learned[productKey(brand, material, name, colorName)]);
+  if (mine) return mine;
   if (!b) return null;
   const same = linkPool.filter(x => norm(x.brand) === b && norm(x.material) === m);
   const hit = same.find(x => c && norm(x.colorName) === c && norm(x.name) === n) || same.find(x => n && norm(x.name) === n) || same.find(x => c && norm(x.colorName) === c);

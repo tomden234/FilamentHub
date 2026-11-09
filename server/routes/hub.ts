@@ -3,6 +3,7 @@ import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHub
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { checkMail, orderMailStatus } from '../hub/orders.js';
+import { cleanSpec, findProductPage } from '../hub/productLink.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
 import { archiveFav, archiveRemove, archiveRename, archiveThumbPath, loadArchive } from '../hub/archive.js';
 import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueFromArchive, queueList, queueMove, queueOptimize, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
@@ -106,6 +107,12 @@ router.get('/api/hub/orders', (_req, res) => res.json({ success: true, ...orderM
 router.post('/api/hub/orders/check', async (_req, res) => {
   await checkMail();
   res.json({ success: true, ...orderMailStatus() });
+});
+
+// 1.276: Produktseite einer Spule über Gemini-Suche (mit Merkzettel auf dem Pi)
+router.post('/api/hub/product-link', async (req, res) => {
+  const r = await findProductPage(cleanSpec(req.body));
+  res.json({ success: true, ...r });
 });
 
 router.get('/api/hub/reports', (_req, res) => {

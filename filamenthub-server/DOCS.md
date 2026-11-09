@@ -43,6 +43,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.32
+
+- **Produktseite finden**: Der Pi sucht per Gemini mit Google-Suche die genaue Produktseite einer Spule (Klick auf den Shop-Link in der App) und merkt sie sich (`product-links.json`). Braucht `gemini_api_key`.
+- **Bestell-Mails sicherer**: Teillieferungen, Wiederholung bei Fehlern, Spam-Ordner wird mitgelesen, Zustellung legt keine neuen Spulen an.
+
 ## Neu in 1.3.31
 
 - **Bestell-Mails**: Neue Optionen `mail_user` und `mail_password` (App-Passwort eines zweiten Gmail-Kontos, IMAP aktiv). Der Pi prüft alle 10 Minuten, Gemini liest Bestellung, Versand und Zustellung. Spulen erscheinen als „Bestellt/Unterwegs“, bei Zustellung kommt ein Push. Das Passwort bleibt nur auf dem Pi. Anleitung im Testmenü, Punkt 7. Braucht `gemini_api_key`.

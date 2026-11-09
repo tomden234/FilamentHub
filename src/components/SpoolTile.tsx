@@ -8,6 +8,7 @@ import { SpoolBadges } from './workshop/SpoolBadges';
 import { isLowSpool } from '../utils/spoolAlerts';
 import { useWorkshopSettings } from '../utils/workshopSettings';
 import { LabelPrintButton } from './LabelPrintButton';
+import { openShop } from '../utils/productPage';
 import { NumInput } from './ui/NumInput';
 
 // Spulen-Kachel: Spulen-Symbol in der Filamentfarbe (Füllung zeigt den Rest), Name, großes Gewicht, durchgehender Füllstandsbalken.
@@ -163,7 +164,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
 
       {!open && (
         <div className="px-3 pb-3 -mt-0.5 flex items-center justify-end gap-1" onClick={stop}>
-          <a href={link.url} target="_blank" rel="noopener noreferrer" title={`${link.label} öffnen`} aria-label={`${link.label} öffnen`} className="p-1.5 rounded-lg text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition">
+          <a href={link.url} onClick={e => openShop(e, spool, link)} target="_blank" rel="noopener noreferrer" title={`${link.label} öffnen`} aria-label={`${link.label} öffnen`} className="p-1.5 rounded-lg text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition">
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
           <LabelPrintButton spool={spool} compact />
@@ -263,7 +264,7 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
               </button>
             )}
             <LabelPrintButton spool={spool} className="py-1.5" />
-            <a href={link.url} target="_blank" rel="noopener noreferrer" title={link.label} className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 text-cyan-500 bg-cyan-500/10 border-cyan-500/30">
+            <a href={link.url} onClick={e => openShop(e, spool, link)} target="_blank" rel="noopener noreferrer" title={link.label} className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 text-cyan-500 bg-cyan-500/10 border-cyan-500/30">
               <ShoppingCart className="w-3.5 h-3.5" />
               Shop
             </a>

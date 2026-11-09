@@ -54,7 +54,7 @@ export const OrderMailCard: React.FC = () => {
       </button>
       <ol className="list-decimal pl-4 space-y-1">
         <li>Zweites Gmail-Konto anlegen, dort Einstellungen → Weiterleitung und POP/IMAP → IMAP aktivieren, 2-Schritt-Bestätigung an, unter Sicherheit ein App-Passwort erzeugen.</li>
-        <li>Im Hauptkonto einen Filter: Von „amazon.de“, Enthält die Wörter „Filament“ → Weiterleiten an das zweite Konto (Adresse dort erst bestätigen).</li>
+        <li>Im Hauptkonto einen Filter: „Enthält die Wörter“ Filament (bei „Enthält nicht“ zum Beispiel github), → Weiterleiten an das zweite Konto (Adresse dort erst bestätigen). Der Pi sortiert Werbung selbst aus.</li>
         <li>Im Add-on „FilamentHub Server“ Adresse und App-Passwort bei mail_user und mail_password eintragen, Add-on neu starten.</li>
       </ol>
       <p>Bestellung → Spule „Unterwegs“, Versand → Lieferdatum, Zustellung → Push „Filament angekommen“. Alte Mails im Hauptkonto bleiben unberührt.</p>

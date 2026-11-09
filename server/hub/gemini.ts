@@ -27,3 +27,22 @@ export async function geminiJson(prompt: string): Promise<string> {
   }
   throw new Error(`Gemini-Fehler ${last?.status ?? ''}`.trim());
 }
+
+/** Gemini mit Google-Suche: liefert die Treffer-Adressen (aus der Suche, nicht aus dem Modelltext erfunden) */
+export async function geminiSearchUrls(prompt: string): Promise<string[]> {
+  const ai = getClient();
+  if (!ai) throw new Error('Kein Gemini-Schlüssel im Add-on eingetragen');
+  const models = [process.env.GEMINI_MODEL, 'gemini-3.5-flash-lite', 'gemini-flash-latest', 'gemini-3.6-flash'].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
+  let last: any = null;
+  for (const model of models) {
+    try {
+      const r = await ai.models.generateContent({ model, contents: [{ role: 'user', parts: [{ text: prompt }] }], config: { tools: [{ googleSearch: {} }] } });
+      const chunks = r.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      return chunks.map(c => String(c.web?.uri || '')).filter(Boolean);
+    } catch (e: any) {
+      last = e;
+      if (e?.status !== 404) break;
+    }
+  }
+  throw new Error(`Gemini-Fehler ${last?.status ?? ''}`.trim());
+}

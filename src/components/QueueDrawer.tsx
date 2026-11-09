@@ -6,6 +6,7 @@ import { logWidthCss, queueWidthCss, usePanelWidths } from '../utils/panelWidth'
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { generateAutoShopUrl } from '../utils/shopLinks';
+import { openShop } from '../utils/productPage';
 import { safeHttpUrl } from '../utils/safeData';
 import { fmtDur } from '../utils/printTimeFmt';
 import { piPrinterFiles, piQueueAction, piQueueOptimize, type PiQueuePlan, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
@@ -531,7 +532,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                               <div className="mt-1" style={{ color: 'var(--app-text-muted)' }}>Keine passende Ersatz-Spule da.</div>
                             )}
                             {buy && (
-                              <a href={buy} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-bold underline" style={{ color: 'var(--app-accent)' }}>
+                              <a href={buy} onClick={ev => e.buy && openShop(ev, e.buy, { url: String(buy), auto: !safeHttpUrl(e.buy.url) })} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-bold underline" style={{ color: 'var(--app-accent)' }}>
                                 Nachkaufen <ExternalLink className="w-3 h-3" />
                               </a>
                             )}

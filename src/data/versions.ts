@@ -3798,5 +3798,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.276',
+    label: '1.276 (Produktseite per Pi-Suche & sichere Bestell-Mails)',
+    releaseDate: '09.11.2026',
+    description:
+      'Klick auf den Shop-Link einer Spule ohne eigenen Link: Der Pi sucht mit Gemini und Google-Suche die genaue Produktseite (zum Beispiel amazon.de/dp/…), öffnet sie direkt und merkt sie sich (Datei product-links.json, dazu auf dem Gerät). Nur echte Suchtreffer zählen, Amazon-Links werden auf /dp/ASIN gekürzt, Marken mit eigenem Shop (Bambu, SUNLU, Prusa, 3DJake, Polymaker, eSUN, ELEGOO) bevorzugen diesen. Findet der Pi nichts, öffnet sich wie bisher die Shop-Suche. Bestell-Mails überarbeitet: Teillieferungen und andere Schreibweisen in Versand- und Zustell-Mails werden der richtigen Spule zugeordnet (über Bestellnummer, ASIN, Name, Material und Farbe), eine Zustellung legt nie neue Spulen an (keine Doppelten), der Produktlink der Spule kommt aus dem Link in der Mail (ASIN muss wirklich in der Mail stehen), bei Gemini- oder Netzfehlern wird die Mail beim nächsten Takt erneut versucht (nach 3 Versuchen übersprungen) und der Spam-Ordner des Postfachs wird mitgelesen. Neue Datei server/hub/productLink.ts. Pi-Add-on 1.3.32.',
+    features: ['🔗 Produktseite per Pi-Suche (Gemini + Google)', '📧 Bestell-Mails: Teillieferungen, Wiederholung bei Fehler, Spam-Ordner', '🧷 ASIN-Link aus der Mail an der Spule', '🥧 Pi-Add-on 1.3.32 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

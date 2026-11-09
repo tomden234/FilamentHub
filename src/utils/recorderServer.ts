@@ -668,3 +668,13 @@ export async function piOrderStatus(check = false): Promise<OrderMailStatus | nu
     return null;
   }
 }
+
+// 1.276: Produktseite am Pi suchen lassen (null = nichts gefunden, dann bleibt die Shop-Suche)
+export async function piProductLink(spec: { brand: string; material: string; name: string; colorName: string }): Promise<string | null> {
+  try {
+    const j = await get('/api/hub/product-link', { method: 'POST', body: spec, timeoutMs: 40000 });
+    return j?.success && typeof j.url === 'string' ? j.url : null;
+  } catch {
+    return null;
+  }
+}

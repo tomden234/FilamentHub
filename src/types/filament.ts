@@ -36,7 +36,7 @@ export interface Spool {
   silicaBag?: boolean; // true = Silica-Trockenbeutel liegt bei der Spule (Beutel-Tara beim Wiegen, Standard 57 g)
   inEibos?: boolean; // true = liegt im Eibos-Vakuumbeutel (Beutel-Tara beim Wiegen)
   needsDrying?: boolean; // true = muss getrocknet werden, bis „Trocknen“ bestätigt wird
-  incoming?: { key: string; orderId: string; status: 'ordered' | 'shipped'; eta?: string }; // 1.275: bestellt, noch nicht da („unterwegs“), kommt aus der Bestell-Mail
+  incoming?: { key: string; orderId: string; status: 'ordered' | 'shipped'; eta?: string; asin?: string }; // 1.275: bestellt, noch nicht da („unterwegs“), kommt aus der Bestell-Mail
   bambuRfid?: string; // Kennung der Bambu-Spule (RFID, liest das AMS selbst). Damit erkennt die App die Spule im AMS ohne eigenen Tag
 }
 

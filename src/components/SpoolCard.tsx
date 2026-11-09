@@ -1,4 +1,5 @@
 import { LabelPrintButton } from './LabelPrintButton';
+import { openShop } from '../utils/productPage';
 import { useNow } from '../hooks/useNow';
 import { useSpoolAms } from '../hooks/useSpoolAms';
 import React, { useState, useEffect } from 'react';
@@ -209,6 +210,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
           <div className="flex items-center gap-1 shrink-0">
             <a
               href={link.url}
+              onClick={e => openShop(e, spool, link)}
               target="_blank"
               rel="noopener noreferrer"
               title={link.label}
@@ -354,6 +356,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
           <div className="flex items-center gap-1 shrink-0">
             <a
               href={link.url}
+              onClick={e => openShop(e, spool, link)}
               target="_blank"
               rel="noopener noreferrer"
               title={`${link.label} öffnen`}
@@ -427,6 +430,7 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
           </span>
           <a
             href={link.url}
+            onClick={e => openShop(e, spool, link)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-orange-500 hover:underline font-semibold flex items-center gap-1"
