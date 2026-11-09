@@ -380,6 +380,24 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
+                {it.setup && (it.setup.bed || it.setup.nozzles.length > 0) && (
+                  <div className="flex flex-wrap items-center gap-1 mt-1.5 text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
+                    {it.setup.bed && <span className="px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-card)' }}>🟦 {it.setup.bed}</span>}
+                    {it.setup.nozzles.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-card)' }}>
+                        🔩 {(it.setup.nozzles.every(n => n === it.setup!.nozzles[0]) ? [it.setup.nozzles[0]] : it.setup.nozzles).map(n => String(n).replace('.', ',')).join(' / ')} mm
+                      </span>
+                    )}
+                  </div>
+                )}
+                {it.setup && it.setup.changes.length > 0 && (
+                  <div className="mt-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-400" role="alert">
+                    <div className="font-bold">{it.setup.changes.some(c => c.startsWith('Platte')) ? 'Vor dem Start wechseln' : 'Vor dem Start prüfen'}</div>
+                    {it.setup.changes.map(c => (
+                      <div key={c}>{c}</div>
+                    ))}
+                  </div>
+                )}
                 {it.missing.length > 0 && <div className="text-[10px] text-amber-400 mt-1.5">Im AMS fehlt: {it.missing.join(', ')}</div>}
                 {it.enough && it.enough.some(e => !e.ok) && (
                   <div className="mt-2 space-y-1.5" role="alert">

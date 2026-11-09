@@ -63,6 +63,49 @@ export function thumbFromThreeMf(data: Uint8Array, plate = 1): Uint8Array | null
   return key ? files[key] : null;
 }
 
+/** 1.270: Was die Datei braucht: Druckplatte und Düse(n) */
+export interface JobSetup {
+  /** Kurzer deutscher Name der Druckplatte (leer = unbekannt) */
+  bed: string;
+  /** Düsendurchmesser in mm, je Extruder (leer = unbekannt) */
+  nozzles: number[];
+}
+
+const BEDS: [RegExp, string][] = [
+  [/textured pei/i, 'Texturierte PEI'],
+  [/smooth pei|cool plate \(supertack\)|supertack/i, 'Glatte PEI'],
+  [/engineering/i, 'Engineering'],
+  [/high temp/i, 'Hochtemperatur'],
+  [/cool plate/i, 'Cool Plate']
+];
+export const bedLabel = (raw: string): string => {
+  const t = String(raw || '').trim();
+  if (!t) return '';
+  return BEDS.find(([re]) => re.test(t))?.[1] || t.slice(0, 40);
+};
+
+/** project_settings.config (JSON) lesen: curr_bed_type und nozzle_diameter. Fehlt etwas, bleibt es leer. */
+export function parseSetup(json: string): JobSetup {
+  try {
+    const j = JSON.parse(json);
+    const raw = j?.curr_bed_type ?? j?.bed_type ?? '';
+    const nd = Array.isArray(j?.nozzle_diameter) ? j.nozzle_diameter : j?.nozzle_diameter != null ? [j.nozzle_diameter] : [];
+    const nozzles = nd.map((x: unknown) => Math.round(parseFloat(String(x)) * 100) / 100).filter((x: number) => x > 0 && x < 3);
+    return { bed: bedLabel(String(raw)), nozzles };
+  } catch {
+    return { bed: '', nozzles: [] };
+  }
+}
+
+/** Aus den Bytes einer .3mf Platte und Düse lesen (null = steht nicht drin) */
+export function setupFromThreeMf(data: Uint8Array): JobSetup | null {
+  const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('project_settings.config') && f.originalSize <= 4_000_000 });
+  const key = Object.keys(files).find(k => k.toLowerCase().endsWith('project_settings.config'));
+  if (!key) return null;
+  const r = parseSetup(strFromU8(files[key]));
+  return r.bed || r.nozzles.length ? r : null;
+}
+
 /** Aus den Bytes einer .3mf das Gewicht lesen */
 export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number; filaments: JobFilament[] } | null {
   const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') && f.originalSize <= 4_000_000 }); // 1.233
@@ -230,7 +273,7 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
 }
 
 /** Filament je Platte aus einer Datei auf dem Drucker */
-export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; thumb: Uint8Array | null } | null> {
+export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; thumb: Uint8Array | null; setup: JobSetup | null } | null> {
   return withFtp(ip, code, async client => {
     const chunks: Buffer[] = [];
     let got = 0;
@@ -252,7 +295,13 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
     } catch {
       /* ohne Bild */
     }
-    return { ...w, thumb };
+    let setup: JobSetup | null = null;
+    try {
+      setup = setupFromThreeMf(bytes);
+    } catch {
+      /* ohne Angabe */
+    }
+    return { ...w, thumb, setup };
   });
 }
 

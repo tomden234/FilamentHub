@@ -413,6 +413,8 @@ export interface PiQueueItem {
   slots?: PiQueueSlot[];
   /** 1.260: reicht die Spule im gewählten Platz? */
   enough?: PiQueueEnough[];
+  /** 1.270: Platte und Düse der Datei, dazu was sich zum Druck davor ändert */
+  setup?: { bed: string; nozzles: number[]; changes: string[] };
 }
 
 export interface PiQueueEnough {

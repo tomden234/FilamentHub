@@ -11,6 +11,7 @@ import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { readLocalDoc } from './localDoc.js';
+import { setupInfo, type SetupInfo } from './setupCheck.js';
 import { checkEnough, enoughLines, type EnoughInfo } from './enough.js';
 
 export interface QueueItem {
@@ -26,6 +27,9 @@ export interface QueueItem {
   addedAt: number;
   /** Eigene Wahl: Filament-Nummer der Datei → Platz „amsId:slotId“ (leer = automatisch nach Material und Farbe) */
   pick?: Record<string, string>;
+  /** 1.270: Druckplatte und Düse(n), die die Datei braucht */
+  bed?: string;
+  nozzles?: number[];
 }
 
 export interface QueuePort {
@@ -68,6 +72,8 @@ interface StartedJob {
   names: string[];
   filaments: JobFilament[];
   at: number;
+  bed?: string;
+  nozzles?: number[];
 }
 const startedFile = () => path.join(dataDir, 'hub-started.json');
 const jobKey = (n: string) => String(n || '').toLowerCase().replace(/\.gcode\.3mf$|\.3mf$|\.gcode$/i, '').trim();
@@ -77,7 +83,7 @@ function loadStarted(): StartedJob[] {
 function rememberStarted(it: QueueItem): void {
   const now = Date.now();
   const names = Array.from(new Set([jobKey(it.name), jobKey(path.posix.basename(it.path))]));
-  const list = [{ path: it.path, names, filaments: it.filaments, at: now }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
+  const list = [{ path: it.path, names, filaments: it.filaments, at: now, bed: it.bed, nozzles: it.nozzles }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
   saveJsonConfig(startedFile(), list, 'gestartete Drucke', { pretty: false, keepPrev: true });
 }
 /** Pfad der Datei eines Drucks, den die Warteschlange gestartet hat (auch nach dem Umbenennen) */
@@ -236,12 +242,20 @@ function enoughFor(it: QueueItem, m: Mapping): EnoughInfo[] {
   }
 }
 
-export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[]; enough: EnoughInfo[] };
+export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[]; enough: EnoughInfo[]; setup?: SetupInfo };
 
 export function queueList(): QueueView[] {
-  return load().map(it => {
+  const items = load();
+  let lastStarted: StartedJob | undefined;
+  return items.map((it, i) => {
     const m = currentMapping(it);
-    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m), enough: enoughFor(it, m) };
+    let setup: SetupInfo | undefined;
+    if (it.bed || it.nozzles?.length) {
+      if (i === 0 && lastStarted === undefined) lastStarted = loadStarted().find(x => x.bed || x.nozzles?.length);
+      const ref = i > 0 ? items[i - 1] : lastStarted;
+      setup = setupInfo(it, ref);
+    }
+    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m), enough: enoughFor(it, m), setup };
   });
 }
 
@@ -283,7 +297,9 @@ export async function queueAdd(filePath: string, plate = 1, fkey?: string, displ
     name: displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''),
     plate: r.plate,
     filaments: r.filaments,
-    addedAt: Date.now()
+    addedAt: Date.now(),
+    bed: r.setup?.bed || undefined,
+    nozzles: r.setup?.nozzles?.length ? r.setup.nozzles : undefined
   };
   load().push(it);
   save();

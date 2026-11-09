@@ -3732,5 +3732,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.270',
+    label: '1.270 (Platte & Düse im Check)',
+    releaseDate: '09.11.2026',
+    description:
+      'Warteschlange: Der Pi liest aus der Druckdatei (.3mf), welche Druckplatte und welche Düse(n) sie braucht, und zeigt beides als Chips an der Karte. Weicht es vom Druck davor ab (letzter in der Warteschlange, beim ersten der zuletzt gestartete), wird die Karte gelb: „Platte: Glatte PEI → Texturierte PEI“ oder „Düse: 0,4 → 0,6 mm“. So siehst du schon vor dem Taster, ob du etwas wechseln musst. Der Drucker meldet Platte und Düse nicht selbst, darum der Vergleich mit dem Druck davor. Alte Einträge ohne Angabe zeigen nichts. Neue Datei server/hub/setupCheck.ts, Tests in setupCheck.test.ts. Pi-Add-on 1.3.26.',
+    features: ['🟦 Druckplatte der Datei an der Karte', '🔩 Düse(n) der Datei an der Karte', '⚠️ Gelber Hinweis bei Platten- oder Düsenwechsel', '🥧 Pi-Add-on 1.3.26 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
