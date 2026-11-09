@@ -3897,5 +3897,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.285',
+    label: '1.285 (Neue Dateien sofort, kein Warten bei 421)',
+    releaseDate: '09.11.2026',
+    description:
+      'Neue Dateien aus Bambu Studio sollen sofort in die Warteschlange: bei „Drucker belegt“ (421) pausiert die Suche nicht mehr 5 bis 30 Minuten, sondern versucht es nach 20 Sekunden wieder, sobald der Platz am Drucker frei ist. Meldung bleibt gelb und sagt das klar. Pi-Add-on 1.3.40.',
+    features: ['⚡ Neue Dateien ohne lange Pause', '🟡 Klare Meldung', '🥧 Pi-Add-on 1.3.40 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

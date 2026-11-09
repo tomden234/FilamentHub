@@ -638,7 +638,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
               ))}
             </div>
           )}
-          {msg && <p className={`text-[11px] ${/Nächster Versuch/.test(msg.text) ? 'text-amber-300' : msg.ok ? 'text-emerald-400' : 'text-rose-400'}`}>{msg.text}</p>}
+          {msg && <p className={`text-[11px] ${/Datei-Verbindung/.test(msg.text) ? 'text-amber-300' : msg.ok ? 'text-emerald-400' : 'text-rose-400'}`}>{msg.text}</p>}
           <button
             disabled={busy || items.length === 0}
             onClick={() => void act('start')}
