@@ -1,6 +1,6 @@
 import { slotLabel } from '../utils/slotLabel';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pencil, Trash2, Tag, Sun, ShoppingCart, ChevronDown, Minus, Plus, Check } from 'lucide-react';
+import { Pencil, Trash2, Tag, Sun, ShoppingCart, ExternalLink, ChevronDown, Minus, Plus, Check } from 'lucide-react';
 import type { AppSettings, Spool } from '../types/filament';
 import { getDryingStatus, getSpoolLink } from '../utils/shopLinks';
 import { useSpoolAms } from '../hooks/useSpoolAms';
@@ -157,6 +157,32 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
           )}
           {(dry.isOverdue || spool.needsDrying) && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-rose-500/15 text-rose-400 border border-rose-500/40">Trocknen fällig</span>}
           {low && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40">{remW <= 0 ? 'Leer' : 'Fast leer'}</span>}
+        </div>
+      )}
+
+
+      {!open && (
+        <div className="px-3 pb-3 -mt-0.5 flex items-center justify-end gap-1" onClick={stop}>
+          <a href={link.url} target="_blank" rel="noopener noreferrer" title={`${link.label} öffnen`} aria-label={`${link.label} öffnen`} className="p-1.5 rounded-lg text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition">
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          <LabelPrintButton spool={spool} compact />
+          {onWriteNfc && (
+            <button
+              onClick={() => onWriteNfc(spool.id)}
+              title={spool.nfcWritten ? 'NFC-Tag beschrieben – Details, Löschen' : 'Spule auf NFC-Tag schreiben'}
+              aria-label="NFC"
+              className={`p-1.5 rounded-lg transition cursor-pointer border ${spool.nfcWritten ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/40 hover:bg-emerald-500/25' : 'text-rose-400 bg-rose-500/15 border-rose-500/40 hover:bg-rose-500/25'}`}
+            >
+              <Tag className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button onClick={() => onEdit(spool.id)} title="Spule bearbeiten" aria-label="Spule bearbeiten" className="p-1.5 rounded-lg text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition cursor-pointer">
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onDelete(spool.id)} title="Spule löschen" aria-label="Spule löschen" className="p-1.5 rounded-lg text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition cursor-pointer">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
