@@ -43,6 +43,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.33
+
+- **Zustellung bestätigen**: Die Zustell-Mail setzt die bestellte Spule nur auf „zugestellt“ (Push „Filament zugestellt“). Erst dein „Habe ich“ in der App macht sie zur normalen Spule. Die Mail liefert außerdem das Lieferdatum („Kommt in 3 Tagen“).
+
 ## Neu in 1.3.32
 
 - **Produktseite finden**: Der Pi sucht per Gemini mit Google-Suche die genaue Produktseite einer Spule (Klick auf den Shop-Link in der App) und merkt sie sich (`product-links.json`). Braucht `gemini_api_key`.

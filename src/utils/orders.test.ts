@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { confirmArrival } from './incoming';
 import { applyOrder, looksLikeFilamentOrder, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
 
 const item = { brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic Schwarz', colorName: 'Schwarz', colorHex: '#000000', quantity: 2, initialWeight: 1000, pricePerKg: 19.99 };
@@ -37,16 +38,25 @@ describe('Bestell-Mail', () => {
     expect(s.doc.spools[1].incoming).toMatchObject({ status: 'shipped', eta: '2026-11-12' });
     expect(s.added).toBe(0);
   });
-  it('Zustellung macht Spulen normal, nur einmal', () => {
+  it('Zustellung setzt nur „zugestellt“, Bestätigung macht sie normal, spätere Mails ändern nichts', () => {
     const a = applyOrder({ spools: [] }, order('ordered'));
     const d = applyOrder(a.doc, order('delivered'));
     expect(d.arrived).toHaveLength(2);
-    expect(d.doc.spools.every((x: any) => !x.incoming)).toBe(true);
+    expect(d.doc.spools.every((x: any) => x.incoming?.status === 'delivered')).toBe(true);
+    // gleiche Zustellmail noch mal: kein zweiter Push
     const d2 = applyOrder(d.doc, order('delivered'));
+    expect(d2.arrived).toHaveLength(0);
     expect(d2.changed).toBe(false);
-    expect(d2.doc.spools).toHaveLength(2);
-    // späte Bestell-Mail legt nichts nach
-    expect(applyOrder(d.doc, order('ordered')).changed).toBe(false);
+    // späte Versandmail stuft nicht zurück
+    expect(applyOrder(d.doc, order('shipped', '2026-11-12')).doc.spools[0].incoming.status).toBe('delivered');
+    // Nutzer bestätigt in der App
+    const confirmed = { spools: d.doc.spools.map((x: any) => confirmArrival(x)) };
+    expect(confirmed.spools.every((x: any) => !x.incoming)).toBe(true);
+    // danach legt keine Mail etwas Neues an
+    expect(applyOrder(confirmed, order('ordered')).changed).toBe(false);
+    expect(applyOrder(confirmed, order('shipped')).changed).toBe(false);
+    expect(applyOrder(confirmed, order('delivered')).changed).toBe(false);
+    expect(confirmed.spools).toHaveLength(2);
   });
   it('Zustellung ohne Bestell-Mail legt nichts an (sonst doppelte Spulen)', () => {
     const d = applyOrder({ spools: [{ id: 'x' }] }, order('delivered'));
@@ -61,9 +71,9 @@ describe('Bestell-Mail', () => {
     const ship: ParsedOrder = { kind: 'delivered', orderId: 'A-1', items: [{ ...item, name: 'Bambu PETG HF', material: 'PETG', colorName: 'Blau', quantity: 1 }] };
     const d = applyOrder(a.doc, ship);
     expect(d.arrived).toHaveLength(1);
-    const left = d.doc.spools.filter((x: any) => x.incoming);
-    expect(left).toHaveLength(1);
-    expect(left[0].material).toBe('PLA');
+    const wait = d.doc.spools.filter((x: any) => x.incoming.status !== 'delivered');
+    expect(wait).toHaveLength(1);
+    expect(wait[0].material).toBe('PLA');
   });
   it('ASIN verbindet Mails mit verschiedenen Namen', () => {
     const asinItem = { ...item, quantity: 1, asin: 'B0DRCR8FZP', productUrl: 'https://www.amazon.de/dp/B0DRCR8FZP' };
@@ -121,5 +131,21 @@ describe('Mail-Verarbeitung mit echtem Parser', () => {
   it('Gemini-Fehler wirft (Mail wird später erneut versucht)', async () => {
     const bad: MailDeps = { ...mk(null), extract: async () => { throw new Error('Gemini-Fehler 429'); } };
     await expect(processMail(mime('Bestellt', amazonHtml), [], bad)).rejects.toThrow('429');
+  });
+});
+
+import { incomingInfo } from './incoming';
+describe('Lieferzeit-Text', () => {
+  const now = new Date(2026, 10, 9, 18, 0);
+  const inc = (status: 'ordered' | 'shipped' | 'delivered', eta?: string) => ({ key: 'k', orderId: 'o', status, eta });
+  it('Tage bis Lieferung', () => {
+    expect(incomingInfo(inc('shipped', '2026-11-09'), now).text).toBe('Kommt heute');
+    expect(incomingInfo(inc('shipped', '2026-11-10'), now).text).toBe('Kommt morgen');
+    expect(incomingInfo(inc('ordered', '2026-11-12'), now).text).toBe('Kommt in 3 Tagen (12.11.)');
+    expect(incomingInfo(inc('shipped', '2026-11-07'), now)).toMatchObject({ tone: 'late' });
+  });
+  it('ohne Datum und zugestellt', () => {
+    expect(incomingInfo(inc('ordered'), now).text).toContain('Lieferdatum offen');
+    expect(incomingInfo(inc('delivered'), now)).toMatchObject({ tone: 'here' });
   });
 });

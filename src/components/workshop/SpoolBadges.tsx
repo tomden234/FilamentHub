@@ -1,10 +1,11 @@
 import React from 'react';
-import { AlertTriangle, Droplets, Truck, Flame, MapPin, Package, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Droplets, Flame, MapPin, Package, ShieldCheck } from 'lucide-react';
 import type { Spool } from '../../types/filament';
 import { getHumidityInfo } from '../../utils/materialInfo';
 import { isLowSpool } from '../../utils/spoolAlerts';
 import { hasSpoolBody, isInEibos, isSealed } from '../../utils/spoolState';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
+import { IncomingChips } from './IncomingChips';
 
 // Kleine Abzeichen für Spulenkarten: fast leer, Zustand (verschweißt, Eibos, ohne Spule, trocknen), Lagerort und Feuchte-Hinweis.
 // Wird innerhalb einer Zeile mit flex-wrap eingesetzt.
@@ -25,18 +26,9 @@ export const SpoolBadges: React.FC<{ spool: Spool }> = ({ spool }) => {
   const eibos = isInEibos(spool);
   const noSpool = !hasSpoolBody(spool);
 
-  const inc = spool.incoming;
   return (
     <>
-      {inc && (
-        <span
-          className="text-[10px] px-1.5 py-0.5 rounded font-bold border bg-indigo-500/20 text-indigo-300 border-indigo-500/40 inline-flex items-center gap-1"
-          title={`Bestellung ${inc.orderId}${inc.eta ? `, Lieferung ${inc.eta}` : ''}`}
-        >
-          <Truck className="w-2.5 h-2.5" />
-          <span>{inc.status === 'shipped' ? 'Unterwegs' : 'Bestellt'}{inc.eta ? ` · ${inc.eta.slice(8, 10)}.${inc.eta.slice(5, 7)}.` : ''}</span>
-        </span>
-      )}
+      <IncomingChips spool={spool} />
       {spool.needsDrying && (
         <span
           className="text-[10px] px-1.5 py-0.5 rounded font-bold border bg-rose-500/20 text-rose-400 border-rose-500/40 inline-flex items-center gap-1"

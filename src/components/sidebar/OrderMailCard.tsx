@@ -57,7 +57,7 @@ export const OrderMailCard: React.FC = () => {
         <li>Im Hauptkonto einen Filter: „Enthält die Wörter“ Filament (bei „Enthält nicht“ zum Beispiel github), → Weiterleiten an das zweite Konto (Adresse dort erst bestätigen). Der Pi sortiert Werbung selbst aus.</li>
         <li>Im Add-on „FilamentHub Server“ Adresse und App-Passwort bei mail_user und mail_password eintragen, Add-on neu starten.</li>
       </ol>
-      <p>Bestellung → Spule „Unterwegs“, Versand → Lieferdatum, Zustellung → Push „Filament angekommen“. Alte Mails im Hauptkonto bleiben unberührt.</p>
+      <p>Bestellung → Spule erscheint sofort („Kommt in 3 Tagen“), Versand → genaueres Lieferdatum, Zustellung → Push „Filament zugestellt“. Sobald du die Spule hast, tippst du an der Karte auf „Habe ich“: dann wird sie zur normalen Spule. Alte Mails im Hauptkonto bleiben unberührt.</p>
     </div>
   );
 };

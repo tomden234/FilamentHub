@@ -9,6 +9,7 @@ import { isLowSpool } from '../utils/spoolAlerts';
 import { useWorkshopSettings } from '../utils/workshopSettings';
 import { LabelPrintButton } from './LabelPrintButton';
 import { openShop } from '../utils/productPage';
+import { IncomingChips } from './workshop/IncomingChips';
 import { NumInput } from './ui/NumInput';
 
 // Spulen-Kachel: Spulen-Symbol in der Filamentfarbe (Füllung zeigt den Rest), Name, großes Gewicht, durchgehender Füllstandsbalken.
@@ -147,8 +148,9 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} style={{ color: 'var(--app-text-muted)' }} />
       </button>
 
-      {(ams.slot !== null || ams.isDrying || dry.isOverdue || spool.needsDrying || low) && !open && (
+      {(ams.slot !== null || ams.isDrying || dry.isOverdue || spool.needsDrying || low || spool.incoming) && !open && (
         <div className="pl-[5.25rem] pr-4 pb-3 -mt-0.5 flex flex-wrap items-center gap-1">
+          <IncomingChips spool={spool} />
           {ams.slot !== null && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[#00AE42]/20 text-[#00AE42] border border-[#00AE42]/30">{slotLabel(ams.slot)}</span>}
           {ams.isDrying && (
             <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-sky-500/20 text-sky-400 border border-sky-500/40 inline-flex items-center gap-1">

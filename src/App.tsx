@@ -59,6 +59,7 @@ import { useDryingReminders } from './hooks/useDryingReminders';
 import { useKeepAlive } from './hooks/useKeepAlive';
 import { LowStockBanner } from './components/workshop/LowStockBanner';
 import { registerSpoolLinks } from './utils/shopLinks';
+import { CONFIRM_ARRIVAL_EVENT, confirmArrival } from './utils/incoming';
 import type { WorkshopTab } from './components/workshop/WorkshopModal';
 import { getLocationStats } from './utils/spoolAlerts';
 import { getWorkshopSettings } from './utils/workshopSettings';
@@ -803,6 +804,23 @@ export default function App() {
     persistState(updatedSpools, updatedHistory);
     showToast(`Waage: ${grossWeight}g − ${tara}g Spule = ${newNet}g Filament.`);
   };
+
+  // 1.277: „Habe ich“ / „Schon da“ auf einer bestellten Spule: wird zur normalen Spule
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = String((e as CustomEvent<string>).detail || '');
+      const spool = spools.find(s => s.id === id);
+      if (!spool?.incoming) return;
+      pushUndoSnapshot();
+      const updated = spools.map(s => (s.id === id ? confirmArrival(s) : s));
+      setSpools(updated);
+      persistState(updated, printHistory);
+      showToast(`${spool.brand} ${spool.name}: Spule übernommen.`);
+      addSystemLog('spule', `${spool.brand} ${spool.name} als angekommen bestätigt`, spool.name, 'success');
+    };
+    window.addEventListener(CONFIRM_ARRIVAL_EVENT, on);
+    return () => window.removeEventListener(CONFIRM_ARRIVAL_EVENT, on);
+  });
 
   const handleMarkDried = (spoolId: string) => {
     pushUndoSnapshot();

@@ -3809,5 +3809,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.277',
+    label: '1.277 (Bestellte Spulen mit Lieferzeit & Bestätigung)',
+    releaseDate: '09.11.2026',
+    description:
+      'Bestellte Spulen: Der Pi legt die Spule bei der Bestell-Mail sofort an. Auf der Karte steht „Kommt in 3 Tagen (12.11.)“, „Kommt morgen“, „Kommt heute“ oder „verspätet“, das Datum kommt aus der Mail (Bestellung, später genauer aus der Versandmail). Kommt die Zustell-Mail, steht dort „Zugestellt: bestätigen, wenn du sie hast“ und du bekommst den Push „Filament zugestellt“. Mit dem Knopf „Habe ich“ (oder „Schon da“, wenn eine Mail fehlte) wird sie zur normalen Spule, genau so wie bestellt (Marke, Material, Farbe, Preis, Link). Die Bestätigung merkt sich die Bestellung, spätere Mails legen nichts doppelt an. Rückgängig geht mit dem Rückgängig-Knopf der App. Neue Dateien src/utils/incoming.ts und src/components/workshop/IncomingChips.tsx. Pi-Add-on 1.3.33.',
+    features: ['🚚 „Kommt in X Tagen“ auf der Spulenkarte', '📦 Zustellung → „Habe ich“ bestätigen', '🥧 Pi-Add-on 1.3.33 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
