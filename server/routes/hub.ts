@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow } from '../hub/hub.js';
+import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks } from '../hub/hub.js';
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
@@ -103,7 +103,7 @@ router.get('/bericht/:id', (req, res) => {
   const r = getReport(String(req.params.id));
   if (!r) return res.status(404).type('text/plain; charset=utf-8').send('Bericht nicht gefunden.');
   res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
+  res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'");
   res.type('text/html; charset=utf-8').send(reportPage(r, listReports()));
 });
 
@@ -134,8 +134,14 @@ router.get('/api/hub/energy', (_req, res) => {
   res.json({ success: true, weeks: energyWeeks(), kwhPrice: getHubConfig().kwhPrice });
 });
 
-router.post('/api/hub/report-now', async (_req, res) => {
-  res.json({ success: true, report: await weeklyReportNow() });
+// 1.262: letzte Wochen als Liste (0 = diese Woche) und Bericht einer gewählten Woche senden
+router.get('/api/hub/weeks', async (req, res) => {
+  res.json({ success: true, weeks: await weeklyWeeks(Number(req.query.n) || 8) });
+});
+
+router.post('/api/hub/report-now', async (req, res) => {
+  const offset = Number(req.body?.offset);
+  res.json({ success: true, report: await weeklyReportNow(Number.isFinite(offset) ? offset : 0) });
 });
 
 router.post('/api/hub/esp-sync', async (_req, res) => {

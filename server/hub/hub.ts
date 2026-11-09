@@ -23,7 +23,7 @@ export { hubEnabled, getHubConfig, updateHubConfig, printMeta, resolvePrint, pus
 export { setPower } from './power.js';
 export { readPhoto } from './photo.js';
 export { onPrintEnd, deductSuggest, manualDeduct } from './deduct.js';
-export { espSyncNow, energyWeeks, weeklyReportNow } from './watch.js';
+export { espSyncNow, energyWeeks, weeklyReportNow, weeklyWeeks } from './watch.js';
 export { backupNow, listBackups, readBackup } from './backup.js';
 
 export function attachPrinter(p: PrinterPort): void {

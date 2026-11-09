@@ -360,9 +360,27 @@ export async function fetchEnergyWeeks(): Promise<EnergyWeekInfo[]> {
   }
 }
 
-export async function weeklyReportNow(): Promise<ServerCheck> {
+export interface ServerWeek {
+  /** 0 = diese Woche, 1 = letzte Woche … */
+  offset: number;
+  weekStart: number;
+  title: string;
+  text: string;
+}
+
+/** Letzte Wochen mit Text vom Pi (1.262) */
+export async function serverWeeks(n = 8): Promise<ServerWeek[]> {
   try {
-    const j = await get('/api/hub/report-now', { method: 'POST', body: {}, timeoutMs: 30000 });
+    const j = await get(`/api/hub/weeks?n=${n}`);
+    return Array.isArray(j?.weeks) ? j.weeks : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function weeklyReportNow(offset = 0): Promise<ServerCheck> {
+  try {
+    const j = await get('/api/hub/report-now', { method: 'POST', body: { offset }, timeoutMs: 30000 });
     return j?.report ? { ok: true, text: `${j.report.title}\n${j.report.text}` } : { ok: false, text: 'Kein Bericht' };
   } catch (e: any) {
     return { ok: false, text: String(e?.message || e) };

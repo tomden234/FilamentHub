@@ -58,15 +58,35 @@ interface ReportInput {
   energy: EnergyWeek | undefined;
   kwhPrice: number;
   lowWeightG: number;
+  /** 1.262: Wochen zurück (0 = diese Woche bis jetzt, 1 = letzte Woche, …) */
+  offset?: number;
 }
 
 const euro = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 const kwh = (wh: number) => `${(wh / 1000).toLocaleString('de-DE', { maximumFractionDigits: 1 })} kWh`;
 
-/** Text des Wochenberichts (Woche ab Montag bis jetzt) */
+/** Montag 00:00 der Woche, die `offset` Wochen zurückliegt (Ortszeit, sommerzeitfest) */
+export function weekStartBack(now: number, offset: number): number {
+  const d = new Date(weekStartMs(now));
+  d.setDate(d.getDate() - 7 * Math.max(0, Math.floor(offset || 0)));
+  return d.getTime();
+}
+
+/** „02.–08.11.“ bzw. „28.10.–03.11.“ */
+export function weekRangeLabel(from: number): string {
+  const a = new Date(from);
+  const b = new Date(from);
+  b.setDate(b.getDate() + 6);
+  const dm = (d: Date) => `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`;
+  return a.getMonth() === b.getMonth() ? `${String(a.getDate()).padStart(2, '0')}.–${dm(b)}` : `${dm(a)}–${dm(b)}`;
+}
+
+/** Text des Wochenberichts (diese Woche ab Montag bis jetzt, oder eine volle frühere Woche) */
 export function weeklyReport(i: ReportInput): { title: string; text: string } {
-  const from = weekStartMs(i.now);
-  const prints = i.prints.filter(p => p.endMs >= from && p.endMs <= i.now);
+  const offset = Math.max(0, Math.floor(i.offset || 0));
+  const from = weekStartBack(i.now, offset);
+  const to = offset > 0 ? weekStartBack(i.now, offset - 1) - 1 : i.now;
+  const prints = i.prints.filter(p => p.endMs >= from && p.endMs <= to);
   const done = prints.filter(p => p.state === 'FINISH').length;
   const failed = prints.length - done;
   const price = new Map(i.spools.map(s => [s.id, Number(s.pricePerKg) || 0]));
@@ -74,7 +94,7 @@ export function weeklyReport(i: ReportInput): { title: string; text: string } {
   let cost = 0;
   for (const h of i.history) {
     const t = Date.parse(h.timestamp);
-    if (!(h.grams > 0) || !(t >= from && t <= i.now)) continue;
+    if (!(h.grams > 0) || !(t >= from && t <= to)) continue;
     grams += h.grams;
     cost += (h.grams / 1000) * (price.get(h.spoolId) || 0);
   }
@@ -87,9 +107,9 @@ export function weeklyReport(i: ReportInput): { title: string; text: string } {
   }
   const total = cost + (i.energy ? (i.energy.totalWh / 1000) * i.kwhPrice : 0);
   if (total > 0) lines.push(`💶 Zusammen ${euro(total)}`);
-  const low = i.spools.filter(s => i.lowWeightG > 0 && s.remainingWeight > 0 && s.remainingWeight <= i.lowWeightG);
+  const low = offset > 0 ? [] : i.spools.filter(s => i.lowWeightG > 0 && s.remainingWeight > 0 && s.remainingWeight <= i.lowWeightG);
   if (low.length) lines.push(`⚠️ Fast leer: ${low.map(s => `${`${s.brand || ''} ${s.name || ''}`.trim()} (${Math.round(s.remainingWeight)} g)`).join(', ')}`);
-  return { title: '📊 Deine 3D-Druck-Woche', text: lines.join('\n') };
+  return { title: offset > 0 ? `📊 3D-Druck-Woche ${weekRangeLabel(from)}` : '📊 Deine 3D-Druck-Woche', text: lines.join('\n') };
 }
 
 // ---------- Warteschlange: Filament der Datei → AMS-Platz ----------

@@ -36,7 +36,7 @@ describe('1.261 Wochenberichte', () => {
     const html = r.reportPage(rep, r.listReports());
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
-    expect(html).toContain('⚡ 1 kWh');
+    expect(html).toContain('<span class="i">⚡</span><span>1 kWh</span>');
     expect(html).toContain('Frühere Berichte');
   });
   it('Adresse des Pi: nur Heimnetz mit Port; Heimnetz geht vor Tailscale', () => {

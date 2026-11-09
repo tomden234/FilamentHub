@@ -3644,5 +3644,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.262',
+    label: '1.262 (Wochen wählen & Berichtsseite im App-Design)',
+    releaseDate: '09.11.2026',
+    description:
+      'Einstellungen → FilamentHub Server: unter „Wochen“ stehen jetzt die letzten 8 Wochen (diese, letzte, davor) als aufklappbare Liste mit Drucken, Filament, Strom und Kosten; jede Woche lässt sich per „Als Push senden“ aufs Handy schicken. Frühere Wochen zählen die volle Woche Montag bis Sonntag und tragen den Zeitraum im Titel. Die Berichtsseite vom Pi sieht jetzt aus wie die App (Sand-Design: warmes Papier, Waldgrün, Serifen-Überschrift, runde Karten mit Symbol) und „App öffnen“ führt zur Webseite der App. Pi-Add-on 1.3.21.',
+    features: ['📅 Frühere Wochen wählen und senden', '🎨 Berichtsseite im App-Design', '🔗 „App öffnen“ geht zur App', '🥧 Pi-Add-on 1.3.21 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

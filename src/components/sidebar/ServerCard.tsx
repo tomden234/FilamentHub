@@ -14,7 +14,9 @@ import {
   getHubSettings,
   saveHubSettings,
   weeklyReportNow,
-  type ServerBackup
+  serverWeeks,
+  type ServerBackup,
+  type ServerWeek
 } from '../../utils/recorderServer';
 import { getHubInfo } from '../../utils/serverDeducts';
 import { getHaSyncInfo } from '../../utils/haPrintSync';
@@ -40,9 +42,16 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
   const setSetting = (patch: Partial<typeof hs>) => setHs(saveHubSettings(patch));
   const [backups, setBackups] = useState<ServerBackup[]>([]);
 
+  const [weeks, setWeeks] = useState<ServerWeek[]>([]);
+  const [openWeek, setOpenWeek] = useState<number | null>(null);
+  const [weekBusy, setWeekBusy] = useState<number | null>(null);
+
   const loadBackups = async () => setBackups(await listServerBackups());
   useEffect(() => {
-    if (getServerUrl() && hub?.enabled) void loadBackups();
+    if (getServerUrl() && hub?.enabled) {
+      void loadBackups();
+      void serverWeeks(8).then(setWeeks);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub?.enabled]);
 
@@ -82,6 +91,21 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
     setHubBusy('report');
     setHubMsg(await weeklyReportNow());
     setHubBusy('');
+  };
+
+  const sendWeek = async (offset: number) => {
+    setWeekBusy(offset);
+    setHubMsg(await weeklyReportNow(offset));
+    setWeekBusy(null);
+  };
+
+  const weekName = (w: ServerWeek) => (w.offset === 0 ? 'Diese Woche' : w.offset === 1 ? 'Letzte Woche' : `Vor ${w.offset} Wochen`);
+  const weekRange = (w: ServerWeek) => {
+    const a = new Date(w.weekStart);
+    const b = new Date(w.weekStart);
+    b.setDate(b.getDate() + 6);
+    const f = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+    return `${f(a)}–${f(b)}`;
   };
 
   const doEsp = async () => {
@@ -163,6 +187,35 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
               ESP-Update prüfen
             </button>
           </div>
+          {weeks.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-[11px] font-extrabold" style={{ color: 'var(--app-text)' }}>
+                Wochen
+              </div>
+              {weeks.map(w => {
+                const open = openWeek === w.offset;
+                return (
+                  <div key={w.offset} className="rounded-lg border" style={{ borderColor: 'var(--app-border)', backgroundColor: 'var(--app-card)' }}>
+                    <button type="button" onClick={() => setOpenWeek(open ? null : w.offset)} aria-expanded={open} className="w-full flex items-center justify-between px-2.5 py-1.5 text-[11px] font-bold cursor-pointer" style={{ color: 'var(--app-text)' }}>
+                      <span>{weekName(w)}</span>
+                      <span style={{ color: 'var(--app-text-muted)' }}>{weekRange(w)} {open ? '▴' : '▾'}</span>
+                    </button>
+                    {open && (
+                      <div className="px-2.5 pb-2 space-y-1.5">
+                        <p className="text-[11px] leading-snug whitespace-pre-line" style={{ color: 'var(--app-text-muted)' }}>
+                          {w.text}
+                        </p>
+                        <button type="button" onClick={() => sendWeek(w.offset)} disabled={!!hubBusy || weekBusy !== null} className={smallBtn} style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
+                          {weekBusy === w.offset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BellRing className="w-3.5 h-3.5" />}
+                          Als Push senden
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {hubMsg && <p className={`text-[11px] leading-snug whitespace-pre-line ${hubMsg.ok ? 'text-emerald-400' : 'text-amber-300'}`}>{hubMsg.text}</p>}
           {ew && (
             <p className="text-[11px]" style={{ color: 'var(--app-text-muted)' }}>

@@ -8,7 +8,7 @@ import { activeSlotFromPrinter } from '../../src/utils/amsMatch.js';
 import { expectedMinutes, shortages, tooLong } from './deductPlan.js';
 import { cloudReady, loadDoc } from './cloud.js';
 import { haAvailable, haPowerW } from './ha.js';
-import { addEnergy, allTrays, missingMaterials, stalled, weekKey, weeklyReport } from './hubLogic.js';
+import { addEnergy, allTrays, missingMaterials, stalled, weekKey, weekStartBack, weeklyReport } from './hubLogic.js';
 import { syncEspYaml } from './esphome.js';
 import { rootDir } from '../paths.js';
 import { access, durText, getHubConfig, port, push, saveState, state, traysOf } from './core.js';
@@ -257,24 +257,43 @@ export function energyWeeks(): { week: string; totalWh: number; printWh: number;
     .map(k => ({ week: k, totalWh: Math.round(e[k].totalWh), printWh: Math.round(e[k].printWh), cost: Math.round((e[k].totalWh / 1000) * price * 100) / 100 }));
 }
 
-export async function weeklyReportNow(): Promise<{ title: string; text: string; id: string; url: string }> {
-  let doc: any = {};
+async function loadReportDoc(): Promise<any> {
   try {
-    if (cloudReady(access())) doc = await loadDoc(access());
+    if (cloudReady(access())) return await loadDoc(access());
   } catch {
-    doc = {};
+    /* ohne Cloud-Speicher: nur Drucke und Strom */
   }
+  return {};
+}
+
+function buildWeek(doc: any, offset: number, now: number) {
   const c = getHubConfig();
-  const now = Date.now();
-  const r = weeklyReport({
+  return weeklyReport({
     now,
+    offset,
     prints: printRecorder.list(),
     history: Array.isArray(doc?.printHistory) ? doc.printHistory : [],
     spools: Array.isArray(doc?.spools) ? doc.spools : [],
-    energy: state().energy?.[weekKey(now)],
+    energy: state().energy?.[weekKey(weekStartBack(now, offset))],
     kwhPrice: c.kwhPrice,
     lowWeightG: c.lowWeightG
   });
+}
+
+/** 1.262: die letzten n Wochen (0 = diese) als Text, ohne Push und ohne zu speichern */
+export async function weeklyWeeks(n = 8): Promise<{ offset: number; weekStart: number; title: string; text: string }[]> {
+  const doc = await loadReportDoc();
+  const now = Date.now();
+  const cnt = Math.max(1, Math.min(26, Math.floor(n) || 8));
+  return Array.from({ length: cnt }, (_, offset) => ({ offset, weekStart: weekStartBack(now, offset), ...buildWeek(doc, offset, now) }));
+}
+
+/** Bericht einer Woche (offset 0 = diese, 1 = letzte …) speichern und als Push schicken */
+export async function weeklyReportNow(offset = 0): Promise<{ title: string; text: string; id: string; url: string }> {
+  const doc = await loadReportDoc();
+  const now = Date.now();
+  const off = Math.max(0, Math.min(25, Math.floor(Number(offset)) || 0));
+  const r = buildWeek(doc, off, now);
   const rep = addReport(r.title, r.text, now);
   const url = reportUrl(rep.id);
   await push('test', r.title, r.text, { tag: 'weekly', url });
