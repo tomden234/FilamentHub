@@ -3655,5 +3655,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.263',
+    label: '1.263 (Test: Druck fertig mit altem Druck)',
+    releaseDate: '09.11.2026',
+    description:
+      'Testmenü → 6. Push-Meldungen: neuer Test „Druck fertig mit altem Druck (Bild + Stats)“. Der Pi nimmt den neuesten fertigen Druck mit gespeichertem Foto (sonst den neuesten fertigen) und schickt den echten „Druck fertig“-Push mit Foto, Dauer, abgezogenem Filament und Strom. Der Text nennt das Datum des alten Drucks. Pi-Add-on 1.3.22.',
+    features: ['🧪 Test „Druck fertig“ mit echtem altem Druck', '📷 Mit Foto, Dauer, Abzug und Strom', '🥧 Pi-Add-on 1.3.22 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

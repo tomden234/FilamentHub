@@ -8,7 +8,7 @@ import { startedJobFilaments, startedJobNear } from './queue.js';
 import { isGenericPrintName } from '../../src/utils/printMatch.js';
 import { publishImage } from './esphome.js';
 import { type Fil, access, deductActive, durText, getHubConfig, hubEnabled, mainSlotOf, port, push, saveState, sleep, state, traysOf, updateHubConfig } from './core.js';
-import { lastJpeg, takePhoto } from './photo.js';
+import { lastJpeg, readPhoto, takePhoto } from './photo.js';
 import { statsGrams, statsPrint, type StatGram } from './printStats.js';
 
 /** Gramm je Material und Farbe für das Dauer-Protokoll (Fun Facts) */
@@ -106,6 +106,23 @@ async function pushEnd(rec: RecordedPrint): Promise<void> {
   } else {
     await push('failed', '❌ Druck abgebrochen', `${rec.name} bei ${rec.percent} % · ${dur}\nIn der App: Spule anteilig abziehen?`, { tag: `print-${rec.id}`, image });
   }
+}
+
+/** 1.263: Test „Druck fertig“ mit einem echten alten Druck (neuester fertiger mit Foto, sonst neuester fertiger): Bild, Dauer, Abzug, Strom */
+export async function pushOldDone(): Promise<{ ok: boolean; name?: string; hasImage: boolean; info: string }> {
+  const done = printRecorder.list().filter(r => r.state === 'FINISH').sort((a, b) => b.endMs - a.endMs);
+  const rec = done.find(r => readPhoto(r.id)) || done[0];
+  if (!rec) return { ok: false, hasImage: false, info: 'Noch kein fertiger Druck am Pi aufgezeichnet.' };
+  const jpeg = readPhoto(rec.id);
+  const image = jpeg ? publishImage(jpeg, `${crypto.randomBytes(8).toString('hex')}.jpg`) || undefined : undefined;
+  const m = state().prints[rec.id];
+  const lines = [`${rec.name} · ${durText((rec.endMs - rec.startMs) / 60000)}`];
+  if (m?.deduct === 'done' && m.texts?.length) lines.push(`Abgezogen: ${m.texts.join(', ')}`);
+  if (m?.energyWh && m.energyWh > 0) lines.push(`⚡ ${(m.energyWh / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 })} kWh`);
+  const when = new Date(rec.endMs).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  lines.push(`(Test mit altem Druck vom ${when})`);
+  const ok = await push('test', '✅ Druck fertig', lines.join('\n'), { tag: 'test-done-old', image });
+  return { ok, name: rec.name, hasImage: Boolean(image), info: `${rec.name} (${when})${image ? ' mit Foto' : ' ohne Foto (keins gespeichert oder Bild-Weg nicht verfügbar)'}` };
 }
 
 /** Drucke, deren Abzug gerade läuft (nie zwei Versuche gleichzeitig, sonst könnte doppelt abgezogen werden) */

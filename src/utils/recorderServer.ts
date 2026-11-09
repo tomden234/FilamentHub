@@ -288,7 +288,8 @@ export async function testServerPush(kind = 'basic'): Promise<ServerCheck> {
     if (j) saveHubInfo(j);
     if (!j?.enabled) return { ok: false, text: 'Der Server ist zu alt. In Home Assistant die App „FilamentHub Server“ aktualisieren.' };
     if (!j.ha) return { ok: false, text: 'Der Server erreicht Home Assistant nicht. App „FilamentHub Server“ aktualisieren und neu starten.' };
-    return j.success ? { ok: true, text: `Push gesendet ${j.lastPush?.text || ''}`.trim() } : { ok: false, text: `Kein Push: ${j.lastPush?.text || 'unbekannt'}. Ist die Home-Assistant-App auf dem Handy angemeldet?` };
+    if (!j.success && j.info && /^Noch kein/.test(j.info)) return { ok: false, text: j.info };
+    return j.success ? { ok: true, text: j.info ? `Push gesendet mit: ${j.info}` : `Push gesendet ${j.lastPush?.text || ''}`.trim() } : { ok: false, text: `Kein Push: ${j.lastPush?.text || 'unbekannt'}. Ist die Home-Assistant-App auf dem Handy angemeldet?` };
   } catch (e: any) {
     return { ok: false, text: String(e?.message || e) };
   }

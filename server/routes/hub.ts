@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks } from '../hub/hub.js';
+import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks, pushOldDone } from '../hub/hub.js';
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
@@ -87,6 +87,10 @@ router.post('/api/hub/test-push', async (req, res) => {
   if (kind === 'weekly') {
     const r = await weeklyReportNow();
     return res.json({ success: true, ...hubStatus(), report: { id: r.id, url: r.url } });
+  }
+  if (kind === 'done-old') {
+    const r = await pushOldDone();
+    return res.json({ success: r.ok, ...hubStatus(), info: r.info });
   }
   const t = findPushTest(kind);
   if (!t) return res.status(400).json({ success: false, error: 'Unbekannte Test-Meldung' });

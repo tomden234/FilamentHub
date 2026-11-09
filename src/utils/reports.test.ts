@@ -64,7 +64,8 @@ describe('1.261 Push-Daten und Test-Meldungen', () => {
     const list = t.pushTestList();
     expect(list[0].id).toBe('weekly');
     expect(new Set(list.map(x => x.id)).size).toBe(list.length);
-    for (const x of list.slice(1)) expect(t.findPushTest(x.id)?.title).toBeTruthy();
+    expect(list[1].id).toBe('done-old');
+    for (const x of list.slice(2)) expect(t.findPushTest(x.id)?.title).toBeTruthy();
     expect(t.findPushTest('nope')).toBeUndefined();
   });
   it('Warteschlangen-Test hat die drei Knöpfe', () => {

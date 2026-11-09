@@ -35,6 +35,6 @@ export const PUSH_TESTS: PushTest[] = [
   { id: 'esp', label: 'ESP-Update bereit', title: '🔧 ESP-Update bereit', text: 'Neue AMS-ESP-Fassung (Beispiel). Home Assistant → ESPHome → Filament AMS → Installieren → Drahtlos.', opts: { tag: 'test-esp' } }
 ];
 
-export const pushTestList = (): { id: string; label: string }[] => [{ id: 'weekly', label: 'Wochenbericht (mit Seite)' }, ...PUSH_TESTS.map(t => ({ id: t.id, label: t.label }))];
+export const pushTestList = (): { id: string; label: string }[] => [{ id: 'weekly', label: 'Wochenbericht (mit Seite)' }, { id: 'done-old', label: 'Druck fertig mit altem Druck (Bild + Stats)' }, ...PUSH_TESTS.map(t => ({ id: t.id, label: t.label }))];
 
 export const findPushTest = (id: string): PushTest | undefined => PUSH_TESTS.find(t => t.id === id);

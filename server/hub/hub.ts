@@ -22,7 +22,7 @@ import { dailyBackup, listBackups } from './backup.js';
 export { hubEnabled, getHubConfig, updateHubConfig, printMeta, resolvePrint, push } from './core.js';
 export { setPower } from './power.js';
 export { readPhoto } from './photo.js';
-export { onPrintEnd, deductSuggest, manualDeduct } from './deduct.js';
+export { onPrintEnd, deductSuggest, manualDeduct, pushOldDone } from './deduct.js';
 export { espSyncNow, energyWeeks, weeklyReportNow, weeklyWeeks } from './watch.js';
 export { backupNow, listBackups, readBackup } from './backup.js';
 
