@@ -112,7 +112,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
       const why = res.data?.error || (res.status === 503 ? 'Foto-Erkennung braucht den Server.' : 'Erkennung nicht möglich.');
       setErrorMessage(`${why} Bitte die Spule von Hand anlegen.`);
     } catch {
-      setErrorMessage('Server nicht erreichbar. Bitte die Spule von Hand anlegen.');
+      setErrorMessage('Server nicht erreichbar (Pi an? Tailscale/WLAN?). Bitte die Spule von Hand anlegen.');
     } finally {
       setIsAnalyzing(false);
     }

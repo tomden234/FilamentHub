@@ -3688,5 +3688,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.266',
+    label: '1.266 (Foto-Erkennung über den Pi)',
+    releaseDate: '09.11.2026',
+    description:
+      'Foto-Erkennung der Spule: Die App schickte das Foto bisher nie an den Pi und meldete in der Handy-App und auf GitHub Pages „Nicht verfügbar auf GitHub Pages (kein Server)“. Jetzt geht das Foto direkt an den eingetragenen Pi (Verbindungen → FilamentHub Server), dort arbeitet der Gemini-Schlüssel aus dem Add-on. Ohne eingetragenen Pi bleibt es wie bisher. Bei Verbindungsproblemen gibt es einen klareren Hinweis.',
+    features: ['📷 Foto-Erkennung läuft über den Pi (Handy-App & Web)', '🔑 Falscher Pi-Schlüssel wird klar gemeldet'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
