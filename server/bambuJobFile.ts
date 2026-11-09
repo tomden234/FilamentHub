@@ -33,7 +33,7 @@ const norm = (s: string) =>
     .trim();
 
 /** slice_info.config lesen (ohne XML-Bibliothek: nur die Filament- und Plate-Zeilen) */
-function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: JobFilament[] } {
+function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: JobFilament[]; predSec?: number } {
   const plates = xml.match(/<plate>[\s\S]*?<\/plate>/g) || [];
   const idxOf = (blk: string) => Number((blk.match(/key="index"\s+value="(\d+)"/) || [])[1]) || 0;
   const blk = plates.find(b => idxOf(b) === plate) || plates[0] || xml;
@@ -52,7 +52,8 @@ function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: Job
       grams: Math.round(grams * 100) / 100
     });
   }
-  return { plate: idxOf(blk) || plate, filaments };
+  const pred = Number((blk.match(/key="prediction"\s+value="(\d+(?:\.\d+)?)"/) || [])[1]);
+  return { plate: idxOf(blk) || plate, filaments, predSec: pred > 0 ? Math.round(pred) : undefined };
 }
 
 /** Titelbild der Platte (Metadata/plate_N.png) aus einer .3mf */
@@ -107,7 +108,7 @@ export function setupFromThreeMf(data: Uint8Array): JobSetup | null {
 }
 
 /** Aus den Bytes einer .3mf das Gewicht lesen */
-export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number; filaments: JobFilament[] } | null {
+export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number; filaments: JobFilament[]; predSec?: number } | null {
   const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') && f.originalSize <= 4_000_000 }); // 1.233
   const key = Object.keys(files).find(k => k.toLowerCase().endsWith('slice_info.config'));
   if (!key) return null;
@@ -273,7 +274,7 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
 }
 
 /** Filament je Platte aus einer Datei auf dem Drucker */
-export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; thumb: Uint8Array | null; setup: JobSetup | null } | null> {
+export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; predSec?: number; thumb: Uint8Array | null; setup: JobSetup | null } | null> {
   return withFtp(ip, code, async client => {
     const chunks: Buffer[] = [];
     let got = 0;

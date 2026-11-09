@@ -3743,5 +3743,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.271',
+    label: '1.271 (Druckzeit: Slicer & berechnet, Wochen-Audit)',
+    releaseDate: '09.11.2026',
+    description:
+      'Warteschlange: Jede Karte zeigt jetzt die Druckzeit laut Slicer (aus der .3mf, „prediction“) und die berechnete Zeit. Die berechnete Zeit ist Slicer-Zeit mal einem Faktor, den der Pi je Material aus echten Drucken lernt (echte Dauer geteilt durch Slicer-Zeit, gleitender Mittelwert). Ab 2 gelernten Drucken wird sie angezeigt, vorher steht „noch offen (x/2 Drucke gelernt)“. Dazu „Fertig ca. Uhrzeit“: erst der laufende Druck (Restzeit vom Drucker), dann ein Eintrag nach dem anderen. Nur Drucke, die die Warteschlange gestartet hat, werden gelernt. Neu: GitHub-Action „Wochen-Audit“ (Sonntag): Claude liest die Änderungen der Woche und legt bei Funden ein Issue an, ändert aber keinen Code. Braucht einmalig das Secret CLAUDE_CODE_OAUTH_TOKEN in GitHub, sonst wird der Lauf übersprungen. Neue Dateien: server/hub/printTime.ts, src/utils/printTimeFmt.ts, .github/workflows/audit.yml. Pi-Add-on 1.3.27.',
+    features: ['⏱️ Slicer-Zeit und berechnete Zeit an jeder Karte', '🧠 Pi lernt Faktor je Material aus echten Drucken', '🏁 Fertig-Uhrzeit für die ganze Warteschlange', '🕵️ Wöchentliches Auto-Audit als GitHub-Issue', '🥧 Pi-Add-on 1.3.27 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

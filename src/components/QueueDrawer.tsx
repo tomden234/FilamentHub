@@ -7,6 +7,7 @@ import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../
 import { useBackLayer } from '../utils/backNav';
 import { generateAutoShopUrl } from '../utils/shopLinks';
 import { safeHttpUrl } from '../utils/safeData';
+import { fmtDur } from '../utils/printTimeFmt';
 import { piPrinterFiles, piQueueAction, piQueuePick, piQueueReorder, piQueueThumb, type PiQueueItem, type PrinterFile } from '../utils/recorderServer';
 
 // Warteschlange vom Pi als Fach rechts: Bild, Name, Anzahl Filamente und Material. Zeilen ziehen = Reihenfolge ändern.
@@ -380,6 +381,15 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
+                {it.time && (
+                  <div className="mt-1.5 text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+                    <div>
+                      ⏱️ Slicer <b style={{ color: 'var(--app-text)' }}>{fmtDur(it.time.slicerSec)}</b> · berechnet{' '}
+                      {it.time.learned ? <b style={{ color: 'var(--app-text)' }}>{fmtDur(it.time.calcSec)}</b> : <span>noch offen ({Math.min(it.time.n, 2)}/2 Drucke gelernt)</span>}
+                    </div>
+                    {it.time.endAt && <div>🏁 Fertig ca. {new Date(it.time.endAt).toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} Uhr</div>}
+                  </div>
+                )}
                 {it.setup && (it.setup.bed || it.setup.nozzles.length > 0) && (
                   <div className="flex flex-wrap items-center gap-1 mt-1.5 text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
                     {it.setup.bed && <span className="px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-card)' }}>🟦 {it.setup.bed}</span>}

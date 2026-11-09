@@ -1,0 +1,65 @@
+# 1.271: Wöchentliches Auto-Audit. Jeden Sonntag liest Claude die Änderungen der letzten 7 Tage
+# und legt ein Issue mit Funden an (Fehler, toter Code, Sicherheit). Es ändert nichts am Code.
+# Einmalig nötig: Repo-Geheimnis CLAUDE_CODE_OAUTH_TOKEN (Settings → Secrets → Actions). Ohne Geheimnis wird der Lauf übersprungen.
+name: Wochen-Audit
+
+on:
+  schedule:
+    - cron: '17 6 * * 0' # Sonntag 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: wochen-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Geheimnis vorhanden?
+        id: key
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "::notice::CLAUDE_CODE_OAUTH_TOKEN fehlt, Audit übersprungen"; fi
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.ok == 'true'
+        with:
+          fetch-depth: 300
+          persist-credentials: false
+      - name: Label anlegen
+        if: steps.key.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh label create wochen-audit --color 5319e7 --description "Automatisches Wochen-Audit" 2>/dev/null || true
+      - name: Audit mit Claude
+        if: steps.key.outputs.ok == 'true'
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }} # eigener Workflow-Token, keine Claude-GitHub-App nötig
+          prompt: |
+            REPO: ${{ github.repository }}
+            Du prüfst das Projekt „FilamentHub“ (Filament-Verwaltung, React/TypeScript-App, Pi-Server in server/, Add-on in filamenthub-server/).
+            Lies zuerst CLAUDE.md und die Skills in .claude/skills (security-audit, code-review-and-quality).
+
+            Aufgabe:
+            1. Hole die Änderungen der letzten 7 Tage: `git log --since="7 days ago" --stat` und `git diff` dazu.
+            2. Prüfe nur diese Änderungen auf: echte Fehler (Logik, Absturz, Race Conditions), toten Code, fehlende Tests,
+               Sicherheitslücken (Schlüssel im Code, Eingaben ohne Prüfung, unsichere Pfade/FTP/HTTP, Rechte).
+            3. Melde nur belegte Funde mit Datei und Zeile. Keine Vermutungen, keine Stilfragen.
+            4. Gibt es mindestens einen Fund: lege GENAU EIN Issue an mit
+               `gh issue create --label wochen-audit --title "Wochen-Audit KW <Woche> <Jahr>" --body "<Bericht>"`.
+               Bericht auf Deutsch, kurz: je Fund Schwere (hoch/mittel/niedrig), Datei:Zeile, Problem, Vorschlag.
+               Gibt es keinen Fund: nichts anlegen.
+            5. Schreibe niemals Tokens, Passwörter oder Zugangscodes in das Issue. Ändere keine Dateien.
+          claude_args: |
+            --max-turns 25
+            --allowedTools Read,Grep,Glob,Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(gh issue create:*),Bash(gh issue list:*)

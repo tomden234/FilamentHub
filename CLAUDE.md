@@ -33,4 +33,4 @@ Revisions- & Projekt-Aktualisierungen
 - Neue Skills: erst mit SkillSpector scannen (`skillspector scan <ordner> --no-llm`) UND selbst lesen, dann erst einbauen. Statischer Scan meldet bei Sicherheits-Skills viele Fehlalarme.
 
 ## Build (GitHub Actions, bei Push auf main)
-- ci.yml (Lint, Test, Build), apk.yml (Android APK), desktop.yml (Windows-App), pages.yml (GitHub Pages).
+- ci.yml (Lint, Test, Build), apk.yml (Android APK), desktop.yml (Windows-App), pages.yml (GitHub Pages), audit.yml (Wochen-Audit, Sonntag, braucht Secret CLAUDE_CODE_OAUTH_TOKEN).

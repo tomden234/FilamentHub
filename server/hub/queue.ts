@@ -11,6 +11,7 @@ import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { readLocalDoc } from './localDoc.js';
+import { loadFactors, mainMaterial, timeInfo, type TimeInfo } from './printTime.js';
 import { setupInfo, type SetupInfo } from './setupCheck.js';
 import { checkEnough, enoughLines, type EnoughInfo } from './enough.js';
 
@@ -30,6 +31,8 @@ export interface QueueItem {
   /** 1.270: Druckplatte und Düse(n), die die Datei braucht */
   bed?: string;
   nozzles?: number[];
+  /** 1.271: Druckzeit laut Slicer in Sekunden */
+  predSec?: number;
 }
 
 export interface QueuePort {
@@ -74,6 +77,8 @@ interface StartedJob {
   at: number;
   bed?: string;
   nozzles?: number[];
+  /** 1.271: Druckzeit laut Slicer in Sekunden */
+  predSec?: number;
 }
 const startedFile = () => path.join(dataDir, 'hub-started.json');
 const jobKey = (n: string) => String(n || '').toLowerCase().replace(/\.gcode\.3mf$|\.3mf$|\.gcode$/i, '').trim();
@@ -83,7 +88,7 @@ function loadStarted(): StartedJob[] {
 function rememberStarted(it: QueueItem): void {
   const now = Date.now();
   const names = Array.from(new Set([jobKey(it.name), jobKey(path.posix.basename(it.path))]));
-  const list = [{ path: it.path, names, filaments: it.filaments, at: now, bed: it.bed, nozzles: it.nozzles }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
+  const list = [{ path: it.path, names, filaments: it.filaments, at: now, bed: it.bed, nozzles: it.nozzles, predSec: it.predSec }, ...loadStarted().filter(x => now - x.at < 7 * 86400_000)].slice(0, 50);
   saveJsonConfig(startedFile(), list, 'gestartete Drucke', { pretty: false, keepPrev: true });
 }
 /** Pfad der Datei eines Drucks, den die Warteschlange gestartet hat (auch nach dem Umbenennen) */
@@ -96,6 +101,13 @@ export function startedJobNear(startMs: number): { name: string; filaments: JobF
   if (!(startMs > 0)) return null;
   const j = loadStarted().find(x => Math.abs(x.at - startMs) < 15 * 60_000 && x.filaments.length);
   return j ? { name: j.names[0] || '', filaments: j.filaments } : null;
+}
+/** 1.271: Slicer-Zeit und Hauptmaterial eines Drucks, den die Warteschlange gestartet hat (Name oder Startzeit), sonst null */
+export function startedJobTime(name: string, startMs: number): { predSec: number; material: string } | null {
+  const k = jobKey(name);
+  const list = loadStarted();
+  const j = (k && list.find(x => x.names.includes(k) && x.predSec)) || (startMs > 0 ? list.find(x => x.predSec && Math.abs(x.at - startMs) < 15 * 60_000) : undefined);
+  return j?.predSec ? { predSec: j.predSec, material: mainMaterial(j.filaments) } : null;
 }
 /** Filament-Gewichte eines Drucks, den die Warteschlange gestartet hat (null = unbekannt) */
 export function startedJobFilaments(name: string): JobFilament[] | null {
@@ -242,11 +254,17 @@ function enoughFor(it: QueueItem, m: Mapping): EnoughInfo[] {
   }
 }
 
-export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[]; enough: EnoughInfo[]; setup?: SetupInfo };
+export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[]; enough: EnoughInfo[]; setup?: SetupInfo; time?: TimeInfo };
 
 export function queueList(): QueueView[] {
   const items = load();
   let lastStarted: StartedJob | undefined;
+  // 1.271: Fertig-Zeit läuft von jetzt an: erst der laufende Druck (Restzeit vom Drucker), dann ein Eintrag nach dem anderen
+  const factors = loadFactors();
+  const pd = printerData();
+  const running = ['RUNNING', 'PAUSE', 'PREPARE'].includes(String(pd.gcode_state || ''));
+  let clock = Date.now() + (running ? Math.max(0, Number(pd.mc_remaining_time) || 0) * 60_000 : 0);
+  let chain = true;
   return items.map((it, i) => {
     const m = currentMapping(it);
     let setup: SetupInfo | undefined;
@@ -255,7 +273,15 @@ export function queueList(): QueueView[] {
       const ref = i > 0 ? items[i - 1] : lastStarted;
       setup = setupInfo(it, ref);
     }
-    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m), enough: enoughFor(it, m), setup };
+    let time: TimeInfo | undefined;
+    if (it.predSec && it.predSec > 0) {
+      time = timeInfo(it.predSec, mainMaterial(it.filaments), factors);
+      if (chain) {
+        clock += time.calcSec * 1000;
+        time.endAt = clock;
+      }
+    } else chain = false;
+    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m), enough: enoughFor(it, m), setup, time };
   });
 }
 
@@ -299,7 +325,8 @@ export async function queueAdd(filePath: string, plate = 1, fkey?: string, displ
     filaments: r.filaments,
     addedAt: Date.now(),
     bed: r.setup?.bed || undefined,
-    nozzles: r.setup?.nozzles?.length ? r.setup.nozzles : undefined
+    nozzles: r.setup?.nozzles?.length ? r.setup.nozzles : undefined,
+    predSec: r.predSec
   };
   load().push(it);
   save();

@@ -4,7 +4,8 @@ import { fetchJobWeights } from '../bambuJobFile.js';
 import { printRecorder, nameKey, type RecordedPrint } from '../printRecorder.js';
 import { applyDeduction, deductedIn, planParts, type Part, type PrintInfo } from './deductPlan.js';
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
-import { startedJobFilaments, startedJobNear } from './queue.js';
+import { startedJobFilaments, startedJobNear, startedJobTime } from './queue.js';
+import { learnFromPrint } from './printTime.js';
 import { isGenericPrintName } from '../../src/utils/printMatch.js';
 import { publishImage } from './esphome.js';
 import { type Fil, access, deductActive, durText, getHubConfig, hubEnabled, mainSlotOf, port, push, saveState, sleep, state, traysOf, updateHubConfig } from './core.js';
@@ -73,6 +74,11 @@ export function onPrintEnd(rec: RecordedPrint, data: any): void {
     statsPrint(rec);
   } catch (e) {
     console.warn('[Statistik]', (e as Error)?.message || e);
+  }
+  try {
+    learnFromPrint(rec, startedJobTime(rec.name, rec.startMs)); // 1.271: echte Dauer ÷ Slicer-Zeit lernen
+  } catch (e) {
+    console.warn('[Druckzeit]', (e as Error)?.message || e);
   }
   s.prints[rec.id] = { deduct: deductActive() ? 'pending' : 'off', tries: 0, lastTry: 0, photo: false, pushed: false, trays: traysOf(data), energyWh: Math.round(s.printWh), at: Date.now() };
   s.printWh = 0;
