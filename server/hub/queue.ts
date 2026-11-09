@@ -5,7 +5,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { dataDir } from '../paths.js';
 import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
-import { ftpBusy, listJobFiles, readJobFile, renameJobFile, type JobFilament } from '../bambuJobFile.js';
+import { ftpBusy, listJobFiles, platesFromThreeMf, readJobFile, renameJobFile, thumbFromThreeMf, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubLogic.js';
 import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
@@ -33,6 +33,8 @@ export interface QueueItem {
   nozzles?: number[];
   /** 1.271: Druckzeit laut Slicer in Sekunden */
   predSec?: number;
+  /** 1.272: gehört zu einer Datei mit mehreren Platten (id = gemeinsame Kennung, total = Anzahl Platten, part = Nummer) */
+  project?: { id: string; total: number; part: number };
 }
 
 export interface QueuePort {
@@ -307,32 +309,93 @@ export async function printerFiles() {
   return listJobFiles(lan.ip, lan.code);
 }
 
-export async function queueAdd(filePath: string, plate = 1, fkey?: string, displayName?: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
-  const lan = port?.getLanAccess();
-  if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
-  // Jeder Name aus Bambu Studio ist erlaubt (auch #, [ ], ' …); nur Steuerzeichen und „..“ nicht. Vor dem Start wird ohnehin sicher umbenannt.
-  if (!/^\/[^\r\n\0]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
-  const r = await readJobFile(lan.ip, lan.code, filePath, plate);
-  if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
+type JobRead = NonNullable<Awaited<ReturnType<typeof readJobFile>>>;
+
+function makeItem(r: JobRead, filePath: string, plate: { plate: number; filaments: JobFilament[]; predSec?: number }, thumb: Uint8Array | null, fkey: string | undefined, name: string, project?: QueueItem['project']): QueueItem {
   const id = crypto.randomBytes(6).toString('hex');
-  const it: QueueItem = {
+  return {
     id,
-    thumb: saveThumb(id, r.thumb),
+    thumb: saveThumb(id, thumb),
     path: filePath,
     fkey,
-    name: displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''),
-    plate: r.plate,
-    filaments: r.filaments,
+    name,
+    plate: plate.plate,
+    filaments: plate.filaments,
     addedAt: Date.now(),
     bed: r.setup?.bed || undefined,
     nozzles: r.setup?.nozzles?.length ? r.setup.nozzles : undefined,
-    predSec: r.predSec
+    predSec: plate.predSec,
+    project
   };
+}
+
+function checkPath(filePath: string): void {
+  // Jeder Name aus Bambu Studio ist erlaubt (auch #, [ ], ' …); nur Steuerzeichen und „..“ nicht. Vor dem Start wird ohnehin sicher umbenannt.
+  if (!/^\/[^\r\n\0]+\.3mf$/i.test(filePath) || filePath.includes('..')) throw new Error('Ungültiger Dateiname');
+}
+
+const withMapping = (it: QueueItem) => {
+  const m = currentMapping(it);
+  return { ...it, mapping: m.lines, missing: m.missing };
+};
+
+/** Eine Platte einer Datei vormerken (genau die gewünschte Platte) */
+export async function queueAdd(filePath: string, plate = 1, fkey?: string, displayName?: string): Promise<QueueItem & { mapping: string[]; missing: string[] }> {
+  const lan = port?.getLanAccess();
+  if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
+  checkPath(filePath);
+  const r = await readJobFile(lan.ip, lan.code, filePath, plate);
+  if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
+  const it = makeItem(r, filePath, r, r.thumb, fkey, displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''));
   load().push(it);
   save();
   void showLeds(0);
-  const m = currentMapping(it);
-  return { ...it, mapping: m.lines, missing: m.missing };
+  return withMapping(it);
+}
+
+/** 1.272: Alle Platten einer Datei einzeln hintereinander vormerken (eine Karte je Platte). Hat die Datei nur eine Platte, ist es wie queueAdd. */
+export async function queueAddAll(filePath: string, fkey?: string, displayName?: string): Promise<(QueueItem & { mapping: string[]; missing: string[] })[]> {
+  const lan = port?.getLanAccess();
+  if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
+  checkPath(filePath);
+  const r = await readJobFile(lan.ip, lan.code, filePath, 1);
+  if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
+  const base = displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, '');
+  let plates: ReturnType<typeof platesFromThreeMf> = [];
+  try {
+    plates = platesFromThreeMf(r.bytes);
+  } catch {
+    /* nur Platte 1 */
+  }
+  if (plates.length <= 1) {
+    const it = makeItem(r, filePath, r, r.thumb, fkey, base);
+    load().push(it);
+    save();
+    void showLeds(0);
+    return [withMapping(it)];
+  }
+  const pid = crypto.randomBytes(4).toString('hex');
+  const out: QueueItem[] = [];
+  for (const p of plates) {
+    let thumb: Uint8Array | null = null;
+    try {
+      thumb = thumbFromThreeMf(r.bytes, p.plate);
+    } catch {
+      /* ohne Bild */
+    }
+    out.push(makeItem(r, filePath, p, thumb, fkey, `${base} (Platte ${p.plate}/${plates.length})`, { id: pid, total: plates.length, part: p.plate }));
+  }
+  load().push(...out);
+  save();
+  void showLeds(0);
+  return out.map(withMapping);
+}
+
+/** 1.272: Alle noch offenen Platten eines Projekts löschen */
+export function queueRemoveProject(projectId: string): number {
+  const ids = load().filter(x => x.project?.id === projectId).map(x => x.id);
+  for (const id of ids) queueRemove(id);
+  return ids.length;
 }
 
 /** „Nochmal drucken“ aus dem Verlauf: dieselbe Datei auf dem Drucker noch einmal vormerken */
@@ -420,15 +483,16 @@ export async function autoScan(force = false): Promise<ScanResult> {
       if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
       if (load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
       // 1.256: dieselbe Datei wurde überschrieben: alten Eintrag ersetzen (Filament kann anders sein)
-      const dup = load().find(x => x.path === f.path);
-      if (dup) queueRemove(dup.id);
+      for (const dup of load().filter(x => x.path === f.path)) queueRemove(dup.id);
       try {
         const t0 = Date.now();
-        const it = await queueAdd(f.path, 1, fileKey(f));
+        const all = await queueAddAll(f.path, fileKey(f));
+        const it = all[0];
         console.log(`[Warteschlange] Datei lesen + vormerken: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-        added++;
+        added += all.length;
         const short = enoughLines(enoughFor(it, currentMapping(it)));
-        await notify('➕ In der Warteschlange', `${it.name} (automatisch aus Bambu Studio)\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}${short.length ? `\n${short.join('\n')}` : ''}`, queueActions(it.id));
+        const multi = all.length > 1 ? `\n📦 ${all.length} Platten, alle einzeln hintereinander vorgemerkt` : '';
+        await notify('➕ In der Warteschlange', `${all.length > 1 ? it.name.replace(/ \(Platte \d+\/\d+\)$/, '') : it.name} (automatisch aus Bambu Studio)${multi}\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}${short.length ? `\n${short.join('\n')}` : ''}`, queueActions(it.id));
         console.log(`[Warteschlange] automatisch vorgemerkt: ${it.name}`);
       } catch (e) {
         console.warn('[Warteschlange] Auto-Vormerken fehlgeschlagen:', (e as Error)?.message || e);
@@ -604,7 +668,11 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
     const lan = port!.getLanAccess();
     if (lan && !/^[A-Za-z0-9_.\-]+$/.test(path.posix.basename(it.path))) {
       try {
-        it.path = await renameJobFile(lan.ip, lan.code, it.path, `fh_${it.id}.gcode.3mf`);
+        const oldPath = it.path;
+        const newPath = await renameJobFile(lan.ip, lan.code, oldPath, `fh_${it.id}.gcode.3mf`);
+        // 1.272: Weitere Platten derselben Datei zeigen jetzt auch auf den neuen Namen
+        for (const o of load()) if (o.path === oldPath) o.path = newPath;
+        it.path = newPath;
         save();
       } catch (e) {
         console.warn('[Warteschlange] Umbenennen auf dem Drucker fehlgeschlagen:', (e as Error)?.message || e);

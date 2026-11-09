@@ -3754,5 +3754,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.272',
+    label: '1.272 (Alle Platten einreihen & Projekt-Fortschritt)',
+    releaseDate: '09.11.2026',
+    description:
+      'Warteschlange: Dateien mit mehreren Platten kommen jetzt komplett und einzeln hintereinander in die Warteschlange (eine Karte je Platte, Name „Regal (Platte 2/3)“). Das gilt für „Senden“ aus Bambu Studio (automatisch), Upload und Hinzufügen aus der Dateiliste. Platten ohne Filament werden übersprungen. Über den Karten steht ein Projekt-Kopf: „1 von 3 Platten fertig · noch 2 · Restzeit · Gramm“ mit Knopf „Ganzes Projekt löschen“. Wird die Datei beim Start auf einen sicheren Namen umbenannt, ziehen alle weiteren Platten mit. Eine einzelne Platte lässt sich weiter mit Plattennummer einreihen. Pi-Add-on 1.3.28.',
+    features: ['📦 Alle Platten einer Datei als einzelne Karten', '📊 Projekt-Kopf mit Fortschritt, Zeit und Gramm', '🗑️ Ganzes Projekt auf einmal löschen', '🥧 Pi-Add-on 1.3.28 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

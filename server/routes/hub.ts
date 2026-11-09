@@ -3,7 +3,7 @@ import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHub
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
-import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueList, queueMove, queueRemove, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
+import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueList, queueMove, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -179,7 +179,11 @@ router.get('/api/hub/printer-files', async (_req, res) => {
 
 router.post('/api/hub/queue/add', async (req, res) => {
   try {
-    res.json({ success: true, item: await queueAdd(String(req.body?.path || ''), Number(req.body?.plate) || 1), items: queueList() });
+    // 1.272: Ohne Plattennummer kommen alle Platten der Datei einzeln in die Warteschlange
+    const file = String(req.body?.path || '');
+    const one = Number(req.body?.plate);
+    const added = one > 0 ? [await queueAdd(file, one)] : await queueAddAll(file);
+    res.json({ success: true, item: added[0], added: added.length, items: queueList() });
   } catch (e: any) {
     res.json({ success: false, error: String(e?.message || e) });
   }
@@ -205,7 +209,8 @@ router.post('/api/hub/queue/duplicate', (req, res) => {
 });
 
 router.post('/api/hub/queue/remove', (req, res) => {
-  queueRemove(String(req.body?.id || ''));
+  if (req.body?.project) queueRemoveProject(String(req.body.project));
+  else queueRemove(String(req.body?.id || ''));
   res.json({ success: true, items: queueList() });
 });
 

@@ -233,6 +233,34 @@ const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open 
   );
 };
 
+/** 1.272: Kopf über den Platten einer Mehrplatten-Datei: Fortschritt, Restzeit, Gramm */
+const ProjectHeader: React.FC<{ items: PiQueueItem[]; pid: string; busy: boolean; onRemove: () => void }> = ({ items, pid, busy, onRemove }) => {
+  const mine = items.filter(x => x.project?.id === pid);
+  const total = mine[0]?.project?.total || mine.length;
+  const left = mine.length;
+  const sec = mine.reduce((a, x) => a + (x.time ? (x.time.learned ? x.time.calcSec : x.time.slicerSec) : 0), 0);
+  const grams = mine.reduce((a, x) => a + x.filaments.reduce((b, f) => b + (f.grams || 0), 0), 0);
+  const title = (mine[0]?.name || '').replace(/ \(Platte \d+\/\d+\)$/, '');
+  return (
+    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-[11px] border" style={{ borderColor: 'var(--app-accent)', backgroundColor: 'var(--app-card)' }}>
+      <span aria-hidden>📦</span>
+      <div className="min-w-0 flex-1">
+        <div className="font-bold truncate" title={title}>
+          {title}
+        </div>
+        <div style={{ color: 'var(--app-text-muted)' }}>
+          {total - left} von {total} Platten fertig · noch {left}
+          {sec > 0 ? ` · ${fmtDur(sec)}` : ''}
+          {grams > 0 ? ` · ${Math.round(grams)} g` : ''}
+        </div>
+      </div>
+      <button type="button" disabled={busy} onClick={onRemove} className="p-1 rounded-lg" aria-label="Ganzes Projekt löschen" title="Ganzes Projekt löschen">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
 export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void }> = ({ items, setItems }) => {
   const open = useQueueDock();
   const pw = usePanelWidths();
@@ -275,6 +303,15 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     const r = await piQueueAction(action, id ? { id } : {});
     if (r.items) setItems(r.items);
     if (r.text || !r.ok) setMsg({ ok: r.ok, text: r.text || 'Fehler' });
+    setBusy(false);
+  };
+
+  const actProject = async (project: string) => {
+    if (!window.confirm('Alle noch offenen Platten dieses Projekts aus der Warteschlange löschen?')) return;
+    setBusy(true);
+    setMsg(null);
+    const r = await piQueueAction('remove', { project });
+    if (r.items) setItems(r.items);
     setBusy(false);
   };
 
@@ -336,8 +373,9 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
             </p>
           ) : (
             items.map((it, i) => (
+              <React.Fragment key={it.id}>
+              {it.project && items[i - 1]?.project?.id !== it.project.id && <ProjectHeader items={items} pid={it.project.id} busy={busy} onRemove={() => void actProject(it.project!.id)} />}
               <div
-                key={it.id}
                 draggable
                 onDragStart={() => setDragId(it.id)}
                 onDragOver={e => {
@@ -479,6 +517,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                   </div>
                 )}
               </div>
+              </React.Fragment>
             ))
           )}
         </div>

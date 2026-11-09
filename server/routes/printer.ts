@@ -3,7 +3,7 @@ import path from 'path';
 import { bambuService } from '../bambuMqtt.js';
 import { fetchJobWeights, uploadJobFile } from '../bambuJobFile.js';
 import { hubEnabled } from '../hub/hub.js';
-import { queueAdd } from '../hub/queue.js';
+import { queueAddAll } from '../hub/queue.js';
 import { handlePrinterRoute } from '../../src/utils/bambu/printerRoutes.js';
 
 const router = Router();
@@ -57,7 +57,7 @@ router.post('/api/printer/upload-gcode', async (req, res) => {
     let queued = false;
     if (hubEnabled() && /\.3mf$/i.test(remote)) {
       try {
-        await queueAdd(remote, 1);
+        await queueAddAll(remote); // 1.272: alle Platten der Datei
         queued = true;
       } catch (e: any) {
         console.warn('[Upload] Warteschlange:', e?.message || e);

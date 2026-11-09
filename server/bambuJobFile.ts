@@ -56,6 +56,21 @@ function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: Job
   return { plate: idxOf(blk) || plate, filaments, predSec: pred > 0 ? Math.round(pred) : undefined };
 }
 
+/** 1.272: Alle Platten einer .3mf mit Filament (für „alle Platten einreihen“), nach Plattennummer sortiert */
+export function platesFromThreeMf(data: Uint8Array): { plate: number; filaments: JobFilament[]; predSec?: number }[] {
+  const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') && f.originalSize <= 4_000_000 });
+  const key = Object.keys(files).find(k => k.toLowerCase().endsWith('slice_info.config'));
+  if (!key) return [];
+  const xml = strFromU8(files[key]);
+  const idxs = (xml.match(/<plate>[\s\S]*?<\/plate>/g) || []).map(b => Number((b.match(/key="index"\s+value="(\d+)"/) || [])[1]) || 0).filter(n => n > 0);
+  const out: { plate: number; filaments: JobFilament[]; predSec?: number }[] = [];
+  for (const i of Array.from(new Set(idxs)).sort((a, b) => a - b)) {
+    const r = parseSliceInfo(xml, i);
+    if (r.plate === i && r.filaments.length) out.push(r);
+  }
+  return out;
+}
+
 /** Titelbild der Platte (Metadata/plate_N.png) aus einer .3mf */
 export function thumbFromThreeMf(data: Uint8Array, plate = 1): Uint8Array | null {
   const want = `metadata/plate_${Math.max(1, plate)}.png`;
@@ -274,7 +289,7 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
 }
 
 /** Filament je Platte aus einer Datei auf dem Drucker */
-export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; predSec?: number; thumb: Uint8Array | null; setup: JobSetup | null } | null> {
+export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; predSec?: number; thumb: Uint8Array | null; setup: JobSetup | null; bytes: Uint8Array } | null> {
   return withFtp(ip, code, async client => {
     const chunks: Buffer[] = [];
     let got = 0;
@@ -302,7 +317,7 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
     } catch {
       /* ohne Angabe */
     }
-    return { ...w, thumb, setup };
+    return { ...w, thumb, setup, bytes };
   });
 }
 

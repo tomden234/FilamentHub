@@ -416,6 +416,8 @@ export interface PiQueueItem {
   /** 1.270: Platte und Düse der Datei, dazu was sich zum Druck davor ändert */
   setup?: { bed: string; nozzles: number[]; changes: string[] };
   /** 1.271: Zeit laut Slicer und berechnete Zeit (Sekunden), Faktor gelernt?, voraussichtlich fertig (ms) */
+  /** 1.272: Teil einer Datei mit mehreren Platten */
+  project?: { id: string; total: number; part: number };
   time?: { slicerSec: number; calcSec: number; learned: boolean; n: number; endAt?: number };
 }
 
