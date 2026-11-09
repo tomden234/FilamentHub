@@ -1192,3 +1192,12 @@ a svg.lucide {
 @media (max-width: 1279px) {
   .fh-fit { --_l: var(--fh-inset-l, 0px); }
 }
+
+/* 1.264: beim Ziehen an der Seitenteil-Breite keine Gleit-Animation (sonst läuft die Kante hinterher) */
+[data-fh-resizing] * {
+  transition: none !important;
+  user-select: none !important;
+}
+[data-fh-resizing] {
+  cursor: col-resize !important;
+}

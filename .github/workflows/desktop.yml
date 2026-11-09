@@ -28,7 +28,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Versionsnummer hochzählen (sonst sieht der Updater keine neue Version)
-        run: npm pkg set version=2.1.${{ github.run_number }}
+        # 1.264: Zeit statt Lauf-Nummer. Nach dem Umzug des Repos zählte die Lauf-Nummer evtl. neu (kleiner als die installierte Version → „aktuell“ für immer)
+        run: npm pkg set version=2.1.$(date +%s)
       - name: Update-Quelle auf dieses Repository stellen
         run: sed -i "s#github.com/[^/]*/[^/]*/releases/download/desktop-latest/#github.com/${GITHUB_REPOSITORY}/releases/download/desktop-latest/#" electron-builder.yml
       - name: Oberfläche und Server bauen

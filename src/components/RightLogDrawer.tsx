@@ -25,7 +25,8 @@ import { getSystemLogs, clearSystemLogs, addSystemLog } from '../utils/logServic
 import { safeStorage } from '../utils/safeStorage';
 import { useBackLayer } from '../utils/backNav';
 import { setDruckerOpen, setQueueDock, useQueueDock } from '../utils/queueDock';
-import { QUEUE_PANEL_W } from './QueueDrawer';
+import { PanelResizer } from './PanelResizer';
+import { queueWidthCss, usePanelWidths } from '../utils/panelWidth';
 
 interface RightLogDrawerProps {
   onOpenPrinterSettings?: () => void;
@@ -44,6 +45,8 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   // Warteschlangen-Fach offen: der Drucker-Streifen rückt neben dessen Kante, statt darüber zu liegen
   const queuePanelOpen = useQueueDock();
+  const panelWidths = usePanelWidths();
+  const QUEUE_PANEL_W = queueWidthCss(panelWidths);
   // Immer nur eines von beiden rechts: Drucker auf → Warteschlange zu; Warteschlange auf → Drucker zu
   useEffect(() => {
     if (isOpen) setQueueDock(false);
@@ -261,9 +264,10 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
 
       {/* 3. AUSGEKLAPPTES LOG-DRAWER PANEL – IM ORIGINALEN AKTIVEN THEME */}
       <div
-        className={`fixed top-0 bottom-0 h-full z-50 w-full sm:w-[420px] shadow-2xl flex flex-col transform transition-all duration-300 ease-out border-l`}
+        className={`fixed top-0 bottom-0 h-full z-50 ${panelWidths.log ? '' : 'w-full sm:w-[420px]'} shadow-2xl flex flex-col transform transition-all duration-300 ease-out border-l`}
         style={{
           right: queuePanelOpen ? QUEUE_PANEL_W : 0,
+          ...(panelWidths.log ? { width: `min(100vw, ${panelWidths.log}px)` } : {}),
           backgroundColor: 'var(--app-card)',
           borderColor: 'var(--app-border)',
           color: 'var(--app-text)',
@@ -271,6 +275,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
           transform: isOpen ? 'translateX(0)' : `translateX(calc(100% + ${QUEUE_PANEL_W}))`
         }}
       >
+        <PanelResizer panel="log" edge="left" />
         {/* DRAWER HEADER */}
         <div
           className="p-4 border-b flex items-center justify-between gap-3"

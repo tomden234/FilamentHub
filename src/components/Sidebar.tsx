@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 
+import { PanelResizer } from './PanelResizer';
+import { menuWidth, usePanelWidths } from '../utils/panelWidth';
 import QRCode from 'qrcode';
 
 import {
@@ -331,6 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Zurück-Taste: erst die Seite im Menü, dann das Menü selbst
   useBackLayer(isOpen && !docked, onClose, 'menu', onReopen);
+  const panelWidths = usePanelWidths();
   // Vor-Taste öffnet genau die Seite wieder, die offen war
   const pageSnapshot = { tab: activeTab, sub: settingsSubTab, ns: noticeSection };
   useBackLayer((isOpen || docked) && activeTab !== 'home', () => setActiveTab('home'), 'menu-page', () => {
@@ -441,12 +444,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={e => e.stopPropagation()}
         className={
           docked
-            ? 'fixed left-0 top-0 z-40 w-[310px] max-w-[94vw] border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
-            : `relative z-10 w-[340px] max-w-[88vw] border-r h-full flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-200 ${
+            ? 'fixed left-0 top-0 z-40 border-r h-screen flex flex-col justify-between overflow-hidden shadow-2xl' // 1.235: schwebt über dem Inhalt, schiebt nichts mehr
+            : `relative z-10 border-r h-full flex flex-col justify-between shadow-2xl overflow-hidden transition-all duration-200 ${
                 isThemesTab ? 'backdrop-blur-none' : 'backdrop-blur-2xl'
               }`
         }
         style={{
+          width: menuWidth(panelWidths, docked),
+          maxWidth: '100vw',
           backgroundColor: docked || isThemesTab
             ? 'var(--app-card)'
             : 'color-mix(in srgb, var(--app-card) 85%, transparent)',
@@ -454,6 +459,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           color: 'var(--app-text)'
         }}
       >
+        <PanelResizer panel="menu" edge="right" />
         {/* Drawer Header: Schlank & Kompakt */}
         <div
           className="px-3.5 py-2.5 border-b flex items-center justify-between transition-colors shrink-0"

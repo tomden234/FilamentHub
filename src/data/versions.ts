@@ -3666,5 +3666,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.264',
+    label: '1.264 (Seitenteile ziehbar & Windows-Update-Fix)',
+    releaseDate: '09.11.2026',
+    description:
+      'Menü links, Warteschlange und Drucker/Logs rechts lassen sich jetzt am Rand beliebig breit oder schmal ziehen (Maus und Finger, auch mit Pfeiltasten). Doppelklick auf den Griff setzt die Standardbreite zurück. Die Breite bleibt nach dem Neustart gespeichert, die feste Seitenleiste und der Inhalt passen sich an. Windows-App: Die Versionsnummer des Installers kommt jetzt aus der Uhrzeit statt aus der Lauf-Nummer. Nach dem Umzug des Repos nach FilamentHub konnte die Lauf-Nummer kleiner sein als die installierte, dann meldete „Nach Update suchen“ für immer „aktuell“.',
+    features: ['↔️ Seitenteile frei ziehbar, bleibt gespeichert', '🪟 Windows-App findet Updates wieder'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

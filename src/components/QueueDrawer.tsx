@@ -1,6 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, ExternalLink, Sparkles, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { PanelResizer } from './PanelResizer';
+import { logWidthCss, queueWidthCss, usePanelWidths } from '../utils/panelWidth';
 import { setQueueDock, toggleQueueDock, useDruckerOpen, useQueueDock } from '../utils/queueDock';
 import { useBackLayer } from '../utils/backNav';
 import { generateAutoShopUrl } from '../utils/shopLinks';
@@ -186,7 +188,6 @@ const Thumb: React.FC<{ item: PiQueueItem }> = ({ item }) => {
 };
 
 /** Streifen am rechten Rand wie „DRUCKER“: öffnet/schließt die Warteschlange. Offen sitzt er an der Kante des Fachs. */
-export const QUEUE_PANEL_W = 'min(72vw, 18rem)';
 
 /** Suche ohne Groß/klein, Leerzeichen, _ und - (findet „air up“ in „Air_Up_Fake_Pod“) */
 const normName = (t: string) => t.toLowerCase().replace(/\.gcode\.3mf$|\.3mf$/i, '').replace(/[\s_\-.()]+/g, '');
@@ -194,10 +195,11 @@ const matchName = (name: string, q: string) => !q.trim() || normName(name).inclu
 
 const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open }) => {
   const druckerOpen = useDruckerOpen();
+  const pw = usePanelWidths();
   return (
   <div
     className="fixed z-[56] select-none transition-all duration-300"
-    style={{ right: druckerOpen ? 'min(100vw, 420px)' : open ? QUEUE_PANEL_W : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
+    style={{ right: druckerOpen ? logWidthCss(pw) : open ? queueWidthCss(pw) : 0, top: 'calc(50% - 82px)', transform: 'translateY(-100%)' }}
   >
     <button
       onClick={toggleQueueDock}
@@ -232,6 +234,8 @@ const QueueEdgeTab: React.FC<{ count: number; open: boolean }> = ({ count, open 
 
 export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: PiQueueItem[] | null) => void }> = ({ items, setItems }) => {
   const open = useQueueDock();
+  const pw = usePanelWidths();
+  const QUEUE_PANEL_W = queueWidthCss(pw);
   const onClose = () => setQueueDock(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -308,10 +312,11 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
         aria-hidden={!open}
       >
       <aside
-        className="h-full flex flex-col border-l"
+        className="h-full flex flex-col border-l relative"
         style={{ width: QUEUE_PANEL_W, backgroundColor: 'var(--app-card)', borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
         aria-label="Warteschlange"
       >
+        <PanelResizer panel="queue" edge="left" />
         <div className="flex items-center gap-2 px-3 py-3 border-b" style={{ borderColor: 'var(--app-border)' }}>
           <ListOrdered className="w-4 h-4 text-emerald-400" />
           <span className="text-sm font-extrabold flex-1">Warteschlange ({items.length})</span>

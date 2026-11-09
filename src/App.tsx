@@ -33,6 +33,7 @@ import { Navbar, DeviceMode } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { QueueDrawer } from './components/QueueDrawer';
 import { usePiQueue } from './hooks/usePiQueue';
+import { logWidthCss, menuWidth, queueWidthCss, usePanelWidths } from './utils/panelWidth';
 import { toggleQueueDock, useQueueDock, useDruckerOpen } from './utils/queueDock';
 import { useBackLayer, closeTopLayer } from './utils/backNav';
 
@@ -192,12 +193,13 @@ export default function App() {
   // 1.258: Inhalt passt sich automatisch an: feste Seitenleiste links und Warteschlange/Drucker rechts verdecken ihn nicht mehr
   const queueOpen = useQueueDock();
   const druckerOpenDock = useDruckerOpen();
+  const panelWidths = usePanelWidths();
   useEffect(() => {
     const r = document.documentElement.style;
-    r.setProperty('--fh-inset-l', isDocked ? '310px' : '0px');
-    const side = winW < 700 ? '0px' : druckerOpenDock ? 'min(100vw, 420px)' : queueOpen ? 'min(72vw, 18rem)' : '0px';
+    r.setProperty('--fh-inset-l', isDocked ? `${menuWidth(panelWidths, true)}px` : '0px');
+    const side = winW < 700 ? '0px' : druckerOpenDock ? logWidthCss(panelWidths) : queueOpen ? queueWidthCss(panelWidths) : '0px';
     r.setProperty('--fh-inset-r', side);
-  }, [isDocked, queueOpen, druckerOpenDock, winW]);
+  }, [isDocked, queueOpen, druckerOpenDock, winW, panelWidths]);
 
   const handleSetDeviceMode = useCallback((mode: DeviceMode) => {
     setDeviceMode(mode);
