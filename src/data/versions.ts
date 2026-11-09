@@ -3699,5 +3699,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.267',
+    label: '1.267 (Foto-Erkennung: richtiges KI-Modell)',
+    releaseDate: '09.11.2026',
+    description:
+      'Foto-Erkennung am Pi: Die Anfrage kam an, aber der Pi rief ein KI-Modell auf, das es nicht gibt („gemini-3.8-flash“), darum „Fehler bei der Spulenerkennung“. Jetzt nutzt der Pi den Alias gemini-flash-latest und bei unbekanntem Modell feste Reserve-Modelle. Fehler sagen jetzt klar, woran es liegt (Schlüssel abgelehnt, Limit erreicht, Modell nicht gefunden) und stehen im Pi-Protokoll. Pi-Add-on 1.3.23 (muss aktualisiert werden).',
+    features: ['📷 Foto-Erkennung mit richtigem Gemini-Modell', '🩺 Klare Fehlertexte + Pi-Protokoll', '🥧 Pi-Add-on 1.3.23 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

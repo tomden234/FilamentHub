@@ -42,16 +42,38 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON ohne Markdown-Codeblöcke.
 
     // 1.231: Ohne Schlüssel ehrlich „nicht verfügbar“ (vorher kam eine erfundene ELEGOO-Erkennung mit 85 %)
     if (!ai) return res.status(503).json({ success: false, offline: true, error: 'Foto-Erkennung ist nicht eingerichtet (kein GEMINI_API_KEY).' });
-    const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [{ inlineData: { data: cleanBase64, mimeType: typeof mimeType === 'string' && /^image\/(jpeg|png|webp|heic)$/.test(mimeType) ? mimeType : 'image/jpeg' } }, { text: promptText }]
-        }
-      ],
-      config: { responseMimeType: 'application/json' }
-    });
+    // 1.267: „gemini-3.8-flash“ gibt es nicht. Erst der Alias auf das neueste Flash-Modell, dann feste Namen als Reserve.
+    const models = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
+    const mime = typeof mimeType === 'string' && /^image\/(jpeg|png|webp|heic)$/.test(mimeType) ? mimeType : 'image/jpeg';
+    let response: Awaited<ReturnType<typeof ai.models.generateContent>> | null = null;
+    let lastErr: any = null;
+    for (const model of models) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents: [{ role: 'user', parts: [{ inlineData: { data: cleanBase64, mimeType: mime } }, { text: promptText }] }],
+          config: { responseMimeType: 'application/json' }
+        });
+        break;
+      } catch (e: any) {
+        lastErr = e;
+        console.error(`Gemini ${model} fehlgeschlagen:`, e?.status ?? '', String(e?.message || e).slice(0, 300));
+        // Nur bei „Modell unbekannt“ (404) das nächste Modell probieren; Schlüssel- oder Limit-Fehler gelten für alle
+        if (e?.status !== 404) break;
+      }
+    }
+    if (!response) {
+      const st = Number(lastErr?.status);
+      const msg =
+        st === 400 || st === 401 || st === 403
+          ? 'Der Gemini-Schlüssel wird abgelehnt (falsch, gesperrt oder Bild zu groß). Schlüssel im Add-on prüfen.'
+          : st === 429
+          ? 'Gemini-Limit erreicht. In ein paar Minuten nochmal versuchen.'
+          : st === 404
+          ? 'Gemini-Modell nicht gefunden. Pi-Protokoll ansehen.'
+          : 'Gemini nicht erreichbar. Pi-Protokoll ansehen.';
+      return res.status(502).json({ success: false, error: msg });
+    }
     let parsedData: unknown;
     try {
       parsedData = JSON.parse(response.text || '');
