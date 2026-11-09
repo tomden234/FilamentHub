@@ -29,32 +29,57 @@ export function getBrandInfo(brandName: string, settings?: AppSettings) {
   };
 }
 
+// 1.275: Gemerkte Produktseiten. Die App sammelt die Links, die du an deinen Spulen gespeichert hast (auch aus Bestell-Mails),
+// und nimmt sie für gleiche Sorten wieder: gleiche Marke + Material + Farbe → genau diese Produktseite statt einer Suche.
+let linkPool: Pick<Spool, 'brand' | 'material' | 'name' | 'colorName' | 'productUrl'>[] = [];
+export function registerSpoolLinks(list: Spool[]) {
+  linkPool = list.filter(s => safeHttpUrl(s.productUrl));
+}
+const norm = (v: string) => (v || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim();
+/** Sucht eine schon bekannte Produktseite derselben Sorte (nur genaue Treffer, kein Raten) */
+export function findKnownProductUrl(brand: string, material: string, name: string, colorName: string): string | null {
+  const b = norm(brand);
+  const m = norm(material);
+  const c = norm(colorName);
+  const n = norm(name);
+  if (!b) return null;
+  const same = linkPool.filter(x => norm(x.brand) === b && norm(x.material) === m);
+  const hit = same.find(x => c && norm(x.colorName) === c && norm(x.name) === n) || same.find(x => n && norm(x.name) === n) || same.find(x => c && norm(x.colorName) === c);
+  const url = hit ? safeHttpUrl(hit.productUrl) : null;
+  if (url) return url;
+  for (const [asin, k] of Object.entries(KNOWN_ASIN_DB)) {
+    if (norm(k.brand || '') === b && norm(k.material || '') === m && c && norm(k.colorName || '') === c) return `https://www.amazon.de/dp/${asin}`;
+  }
+  return null;
+}
+
+/** Suchbegriff ohne doppelte Wörter („PLA PLA Basic Schwarz Schwarz“) und ohne Füllwörter */
+export function shopQuery(brand: string, material: string, name: string, colorName: string, extra = ''): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const w of `${brand} ${name} ${material} ${colorName} ${extra}`.split(/\s+/)) {
+    const k = w.toLowerCase().replace(/[^a-z0-9äöüß.+]/g, '');
+    if (!k || seen.has(k) || k === 'filament' && seen.has('filament')) continue;
+    seen.add(k);
+    out.push(w);
+  }
+  return out.join(' ');
+}
+
 export function generateAutoShopUrl(brand: string, material: string, name: string, colorName: string): string {
+  const known = findKnownProductUrl(brand, material, name, colorName);
+  if (known) return known;
   const bLower = (brand || '').toLowerCase();
-  const mLower = (material || 'PLA').toLowerCase();
-  const nLower = `${name || ''} ${colorName || ''}`.toLowerCase();
+  const mat = material || 'PLA';
 
-  // 1. BAMBU LAB -> Offizieller Bambu Lab EU Store (DE-Lager, 1-3 Tage)
-  if (bLower.includes('bambu')) {
-    let slug = 'pla-basic-filament';
-    if (nLower.includes('matte') || nLower.includes('matt')) slug = 'pla-matte-filament';
-    else if (mLower.includes('petg')) slug = 'petg-hf';
-    else if (mLower.includes('tpu')) slug = 'tpu-95a-hf';
-    else if (mLower.includes('asa')) slug = 'asa-filament';
-    else if (mLower.includes('abs')) slug = 'abs-filament';
-    else if (mLower.includes('pa') || mLower.includes('nylon') || mLower.includes('cf')) slug = 'paht-cf';
-    return `https://eu.store.bambulab.com/de/products/${slug}`;
-  }
+  // Offizielle Shops: Suche mit genauem Begriff (Produkt-Adressen werden nicht geraten, die ändern sich)
+  if (bLower.includes('bambu')) return `https://eu.store.bambulab.com/de/search?q=${encodeURIComponent(shopQuery('', mat, name.replace(/bambu\s*lab/i, ''), colorName))}`;
+  if (bLower.includes('sunlu')) return `https://www.sunlu.com/search?q=${encodeURIComponent(shopQuery('', mat, name.replace(/sunlu/i, ''), colorName))}`;
+  if (bLower.includes('prusa')) return `https://www.prusa3d.com/de/search/?q=${encodeURIComponent(shopQuery('Prusament', mat, '', colorName))}`;
+  if (bLower.includes('3djake')) return `https://www.3djake.de/search?q=${encodeURIComponent(shopQuery('', mat, name.replace(/3djake/i, ''), colorName))}`;
 
-  // 2. SUNLU -> Offizieller SUNLU Store (1-3 Tage EU)
-  if (bLower.includes('sunlu')) {
-    const q = encodeURIComponent(`${material || 'PLA'} ${colorName || ''}`.trim());
-    return `https://www.sunlu.com/search?q=${q}`;
-  }
-
-  // 3. ALLE ANDEREN MARKEN -> Amazon.de Prime (1-2 Tage)
-  const query = encodeURIComponent(`${brand || ''} ${material || 'PLA'} ${colorName || ''} ${name || ''} Filament 1.75mm`.replace(/\s+/g, ' ').trim());
-  return `https://www.amazon.de/s?k=${query}`;
+  // Alle anderen: Amazon.de mit Marke, Name, Material, Farbe, 1.75 mm
+  return `https://www.amazon.de/s?k=${encodeURIComponent(shopQuery(brand, mat, name, colorName, 'Filament 1.75mm'))}`;
 }
 
 export function getSpoolLink(spool: Spool): { url: string; label: string; auto: boolean } {
@@ -65,16 +90,16 @@ export function getSpoolLink(spool: Spool): { url: string; label: string; auto: 
     if (bLower.includes('bambu')) label = 'Bambu Lab Store';
     else if (bLower.includes('sunlu')) label = 'SUNLU Store';
     else if (safeUrl.includes('amazon')) label = 'Amazon.de Prime';
-    return {
-      url: safeUrl,
-      label,
-      auto: false
-    };
+    return { url: safeUrl, label, auto: false };
   }
+  const known = findKnownProductUrl(spool.brand, spool.material, spool.name, spool.colorName);
+  if (known) return { url: known, label: 'Produktseite (gemerkt)', auto: true };
   const url = generateAutoShopUrl(spool.brand, spool.material, spool.name, spool.colorName);
-  let label = 'Amazon.de Prime (1–2d)';
-  if (bLower.includes('bambu')) label = 'Bambu Store (1–3d)';
-  else if (bLower.includes('sunlu')) label = 'SUNLU Shop (1–3d)';
+  let label = 'Amazon.de Suche';
+  if (bLower.includes('bambu')) label = 'Bambu Store Suche';
+  else if (bLower.includes('sunlu')) label = 'SUNLU Suche';
+  else if (bLower.includes('prusa')) label = 'Prusa Shop Suche';
+  else if (bLower.includes('3djake')) label = '3DJake Suche';
   return { url, label, auto: true };
 }
 

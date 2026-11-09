@@ -58,6 +58,7 @@ import { useAppSettings } from './hooks/useAppSettings';
 import { useDryingReminders } from './hooks/useDryingReminders';
 import { useKeepAlive } from './hooks/useKeepAlive';
 import { LowStockBanner } from './components/workshop/LowStockBanner';
+import { registerSpoolLinks } from './utils/shopLinks';
 import type { WorkshopTab } from './components/workshop/WorkshopModal';
 import { getLocationStats } from './utils/spoolAlerts';
 import { getWorkshopSettings } from './utils/workshopSettings';
@@ -395,6 +396,7 @@ export default function App() {
   }, []);
 
   // Erinnerung: Trocknen fällig, AMS-Trocknung fertig
+  useEffect(() => registerSpoolLinks(spools), [spools]);
   useDryingReminders({ spools, showToast });
   useKeepAlive();
   // Warteschlange vom Pi (Fach rechts + Zähler oben)

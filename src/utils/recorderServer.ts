@@ -647,3 +647,24 @@ export async function piDeductManual(p: { id: string; name: string; startMs: num
     return { ok: false, text: String(e?.message || e) };
   }
 }
+
+// 1.275: Bestell-Mails (Status ohne Passwort)
+export interface OrderMailStatus {
+  enabled: boolean;
+  configured: boolean;
+  gemini: boolean;
+  account: string;
+  lastCheck: number;
+  lastOk: boolean;
+  text: string;
+  added: number;
+  arrived: number;
+}
+export async function piOrderStatus(check = false): Promise<OrderMailStatus | null> {
+  try {
+    const j = await get(check ? '/api/hub/orders/check' : '/api/hub/orders', { method: check ? 'POST' : 'GET', timeoutMs: check ? 90000 : 15000 });
+    return j?.success ? (j as OrderMailStatus) : null;
+  } catch {
+    return null;
+  }
+}

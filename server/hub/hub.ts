@@ -17,6 +17,7 @@ import { retryDeducts, tryDeduct } from './deduct.js';
 import { autoOff, dryOff, rt } from './power.js';
 import { energyTick, energyWeeks, errorWatch, espTick, goneWatch, onAction, watchPrint, weeklyTick } from './watch.js';
 import { dailyBackup, listBackups } from './backup.js';
+import { startOrderMail } from './orders.js';
 
 // Öffentliche Schnittstelle des Hubs (Routen, bambuMqtt, Tests): alles weiter über hub.js erreichbar
 export { hubEnabled, getHubConfig, updateHubConfig, printMeta, resolvePrint, push } from './core.js';
@@ -38,6 +39,7 @@ export function attachPrinter(p: PrinterPort): void {
     setTimeout(() => refreshLeds(), 20_000);
     // Neue Dateien aus Bambu Studio suchen: 1.231 alle 20-60 s statt alle 3 s (schont den Drucker), bei Änderung am Drucker sofort
     setInterval(() => void autoScanTick(), 5_000).unref();
+    startOrderMail();
   }
 }
 

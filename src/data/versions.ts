@@ -3787,5 +3787,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.275',
+    label: '1.275 (Bestell-Mail → Spulen & Produktlink)',
+    releaseDate: '09.11.2026',
+    description:
+      'Bestell-Mails: Der Pi liest alle 10 Minuten ein eigenes Gmail-Postfach (IMAP, App-Passwort nur in den Add-on-Optionen mail_user und mail_password, nie in der Webseite). Gemini holt aus Amazon-Mails Bestellung, Versand und Zustellung. Bestellung → neue Spule mit Abzeichen „Bestellt“, Versand → „Unterwegs“ mit Lieferdatum, Zustellung → Spule wird normal und der Pi schickt „Filament angekommen“. Jede Bestellung wird nur einmal angelegt, der Mailtext gilt als reine Daten, alte Mails bleiben im Hauptkonto (Weiterleitungs-Filter). Anleitung und „Jetzt prüfen“ im Testmenü, Punkt 7. Produktlink neu: zuerst die gemerkte Produktseite derselben Sorte (aus deinen Spulen und Bestell-Mails), sonst Shop-Suche mit sauberem Suchbegriff (ohne doppelte Wörter), für Bambu, SUNLU, Prusa und 3DJake im eigenen Shop statt geratener Adressen. Neue Dateien server/hub/orders.ts und gemini.ts. Pi-Add-on 1.3.31.',
+    features: ['📧 Bestell-Mail → Spule „Bestellt/Unterwegs“', '📦 Push bei Zustellung', '🔗 Produktlink: gemerkte Seite vor Suche, sauberer Suchbegriff', '🥧 Pi-Add-on 1.3.31 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

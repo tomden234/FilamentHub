@@ -42,6 +42,9 @@ const env = {
   NOTIFY_SERVICE: String(o.notify_service || '').trim(),
   // 1.260: Schlüssel für die Foto-Erkennung der Spulen (Google Gemini, kostenloser Schlüssel von aistudio.google.com). Leer = Foto-Erkennung aus.
   GEMINI_API_KEY: String(o.gemini_api_key || '').trim(),
+  // 1.275: eigenes Gmail-Postfach für Bestell-Mails (IMAP, App-Passwort). Nur hier auf dem Pi, nie in der Webseite.
+  MAIL_USER: String(o.mail_user || '').trim(),
+  MAIL_PASSWORD: String(o.mail_password || '').trim(),
   TZ: process.env.TZ || 'Europe/Berlin',
   // Handy-App, Windows-App und Webseite dürfen den Server ansprechen
   CORS_ORIGIN: 'https://tomden234.github.io,https://localhost,capacitor://localhost,http://localhost,http://localhost:3000,http://127.0.0.1:38517,http://localhost:38517,app://.'

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks, pushOldDone } from '../hub/hub.js';
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
+import { checkMail, orderMailStatus } from '../hub/orders.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
 import { archiveFav, archiveRemove, archiveRename, archiveThumbPath, loadArchive } from '../hub/archive.js';
 import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueFromArchive, queueList, queueMove, queueOptimize, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
@@ -100,6 +101,13 @@ router.post('/api/hub/test-push', async (req, res) => {
 });
 
 // 1.261: letzte Wochenberichte (für die App) und die Berichtsseite (Tipp auf den Push). Die Seite hat keine Anmeldung, die Kennung ist zufällig.
+// 1.275: Bestell-Mails (Status ohne Passwort, Jetzt prüfen)
+router.get('/api/hub/orders', (_req, res) => res.json({ success: true, ...orderMailStatus() }));
+router.post('/api/hub/orders/check', async (_req, res) => {
+  await checkMail();
+  res.json({ success: true, ...orderMailStatus() });
+});
+
 router.get('/api/hub/reports', (_req, res) => {
   res.json({ success: true, reports: listReports().map(r => ({ ...r, url: reportUrl(r.id) })) });
 });

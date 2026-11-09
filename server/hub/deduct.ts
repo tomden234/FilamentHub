@@ -136,7 +136,7 @@ const inFlight = new Set<string>();
 
 /** Alle Schreibvorgänge ins Cloud-Dokument nacheinander (Auto- und manueller Abzug dürfen nie gleichzeitig lesen → schreiben) */
 let cloudChain: Promise<unknown> = Promise.resolve();
-function withCloudLock<T>(fn: () => Promise<T>): Promise<T> {
+export function withCloudLock<T>(fn: () => Promise<T>): Promise<T> {
   const run = cloudChain.then(fn, fn);
   cloudChain = run.catch(() => undefined);
   return run;
