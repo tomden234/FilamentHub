@@ -3677,5 +3677,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.265',
+    label: '1.265 (Update-Suche bei GitHub-Bremse)',
+    releaseDate: '09.11.2026',
+    description:
+      'Windows-App: Meldet GitHub „429 Too Many Requests“ (typisch bei Handy-Hotspot oder Schul-WLAN, weil sich viele eine IP teilen), versucht die App die Suche bis zu 3 Mal mit wachsender Pause neu und zeigt sonst einen klaren deutschen Hinweis. Außerdem gilt die Version auf dem Server als Wahrheit: Ist die installierte Nummer größer, wird trotzdem aktualisiert, damit „Nach Update suchen“ nicht mehr für immer „aktuell“ sagt.',
+    features: ['🔁 Update-Suche versucht bei 429 automatisch neu', '🪟 Server-Version zählt, auch wenn die installierte Nummer größer ist'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

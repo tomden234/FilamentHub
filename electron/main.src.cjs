@@ -130,11 +130,14 @@ function clearUpdaterCache() {
   }
 }
 const isNetError = e => /ERR_HTTP2|ERR_CONNECTION|ERR_NETWORK|ERR_SSL|ERR_TIMED_OUT|ERR_INTERNET|ERR_PROXY|ERR_TUNNEL|ERR_EMPTY_RESPONSE/i.test(String((e && e.message) || e));
+const isRateLimit = e => /\b429\b|Too Many Requests/i.test(String((e && e.message) || e));
 const isChecksumError = e => /checksum|sha512|sha256/i.test(String((e && e.message) || e));
 
 function setupAutoUpdate() {
   try {
     autoUpdater.disableDifferentialDownload = true;
+    // 1.265: Server-Version ist die Wahrheit. Ist die installierte Nummer größer (z. B. nach Repo-Umzug), wird trotzdem aktualisiert.
+    autoUpdater.allowDowngrade = true;
   } catch {
     /* ältere Version ohne dieses Feld */
   }
@@ -147,7 +150,22 @@ function setupAutoUpdate() {
       try {
         r = await autoUpdater.checkForUpdates();
       } catch (e0) {
-        if (isChecksumError(e0)) {
+        if (isRateLimit(e0)) {
+          // 1.265: GitHub bremst (oft geteilte Hotspot-/Schul-IP). Bis zu 3 Mal mit wachsender Pause neu versuchen.
+          let last = e0;
+          r = undefined;
+          for (const wait of [4000, 12000, 30000]) {
+            await new Promise(res => setTimeout(res, wait));
+            try {
+              r = await autoUpdater.checkForUpdates();
+              break;
+            } catch (e1) {
+              last = e1;
+              if (!isRateLimit(e1)) throw e1;
+            }
+          }
+          if (!r) throw last;
+        } else if (isChecksumError(e0)) {
           clearUpdaterCache();
           r = await autoUpdater.checkForUpdates();
         } else if (isNetError(e0) || /latest\.yml|channel|404|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(String((e0 && e0.message) || e0))) {
@@ -169,7 +187,7 @@ function setupAutoUpdate() {
       const raw = String((e && e.message) || e);
       const s = {
         state: 'error',
-        message: isNetError(e) ? 'Keine stabile Verbindung zu GitHub (Netz/Proxy/Firewall). Anderes WLAN oder Handy-Hotspot probieren, dann nochmal prüfen.' : /latest\.yml|channel/i.test(raw) ? 'Neue Version wird gerade veröffentlicht. In 3 Minuten nochmal prüfen.' : raw.slice(0, 160)
+        message: isRateLimit(e) ? 'GitHub bremst gerade (zu viele Anfragen aus diesem Netz, z. B. Hotspot oder Schul-WLAN). Nach 10 bis 15 Minuten oder in einem anderen WLAN nochmal prüfen.' : isNetError(e) ? 'Keine stabile Verbindung zu GitHub (Netz/Proxy/Firewall). Anderes WLAN oder Handy-Hotspot probieren, dann nochmal prüfen.' : /latest\.yml|channel/i.test(raw) ? 'Neue Version wird gerade veröffentlicht. In 3 Minuten nochmal prüfen.' : raw.slice(0, 160)
       };
       sendStatus(s);
       return s;
