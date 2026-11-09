@@ -345,7 +345,7 @@ export async function checkMail(): Promise<Status> {
     if (!geminiReady()) throw new Error('Kein Gemini-Schlüssel im Add-on eingetragen');
     if (!cloudReady(access())) throw new Error('Spulen-Cloud (Pi) ist nicht eingerichtet');
     const c = cfg();
-    client = new ImapFlow({ host: c.host, port: 993, secure: true, auth: { user: c.user, pass: c.pass }, logger: false, socketTimeout: 60_000 });
+    client = new ImapFlow({ host: c.host, port: 993, secure: true, auth: { user: c.user, pass: c.pass }, logger: false, socketTimeout: 5 * 60_000, greetingTimeout: 30_000, connectionTimeout: 45_000 });
     client.on('error', () => undefined);
     await client.connect();
     const st = loadState();
@@ -408,7 +408,11 @@ export async function checkMail(): Promise<Status> {
   } catch (e: any) {
     status.lastOk = false;
     const m = String(e?.responseText || e?.message || e).replace(/\s+/g, ' ');
-    status.text = /AUTHENTICATIONFAILED|Invalid credentials|auth/i.test(m) ? 'Anmeldung abgelehnt: App-Passwort und Adresse prüfen' : m.slice(0, 160);
+    status.text = /AUTHENTICATIONFAILED|Invalid credentials|auth/i.test(m)
+      ? 'Anmeldung abgelehnt: App-Passwort und Adresse prüfen'
+      : /timeout|ETIMEDOUT|ECONNRESET|socket/i.test(m)
+      ? 'Gmail hat zu lange gebraucht, nächster Versuch in 10 Minuten'
+      : m.slice(0, 160);
     console.warn('[Orders] Fehler:', status.text);
   } finally {
     running = false;
@@ -426,4 +430,27 @@ export function startOrderMail(): void {
   console.log('[Orders] Bestell-Mails werden alle 10 Minuten geprüft.');
   setTimeout(() => void checkMail(), 60_000).unref();
   setInterval(() => void checkMail(), 10 * 60_000).unref();
+}
+
+// ---------- Testlauf ohne Speichern ----------
+const SAMPLE_HTML = `<p>Hallo, vielen Dank für Ihre Bestellung bei Amazon.de.</p>
+<p>Bestellnummer: 302-0000000-0000000</p><p>Voraussichtliche Zustellung: Morgen</p>
+<a href="https://www.amazon.de/gp/r.html?U=https%3A%2F%2Fwww.amazon.de%2Fdp%2FB0DRCR8FZP"><b>yxpolyer Nylon kohlefaser Filament PA6-CF 1,75 mm 1 kg Schwarz</b></a>
+<p>Menge: 2 · 39,99 €</p>`;
+
+/** Prüft Gemini und die Auslese mit einer eingebauten Beispiel-Mail. Speichert nichts. */
+export async function testOrderExtraction(): Promise<{ ok: boolean; text: string }> {
+  if (!geminiReady()) return { ok: false, text: 'Kein Gemini-Schlüssel im Add-on' };
+  try {
+    const plain = SAMPLE_HTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    const o = await extractOrder('Amazon.de <bestellbestaetigung@amazon.de>', 'Ihre Amazon.de-Bestellung: yxpolyer Nylon Filament', plain, mailProducts(SAMPLE_HTML));
+    if (!o) return { ok: false, text: 'Gemini hat die Beispiel-Mail nicht erkannt' };
+    const it = o.items[0];
+    return {
+      ok: true,
+      text: `Erkannt: ${o.kind === 'ordered' ? 'Bestellung' : o.kind} ${o.orderId}, ${it.quantity}× ${it.brand} ${it.name} (${it.material}, ${it.colorName})${o.eta ? `, Lieferung ${o.eta}` : ''}${it.asin ? ', Link ✓' : ''}`
+    };
+  } catch (e) {
+    return { ok: false, text: (e as Error).message.slice(0, 160) };
+  }
 }

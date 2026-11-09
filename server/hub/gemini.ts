@@ -28,21 +28,23 @@ export async function geminiJson(prompt: string): Promise<string> {
   throw new Error(`Gemini-Fehler ${last?.status ?? ''}`.trim());
 }
 
-/** Gemini mit Google-Suche: liefert die Treffer-Adressen (aus der Suche, nicht aus dem Modelltext erfunden) */
-export async function geminiSearchUrls(prompt: string): Promise<string[]> {
+/** Gemini mit Google-Suche: Treffer-Adressen (aus der Suche) und der Antworttext. Flash-Lite kann die Suche nicht immer: dann das nächste Modell. */
+export async function geminiSearch(prompt: string): Promise<{ urls: string[]; text: string }> {
   const ai = getClient();
   if (!ai) throw new Error('Kein Gemini-Schlüssel im Add-on eingetragen');
-  const models = [process.env.GEMINI_MODEL, 'gemini-3.5-flash-lite', 'gemini-flash-latest', 'gemini-3.6-flash'].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
+  const models = [process.env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
   let last: any = null;
   for (const model of models) {
     try {
       const r = await ai.models.generateContent({ model, contents: [{ role: 'user', parts: [{ text: prompt }] }], config: { tools: [{ googleSearch: {} }] } });
       const chunks = r.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-      return chunks.map(c => String(c.web?.uri || '')).filter(Boolean);
+      return { urls: chunks.map(c => String(c.web?.uri || '')).filter(Boolean), text: String(r.text || '') };
     } catch (e: any) {
       last = e;
-      if (e?.status !== 404) break;
+      console.warn(`[Produktlink] Gemini ${model} mit Suche: ${e?.status ?? ''} ${String(e?.message || e).slice(0, 160)}`);
+      // Schlüssel- oder Limitfehler gelten für alle Modelle
+      if ([401, 402, 403, 429].includes(Number(e?.status))) break;
     }
   }
-  throw new Error(`Gemini-Fehler ${last?.status ?? ''}`.trim());
+  throw new Error(`Gemini-Suche fehlgeschlagen (${last?.status ?? 'unbekannt'})`);
 }

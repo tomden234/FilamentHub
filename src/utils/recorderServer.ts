@@ -660,6 +660,14 @@ export interface OrderMailStatus {
   added: number;
   arrived: number;
 }
+export async function piOrderTest(): Promise<{ ok: boolean; text: string }> {
+  try {
+    const j = await get('/api/hub/orders/test', { method: 'POST', timeoutMs: 60000 });
+    return j?.success ? { ok: Boolean(j.ok), text: String(j.text || '') } : { ok: false, text: 'Pi zu alt: Add-on aktualisieren' };
+  } catch {
+    return { ok: false, text: 'Pi nicht erreichbar' };
+  }
+}
 export async function piOrderStatus(check = false): Promise<OrderMailStatus | null> {
   try {
     const j = await get(check ? '/api/hub/orders/check' : '/api/hub/orders', { method: check ? 'POST' : 'GET', timeoutMs: check ? 90000 : 15000 });
@@ -669,11 +677,28 @@ export async function piOrderStatus(check = false): Promise<OrderMailStatus | nu
   }
 }
 
-// 1.276: Produktseite am Pi suchen lassen (null = nichts gefunden, dann bleibt die Shop-Suche)
-export async function piProductLink(spec: { brand: string; material: string; name: string; colorName: string }): Promise<string | null> {
+// 1.276/1.278: Produktseite am Pi suchen lassen (url null = nichts gefunden, error sagt warum)
+export async function piProductLink(spec: { brand: string; material: string; name: string; colorName: string; refill?: boolean }): Promise<{ url: string | null; error?: string }> {
   try {
-    const j = await get('/api/hub/product-link', { method: 'POST', body: spec, timeoutMs: 40000 });
-    return j?.success && typeof j.url === 'string' ? j.url : null;
+    const j = await get('/api/hub/product-link', { method: 'POST', body: spec, timeoutMs: 45000 });
+    if (!j?.success) return { url: null, error: 'Pi zu alt: Add-on aktualisieren' };
+    return { url: typeof j.url === 'string' ? j.url : null, error: j.error };
+  } catch {
+    return { url: null, error: 'Pi nicht erreichbar' };
+  }
+}
+export interface ProductFillStatus {
+  running: boolean;
+  lastAt: number;
+  filled: number;
+  failed: number;
+  open: number;
+  text: string;
+}
+export async function piProductFill(run = false): Promise<ProductFillStatus | null> {
+  try {
+    const j = await get(run ? '/api/hub/product-links/run' : '/api/hub/product-links', { method: run ? 'POST' : 'GET', timeoutMs: run ? 60000 : 15000 });
+    return j?.success ? (j as ProductFillStatus) : null;
   } catch {
     return null;
   }

@@ -31,6 +31,21 @@ export function getBrandInfo(brandName: string, settings?: AppSettings) {
 
 // 1.275: Gemerkte Produktseiten. Die App sammelt die Links, die du an deinen Spulen gespeichert hast (auch aus Bestell-Mails),
 // und nimmt sie für gleiche Sorten wieder: gleiche Marke + Material + Farbe → genau diese Produktseite statt einer Suche.
+/** Gespeicherte Suchseiten (aus alten Versionen) zählen nicht als Produktseite */
+export function isSearchUrl(u: string | null | undefined): boolean {
+  if (!u) return true;
+  try {
+    const x = new URL(u);
+    return /^\/s(\/|$)/.test(x.pathname) || /\/(search|suche)(\/|$)/i.test(x.pathname) || x.searchParams.has('k') || (x.searchParams.has('q') && !/\/(products?|produkt|dp)\//i.test(x.pathname));
+  } catch {
+    return true;
+  }
+}
+const realUrl = (u: unknown): string | null => {
+  const safe = safeHttpUrl(u);
+  return safe && !isSearchUrl(safe) ? safe : null;
+};
+
 // Vom Pi gefundene Produktseiten, je Gerät gemerkt (damit der nächste Klick sofort direkt öffnet)
 const LS_KEY = 'fh-product-links';
 let learned: Record<string, string> = {};
@@ -53,7 +68,7 @@ export function rememberProductUrl(brand: string, material: string, name: string
 
 let linkPool: Pick<Spool, 'brand' | 'material' | 'name' | 'colorName' | 'productUrl'>[] = [];
 export function registerSpoolLinks(list: Spool[]) {
-  linkPool = list.filter(s => safeHttpUrl(s.productUrl));
+  linkPool = list.filter(s => realUrl(s.productUrl));
 }
 const norm = (v: string) => (v || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim();
 /** Sucht eine schon bekannte Produktseite derselben Sorte (nur genaue Treffer, kein Raten) */
@@ -62,12 +77,12 @@ export function findKnownProductUrl(brand: string, material: string, name: strin
   const m = norm(material);
   const c = norm(colorName);
   const n = norm(name);
-  const mine = safeHttpUrl(learned[productKey(brand, material, name, colorName)]);
+  const mine = realUrl(learned[productKey(brand, material, name, colorName)]);
   if (mine) return mine;
   if (!b) return null;
   const same = linkPool.filter(x => norm(x.brand) === b && norm(x.material) === m);
   const hit = same.find(x => c && norm(x.colorName) === c && norm(x.name) === n) || same.find(x => n && norm(x.name) === n) || same.find(x => c && norm(x.colorName) === c);
-  const url = hit ? safeHttpUrl(hit.productUrl) : null;
+  const url = hit ? realUrl(hit.productUrl) : null;
   if (url) return url;
   for (const [asin, k] of Object.entries(KNOWN_ASIN_DB)) {
     if (norm(k.brand || '') === b && norm(k.material || '') === m && c && norm(k.colorName || '') === c) return `https://www.amazon.de/dp/${asin}`;
@@ -79,7 +94,11 @@ export function findKnownProductUrl(brand: string, material: string, name: strin
 export function shopQuery(brand: string, material: string, name: string, colorName: string, extra = ''): string {
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const w of `${brand} ${name} ${material} ${colorName} ${extra}`.split(/\s+/)) {
+  // Material nur, wenn der Name noch keins nennt („PA6-CF“ + „PET-CF / PA-CF“ macht die Suche kaputt)
+  const nw = (name || '').toLowerCase().split(/[^a-z0-9]+/);
+  const nameHasMat = nw.some(w => /^(pla|petg|pet|abs|asa|tpu|pa\d*|pc|cf|gf|nylon)$/.test(w));
+  const mat = nameHasMat ? '' : (material || '').split('/')[0].trim();
+  for (const w of `${brand} ${name} ${mat} ${colorName} ${extra}`.split(/\s+/)) {
     const k = w.toLowerCase().replace(/[^a-z0-9äöüß.+]/g, '');
     if (!k || seen.has(k) || k === 'filament' && seen.has('filament')) continue;
     seen.add(k);
@@ -106,7 +125,7 @@ export function generateAutoShopUrl(brand: string, material: string, name: strin
 
 export function getSpoolLink(spool: Spool): { url: string; label: string; auto: boolean } {
   const bLower = (spool.brand || '').toLowerCase();
-  const safeUrl = safeHttpUrl(spool.productUrl);
+  const safeUrl = realUrl(spool.productUrl);
   if (safeUrl) {
     let label = 'Shop öffnen';
     if (bLower.includes('bambu')) label = 'Bambu Lab Store';
@@ -189,9 +208,8 @@ export function parseFilamentText(inputStr: string, rawText = '', settings?: App
   const customPreset = settings?.materialPresets[detectedMaterial];
   const preset = customPreset || MATERIAL_PRESETS[detectedMaterial] || MATERIAL_PRESETS['PLA'];
 
-  const finalUrl = inputStr.startsWith('http')
-    ? inputStr
-    : generateAutoShopUrl(detectedBrand, detectedMaterial, cleanTitle, detectedColorName);
+  // 1.278: Nur eine echte Adresse speichern; ohne Adresse sucht der Pi beim ersten Klick die Produktseite
+  const finalUrl = inputStr.startsWith('http') && !isSearchUrl(inputStr) ? inputStr : undefined;
 
   return {
     brand: detectedBrand,

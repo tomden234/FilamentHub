@@ -60,6 +60,8 @@ import { useKeepAlive } from './hooks/useKeepAlive';
 import { LowStockBanner } from './components/workshop/LowStockBanner';
 import { registerSpoolLinks } from './utils/shopLinks';
 import { CONFIRM_ARRIVAL_EVENT, confirmArrival } from './utils/incoming';
+import { SET_PRODUCT_URL_EVENT } from './utils/productPage';
+import { isSearchUrl } from './utils/shopLinks';
 import type { WorkshopTab } from './components/workshop/WorkshopModal';
 import { getLocationStats } from './utils/spoolAlerts';
 import { getWorkshopSettings } from './utils/workshopSettings';
@@ -820,6 +822,20 @@ export default function App() {
     };
     window.addEventListener(CONFIRM_ARRIVAL_EVENT, on);
     return () => window.removeEventListener(CONFIRM_ARRIVAL_EVENT, on);
+  });
+
+  // 1.278: Vom Pi gefundene Produktseite fest an der Spule speichern (nur wenn sie noch keine echte hat)
+  useEffect(() => {
+    const on = (e: Event) => {
+      const { id, url } = ((e as CustomEvent).detail || {}) as { id?: string; url?: string };
+      const sp = spools.find(s => s.id === id);
+      if (!sp || !url || !isSearchUrl(sp.productUrl)) return;
+      const updated = spools.map(s => (s.id === id ? { ...s, productUrl: url } : s));
+      setSpools(updated);
+      persistState(updated, printHistory);
+    };
+    window.addEventListener(SET_PRODUCT_URL_EVENT, on);
+    return () => window.removeEventListener(SET_PRODUCT_URL_EVENT, on);
   });
 
   const handleMarkDried = (spoolId: string) => {

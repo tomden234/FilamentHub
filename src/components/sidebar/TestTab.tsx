@@ -382,7 +382,7 @@ export const TestTab: React.FC = () => {
       </Section>
 
       {/* 7. Bestell-Mails */}
-      <Section id="s7" open={open} onToggle={toggle} icon={<Mail className="w-4 h-4 text-indigo-400" />} title="7. Bestell-Mails (Amazon → Spulen)">
+      <Section id="s7" open={open} onToggle={toggle} icon={<Mail className="w-4 h-4 text-indigo-400" />} title="7. Bestell-Mails & Spulen-Links">
         <OrderMailCard />
       </Section>
     </div>

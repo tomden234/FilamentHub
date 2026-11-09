@@ -3820,5 +3820,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.278',
+    label: '1.278 (Spulen-Links direkt zur Produktseite)',
+    releaseDate: '09.11.2026',
+    description:
+      'Shop-Links der Spulen neu: Bambu, Prusament, SUNLU und 3DJake liest der Pi die offizielle Produktliste des Shops (Sitemap, 7 Tage gemerkt) und nimmt die passende Seite, zum Beispiel Prusament PLA → prusa3d.com/de/produkt/prusament-pla-filament (dort 1 kg und Farbe wählen), Bambu PLA Matte → Bambu-Store-Seite PLA Matte, Refill → Refill-Seite. Alle anderen Marken: der Pi holt die Amazon-Treffer und Gemini wählt das passende Produkt (amazon.de/dp/…), Reserve ist Gemini mit Google-Suche. Gefundene Links werden fest an der Spule gespeichert. Alte gespeicherte Suchadressen zählen nicht mehr als Link und werden ersetzt. Der Pi füllt alle 3 Minuten den Link der nächsten Spule ohne Produktseite von selbst. Findet er nichts, steht der Grund kurz im Tab. Testmenü Punkt 7: Erklärtext entfernt, neu „Test-Mail auslesen“ (prüft Gemini mit einer Beispiel-Mail, speichert nichts) und Stand der Spulen-Links. Gmail-Zeitüberschreitung: längere Wartezeit, verständliche Meldung. Pi-Add-on 1.3.34.',
+    features: ['🔗 Shop-Link öffnet die Produktseite (Shop-Liste bzw. Amazon-Treffer)', '🧵 Pi füllt Links aller Spulen selbst', '🧪 Test-Mail auslesen', '🥧 Pi-Add-on 1.3.34 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
