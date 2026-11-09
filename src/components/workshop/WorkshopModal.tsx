@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Bell, BellRing, Lightbulb, QrCode, SlidersHorizontal, X } from 'lucide-react';
+import { Archive, BarChart3, Bell, BellRing, Lightbulb, QrCode, SlidersHorizontal, X } from 'lucide-react';
 import type { Spool } from '../../types/filament';
 import { NoticesTab } from './NoticesTab';
 import { InboxTab } from './InboxTab';
@@ -8,8 +8,9 @@ import { useBackLayer } from '../../utils/backNav';
 import { LabelsTab } from './LabelsTab';
 import { StatsTab } from './StatsTab';
 import { StatusLedCard } from '../sidebar/StatusLedCard';
+import { ArchiveTab } from './ArchiveTab';
 
-export type WorkshopTab = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue' | 'led';
+export type WorkshopTab = 'inbox' | 'notices' | 'labels' | 'prints' | 'stats' | 'queue' | 'led' | 'archive';
 
 // Zwei Fenster in einem: „Mitteilungen“ (Postfach + Einstellungen, geöffnet über die Glocke) und „Werkstatt“ (Etiketten)
 const NOTICE_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -17,6 +18,7 @@ const NOTICE_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{
   { id: 'notices', label: 'Einstellungen', icon: SlidersHorizontal }
 ];
 const WORKSHOP_TABS: { id: WorkshopTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'archive', label: 'Datei-Archiv', icon: Archive },
   { id: 'stats', label: 'Statistik', icon: BarChart3 },
   { id: 'labels', label: 'Etiketten', icon: QrCode },
   { id: 'led', label: 'Status-LED', icon: Lightbulb }
@@ -40,14 +42,14 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, o
   const unread = useUnreadCount();
   useBackLayer(isOpen, onClose, 'workshop', onReopen);
   if (!isOpen) return null;
-  const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue' || tab === 'led';
+  const isWorkshop = tab === 'labels' || tab === 'prints' || tab === 'stats' || tab === 'queue' || tab === 'led' || tab === 'archive';
   // Drucke und Warteschlange stecken jetzt in der Drucker-Leiste rechts; alte Verweise landen bei der Statistik
   if (tab === 'prints' || tab === 'queue') queueMicrotask(() => onTabChange('stats'));
   // 1.191: Statistik, Etiketten und Status-LED sind eigene Fenster (aus Menü bzw. Leiste oben), ohne Werkstatt-Reiter
   const single = isWorkshop ? WORKSHOP_TABS.find(t => t.id === tab) || WORKSHOP_TABS[0] : null;
   const tabs = isWorkshop ? [] : NOTICE_TABS;
   const HeadIcon = single ? single.icon : BellRing;
-  const SUBS: Record<string, string> = { stats: 'Verbrauch, Drucke und Lager auf einen Blick', labels: 'QR-Etiketten für deine Spulen drucken', led: 'LED-Streifen am Drucker einstellen und testen' };
+  const SUBS: Record<string, string> = { archive: 'Alle geslicten Dateien auf dem Pi, jederzeit nachdrucken', stats: 'Verbrauch, Drucke und Lager auf einen Blick', labels: 'QR-Etiketten für deine Spulen drucken', led: 'LED-Streifen am Drucker einstellen und testen' };
 
   return (
     <div
@@ -118,6 +120,7 @@ export const WorkshopModal: React.FC<WorkshopModalProps> = ({ isOpen, onClose, o
           {tab === 'labels' && <LabelsTab spools={spools} preselectId={labelSpoolId} />}
           {tab === 'stats' && <StatsTab spools={spools} />}
           {tab === 'led' && <StatusLedCard />}
+          {tab === 'archive' && <ArchiveTab />}
 </div>
       </div>
     </div>

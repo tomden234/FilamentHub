@@ -3,7 +3,8 @@ import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHub
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
-import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueList, queueMove, queueOptimize, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
+import { archiveFav, archiveRemove, archiveRename, archiveThumbPath, loadArchive } from '../hub/archive.js';
+import { setLedTest, autoScan, autoAddOn, queuePick, queueWatch, queueDuplicate, queueReprint, printerFiles, queueAdd, queueAddAll, queueFromArchive, queueList, queueMove, queueOptimize, queueRemove, queueRemoveProject, queueReorder, setAutoAdd, startNext, thumbPath } from '../hub/queue.js';
 
 // Hub-Routen: Apps schicken Einstellungen, holen Status, Fotos und Sicherungen.
 const router = Router();
@@ -212,6 +213,40 @@ router.post('/api/hub/queue/remove', (req, res) => {
   if (req.body?.project) queueRemoveProject(String(req.body.project));
   else queueRemove(String(req.body?.id || ''));
   res.json({ success: true, items: queueList() });
+});
+
+// 1.274: Datei-Archiv
+router.get('/api/hub/archive', (_req, res) => {
+  const items = loadArchive();
+  res.json({ success: true, items, bytes: items.reduce((a, e) => a + e.size, 0) });
+});
+
+router.get('/api/hub/archive/thumb/:id', (req, res) => {
+  const p = archiveThumbPath(String(req.params.id || ''));
+  if (!p) return res.status(404).end();
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.type('png').sendFile(p);
+});
+
+router.post('/api/hub/archive/print', async (req, res) => {
+  try {
+    const items = await queueFromArchive(String(req.body?.id || ''), Number(req.body?.plate) || undefined);
+    res.json({ success: true, text: `${items.length > 1 ? `${items.length} Platten` : `„${items[0].name}“`} vorgemerkt.`, items: queueList() });
+  } catch (e: any) {
+    res.json({ success: false, text: String(e?.message || e), items: queueList() });
+  }
+});
+
+router.post('/api/hub/archive/delete', (req, res) => {
+  res.json({ success: archiveRemove(String(req.body?.id || '')), items: loadArchive() });
+});
+
+router.post('/api/hub/archive/fav', (req, res) => {
+  res.json({ success: archiveFav(String(req.body?.id || ''), Boolean(req.body?.fav)), items: loadArchive() });
+});
+
+router.post('/api/hub/archive/rename', (req, res) => {
+  res.json({ success: archiveRename(String(req.body?.id || ''), String(req.body?.name || '')), items: loadArchive() });
 });
 
 router.post('/api/hub/queue/optimize', (req, res) => {

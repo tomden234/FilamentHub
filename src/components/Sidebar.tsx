@@ -5,6 +5,7 @@ import { menuWidth, usePanelWidths } from '../utils/panelWidth';
 import QRCode from 'qrcode';
 
 import {
+  Archive,
   X,
   Disc,
   Bot,
@@ -70,7 +71,7 @@ export interface SidebarProps {
   /** Vor-Taste der Maus: Menü wieder öffnen */
   onReopen?: () => void;
   /** Fenster öffnen: Statistik, Etiketten, Postfach */
-  onOpenWorkshop?: (tab: 'stats' | 'labels' | 'inbox') => void;
+  onOpenWorkshop?: (tab: 'stats' | 'labels' | 'inbox' | 'archive') => void;
   viewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
   spools: Spool[];
@@ -389,6 +390,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // 1.235: Menü gekürzt und nach Wichtigkeit sortiert: oben das, was man täglich braucht (Postfach, Verbindungen, Statistik, Etiketten),
   // die sechs Mitteilungs-Seiten sind ein Punkt „Mitteilungen“ (innen mit Schnellsprung), Texte kurz.
   const homeItems: { key: string; icon: React.ComponentType<{ className?: string }>; title: string; sub: string; go: () => void; group: string }[] = [
+    { key: 'archive', group: 'Wichtig', icon: Archive, title: 'Datei-Archiv', sub: 'Gesicherte Dateien suchen und nachdrucken', go: () => onOpenWorkshop?.('archive') },
     { key: 'inbox', group: 'Wichtig', icon: Bell, title: 'Postfach', sub: 'Alle Meldungen', go: () => onOpenWorkshop?.('inbox') },
     { key: 'connections', group: 'Wichtig', icon: Plug, title: 'Verbindungen', sub: 'Drucker, Home Assistant, Cloud', go: settings('connections') },
     { key: 'stats', group: 'Wichtig', icon: BarChart3, title: 'Statistik', sub: 'Verbrauch und Drucke', go: () => onOpenWorkshop?.('stats') },
@@ -409,6 +411,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
     Mehr: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
     Einstellungen: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
     Info: 'text-rose-400 bg-rose-500/15 border-rose-500/30'
+  };
+  // 1.274: jeder Punkt hat eine eigene Farbe, die Gruppen-Köpfe tragen die Farbe ihrer Gruppe
+  const ITEM_TONES: Record<string, string> = {
+    archive: 'text-indigo-400 bg-indigo-500/15 border-indigo-500/30',
+    inbox: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+    connections: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/30',
+    stats: 'text-violet-400 bg-violet-500/15 border-violet-500/30',
+    labels: 'text-orange-400 bg-orange-500/15 border-orange-500/30',
+    gcode: 'text-lime-400 bg-lime-500/15 border-lime-500/30',
+    ai: 'text-fuchsia-400 bg-fuchsia-500/15 border-fuchsia-500/30',
+    test: 'text-teal-400 bg-teal-500/15 border-teal-500/30',
+    connect: 'text-sky-400 bg-sky-500/15 border-sky-500/30'
+  };
+  const GROUP_HEAD: Record<string, string> = {
+    Wichtig: 'text-amber-400 border-amber-500/40',
+    Mehr: 'text-sky-400 border-sky-500/40',
+    Einstellungen: 'text-emerald-400 border-emerald-500/40',
+    Info: 'text-rose-400 border-rose-500/40'
   };
   const NOTICE_TITLES: Record<NoticeSection, string> = {
     print: 'Mitteilungen: Druck',
@@ -689,7 +709,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-4">
               {Array.from(new Set(homeItems.map(i => i.group))).map(group => (
                 <div key={group} className="space-y-1.5">
-                  <div className="fh-eyebrow px-1 flex items-center justify-between"><span>{group}</span><span className="font-mono-num">{homeItems.filter(i => i.group === group).length}</span></div>
+                  <div className={`fh-eyebrow px-2 py-1 border-l-4 rounded-sm flex items-center justify-between font-extrabold ${GROUP_HEAD[group] || GROUP_HEAD.Einstellungen}`}><span>{group}</span><span className="font-mono-num">{homeItems.filter(i => i.group === group).length}</span></div>
                   <div className="rounded-xl border overflow-hidden divide-y divide-[var(--app-border)]" style={{ backgroundColor: 'var(--app-card-sub)', borderColor: 'var(--app-border)' }}>
                     {homeItems
                       .filter(i => i.group === group)
@@ -702,7 +722,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             className="w-full px-3 py-2 flex items-center gap-3 text-left cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.99] transition"
                           >
                             <span
-                              className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${TONES[item.group] || TONES.Einstellungen}`}
+                              className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${ITEM_TONES[item.key] || TONES[item.group] || TONES.Einstellungen}`}
                             >
                               <Icon className="w-4 h-4" />
                             </span>

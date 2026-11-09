@@ -3776,5 +3776,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.274',
+    label: '1.274 (Datei-Archiv & farbiges Menü)',
+    releaseDate: '09.11.2026',
+    description:
+      'Neues Datei-Archiv: Jede Datei, die in die Warteschlange kommt, sichert der Pi zusätzlich (Ordner archive, bis 2 GB oder 400 Dateien, gleiche Datei nur einmal). Im Menü ganz oben „Datei-Archiv“ öffnet direkt das Archiv: Suche oben, Sortierung (Neueste, zuletzt benutzt, Name, Material, Gramm, Druckzeit, oft gedruckt), Material-Filter, Stern für „nie automatisch löschen“, Umbenennen, Löschen, „Nochmal drucken“ (bei mehreren Platten alle oder einzeln). Beim Aufräumen fliegen die am längsten unbenutzten Dateien zuerst raus, markierte nie. Menü: jeder Punkt hat eine eigene Farbe, die Gruppen-Köpfe tragen die Gruppenfarbe. Neue Dateien server/hub/archive.ts und src/components/workshop/ArchiveTab.tsx. Pi-Add-on 1.3.30.',
+    features: ['🗂️ Datei-Archiv auf dem Pi', '🔎 Suchen, Sortieren, Material-Filter', '🖨️ Nochmal drucken (alle oder einzelne Platten)', '🎨 Farbiges Menü', '🥧 Pi-Add-on 1.3.30 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

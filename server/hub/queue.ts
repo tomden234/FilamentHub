@@ -5,12 +5,13 @@ import path from 'path';
 import crypto from 'crypto';
 import { dataDir } from '../paths.js';
 import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
-import { ftpBusy, listJobFiles, platesFromThreeMf, readJobFile, renameJobFile, thumbFromThreeMf, type JobFilament } from '../bambuJobFile.js';
+import { ftpBusy, listJobFiles, platesFromThreeMf, readJobFile, renameJobFile, thumbFromThreeMf, uploadJobFile, type JobFilament } from '../bambuJobFile.js';
 import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubLogic.js';
 import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { readLocalDoc } from './localDoc.js';
+import { archiveAdd, archiveBytes, archiveUsed, loadArchive } from './archive.js';
 import { loadFactors, mainMaterial, timeInfo, type TimeInfo } from './printTime.js';
 import { filamentKey, optimize, type OptItem, type OptPlan } from './queueOptimize.js';
 import { nozzleText, setupInfo, type SetupInfo } from './setupCheck.js';
@@ -350,6 +351,7 @@ export async function queueAdd(filePath: string, plate = 1, fkey?: string, displ
   checkPath(filePath);
   const r = await readJobFile(lan.ip, lan.code, filePath, plate);
   if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
+  void archiveAdd(r.bytes, path.basename(filePath)).catch(e => console.warn('[Archiv]', e?.message || e));
   const it = makeItem(r, filePath, r, r.thumb, fkey, displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''));
   load().push(it);
   save();
@@ -364,6 +366,7 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
   checkPath(filePath);
   const r = await readJobFile(lan.ip, lan.code, filePath, 1);
   if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
+  void archiveAdd(r.bytes, path.basename(filePath)).catch(e => console.warn('[Archiv]', e?.message || e));
   const base = displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, '');
   let plates: ReturnType<typeof platesFromThreeMf> = [];
   try {
@@ -393,6 +396,27 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
   save();
   void showLeds(0);
   return out.map(withMapping);
+}
+
+/** 1.274: Aus dem Archiv drucken: Datei liegt schon auf dem Drucker (gleicher Name und gleiche Größe) oder wird hochgeladen, dann alle Platten (oder die gewählte) einreihen. */
+export async function queueFromArchive(id: string, plate?: number): Promise<(QueueItem & { mapping: string[]; missing: string[] })[]> {
+  const lan = port?.getLanAccess();
+  if (!lan) throw new Error('Drucker nicht im LAN-Modus verbunden');
+  const e = loadArchive().find(x => x.id === id);
+  const bytes = e ? archiveBytes(id) : null;
+  if (!e || !bytes) throw new Error('Datei nicht mehr im Archiv');
+  const safe = e.fileName.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '').slice(0, 120) || 'archiv.gcode.3mf';
+  const files = await printerFiles();
+  let remote = files.find(f => f.name === safe && f.size === bytes.length)?.path;
+  if (!remote) remote = await uploadJobFile(lan.ip, lan.code, e.fileName, bytes);
+  // Die hochgeladene Datei soll die automatische Suche nicht noch einmal einreihen
+  const f = (await printerFiles()).find(x => x.path === remote);
+  load();
+  if (f && seen) seen.add(fileKey(f));
+  const fk = f ? fileKey(f) : undefined;
+  const items = plate && plate > 0 ? [await queueAdd(remote, plate, fk, e.plates.length > 1 ? `${e.name} (Platte ${plate}/${e.plates.length})` : e.name)] : await queueAddAll(remote, fk, e.name);
+  archiveUsed(id);
+  return items;
 }
 
 /** 1.272: Alle noch offenen Platten eines Projekts löschen */

@@ -532,6 +532,72 @@ export async function piPrinterFiles(): Promise<{ files: PrinterFile[]; error?: 
   }
 }
 
+/** 1.274: Datei-Archiv auf dem Pi */
+export interface PiArchiveEntry {
+  id: string;
+  name: string;
+  fileName: string;
+  size: number;
+  addedAt: number;
+  lastUsed: number;
+  printCount: number;
+  fav: boolean;
+  materials: string[];
+  colors: string[];
+  grams: number;
+  sec: number;
+  plates: { plate: number; grams: number; sec: number; types: string[] }[];
+  bed?: string;
+  nozzles?: number[];
+  thumb: boolean;
+}
+
+export async function piArchiveList(): Promise<{ ok: boolean; items: PiArchiveEntry[]; bytes: number; error?: string }> {
+  try {
+    const j = await get('/api/hub/archive', { timeoutMs: 20000 });
+    return j?.success ? { ok: true, items: j.items || [], bytes: Number(j.bytes) || 0 } : { ok: false, items: [], bytes: 0, error: j?.error || 'Fehler' };
+  } catch (e: any) {
+    return { ok: false, items: [], bytes: 0, error: String(e?.message || e) };
+  }
+}
+
+export async function piArchiveAction(action: 'delete' | 'fav' | 'rename', body: Record<string, unknown>): Promise<PiArchiveEntry[] | null> {
+  try {
+    const j = await get(`/api/hub/archive/${action}`, { method: 'POST', body, timeoutMs: 20000 });
+    return j?.success && Array.isArray(j.items) ? j.items : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Aus dem Archiv drucken (plate leer = alle Platten) */
+export async function piArchivePrint(id: string, plate?: number): Promise<{ ok: boolean; text: string }> {
+  try {
+    const j = await get('/api/hub/archive/print', { method: 'POST', body: { id, plate }, timeoutMs: 90000 });
+    return { ok: Boolean(j?.success), text: String(j?.text || j?.error || (j?.success ? 'Vorgemerkt.' : 'Fehler')) };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e) };
+  }
+}
+
+const archiveThumbCache = new Map<string, string>();
+export async function piArchiveThumb(id: string): Promise<string | null> {
+  const hit = archiveThumbCache.get(id);
+  if (hit) return hit;
+  const b = base();
+  if (b === null) return null;
+  try {
+    const key = getServerKey();
+    const res = await fetch(`${b}/api/hub/archive/thumb/${id}`, { headers: key ? { 'x-api-key': key } : {}, signal: AbortSignal.timeout(15000) });
+    if (!res.ok) return null;
+    const url = URL.createObjectURL(await res.blob());
+    archiveThumbCache.set(id, url);
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 /** 1.273: Smart sortieren (apply=false: nur Vorschlag) */
 export interface PiQueuePlan {
   order: string[];
