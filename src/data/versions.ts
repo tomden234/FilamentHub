@@ -3710,5 +3710,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.268',
+    label: '1.268 (Foto-Erkennung: Guthaben-Hinweis)',
+    releaseDate: '09.11.2026',
+    description:
+      'Foto-Erkennung: Meldet Gemini „Prepayment credits are depleted“ (Code 402), zeigt die App jetzt klar „Gemini-Guthaben ist leer“ und nennt den Ausweg (Guthaben auffüllen oder Schlüssel aus einem Projekt ohne Abrechnung). Vorher kam nur „Gemini nicht erreichbar“. Pi-Add-on 1.3.24 (muss aktualisiert werden).',
+    features: ['💳 Klarer Hinweis bei leerem Gemini-Guthaben', '🥧 Pi-Add-on 1.3.24 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

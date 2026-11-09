@@ -65,7 +65,9 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON ohne Markdown-Codeblöcke.
     if (!response) {
       const st = Number(lastErr?.status);
       const msg =
-        st === 400 || st === 401 || st === 403
+        st === 402
+          ? 'Gemini-Guthaben ist leer. In AI Studio (aistudio.google.com) Guthaben auffüllen oder einen Schlüssel aus einem Projekt ohne Abrechnung nehmen.'
+          : st === 400 || st === 401 || st === 403
           ? 'Der Gemini-Schlüssel wird abgelehnt (falsch, gesperrt oder Bild zu groß). Schlüssel im Add-on prüfen.'
           : st === 429
           ? 'Gemini-Limit erreicht. In ein paar Minuten nochmal versuchen.'
