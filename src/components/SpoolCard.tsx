@@ -2,7 +2,7 @@ import { LabelPrintButton } from './LabelPrintButton';
 import { openShop } from '../utils/productPage';
 import { useNow } from '../hooks/useNow';
 import { useSpoolAms } from '../hooks/useSpoolAms';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ExternalLink,
   Copy,

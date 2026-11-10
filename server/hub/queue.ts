@@ -64,6 +64,8 @@ const urlVariants = (p: string): { key: string; url: string }[] => {
   ];
 };
 let urlKey = '';
+/** 1.293: Fehler beim Vormerken, die sich nicht von selbst erledigen (die Datei wird dann nicht noch mal versucht) */
+const PERMANENT_ADD_ERROR = /kein Filament|Ungültiger Dateiname/i;
 
 const file = () => path.join(dataDir, 'hub-queue.json');
 const urlKeyFile = () => path.join(dataDir, 'hub-start-url.txt');
@@ -511,11 +513,14 @@ export async function autoScan(force = false): Promise<ScanResult> {
       known.add(fileKey(f));
       if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
       if (load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
-      // 1.256: dieselbe Datei wurde überschrieben: alten Eintrag ersetzen (Filament kann anders sein)
-      for (const dup of load().filter(x => x.path === f.path)) queueRemove(dup.id);
+      // 1.256: dieselbe Datei wurde überschrieben: alten Eintrag ersetzen (Filament kann anders sein).
+      // 1.293: Die alten Einträge fallen erst weg, wenn die neue Datei wirklich gelesen wurde. Vorher gingen sie schon beim
+      // ersten Fehler (z. B. Drucker belegt, 421) verloren und kamen nie zurück.
+      const olds = load().filter(x => x.path === f.path).map(x => x.id);
       try {
         const t0 = Date.now();
         const all = await queueAddAll(f.path, fileKey(f));
+        for (const id of olds) queueRemove(id);
         const it = all[0];
         console.log(`[Warteschlange] Datei lesen + vormerken: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         added += all.length;
@@ -524,7 +529,10 @@ export async function autoScan(force = false): Promise<ScanResult> {
         await notify('➕ In der Warteschlange', `${all.length > 1 ? it.name.replace(/ \(Platte \d+\/\d+\)$/, '') : it.name} (automatisch aus Bambu Studio)${multi}\n${it.mapping.join('\n')}${it.missing.length ? `\n⚠️ Im AMS fehlt: ${it.missing.join(', ')}` : ''}${short.length ? `\n${short.join('\n')}` : ''}`, queueActions(it.id));
         console.log(`[Warteschlange] automatisch vorgemerkt: ${it.name}`);
       } catch (e) {
-        console.warn('[Warteschlange] Auto-Vormerken fehlgeschlagen:', (e as Error)?.message || e);
+        const msg = (e as Error)?.message || String(e);
+        console.warn('[Warteschlange] Auto-Vormerken fehlgeschlagen:', msg);
+        // 1.293: Nur ein dauerhafter Fehler (kein Filament, ungültiger Name) macht die Datei „gesehen“. Bei Netz-/Drucker-Fehlern nächste Runde noch mal.
+        if (!PERMANENT_ADD_ERROR.test(msg)) known.delete(fileKey(f));
       }
     }
     save();

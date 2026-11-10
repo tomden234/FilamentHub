@@ -135,7 +135,7 @@ export const BambuPrinterWidget: React.FC<BambuPrinterWidgetProps> = ({
   // G-Code Upload Modal
 
   // AMS Spulen-Editor
-  const { handleRefreshLiveState, localDrying, amsDryHours, isRefreshing, setAmsSlots, activeSlot, amsSlots, handleSetActiveSlot, setEditingAmsSlot, setAmsEditColor, setAmsEditMaterial, handleSetAmsSlot, amsDryTemp, setAmsDryHours, setAmsDryTemp, handleToggleAmsDrying, dryLoading, editingAmsSlot, amsEditColor, setAmsEditMinTemp, setAmsEditMaxTemp, amsEditMaterial, amsEditMinTemp, amsEditMaxTemp, handleSaveAmsSlotToPrinter } = useAmsControl({ spools, liveState, onApplyDryingCredit, setActionToast, setLiveState, setActionLoading });
+  const { handleRefreshLiveState, amsDryHours, isRefreshing, setAmsSlots, activeSlot, amsSlots, handleSetActiveSlot, setEditingAmsSlot, setAmsEditColor, setAmsEditMaterial, handleSetAmsSlot, amsDryTemp, setAmsDryHours, setAmsDryTemp, handleToggleAmsDrying, dryLoading, editingAmsSlot, amsEditColor, setAmsEditMinTemp, setAmsEditMaxTemp, amsEditMaterial, amsEditMinTemp, amsEditMaxTemp, handleSaveAmsSlotToPrinter } = useAmsControl({ spools, liveState, onApplyDryingCredit, setActionToast, setLiveState, setActionLoading });
 
   // AMS Trocknung
 

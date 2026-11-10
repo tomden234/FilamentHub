@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiFetch, type ApiBase } from './client';
+import { apiGet, apiPost, apiFetch } from './client';
 
 // Alle Aufrufe an den eigenen Server unter /api/homeassistant/*.
 // Direkte Aufrufe an Home Assistant (Nabu Casa) bleiben in utils/haClient.ts.

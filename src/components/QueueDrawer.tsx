@@ -364,8 +364,6 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     setBusy(false);
   };
 
-  const mats = (it: PiQueueItem) => Array.from(new Set(it.filaments.map(f => f.type).filter(Boolean))).join(', ') || '–';
-
   return (
     <>
       {/* Fach rechts: liegt immer über dem Inhalt (am PC und am Handy), der Inhalt verschiebt sich nicht und wird nicht abgedunkelt. Gleitet auf und zu, Escape oder X oder der Streifen schließen es. */}

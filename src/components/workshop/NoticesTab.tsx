@@ -4,7 +4,7 @@ import { useHumidity } from '../../utils/humidity';
 import { IS_NATIVE } from '../../utils/env';
 import { testAlert, TEST_KINDS } from '../../utils/alerts';
 import type { InboxKind } from '../../utils/inbox';
-import { notifyPermission, localNotify, requestNotifyPermission, refreshNotifyPermission, openNotifySettings, notifyNeedsNewApk, type NotifyPermission } from '../../utils/notify';
+import { notifyPermission, requestNotifyPermission, refreshNotifyPermission, openNotifySettings, notifyNeedsNewApk, type NotifyPermission } from '../../utils/notify';
 import { useWorkshopSettings } from '../../utils/workshopSettings';
 import { Card, Section, Toggle, ToggleList, buttonStyle, inputStyle } from './ui';
 import { NumInput } from '../ui/NumInput';

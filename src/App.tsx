@@ -9,7 +9,6 @@ import { storageApi } from './api';
 
 import {
   HistoryEntry,
-  MaterialType,
   Spool,
   VersionProfile,
   ViewMode

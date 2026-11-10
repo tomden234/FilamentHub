@@ -3985,5 +3985,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.293',
+    label: '1.293 (Warteschlange verliert nichts mehr)',
+    releaseDate: '10.11.2026',
+    description:
+      'Fehler behoben: Wurde eine Datei noch einmal gesendet und der Drucker war gerade belegt (421), hat die Warteschlange die alten Einträge schon gelöscht und die neue nie angelegt. Jetzt ersetzt sie alte Einträge erst, wenn die neue Datei gelesen ist. Bei einem Netz- oder Drucker-Fehler wird die Datei in der nächsten Runde noch einmal versucht. Aufgeräumt: ungenutzte Importe und Variablen entfernt. Pi-Add-on 1.3.46.',
+    features: ['🛡️ Alte Einträge bleiben, bis die neue Datei gelesen ist', '🔁 Fehlversuch wird automatisch wiederholt', '🧹 Toten Code entfernt', '🥧 Pi-Add-on 1.3.46 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
