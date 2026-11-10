@@ -4062,5 +4062,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.300',
+    label: '1.300 (Gleiche Namen sicher, Datei wird vor dem Start geprüft)',
+    releaseDate: '10.11.2026',
+    description:
+      'Jede vorgemerkte Datei wird jetzt im Archiv des Pi gesichert und mit Inhalt und Größe gemerkt. Vor dem Start prüft der Pi, ob auf dem Drucker noch genau diese Datei liegt. Wurde sie von einer neuen Datei mit gleichem Namen überschrieben, lädt er die richtige aus dem Archiv neu hoch, statt die falsche Platte zu drucken. Karten mit Archiv-Kopie werden bei gleichem Namen nicht mehr ersetzt, sondern bleiben stehen. Das Umbenennen auf den eigenen Namen versucht der Pi bis zu 3 Mal, und nur die Karten der neuen Datei bekommen den neuen Pfad. Pi-Add-on 1.3.52.',
+    features: ['🛡️ Datei vor dem Start prüfen, bei Bedarf neu hochladen', '🗃️ Karten mit Archiv-Kopie bleiben bei gleichem Namen', '🔁 Umbenennen mit 3 Versuchen', '🥧 Pi-Add-on 1.3.52 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

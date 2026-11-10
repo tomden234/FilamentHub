@@ -37,6 +37,9 @@ export interface QueueItem {
   temps?: number[];
   /** 1.271: Druckzeit laut Slicer in Sekunden */
   predSec?: number;
+  /** 1.300: Archiv-Kennung (Inhalt der Datei) und Größe beim Vormerken: damit lässt sich eine überschriebene Datei erkennen und neu hochladen */
+  aid?: string;
+  fsize?: number;
   /** 1.272: gehört zu einer Datei mit mehreren Platten (id = gemeinsame Kennung, total = Anzahl Platten, part = Nummer) */
   project?: { id: string; total: number; part: number };
 }
@@ -353,8 +356,10 @@ export async function queueAdd(filePath: string, plate = 1, fkey?: string, displ
   checkPath(filePath);
   const r = await readJobFile(lan.ip, lan.code, filePath, plate);
   if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
-  void archiveAdd(r.bytes, path.basename(filePath)).catch(e => console.warn('[Archiv]', e?.message || e));
+  const ar = await archiveAdd(r.bytes, path.basename(filePath)).catch(e => (console.warn('[Archiv]', e?.message || e), null));
   const it = makeItem(r, filePath, r, r.thumb, fkey, displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, ''));
+  it.aid = ar?.id;
+  it.fsize = r.bytes.length;
   load().push(it);
   save();
   void showLeds(0);
@@ -368,7 +373,8 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
   checkPath(filePath);
   const r = await readJobFile(lan.ip, lan.code, filePath, 1);
   if (!r || !r.filaments.length) throw new Error('In der Datei steht kein Filament (nicht geslict?)');
-  void archiveAdd(r.bytes, path.basename(filePath)).catch(e => console.warn('[Archiv]', e?.message || e));
+  const ar = await archiveAdd(r.bytes, path.basename(filePath)).catch(e => (console.warn('[Archiv]', e?.message || e), null));
+  const stamp = (x: QueueItem): QueueItem => ((x.aid = ar?.id), (x.fsize = r.bytes.length), x);
   const base = displayName || path.basename(filePath).replace(/\.gcode\.3mf$|\.3mf$/i, '');
   let plates: ReturnType<typeof platesFromThreeMf> = [];
   try {
@@ -387,7 +393,7 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
         /* altes Bild */
       }
     }
-    const it = makeItem(r, filePath, p0, t0, fkey, base);
+    const it = stamp(makeItem(r, filePath, p0, t0, fkey, base));
     load().push(it);
     save();
     void showLeds(0);
@@ -402,7 +408,7 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
     } catch {
       /* ohne Bild */
     }
-    out.push(makeItem(r, filePath, p, thumb, fkey, `${base} (Platte ${n + 1}/${plates.length})`, { id: pid, total: plates.length, part: n + 1 }));
+    out.push(stamp(makeItem(r, filePath, p, thumb, fkey, `${base} (Platte ${n + 1}/${plates.length})`, { id: pid, total: plates.length, part: n + 1 })));
   }
   load().push(...out);
   save();
@@ -526,7 +532,7 @@ export async function autoScan(force = false): Promise<ScanResult> {
       // 1.256: dieselbe Datei wurde überschrieben: alten Eintrag ersetzen (Filament kann anders sein).
       // 1.293: Die alten Einträge fallen erst weg, wenn die neue Datei wirklich gelesen wurde. Vorher gingen sie schon beim
       // ersten Fehler (z. B. Drucker belegt, 421) verloren und kamen nie zurück.
-      const olds = load().filter(x => x.path === f.path).map(x => x.id);
+      const olds = load().filter(x => x.path === f.path && !x.aid).map(x => x.id); // 1.300: Karten mit Archiv-Kopie bleiben (werden vor dem Start bei Bedarf neu hochgeladen)
       try {
         const t0 = Date.now();
         const all = await queueAddAll(f.path, fileKey(f));
@@ -534,12 +540,18 @@ export async function autoScan(force = false): Promise<ScanResult> {
         const it = all[0];
         // 1.294: Datei sofort auf einen eigenen Namen umbenennen. Bambu Studio nennt Dateien gleich (z. B. „Untitled“) und überschreibt sonst
         // die vorige Datei auf dem Drucker: dann wären die alten Karten ungültig und die Warteschlange könnte sie nicht mehr halten.
-        try {
-          const np = await renameJobFile(lan.ip, lan.code, f.path, `fh_${it.id}.gcode.3mf`);
-          for (const o of load()) if (o.path === f.path) o.path = np;
-          save();
-        } catch (e) {
-          console.warn('[Warteschlange] Umbenennen nach dem Vormerken fehlgeschlagen (Datei bleibt unter altem Namen):', (e as Error)?.message || e);
+        // 1.300: bis zu 3 Versuche (kurz nach dem Lesen ist der Drucker oft noch belegt). Nur die Karten dieser Datei bekommen den neuen Pfad.
+        const mine = new Set(all.map(x => x.id));
+        for (let a = 1; a <= 3; a++) {
+          try {
+            const np = await renameJobFile(lan.ip, lan.code, f.path, `fh_${it.id}.gcode.3mf`);
+            for (const o of load()) if (mine.has(o.id)) o.path = np;
+            save();
+            break;
+          } catch (e) {
+            console.warn(`[Warteschlange] Umbenennen nach dem Vormerken fehlgeschlagen (Versuch ${a}/3):`, (e as Error)?.message || e);
+            if (a < 3) await new Promise(r => setTimeout(r, 2000));
+          }
         }
         console.log(`[Warteschlange] Datei lesen + vormerken: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         added += all.length;
@@ -757,12 +769,35 @@ export async function startNext(source: 'Taster' | 'App'): Promise<{ ok: boolean
     // Der Drucker lehnt den Start mit „Nicht unterstützter Dateipfad oder Name“ (0500-4002) ab, wenn der Name Klammern, Leerzeichen,
     // Umlaute oder Sonderzeichen hat. Dann die Datei auf dem Drucker einmal auf einen sicheren Namen umbenennen.
     const lan = port!.getLanAccess();
+    // 1.300: Liegt auf dem Drucker noch genau die Datei, die vorgemerkt wurde? Sonst (überschrieben oder weg) aus dem Archiv neu hochladen.
+    // Ohne Kopie lieber nicht starten, als die falsche Platte zu drucken.
+    if (lan && it.aid && it.fsize) {
+      try {
+        const cur = (await printerFiles()).find(x => x.path === it.path);
+        if (!cur || cur.size !== it.fsize) {
+          const bytes = archiveBytes(it.aid);
+          if (!bytes) {
+            await showLeds(1);
+            const text = `Die Datei „${it.name}“ auf dem Drucker wurde überschrieben und ist nicht im Archiv. Bitte in Bambu Studio noch einmal „Senden“.`;
+            if (source === 'Taster') await notify('⛔ Nicht gestartet', text);
+            return { ok: false, text };
+          }
+          const oldPath = it.path;
+          const np = await uploadJobFile(lan.ip, lan.code, `fh_${it.aid.slice(0, 12)}.gcode.3mf`, bytes);
+          for (const o of load()) if (o.path === oldPath && o.aid === it.aid) o.path = np;
+          save();
+          console.log(`[Warteschlange] Datei war überschrieben, aus dem Archiv neu hochgeladen: ${np}`);
+        }
+      } catch (e) {
+        console.warn('[Warteschlange] Dateiprüfung vor dem Start fehlgeschlagen:', (e as Error)?.message || e);
+      }
+    }
     if (lan && !/^[A-Za-z0-9_.\-]+$/.test(path.posix.basename(it.path))) {
       try {
         const oldPath = it.path;
         const newPath = await renameJobFile(lan.ip, lan.code, oldPath, `fh_${it.id}.gcode.3mf`);
         // 1.272: Weitere Platten derselben Datei zeigen jetzt auch auf den neuen Namen
-        for (const o of load()) if (o.path === oldPath) o.path = newPath;
+        for (const o of load()) if (o.path === oldPath && o.aid === it.aid) o.path = newPath;
         it.path = newPath;
         save();
       } catch (e) {
