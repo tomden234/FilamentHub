@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { confirmArrival, incomingSteps } from './incoming';
-import { applyOrder, looksLikeFilamentOrder, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
+import { confirmArrival, incomingSteps, testMail } from './incoming';
+import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
 
 const item = { brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic Schwarz', colorName: 'Schwarz', colorHex: '#000000', quantity: 2, initialWeight: 1000, pricePerKg: 19.99 };
 const order = (kind: ParsedOrder['kind'], eta?: string): ParsedOrder => ({ kind, orderId: '302-1234567-7654321', eta, items: [item] });
@@ -202,5 +202,61 @@ describe('Bestell-Verlauf (1.290)', () => {
     const steps = incomingSteps({ key: 'k', orderId: 'o', status: 'ordered', eta: '2026-11-12' });
     expect(steps.map(st => st.done)).toEqual([true, false, false]);
     expect(steps[2].when).toBe('erwartet 12.11.');
+  });
+});
+
+describe('Test-Mail (1.291)', () => {
+  it('Marker aus der vorgefertigten Mail wird erkannt', () => {
+    for (const kind of ['ordered', 'shipped', 'delivered'] as const) {
+      const m = testMail(kind, 'abc123');
+      const o = testOrderFrom(m.subject, m.body);
+      expect(o?.kind).toBe(kind);
+      expect(o?.orderId).toBe('TEST-abc123');
+      expect(o?.test).toBe(true);
+    }
+  });
+  it('normale Mail ist keine Test-Mail', () => {
+    expect(testOrderFrom('Ihre Bestellung', 'Bambu Lab PLA')).toBeNull();
+  });
+  it('Testspule: markiert, nicht doppelt, nach Bestätigung ohne Bestell-Rest', () => {
+    const o = testOrderFrom('x', 'FILAMENTHUB-TESTSPULE-abc123-ordered')!;
+    let doc = applyOrder({ spools: [] }, o).doc;
+    expect(doc.spools).toHaveLength(1);
+    expect(doc.spools[0].isTest).toBe(true);
+    expect(doc.spools[0].name).toBe('Testspule');
+    expect(doc.spools[0].incoming.orderId).toBe('TEST-abc123');
+    expect(applyOrder(doc, o).changed).toBe(false);
+    doc = applyOrder(doc, testOrderFrom('x', 'FILAMENTHUB-TESTSPULE-abc123-delivered')!).doc;
+    expect(doc.spools[0].incoming.status).toBe('delivered');
+    const normal = confirmArrival(doc.spools[0]);
+    expect(normal.incoming).toBeUndefined();
+    expect(normal.isTest).toBe(true);
+  });
+});
+
+describe('Test-Mail durch den echten Parser (1.291)', () => {
+  it('weitergeleitete Test-Mail: kein Gemini, kein Lernen, Testspule wird angelegt', async () => {
+    const log: string[] = [];
+    let doc: any = { spools: [] };
+    const deps: MailDeps = {
+      extract: async () => (log.push('gemini'), null),
+      apply: async o => {
+        const r = applyOrder(doc, o);
+        doc = r.doc;
+        return r;
+      },
+      notify: async t => void log.push(`push:${t}`),
+      learn: async () => (log.push('learn'), 0)
+    };
+    const m = testMail('delivered', 'abc123');
+    const raw = Buffer.from(`From: Tom <haupt@example.de>\r\nTo: bestell@example.de\r\nSubject: Fwd: ${m.subject}\r\nMessage-ID: <t1@x>\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n---------- Weitergeleitete Nachricht ----------\r\n> ${m.body.replace(/\n/g, '\r\n> ')}`);
+    const r = await processMail(raw, [], deps);
+    expect(r.outcome).toBe('applied');
+    expect(log).not.toContain('gemini');
+    expect(log).not.toContain('learn');
+    expect(doc.spools).toHaveLength(1);
+    expect(doc.spools[0].isTest).toBe(true);
+    expect(doc.spools[0].incoming.status).toBe('delivered');
+    expect(log.some(l => l.startsWith('push:'))).toBe(true);
   });
 });

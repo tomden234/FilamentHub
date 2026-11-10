@@ -31,6 +31,25 @@ export interface ParsedOrder {
   orderId: string;
   eta?: string;
   items: OrderItem[];
+  /** 1.291: Testspule aus der Test-Mail im Testmenü (kein Gemini, kein Link-Lernen, in der App ohne Rückstände löschbar) */
+  test?: boolean;
+}
+
+/** 1.291: Test-Mail aus dem Testmenü erkennen. Marker in Betreff oder Text, Aufbau: FILAMENTHUB-TESTSPULE-<id>-<ordered|shipped|delivered> */
+export function testOrderFrom(subject: string, text: string, now = new Date()): ParsedOrder | null {
+  const m = /FILAMENTHUB-TESTSPULE-([a-z0-9]{4,12})-(ordered|shipped|delivered)/i.exec(`${subject}\n${text}`);
+  if (!m) return null;
+  const id = m[1].toLowerCase();
+  const kind = m[2].toLowerCase() as OrderKind;
+  const t = new Date(now.getTime() + 86_400_000);
+  const eta = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  return {
+    kind,
+    orderId: `TEST-${id}`,
+    ...(kind === 'delivered' ? {} : { eta }),
+    test: true,
+    items: [{ brand: 'Test', material: 'PLA', name: 'Testspule', colorName: 'Grau', colorHex: '#9ca3af', quantity: 1, initialWeight: 1000, pricePerKg: 0 }]
+  };
 }
 
 const MATERIALS = ['PLA', 'PLA+', 'PETG', 'TPU', 'ABS', 'ASA', 'PA / Nylon', 'PC', 'PET-CF / PA-CF'];
@@ -143,7 +162,7 @@ export async function extractOrder(from: string, subject: string, text: string, 
   return parseOrderJson(await geminiJson(orderPrompt(from, subject, text, products)), new Set(products.map(p => p.asin)));
 }
 
-const spoolFrom = (it: OrderItem, key: string, orderId: string, status: 'ordered' | 'shipped', eta: string | undefined, nowIso: string) => {
+const spoolFrom = (it: OrderItem, key: string, orderId: string, status: 'ordered' | 'shipped', eta: string | undefined, nowIso: string, test = false) => {
   const d = DRY[it.material] || DRY.PLA;
   const s: Record<string, unknown> = {
     id: crypto.randomUUID(),
@@ -165,6 +184,7 @@ const spoolFrom = (it: OrderItem, key: string, orderId: string, status: 'ordered
     storageNote: `Bestellung ${orderId}`
   };
   if (it.productUrl) s.productUrl = it.productUrl;
+  if (test) s.isTest = true;
   s.incoming = { key, orderId, status, ...(eta ? { eta } : {}), ...(it.asin ? { asin: it.asin } : {}), orderedAt: nowIso, ...(status === 'shipped' ? { shippedAt: nowIso } : {}) };
   return s;
 };
@@ -244,7 +264,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
           changed = true;
         }
       } else if (!deliveredExact && !deliveredFuzzy) {
-        spools.push(spoolFrom(it, key, o.orderId, o.kind, o.eta, nowIso));
+        spools.push(spoolFrom(it, key, o.orderId, o.kind, o.eta, nowIso, o.test));
         used.add(spools.length - 1);
         added++;
         changed = true;
@@ -274,6 +294,18 @@ export interface MailOutcome {
   done?: string[];
 }
 
+/** Test-Mail: ohne Gemini, ohne Link-Lernen. Spule wird bei Bedarf erst als „bestellt“ angelegt (Reihenfolge der Test-Mails egal). */
+async function applyTest(o: ParsedOrder, deps: MailDeps): Promise<{ added: number; arrived: number }> {
+  let added = 0;
+  if (o.kind !== 'ordered') added += (await deps.apply({ ...o, kind: 'ordered', eta: undefined })).added;
+  const res = await deps.apply(o);
+  added += res.added;
+  const tag = `order-${o.orderId}`;
+  if (o.kind === 'delivered' && res.arrived.length) await deps.notify('📦 Testspule ist da?', `${res.arrived.join(', ')}. Hast du sie in der Hand?`, tag, orderActions(o.orderId));
+  else if (added) await deps.notify(o.kind === 'shipped' ? '🚚 Test: Versand erkannt' : '🛒 Test: Bestellung erkannt', 'Testspule angelegt. In der App kannst du sie ohne Rückstände löschen.', tag);
+  return { added, arrived: res.arrived.length };
+}
+
 const mailId = (m: any, fallback: string) => crypto.createHash('sha1').update(String(m?.messageId || fallback)).digest('hex').slice(0, 16);
 const mailText = (m: any) => String(m?.text || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 const mailHtml = (m: any) => (typeof m?.html === 'string' ? m.html : '');
@@ -292,6 +324,8 @@ export async function processMail(source: Uint8Array | Buffer, seen: string[], d
   const attached = (mail.attachments || []).filter(a => /message\/rfc822/i.test(a.contentType) || /\.eml$/i.test(a.filename || ''));
   if (attached.length) {
     let learned = 0;
+    let added = 0;
+    let arrived = 0;
     const done: string[] = [];
     for (const a of attached.slice(0, 200)) {
       const inner = await simpleParser(a.content);
@@ -299,18 +333,28 @@ export async function processMail(source: Uint8Array | Buffer, seen: string[], d
       if (seen.includes(iid)) continue;
       const isub = String(inner.subject || '');
       const itext = mailText(inner);
-      if (looksLikeFilamentOrder(isub, itext)) {
+      const itest = testOrderFrom(isub, itext);
+      if (itest) {
+        const r = await applyTest(itest, deps);
+        added += r.added;
+        arrived += r.arrived;
+      } else if (looksLikeFilamentOrder(isub, itext)) {
         const o = await deps.extract(String(inner.from?.text || ''), isub, itext, mailProducts(mailHtml(inner)));
         if (o) learned += await deps.learn(o);
       }
       done.push(iid);
     }
     if (learned) await deps.notify('🔗 Bestellungen gelernt', `${learned} Produkt(e) mit Amazon-Link aus ${attached.length} weitergeleiteten Mails. Passende Spulen bekommen den Link.`, `learn-${id}`);
-    return { outcome: 'learned', id, added: 0, arrived: 0, learned, done };
+    return { outcome: learned || added || arrived ? 'learned' : 'skipped', id, added, arrived, learned, done };
   }
 
   const html = mailHtml(mail);
   const text = mailText(mail);
+  const test = testOrderFrom(subject, text);
+  if (test) {
+    const r = await applyTest(test, deps);
+    return { outcome: 'applied', id, added: r.added, arrived: r.arrived };
+  }
   if (!looksLikeFilamentOrder(subject, text)) return { outcome: 'skipped', id, added: 0, arrived: 0 };
   const order = await deps.extract(String(mail.from?.text || ''), subject, text, mailProducts(html));
   if (!order) return { outcome: 'other', id, added: 0, arrived: 0 };

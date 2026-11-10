@@ -59,7 +59,7 @@ import { useDryingReminders } from './hooks/useDryingReminders';
 import { useKeepAlive } from './hooks/useKeepAlive';
 import { LowStockBanner } from './components/workshop/LowStockBanner';
 import { registerSpoolLinks } from './utils/shopLinks';
-import { CONFIRM_ARRIVAL_EVENT, REJECT_INCOMING_EVENT, confirmArrival } from './utils/incoming';
+import { CONFIRM_ARRIVAL_EVENT, DELETE_TEST_SPOOLS_EVENT, REJECT_INCOMING_EVENT, confirmArrival } from './utils/incoming';
 import { SET_PRODUCT_URL_EVENT, SHOP_TOAST_EVENT } from './utils/productPage';
 import { isSearchUrl } from './utils/shopLinks';
 import type { WorkshopTab } from './components/workshop/WorkshopModal';
@@ -839,6 +839,25 @@ export default function App() {
     };
     window.addEventListener(REJECT_INCOMING_EVENT, on);
     return () => window.removeEventListener(REJECT_INCOMING_EVENT, on);
+  });
+
+  // 1.291: Testmenü „Testspulen löschen“: alle Testspulen weg, ohne Rückstände
+  useEffect(() => {
+    const on = () => {
+      const left = spools.filter(s => !s.isTest);
+      const n = spools.length - left.length;
+      if (!n) {
+        showToast('Keine Testspulen vorhanden.');
+        return;
+      }
+      pushUndoSnapshot();
+      setSpools(left);
+      persistState(left, printHistory);
+      showToast(`${n} Testspule${n === 1 ? '' : 'n'} gelöscht.`);
+      addSystemLog('spule', `${n} Testspule(n) gelöscht`, 'Testmenü', 'info');
+    };
+    window.addEventListener(DELETE_TEST_SPOOLS_EVENT, on);
+    return () => window.removeEventListener(DELETE_TEST_SPOOLS_EVENT, on);
   });
 
   // 1.278: Vom Pi gefundene Produktseite fest an der Spule speichern (nur wenn sie noch keine echte hat)

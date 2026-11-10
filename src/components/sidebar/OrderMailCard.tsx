@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlaskConical, Link2, Loader2, RefreshCw } from 'lucide-react';
+import { Copy, FlaskConical, Link2, Loader2, Mail, RefreshCw, Trash2 } from 'lucide-react';
+import { currentTestId, requestDeleteTestSpools, testMail, type TestMailKind } from '../../utils/incoming';
 import { hasServer, piOrderStatus, piOrderTest, piProductFill, type OrderMailStatus, type ProductFillStatus } from '../../utils/recorderServer';
 
 // 1.275/1.278: Bestell-Mails und Spulen-Links. Passwort und Schlüssel stehen nur in den Add-on-Optionen, nie hier.
@@ -8,6 +9,11 @@ const muted: React.CSSProperties = { color: 'var(--app-text-muted)' };
 const btn = 'px-3 py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer flex items-center gap-1.5 disabled:opacity-40';
 const btnStyle: React.CSSProperties = { borderColor: 'var(--app-border)', color: 'var(--app-text)' };
 const box = (ok: boolean | null) => `rounded-xl border px-3 py-2 ${ok === null ? 'border-amber-500/40 bg-amber-500/10' : ok ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10'}`;
+const TEST_KINDS: { kind: TestMailKind; label: string }[] = [
+  { kind: 'ordered', label: '1 Bestellt' },
+  { kind: 'shipped', label: '2 Versendet' },
+  { kind: 'delivered', label: '3 Zugestellt' }
+];
 const time = (t: number) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
 export const OrderMailCard: React.FC = () => {
@@ -15,6 +21,7 @@ export const OrderMailCard: React.FC = () => {
   const [fill, setFill] = useState<ProductFillStatus | null>(null);
   const [test, setTest] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState('');
+  const [copied, setCopied] = useState('');
   const [loaded, setLoaded] = useState(false);
   const server = hasServer();
 
@@ -32,6 +39,21 @@ export const OrderMailCard: React.FC = () => {
     setBusy(id);
     await fn();
     setBusy('');
+  };
+
+  const openTestMail = (kind: TestMailKind) => {
+    const m = testMail(kind, currentTestId());
+    window.location.href = `mailto:?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
+  };
+  const copyTestMail = async (kind: TestMailKind) => {
+    const m = testMail(kind, currentTestId());
+    try {
+      await navigator.clipboard.writeText(`${m.subject}\n\n${m.body}`);
+      setCopied(kind);
+      setTimeout(() => setCopied(''), 2500);
+    } catch {
+      setCopied('');
+    }
   };
 
   if (!server) return <p className="text-[11px]" style={muted}>Das macht der Pi. Zuerst den Pi-Server verbinden.</p>;
@@ -64,6 +86,37 @@ export const OrderMailCard: React.FC = () => {
           Test-Mail auslesen
         </button>
       </div>
+
+      <div className="pt-1 font-bold" style={{ color: 'var(--app-text)' }}>
+        Test-Spule per Mail
+      </div>
+      <p>
+        Mail-Programm öffnen, an deine Haupt-Adresse schicken und von dort an das Bestell-Postfach weiterleiten. Der Pi erkennt sie als Testspule (ohne Gemini) und legt sie wie eine bestellte Spule an. Reihenfolge 1, 2, 3 zeigt den ganzen Ablauf.
+      </p>
+      {TEST_KINDS.map(t => (
+        <div key={t.kind} className="flex gap-1.5">
+          <button className={`${btn} flex-1`} style={btnStyle} onClick={() => openTestMail(t.kind)}>
+            <Mail className="w-3.5 h-3.5" />
+            {t.label}
+          </button>
+          <button className={btn} style={btnStyle} onClick={() => void copyTestMail(t.kind)} title="Betreff und Text kopieren" aria-label={`${t.label}: Text kopieren`}>
+            <Copy className="w-3.5 h-3.5" />
+            {copied === t.kind ? 'Kopiert' : ''}
+          </button>
+        </div>
+      ))}
+      <button
+        className={btn}
+        style={btnStyle}
+        onClick={() => {
+          requestDeleteTestSpools();
+          currentTestId(true);
+        }}
+        title="Löscht alle Testspulen aus der App. Es bleibt nichts zurück."
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+        Testspulen löschen
+      </button>
 
       <div className="pt-1 font-bold" style={{ color: 'var(--app-text)' }}>
         Spulen-Links

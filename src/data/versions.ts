@@ -3963,5 +3963,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.291',
+    label: '1.291 (Test-Spule per Mail im Testmenü)',
+    releaseDate: '10.11.2026',
+    description:
+      'Testmenü → Bestell-Mails: Drei Knöpfe (1 Bestellt, 2 Versendet, 3 Zugestellt) öffnen eine vorgefertigte Mail (oder kopieren sie). Du schickst sie an deine Haupt-Adresse und leitest sie an das Bestell-Postfach weiter. Der Pi erkennt den Marker ohne Gemini und legt eine „Testspule“ an wie eine bestellte Spule (grau gestrichelt, Status-Menü, Push „Testspule ist da?“). Knopf „Testspulen löschen“ entfernt alle Testspulen ohne Rückstände (kein Link-Lernen, kein Katalog-Eintrag). Pi-Add-on 1.3.44.',
+    features: ['🧪 Test-Mail mit 3 Schritten im Testmenü', '🩶 „Testspule“ wie eine bestellte Spule', '🗑️ Testspulen ohne Rückstände löschen', '🥧 Pi-Add-on 1.3.44 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

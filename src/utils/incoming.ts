@@ -70,3 +70,36 @@ export function incomingSteps(inc: Incoming): IncomingStep[] {
     { label: 'Zugestellt', when: inc.status === 'delivered' ? fmt(inc.deliveredAt) : eta ? `erwartet ${eta}` : '', done: inc.status === 'delivered' }
   ];
 }
+
+export const DELETE_TEST_SPOOLS_EVENT = 'filamenthub:delete-test-spools';
+/** Testmenü: alle Testspulen entfernen (App.tsx führt es aus) */
+export function requestDeleteTestSpools(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(DELETE_TEST_SPOOLS_EVENT));
+}
+
+const TEST_ID_KEY = 'filamenthub_test_order_id';
+const newTestId = () => Math.random().toString(36).slice(2, 8).padEnd(6, '0');
+/** Test-ID für die Test-Mails (bleibt gleich, bis die Testspulen gelöscht werden) */
+export function currentTestId(reset = false): string {
+  try {
+    let id = reset ? '' : localStorage.getItem(TEST_ID_KEY) || '';
+    if (!/^[a-z0-9]{4,12}$/.test(id)) {
+      id = newTestId();
+      localStorage.setItem(TEST_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return 'test01';
+  }
+}
+
+export type TestMailKind = 'ordered' | 'shipped' | 'delivered';
+const TEST_LABEL: Record<TestMailKind, string> = { ordered: 'Bestellung bestätigt', shipped: 'Versendet', delivered: 'Zugestellt' };
+/** Vorgefertigte Test-Mail (Betreff + Text), die der Pi ohne Gemini als Testspule erkennt */
+export function testMail(kind: TestMailKind, id: string): { subject: string; body: string } {
+  return {
+    subject: `FilamentHub Test: Filament-Bestellung ${TEST_LABEL[kind]}`,
+    body: `Das ist eine Testmail für FilamentHub (Filament, Bestellung ${TEST_LABEL[kind]}).\nBitte an das Bestell-Postfach weiterleiten. Die App legt dann eine Testspule an.\n\nFILAMENTHUB-TESTSPULE-${id}-${kind}\n`
+  };
+}
