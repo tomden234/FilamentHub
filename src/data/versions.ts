@@ -4029,5 +4029,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.297',
+    label: '1.297 (Neue Spule erscheint sofort nach „Jetzt prüfen“)',
+    releaseDate: '10.11.2026',
+    description:
+      'Die Test-Mail wurde vom Pi schnell erkannt (Push kam), die Spule stand aber erst nach „Jetzt prüfen“ in der App: Die App holt die Spulen vom Pi nur alle 60 Sekunden. Jetzt holt sie die Spulen sofort, wenn du im Testmenü „Jetzt prüfen“ oder eine Test-Mail schickst, und noch einmal nach 6 und 20 Sekunden. Ohne Knopfdruck erscheint die Spule weiterhin spätestens nach 60 Sekunden.',
+    features: ['🔄 Spulen vom Pi sofort holen nach „Jetzt prüfen“ und Test-Mail', '⏱️ Zusätzlich nach 6 und 20 Sekunden', '💻 Nur App-Update, Pi-Add-on bleibt 1.3.49'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

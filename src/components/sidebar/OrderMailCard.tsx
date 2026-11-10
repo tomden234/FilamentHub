@@ -14,6 +14,13 @@ const TEST_KINDS: { kind: TestMailKind; label: string }[] = [
   { kind: 'shipped', label: '2 Versendet' },
   { kind: 'delivered', label: '3 Zugestellt' }
 ];
+/** 1.297: Spulen vom Pi holen: gleich und noch zweimal kurz danach (die Live-Verbindung legt die Spule nach wenigen Sekunden an) */
+const syncSoon = (): void => {
+  const go = () => window.dispatchEvent(new Event('filamenthub:sync-now'));
+  go();
+  setTimeout(go, 6_000);
+  setTimeout(go, 20_000);
+};
 const time = (t: number) => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
 export const OrderMailCard: React.FC = () => {
@@ -46,7 +53,11 @@ export const OrderMailCard: React.FC = () => {
     window.location.href = `mailto:${TEST_MAIL_MAIN}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
   };
   const sendTestMail = (kind: TestMailKind, to: 'main' | 'self') =>
-    void run(`tm-${kind}-${to}`, async () => setTest(await piOrderTestMail(kind, currentTestId(), to)));
+    void run(`tm-${kind}-${to}`, async () => {
+      const r = await piOrderTestMail(kind, currentTestId(), to);
+      setTest(r);
+      if (r.ok) syncSoon();
+    });
   const copyTestMail = async (kind: TestMailKind) => {
     const m = testMail(kind, currentTestId());
     try {
@@ -80,7 +91,10 @@ export const OrderMailCard: React.FC = () => {
       )}
       {test && <div className={box(test.ok)}>{test.text}</div>}
       <div className="flex flex-wrap gap-1.5">
-        <button className={btn} style={btnStyle} disabled={!!busy || !st?.configured} onClick={() => void run('check', async () => setSt(await piOrderStatus(true)))}>
+        <button className={btn} style={btnStyle} disabled={!!busy || !st?.configured} onClick={() => void run('check', async () => {
+          setSt(await piOrderStatus(true));
+          syncSoon();
+        })}>
           {busy === 'check' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           Jetzt prüfen
         </button>
