@@ -93,12 +93,12 @@ export const OrderMailCard: React.FC = () => {
         Test-Spule per Mail
       </div>
       <p>
-        „An mein Konto“: Der Pi schickt die Mail über das Bestell-Postfach an {TEST_MAIL_MAIN}, deine Weiterleitung bringt sie zurück. „Direkt“ legt sie ohne Umweg ins Bestell-Postfach (klappt immer). Reihenfolge 1, 2, 3 zeigt den ganzen Ablauf.
+        „An mein Konto“: Der Pi schickt die Mail über das Bestell-Postfach an {TEST_MAIL_MAIN} und legt eine Kopie gleich ins Bestell-Postfach (Gmail leitet Mails nicht an den eigenen Absender weiter, deshalb nicht über den Filter). „Direkt“ schickt nur ins Bestell-Postfach. Reihenfolge 1, 2, 3 zeigt den ganzen Ablauf.
       </p>
       {TEST_KINDS.map(t => (
         <div key={t.kind} className="flex flex-wrap items-center gap-1.5">
           <span className="w-24 font-bold" style={{ color: 'var(--app-text)' }}>{t.label}</span>
-          <button className={btn} style={btnStyle} disabled={!!busy} onClick={() => sendTestMail(t.kind, 'main')} title={`Pi schickt die Mail an ${TEST_MAIL_MAIN}`}>
+          <button className={btn} style={btnStyle} disabled={!!busy} onClick={() => sendTestMail(t.kind, 'main')} title={`Pi schickt die Mail an ${TEST_MAIL_MAIN} und eine Kopie ins Bestell-Postfach`}>
             {busy === `tm-${t.kind}-main` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             An mein Konto
           </button>

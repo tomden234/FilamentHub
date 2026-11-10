@@ -559,6 +559,11 @@ export async function testOrderExtraction(): Promise<{ ok: boolean; text: string
 /** Haupt-Adresse des Nutzers für die Test-Mail. Nur diese oder das Bestell-Postfach selbst sind erlaubt, nie eine Adresse aus der App (kein Spam-Weg). */
 const MAIN_ADDRESS = 'tomden233@gmail.com';
 export const testMailTarget = (to: string, user = cfg().user): string => (to === 'self' ? user : (process.env.MAIL_TEST_TO || MAIN_ADDRESS).trim());
+/** 1.295: „An mein Konto“ geht zusätzlich als Kopie (Bcc) ins Bestell-Postfach. Gmail leitet eine Mail nicht an die Adresse weiter, von der sie selbst kommt: ohne die Kopie käme sie nie an. */
+export const testMailRecipients = (to: string, user = cfg().user): { to: string; bcc?: string } => {
+  const main = testMailTarget(to, user);
+  return main.toLowerCase() === user.toLowerCase() ? { to: main } : { to: main, bcc: user };
+};
 
 export async function sendTestMail(kindRaw: unknown, idRaw: unknown, toRaw: unknown): Promise<{ ok: boolean; text: string }> {
   const kind = String(kindRaw) as TestMailKind;
@@ -566,12 +571,13 @@ export async function sendTestMail(kindRaw: unknown, idRaw: unknown, toRaw: unkn
   if (!['ordered', 'shipped', 'delivered'].includes(kind) || !/^[a-z0-9]{4,12}$/.test(id)) return { ok: false, text: 'Ungültige Test-Mail' };
   if (!mailConfigured()) return { ok: false, text: 'Postfach fehlt: mail_user und mail_password im Add-on eintragen' };
   const c = cfg();
-  const to = testMailTarget(toRaw === 'self' ? 'self' : 'main', c.user);
+  const rcpt = testMailRecipients(toRaw === 'self' ? 'self' : 'main', c.user);
+  const to = rcpt.to;
   const m = testMail(kind, id);
   try {
     const tr = nodemailer.createTransport({ host: c.host.replace(/^imap\./, 'smtp.'), port: 465, secure: true, auth: { user: c.user, pass: c.pass }, connectionTimeout: 30_000, greetingTimeout: 20_000, socketTimeout: 45_000 });
-    await tr.sendMail({ from: `FilamentHub <${c.user}>`, to, subject: m.subject, text: m.body });
-    return { ok: true, text: `Test-Mail „${kind}“ an ${to.replace(/^(.).*(@.*)$/, '$1***$2')} geschickt. ${to === c.user ? 'Der Pi liest sie beim nächsten Takt oder mit „Jetzt prüfen“.' : 'Sie kommt über deine Weiterleitung ins Bestell-Postfach. Kommt nichts an: „Direkt ins Postfach“ nehmen.'}` };
+    await tr.sendMail({ from: `FilamentHub <${c.user}>`, to, ...(rcpt.bcc ? { bcc: rcpt.bcc } : {}), subject: m.subject, text: m.body });
+    return { ok: true, text: `Test-Mail „${kind}“ an ${to.replace(/^(.).*(@.*)$/, '$1***$2')} geschickt. ${rcpt.bcc ? 'Eine Kopie liegt direkt im Bestell-Postfach.' : ''} Der Pi liest sie beim nächsten Takt oder mit „Jetzt prüfen“.` };
   } catch (e) {
     return { ok: false, text: `Senden fehlgeschlagen: ${String((e as Error).message || e).replace(c.pass, '***').slice(0, 160)}` };
   }

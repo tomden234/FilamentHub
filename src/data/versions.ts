@@ -4007,5 +4007,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.295',
+    label: '1.295 (Test-Mail kommt auch ohne Weiterleitung an)',
+    releaseDate: '10.11.2026',
+    description:
+      'Die Test-Mail „An mein Konto“ kam bei dir an, wurde aber nicht an das Bestell-Postfach weitergeleitet: Sie kommt ja selbst vom Bestell-Postfach, und Gmail leitet eine Mail nicht an ihren eigenen Absender zurück. Jetzt schickt der Pi sie an dein Konto und legt eine Kopie (Bcc) gleich ins Bestell-Postfach. So wird die Testspule automatisch angelegt, ohne Filter. Pi-Add-on 1.3.48.',
+    features: ['📨 Test-Mail an dein Konto plus Kopie ins Bestell-Postfach', '✅ Klappt ohne Gmail-Filter', '🥧 Pi-Add-on 1.3.48 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

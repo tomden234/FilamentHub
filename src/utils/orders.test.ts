@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { confirmArrival, incomingSteps, testMail } from './incoming';
-import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, testMailTarget, sendTestMail, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
+import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, testMailTarget, testMailRecipients, sendTestMail, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
 
 const item = { brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic Schwarz', colorName: 'Schwarz', colorHex: '#000000', quantity: 2, initialWeight: 1000, pricePerKg: 19.99 };
 const order = (kind: ParsedOrder['kind'], eta?: string): ParsedOrder => ({ kind, orderId: '302-1234567-7654321', eta, items: [item] });
@@ -271,5 +271,14 @@ describe('Test-Mail verschicken (1.292)', () => {
     expect((await sendTestMail('boese', 'abc123', 'main')).ok).toBe(false);
     expect((await sendTestMail('ordered', '../x', 'main')).ok).toBe(false);
     expect((await sendTestMail('ordered', 'abc123', 'main')).text).toMatch(/Postfach fehlt/);
+  });
+});
+
+describe('Test-Mail Kopie ins Postfach (1.295)', () => {
+  it('An mein Konto: Haupt-Adresse plus Bcc ans Bestell-Postfach', () => {
+    expect(testMailRecipients('main', 'box@gmail.com')).toEqual({ to: 'tomden233@gmail.com', bcc: 'box@gmail.com' });
+  });
+  it('Direkt: nur das Postfach, keine Doppel-Kopie', () => {
+    expect(testMailRecipients('self', 'box@gmail.com')).toEqual({ to: 'box@gmail.com' });
   });
 });
