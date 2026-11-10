@@ -27,4 +27,22 @@ describe('piDocFetch', () => {
     expect(r.headers.get('etag')).toBe('"3"');
     expect((f.mock.calls[0] as any)[1].headers['x-api-key']).toBe('k');
   });
+
+  it('304: schickt If-None-Match und liefert die gemerkte Fassung; Speichern vergisst sie', async () => {
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{"spools":[1]}', { status: 200, headers: { 'Content-Type': 'application/json', ETag: '"7"' } }))
+      .mockResolvedValueOnce(new Response(null, { status: 304 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json', ETag: '"8"' } }))
+      .mockResolvedValueOnce(new Response('{"spools":[2]}', { status: 200, headers: { 'Content-Type': 'application/json', ETag: '"8"' } }));
+    vi.stubGlobal('fetch', f);
+    await piDocFetch();
+    const r2 = await piDocFetch();
+    expect((f.mock.calls[1] as any)[1].headers['If-None-Match']).toBe('"7"');
+    expect(r2.status).toBe(200);
+    expect(await r2.text()).toBe('{"spools":[1]}');
+    await piDocFetch({ method: 'POST', body: '{}' });
+    await piDocFetch();
+    expect((f.mock.calls[3] as any)[1].headers['If-None-Match']).toBeUndefined();
+  });
 });

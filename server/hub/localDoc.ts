@@ -1,6 +1,7 @@
 // Das Spulen-Dokument der App (Spulen, Verlauf, Druckliste) als Datei auf dem Pi (SSD).
 // Ersatz für npoint/Gist: kein Fremddienst, kein Token. Jede Änderung zählt `rev` hoch,
 // damit zwei Geräte sich nicht gegenseitig überschreiben (If-Match → 409).
+import fs from "fs";
 import path from "path";
 import { dataDir } from "../paths.js";
 import { loadJsonConfig, prevOf, saveJsonConfig } from "../jsonConfig.js";
@@ -29,6 +30,27 @@ export function readLocalDoc(): StoredDoc {
   );
 }
 
+/**
+ * 1.298: Nur die Versionsnummer, ohne das ganze Dokument zu lesen und umzuwandeln. Gemerkt wird sie, solange die Datei gleich bleibt
+ * (Änderungszeit + Größe). Die App fragt alle 10 s danach: bleibt sie gleich, antwortet der Pi mit 304 und liest die Datei nicht neu.
+ */
+let revCache: { key: string; rev: number } | null = null;
+const stampOf = (f: string): string => {
+  try {
+    const st = fs.statSync(f);
+    return `${st.mtimeMs}|${st.size}`;
+  } catch {
+    return "";
+  }
+};
+export function localRev(): number {
+  const key = stampOf(file());
+  if (key && revCache?.key === key) return revCache.rev;
+  const rev = readLocalDoc().rev;
+  if (key) revCache = { key, rev };
+  return rev;
+}
+
 type WriteResult =
   | { ok: true; rev: number }
   | { ok: false; status: 400 | 409 | 500; error: string };
@@ -54,6 +76,7 @@ export function writeLocalDoc(doc: unknown, expectedRev?: number): WriteResult {
   if (curSpools > 0 && !Array.isArray(next.spools))
     return { ok: false, status: 400, error: "Dokument ohne Spulen abgelehnt." };
   const rev = cur.rev + 1;
+  revCache = null;
   if (
     !saveJsonConfig(
       file(),

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HistoryEntry, Spool } from '../types/filament';
 import { cloudSync, type CloudPayload } from '../api';
 import { safeStorage } from '../utils/safeStorage';
+import { isPiUrl } from '../utils/piDoc';
 import { STORAGE_KEY_HISTORY, STORAGE_KEY_SPOOLS, STORAGE_KEY_SPOOLS_AT } from '../utils/storageKeys';
 import { mergePrintLog, printLogForCloud, PRINT_LOG_CHANGED } from '../utils/printLog';
 import { normalizeSpools } from '../utils/spoolState';
@@ -202,7 +203,13 @@ export function useCloudSync(o: {
   const syncRef = useRef(syncWithCloud);
   syncRef.current = syncWithCloud;
   useEffect(() => {
-    const iv = setInterval(() => void syncRef.current(false), 60000);
+    // 1.298: Beim Pi alle 10 s nachfragen (der Pi antwortet bei Unverändertem nur mit 304), sonst alle 60 s. Ist die App nicht sichtbar, genügt alle 60 s.
+    let tick = 0;
+    const iv = setInterval(() => {
+      tick++;
+      const fast = isPiUrl(urlRef.current) && document.visibilityState === 'visible';
+      if (fast || tick % 6 === 0) void syncRef.current(false);
+    }, 10000);
     const vis = () => {
       if (document.visibilityState === 'visible') void syncRef.current(false);
     };

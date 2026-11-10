@@ -3,6 +3,9 @@
 import { getServerKey, serverBase } from "./serverEndpoint";
 
 export const PI_URL = "pi:";
+/** 1.298: Letzte gelesene Fassung (Versionsnummer + Text). Die App fragt „nur wenn neuer“ (If-None-Match); antwortet der Pi mit 304, kommt dieser Text zurück. */
+let lastGet: { base: string; etag: string; body: string } | null = null;
+
 export const isPiUrl = (u: string): boolean => u === PI_URL;
 
 export async function piDocFetch(
@@ -21,10 +24,13 @@ export async function piDocFetch(
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   const key = getServerKey();
+  const isGet = !init.method || init.method.toUpperCase() === "GET";
   const headers: Record<string, string> = {
     ...(init.headers || {}),
     ...(key ? { "x-api-key": key } : {}),
+    ...(isGet && lastGet?.base === b ? { "If-None-Match": lastGet.etag } : {}),
   };
+  if (!isGet) lastGet = null; // nach dem Speichern gilt die alte Fassung nicht mehr
   try {
     const res = await fetch(`${b}/api/hub/doc`, {
       method: init.method || "GET",
@@ -33,6 +39,11 @@ export async function piDocFetch(
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
     });
+    if (res.status === 304 && lastGet && lastGet.base === b)
+      return new Response(lastGet.body, {
+        status: 200,
+        headers: { "Content-Type": "application/json", ETag: lastGet.etag },
+      });
     if (res.status === 401)
       return new Response(
         JSON.stringify({
@@ -46,6 +57,11 @@ export async function piDocFetch(
         status: 404,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+    const etag = res.headers.get("etag");
+    if (isGet && res.ok && etag) {
+      const body = await res.clone().text();
+      lastGet = { base: b, etag, body };
     }
     return res;
   } catch (e: any) {

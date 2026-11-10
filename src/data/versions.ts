@@ -4040,5 +4040,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.298',
+    label: '1.298 (Schneller Abgleich alle 10 Sekunden)',
+    releaseDate: '10.11.2026',
+    description:
+      'Die App fragt den Pi jetzt alle 10 Sekunden, ob sich bei den Spulen etwas geändert hat (vorher 60 Sekunden). Ist nichts neu, antwortet der Pi nur mit „304, nichts Neues“, ohne das Dokument zu lesen oder zu senden. Dadurch bleibt die Last winzig. Ist die App im Hintergrund, bleibt es bei 60 Sekunden. Nach dem Speichern holt die App wieder die volle Fassung. Pi-Add-on 1.3.50.',
+    features: ['⚡ Neue Spule in der App nach höchstens 10 Sekunden', '🪶 304-Antwort: kaum Last auf dem Pi', '🌙 Im Hintergrund weiter alle 60 Sekunden', '🥧 Pi-Add-on 1.3.50 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

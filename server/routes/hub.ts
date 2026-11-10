@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks, pushOldDone } from '../hub/hub.js';
-import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
+import { localRev, readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { rateFromApp, readRatings } from '../hub/rating.js';
 import { checkMail, orderMailStatus, sendTestMail, testOrderExtraction } from '../hub/orders.js';
@@ -23,10 +23,16 @@ router.get('/api/hub/status', (_req, res) => {
 });
 
 // Spulen-Dokument auf dem Pi (ab 1.230). ETag = Versionszähler, POST mit If-Match schreibt nur, wenn niemand dazwischen war.
-router.get('/api/hub/doc', (_req, res) => {
+router.get('/api/hub/doc', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  // 1.298: Unverändert (gleiche Versionsnummer wie die App schon hat): 304 ohne Dokument, die Datei wird dafür nicht gelesen
+  const tag = `"${localRev()}"`;
+  if (String(req.headers['if-none-match'] || '').trim() === tag) {
+    res.setHeader('ETag', tag);
+    return res.status(304).end();
+  }
   const d = readLocalDoc();
   res.setHeader('ETag', `"${d.rev}"`);
-  res.setHeader('Cache-Control', 'no-store');
   res.json(d.doc);
 });
 
