@@ -3919,5 +3919,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.287',
+    label: '1.287 (Dateiliste unten & schließbar)',
+    releaseDate: '10.11.2026',
+    description:
+      'Warteschlange: „Nächsten starten“ steht jetzt direkt unter den Einträgen, darunter „Datei vom Drucker vormerken“ mit der Dateiliste. Der Knopf schließt die Liste wieder („Dateiliste schließen“), und nach dem Vormerken einer Datei schließt sie sich von selbst. Hinweis: Test mit deaktivierter Home-Assistant-Bambu-Integration hat die Dateiliste gezeigt, also belegt Home Assistant den Datei-Platz.',
+    features: ['⬇️ Dateiliste unter „Nächsten starten“', '✖️ Liste schließbar, schließt nach Vormerken'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -341,12 +341,17 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
     if (r.error) setMsg({ ok: false, text: r.error });
     setFilesBusy(false);
   };
+  const closeFiles = () => {
+    setFiles(null);
+    setFileQuery('');
+  };
   const addFile = async (f: PrinterFile) => {
     setBusy(true);
     setMsg(null);
     const r = await piQueueAction('add', { path: f.path });
     if (r.items.length) setItems(r.items);
     setMsg({ ok: r.ok, text: r.ok ? `„${f.name.replace(/\.gcode\.3mf$|\.3mf$/i, '')}“ vorgemerkt.` : r.text || 'Fehler' });
+    if (r.ok) closeFiles(); // 1.287: nach dem Vormerken Liste zu
     setBusy(false);
   };
 
@@ -589,14 +594,25 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
 
         <div className="p-3 pb-24 border-t space-y-2" style={{ borderColor: 'var(--app-border)' }}>
           <button
+            disabled={busy || items.length === 0}
+            onClick={() => void act('start')}
+            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[var(--app-accent)] disabled:opacity-40 cursor-pointer"
+          >
+            <Play className="w-3.5 h-3.5" /> Nächsten starten (wie Taster)
+          </button>
+          <p className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
+            Ziehen am Griff ändert die Reihenfolge. Platte erst leer machen.
+          </p>
+          {msg && <p className={`text-[11px] ${/Datei-Verbindung/.test(msg.text) ? 'text-amber-300' : msg.ok ? 'text-emerald-400' : 'text-rose-400'}`}>{msg.text}</p>}
+          <button
             type="button"
             disabled={filesBusy}
-            onClick={() => void loadFiles()}
+            onClick={() => (files ? closeFiles() : void loadFiles())}
             className="w-full py-1.5 rounded-lg text-[11px] font-bold border cursor-pointer flex items-center justify-center gap-1.5"
             style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
           >
-            {filesBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            Datei vom Drucker vormerken
+            {filesBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : files ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            {files ? 'Dateiliste schließen' : 'Datei vom Drucker vormerken'}
           </button>
           {files && files.length > 0 && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border" style={{ borderColor: 'var(--app-border)' }}>
@@ -646,17 +662,6 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
               ))}
             </div>
           )}
-          {msg && <p className={`text-[11px] ${/Datei-Verbindung/.test(msg.text) ? 'text-amber-300' : msg.ok ? 'text-emerald-400' : 'text-rose-400'}`}>{msg.text}</p>}
-          <button
-            disabled={busy || items.length === 0}
-            onClick={() => void act('start')}
-            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[var(--app-accent)] disabled:opacity-40 cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5" /> Nächsten starten (wie Taster)
-          </button>
-          <p className="text-[10px] leading-snug" style={{ color: 'var(--app-text-muted)' }}>
-            Ziehen am Griff ändert die Reihenfolge. Platte erst leer machen.
-          </p>
         </div>
       </aside>
       </div>
