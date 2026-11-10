@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { confirmArrival, incomingSteps, testMail } from './incoming';
-import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, testMailTarget, testMailRecipients, sendTestMail, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
+import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, testMailTarget, testMailRecipients, sendTestMail, nextBackoff, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
 
 const item = { brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic Schwarz', colorName: 'Schwarz', colorHex: '#000000', quantity: 2, initialWeight: 1000, pricePerKg: 19.99 };
 const order = (kind: ParsedOrder['kind'], eta?: string): ParsedOrder => ({ kind, orderId: '302-1234567-7654321', eta, items: [item] });
@@ -280,5 +280,15 @@ describe('Test-Mail Kopie ins Postfach (1.295)', () => {
   });
   it('Direkt: nur das Postfach, keine Doppel-Kopie', () => {
     expect(testMailRecipients('self', 'box@gmail.com')).toEqual({ to: 'box@gmail.com' });
+  });
+});
+
+describe('Live-Verbindung zum Postfach (1.296)', () => {
+  it('Wartezeit verdoppelt sich bis höchstens 10 Minuten', () => {
+    expect(nextBackoff(30_000)).toBe(60_000);
+    expect(nextBackoff(60_000)).toBe(120_000);
+    expect(nextBackoff(400_000)).toBe(600_000);
+    expect(nextBackoff(600_000)).toBe(600_000);
+    expect(nextBackoff(0)).toBe(60_000);
   });
 });

@@ -401,7 +401,7 @@ export const mailConfigured = () => Boolean(cfg().user && cfg().pass);
 export function orderMailStatus() {
   const c = cfg();
   const u = c.user ? c.user.replace(/^(.).*(@.*)$/, '$1***$2') : '';
-  return { enabled: hubEnabled(), configured: mailConfigured(), gemini: geminiReady(), account: u, ...status };
+  return { enabled: hubEnabled(), configured: mailConfigured(), gemini: geminiReady(), account: u, live: watchLive, ...status };
 }
 
 const loadState = (): MailState => {
@@ -525,11 +525,64 @@ export async function checkMail(): Promise<Status> {
   return status;
 }
 
+// ---------- 1.296: Live-Verbindung (IMAP IDLE) ----------
+// Eine offene Verbindung zum Eingang: Gmail meldet eine neue Mail sofort, der Pi liest dann gleich nach statt erst beim 10-Minuten-Takt.
+// Kostet keine Rechenzeit, solange nichts kommt (nur ein Lebenszeichen alle paar Minuten). Der 10-Minuten-Takt bleibt als Absicherung (auch für den Spam-Ordner).
+let watchLive = false;
+let kickTimer: NodeJS.Timeout | null = null;
+/** Neue Mail gemeldet: kurz warten (mehrere Mails auf einmal) und dann das Postfach lesen */
+const kick = (): void => {
+  if (kickTimer) return;
+  kickTimer = setTimeout(() => {
+    kickTimer = null;
+    void checkMail();
+  }, 4_000);
+  kickTimer.unref();
+};
+/** Wartezeit vor dem nächsten Verbindungsversuch: verdoppeln bis höchstens 10 Minuten */
+export const nextBackoff = (ms: number): number => Math.min(Math.max(ms, 30_000) * 2, 10 * 60_000);
+
+async function watchMailbox(): Promise<void> {
+  let wait = 30_000;
+  let lastErr = '';
+  for (;;) {
+    const c = cfg();
+    let client: ImapFlow | null = null;
+    try {
+      client = new ImapFlow({ host: c.host, port: 993, secure: true, auth: { user: c.user, pass: c.pass }, logger: false, socketTimeout: 10 * 60_000, maxIdleTime: 4 * 60_000, greetingTimeout: 30_000, connectionTimeout: 45_000 });
+      client.on('error', () => undefined);
+      const closed = new Promise<void>(res => client!.once('close', () => res()));
+      await client.connect();
+      await client.mailboxOpen('INBOX');
+      client.on('exists', () => kick());
+      watchLive = true;
+      wait = 30_000;
+      if (lastErr) console.log('[Orders] Live-Verbindung steht wieder.');
+      lastErr = '';
+      await closed;
+    } catch (e) {
+      const msg = String((e as Error)?.message || e).replace(c.pass, '***').slice(0, 120);
+      if (msg !== lastErr) console.warn(`[Orders] Live-Verbindung fehlgeschlagen (nächster Versuch in ${Math.round(wait / 1000)} s): ${msg}`);
+      lastErr = msg;
+      wait = nextBackoff(wait);
+    } finally {
+      watchLive = false;
+      try {
+        client?.close();
+      } catch {
+        /* schon zu */
+      }
+    }
+    await new Promise(r => setTimeout(r, wait).unref());
+  }
+}
+
 export function startOrderMail(): void {
   if (!hubEnabled() || !mailConfigured()) return;
-  console.log('[Orders] Bestell-Mails werden alle 10 Minuten geprüft.');
+  console.log('[Orders] Bestell-Mails: Live-Verbindung (neue Mail sofort) und Absicherung alle 10 Minuten.');
   setTimeout(() => void checkMail(), 60_000).unref();
   setInterval(() => void checkMail(), 10 * 60_000).unref();
+  void watchMailbox();
 }
 
 // ---------- Testlauf ohne Speichern ----------

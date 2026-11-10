@@ -72,6 +72,7 @@ export const OrderMailCard: React.FC = () => {
             <div>
               {st.text}
               {st.lastCheck > 0 && ` · ${time(st.lastCheck)} Uhr`}
+              {st.live ? ' · Live-Verbindung: neue Mail sofort' : st.live === false ? ' · Live-Verbindung: aus (Prüfung alle 10 Min)' : ''}
               {!st.gemini && ' · Gemini-Schlüssel fehlt'}
             </div>
           )}

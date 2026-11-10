@@ -4018,5 +4018,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.296',
+    label: '1.296 (Neue Mail sofort per Live-Verbindung)',
+    releaseDate: '10.11.2026',
+    description:
+      'Der Pi hält jetzt eine dauerhafte Verbindung zum Bestell-Postfach (IMAP IDLE). Kommt eine Mail, meldet Gmail sie sofort und der Pi liest nach wenigen Sekunden nach, statt erst beim 10-Minuten-Takt. Ohne neue Mail kostet das keine Rechenzeit. Reißt die Verbindung ab, versucht der Pi es mit wachsender Wartezeit (30 s bis 10 Min) neu. Der 10-Minuten-Takt bleibt als Absicherung, auch für den Spam-Ordner. Testmenü zeigt „Live-Verbindung“ an. Pi-Add-on 1.3.49.',
+    features: ['⚡ Neue Mail nach wenigen Sekunden', '🔁 Verbindung baut sich selbst neu auf', '🛟 10-Minuten-Takt als Absicherung', '🥧 Pi-Add-on 1.3.49 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

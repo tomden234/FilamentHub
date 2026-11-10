@@ -656,6 +656,8 @@ export interface OrderMailStatus {
   configured: boolean;
   gemini: boolean;
   account: string;
+  /** 1.296: Live-Verbindung zum Postfach steht (neue Mail sofort) */
+  live?: boolean;
   lastCheck: number;
   lastOk: boolean;
   text: string;
