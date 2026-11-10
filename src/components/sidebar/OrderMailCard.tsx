@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Copy, FlaskConical, Link2, Loader2, Mail, RefreshCw, Trash2 } from 'lucide-react';
-import { currentTestId, requestDeleteTestSpools, testMail, type TestMailKind } from '../../utils/incoming';
-import { hasServer, piOrderStatus, piOrderTest, piProductFill, type OrderMailStatus, type ProductFillStatus } from '../../utils/recorderServer';
+import { Copy, FlaskConical, Inbox, Link2, Loader2, Mail, RefreshCw, Send, Trash2 } from 'lucide-react';
+import { currentTestId, requestDeleteTestSpools, TEST_MAIL_MAIN, testMail, type TestMailKind } from '../../utils/incoming';
+import { hasServer, piOrderStatus, piOrderTest, piOrderTestMail, piProductFill, type OrderMailStatus, type ProductFillStatus } from '../../utils/recorderServer';
 
 // 1.275/1.278: Bestell-Mails und Spulen-Links. Passwort und Schlüssel stehen nur in den Add-on-Optionen, nie hier.
 
@@ -43,8 +43,10 @@ export const OrderMailCard: React.FC = () => {
 
   const openTestMail = (kind: TestMailKind) => {
     const m = testMail(kind, currentTestId());
-    window.location.href = `mailto:?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
+    window.location.href = `mailto:${TEST_MAIL_MAIN}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
   };
+  const sendTestMail = (kind: TestMailKind, to: 'main' | 'self') =>
+    void run(`tm-${kind}-${to}`, async () => setTest(await piOrderTestMail(kind, currentTestId(), to)));
   const copyTestMail = async (kind: TestMailKind) => {
     const m = testMail(kind, currentTestId());
     try {
@@ -91,13 +93,21 @@ export const OrderMailCard: React.FC = () => {
         Test-Spule per Mail
       </div>
       <p>
-        Mail-Programm öffnen, an deine Haupt-Adresse schicken und von dort an das Bestell-Postfach weiterleiten. Der Pi erkennt sie als Testspule (ohne Gemini) und legt sie wie eine bestellte Spule an. Reihenfolge 1, 2, 3 zeigt den ganzen Ablauf.
+        „An mein Konto“: Der Pi schickt die Mail über das Bestell-Postfach an {TEST_MAIL_MAIN}, deine Weiterleitung bringt sie zurück. „Direkt“ legt sie ohne Umweg ins Bestell-Postfach (klappt immer). Reihenfolge 1, 2, 3 zeigt den ganzen Ablauf.
       </p>
       {TEST_KINDS.map(t => (
-        <div key={t.kind} className="flex gap-1.5">
-          <button className={`${btn} flex-1`} style={btnStyle} onClick={() => openTestMail(t.kind)}>
+        <div key={t.kind} className="flex flex-wrap items-center gap-1.5">
+          <span className="w-24 font-bold" style={{ color: 'var(--app-text)' }}>{t.label}</span>
+          <button className={btn} style={btnStyle} disabled={!!busy} onClick={() => sendTestMail(t.kind, 'main')} title={`Pi schickt die Mail an ${TEST_MAIL_MAIN}`}>
+            {busy === `tm-${t.kind}-main` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            An mein Konto
+          </button>
+          <button className={btn} style={btnStyle} disabled={!!busy} onClick={() => sendTestMail(t.kind, 'self')} title="Pi schickt die Mail ins Bestell-Postfach selbst">
+            {busy === `tm-${t.kind}-self` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Inbox className="w-3.5 h-3.5" />}
+            Direkt
+          </button>
+          <button className={btn} style={btnStyle} onClick={() => openTestMail(t.kind)} title="Mail-Programm öffnen" aria-label={`${t.label}: Mail-Programm öffnen`}>
             <Mail className="w-3.5 h-3.5" />
-            {t.label}
           </button>
           <button className={btn} style={btnStyle} onClick={() => void copyTestMail(t.kind)} title="Betreff und Text kopieren" aria-label={`${t.label}: Text kopieren`}>
             <Copy className="w-3.5 h-3.5" />

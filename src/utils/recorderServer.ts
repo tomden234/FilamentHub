@@ -670,6 +670,15 @@ export async function piOrderTest(): Promise<{ ok: boolean; text: string }> {
     return { ok: false, text: 'Pi nicht erreichbar' };
   }
 }
+/** 1.292: Test-Mail vom Pi verschicken (an die Haupt-Adresse oder direkt ins Bestell-Postfach) */
+export async function piOrderTestMail(kind: string, id: string, to: 'main' | 'self'): Promise<{ ok: boolean; text: string }> {
+  try {
+    const j = await get('/api/hub/orders/test-mail', { method: 'POST', body: { kind, id, to }, timeoutMs: 60000 });
+    return j?.success ? { ok: Boolean(j.ok), text: String(j.text || '') } : { ok: false, text: 'Pi zu alt: Add-on aktualisieren' };
+  } catch {
+    return { ok: false, text: 'Pi nicht erreichbar' };
+  }
+}
 export async function piOrderStatus(check = false): Promise<OrderMailStatus | null> {
   try {
     const j = await get(check ? '/api/hub/orders/check' : '/api/hub/orders', { method: check ? 'POST' : 'GET', timeoutMs: check ? 90000 : 15000 });

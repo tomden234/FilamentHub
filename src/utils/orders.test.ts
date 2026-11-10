@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { confirmArrival, incomingSteps, testMail } from './incoming';
-import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
+import { applyOrder, looksLikeFilamentOrder, testOrderFrom, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, testMailTarget, sendTestMail, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
 
 const item = { brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic Schwarz', colorName: 'Schwarz', colorHex: '#000000', quantity: 2, initialWeight: 1000, pricePerKg: 19.99 };
 const order = (kind: ParsedOrder['kind'], eta?: string): ParsedOrder => ({ kind, orderId: '302-1234567-7654321', eta, items: [item] });
@@ -258,5 +258,18 @@ describe('Test-Mail durch den echten Parser (1.291)', () => {
     expect(doc.spools[0].isTest).toBe(true);
     expect(doc.spools[0].incoming.status).toBe('delivered');
     expect(log.some(l => l.startsWith('push:'))).toBe(true);
+  });
+});
+
+describe('Test-Mail verschicken (1.292)', () => {
+  it('Ziel nur Haupt-Adresse oder Postfach selbst', () => {
+    expect(testMailTarget('main', 'box@gmail.com')).toBe('tomden233@gmail.com');
+    expect(testMailTarget('self', 'box@gmail.com')).toBe('box@gmail.com');
+    expect(testMailTarget('fremd@x.de', 'box@gmail.com')).toBe('tomden233@gmail.com');
+  });
+  it('ungültige Angaben und fehlendes Postfach werden abgelehnt', async () => {
+    expect((await sendTestMail('boese', 'abc123', 'main')).ok).toBe(false);
+    expect((await sendTestMail('ordered', '../x', 'main')).ok).toBe(false);
+    expect((await sendTestMail('ordered', 'abc123', 'main')).text).toMatch(/Postfach fehlt/);
   });
 });

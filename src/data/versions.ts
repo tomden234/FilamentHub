@@ -3974,5 +3974,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.292',
+    label: '1.292 (Test-Mail direkt vom Pi an dein Konto)',
+    releaseDate: '10.11.2026',
+    description:
+      'Testmenü → Bestell-Mails: Pro Schritt (1 Bestellt, 2 Versendet, 3 Zugestellt) gibt es „An mein Konto“ (der Pi schickt die Test-Mail über das Bestell-Postfach an tomden233@gmail.com, deine Weiterleitung bringt sie zurück ins Postfach) und „Direkt“ (ohne Umweg ins Bestell-Postfach, klappt immer). Mail-Programm öffnen und Kopieren gibt es weiter, mit der Haupt-Adresse schon eingetragen. Der Pi sendet nur an diese Adresse oder an das Postfach selbst. Pi-Add-on 1.3.45.',
+    features: ['📨 „An mein Konto“ direkt vom Pi', '📥 „Direkt“ ins Bestell-Postfach', '✉️ Haupt-Adresse fest eingetragen', '🥧 Pi-Add-on 1.3.45 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

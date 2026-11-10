@@ -94,6 +94,9 @@ export function currentTestId(reset = false): string {
   }
 }
 
+/** Haupt-Adresse des Nutzers (Ziel der Test-Mail, der Pi erlaubt nur diese oder das Bestell-Postfach) */
+export const TEST_MAIL_MAIN = 'tomden233@gmail.com';
+
 export type TestMailKind = 'ordered' | 'shipped' | 'delivered';
 const TEST_LABEL: Record<TestMailKind, string> = { ordered: 'Bestellung bestätigt', shipped: 'Versendet', delivered: 'Zugestellt' };
 /** Vorgefertigte Test-Mail (Betreff + Text), die der Pi ohne Gemini als Testspule erkennt */

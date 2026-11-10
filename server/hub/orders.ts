@@ -3,6 +3,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import { ImapFlow } from 'imapflow';
+import nodemailer from 'nodemailer';
 import { simpleParser } from 'mailparser';
 import { dataDir } from '../paths.js';
 import { loadJsonConfig, saveJsonConfig } from '../jsonConfig.js';
@@ -10,7 +11,7 @@ import { access, hubEnabled, push } from './core.js';
 import { cloudReady, loadDoc, saveDoc } from './cloud.js';
 import { withCloudLock } from './deduct.js';
 import { geminiJson, geminiReady } from './gemini.js';
-import { confirmArrival } from '../../src/utils/incoming.js';
+import { confirmArrival, testMail, type TestMailKind } from '../../src/utils/incoming.js';
 import { applyCatalogToSpools, learnCatalog, readCatalog } from './productLink.js';
 
 export type OrderKind = 'ordered' | 'shipped' | 'delivered';
@@ -551,6 +552,28 @@ export async function testOrderExtraction(): Promise<{ ok: boolean; text: string
     };
   } catch (e) {
     return { ok: false, text: (e as Error).message.slice(0, 160) };
+  }
+}
+
+// ---------- 1.292: Test-Mail direkt vom Pi verschicken ----------
+/** Haupt-Adresse des Nutzers für die Test-Mail. Nur diese oder das Bestell-Postfach selbst sind erlaubt, nie eine Adresse aus der App (kein Spam-Weg). */
+const MAIN_ADDRESS = 'tomden233@gmail.com';
+export const testMailTarget = (to: string, user = cfg().user): string => (to === 'self' ? user : (process.env.MAIL_TEST_TO || MAIN_ADDRESS).trim());
+
+export async function sendTestMail(kindRaw: unknown, idRaw: unknown, toRaw: unknown): Promise<{ ok: boolean; text: string }> {
+  const kind = String(kindRaw) as TestMailKind;
+  const id = String(idRaw || '').toLowerCase();
+  if (!['ordered', 'shipped', 'delivered'].includes(kind) || !/^[a-z0-9]{4,12}$/.test(id)) return { ok: false, text: 'Ungültige Test-Mail' };
+  if (!mailConfigured()) return { ok: false, text: 'Postfach fehlt: mail_user und mail_password im Add-on eintragen' };
+  const c = cfg();
+  const to = testMailTarget(toRaw === 'self' ? 'self' : 'main', c.user);
+  const m = testMail(kind, id);
+  try {
+    const tr = nodemailer.createTransport({ host: c.host.replace(/^imap\./, 'smtp.'), port: 465, secure: true, auth: { user: c.user, pass: c.pass }, connectionTimeout: 30_000, greetingTimeout: 20_000, socketTimeout: 45_000 });
+    await tr.sendMail({ from: `FilamentHub <${c.user}>`, to, subject: m.subject, text: m.body });
+    return { ok: true, text: `Test-Mail „${kind}“ an ${to.replace(/^(.).*(@.*)$/, '$1***$2')} geschickt. ${to === c.user ? 'Der Pi liest sie beim nächsten Takt oder mit „Jetzt prüfen“.' : 'Sie kommt über deine Weiterleitung ins Bestell-Postfach. Kommt nichts an: „Direkt ins Postfach“ nehmen.'}` };
+  } catch (e) {
+    return { ok: false, text: `Senden fehlgeschlagen: ${String((e as Error).message || e).replace(c.pass, '***').slice(0, 160)}` };
   }
 }
 

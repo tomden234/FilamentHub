@@ -3,7 +3,7 @@ import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHub
 import { readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { rateFromApp, readRatings } from '../hub/rating.js';
-import { checkMail, orderMailStatus, testOrderExtraction } from '../hub/orders.js';
+import { checkMail, orderMailStatus, sendTestMail, testOrderExtraction } from '../hub/orders.js';
 import { cleanHits, cleanSpec, findProductPage, productFillStatus, productLinkTick } from '../hub/productLink.js';
 import { findPushTest, pushTestList } from '../hub/pushTests.js';
 import { archiveFav, archiveRemove, archiveRename, archiveThumbPath, loadArchive } from '../hub/archive.js';
@@ -108,6 +108,7 @@ router.get('/api/hub/orders', (_req, res) => res.json({ success: true, ...orderM
 router.get('/api/hub/ratings', (_req, res) => res.json({ success: true, ratings: readRatings() }));
 router.post('/api/hub/ratings', (req, res) => res.json({ success: rateFromApp(String(req.body?.h || ''), req.body?.up === true), ratings: readRatings() }));
 router.post('/api/hub/orders/test', async (_req, res) => res.json({ success: true, ...(await testOrderExtraction()) }));
+router.post('/api/hub/orders/test-mail', async (req, res) => res.json({ success: true, ...(await sendTestMail(req.body?.kind, req.body?.id, req.body?.to)) }));
 router.post('/api/hub/orders/check', async (_req, res) => {
   await checkMail();
   res.json({ success: true, ...orderMailStatus() });
