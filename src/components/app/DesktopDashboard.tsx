@@ -7,6 +7,7 @@ import type { Spool } from '../../types/filament';
 
 interface DesktopDashboardProps {
   spools: Spool[];
+  stockSpools?: Spool[];
   totalGrams: any;
   totalValue: any;
   dueDryingCount: any;
@@ -48,6 +49,7 @@ interface DesktopDashboardProps {
 
 export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
   spools,
+  stockSpools,
   totalGrams,
   totalValue,
   dueDryingCount,
@@ -85,13 +87,14 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
   setActiveLocationFilter,
   hidePrinter = false
 }) => {
+  const stock = stockSpools ?? spools;
   return (
 <>
             {/* 1.251: Zahlen als 5 Kacheln mit farbigem Symbol (Option C), Wort oben normal geschrieben, Zahl groß darunter */}
             {(() => {
               const due = dueDryingCount > 0;
               const items = [
-                { key: 'spulen', label: 'Spulen', value: String(spools.length), unit: '', Icon: Disc3, color: 'var(--app-accent-bar)', tone: 'var(--app-text)' },
+                { key: 'spulen', label: 'Spulen', value: String(stock.length), unit: '', Icon: Disc3, color: 'var(--app-accent-bar)', tone: 'var(--app-text)' },
                 { key: 'filament', label: 'Filament', value: (totalGrams / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }), unit: 'kg', Icon: Weight, color: '#3b82f6', tone: 'var(--app-text)' },
                 { key: 'wert', label: 'Wert', value: totalValue.toFixed(2).replace('.', ','), unit: '€', Icon: Euro, color: '#10b981', tone: 'var(--app-text)' },
                 { key: 'trocknen', label: 'Trocknen fällig', value: String(dueDryingCount), unit: '', Icon: Sun, color: due ? '#ef4444' : '#f59e0b', tone: due ? 'var(--app-danger-text)' : 'var(--app-text)' },
@@ -134,8 +137,8 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                             </span>
                           ) : k.key === 'trocknen' ? (
                             due ? 'jetzt trocknen' : 'alles trocken'
-                          ) : k.key === 'filament' && spools.length > 0 ? (
-                            `Ø ${Math.round(totalGrams / spools.length).toLocaleString('de-DE')} g je Spule`
+                          ) : k.key === 'filament' && stock.length > 0 ? (
+                            `Ø ${Math.round(totalGrams / stock.length).toLocaleString('de-DE')} g je Spule`
                           ) : null}
                         </div>
                       </>

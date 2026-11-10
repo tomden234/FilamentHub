@@ -165,7 +165,7 @@ const spoolFrom = (it: OrderItem, key: string, orderId: string, status: 'ordered
     storageNote: `Bestellung ${orderId}`
   };
   if (it.productUrl) s.productUrl = it.productUrl;
-  s.incoming = { key, orderId, status, ...(eta ? { eta } : {}), ...(it.asin ? { asin: it.asin } : {}) };
+  s.incoming = { key, orderId, status, ...(eta ? { eta } : {}), ...(it.asin ? { asin: it.asin } : {}), orderedAt: nowIso, ...(status === 'shipped' ? { shippedAt: nowIso } : {}) };
   return s;
 };
 
@@ -227,7 +227,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
         }
         // Zugestellt heißt noch nicht „in der Hand“: Status setzen, der Nutzer bestätigt in der App (dann wird sie zur normalen Spule)
         if (spools[idx].incoming.status === 'delivered') continue;
-        spools[idx] = { ...spools[idx], incoming: { ...spools[idx].incoming, status: 'delivered' } };
+        spools[idx] = { ...spools[idx], incoming: { ...spools[idx].incoming, status: 'delivered', deliveredAt: nowIso } };
         arrived.push(`${it.brand} ${it.name}`);
         if (!arrivedOrders.includes(o.orderId)) arrivedOrders.push(o.orderId);
         changed = true;
@@ -236,6 +236,7 @@ export function applyOrder(doc: any, o: ParsedOrder, nowIso = new Date().toISOSt
         const next = { ...cur, ...(it.asin && !cur.asin ? { asin: it.asin } : {}) };
         if (o.kind === 'shipped' && cur.status !== 'delivered') {
           next.status = 'shipped';
+          if (!next.shippedAt) next.shippedAt = nowIso;
           if (o.eta) next.eta = o.eta;
         }
         if (JSON.stringify(next) !== JSON.stringify(cur) || (it.productUrl && !spools[idx].productUrl)) {

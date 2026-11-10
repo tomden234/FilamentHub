@@ -102,10 +102,10 @@ export const SpoolTile: React.FC<SpoolTileProps> = ({ spool, now, appSettings, o
 
   return (
     <article
-      className={`fh-lift relative overflow-hidden rounded-2xl border ${dry.isOverdue ? 'border-rose-500/60' : ''}`}
+      className={`fh-lift relative overflow-hidden rounded-2xl border ${spool.incoming ? 'border-dashed border-slate-400/60 opacity-70' : dry.isOverdue ? 'border-rose-500/60' : ''}`}
       style={{
         backgroundColor: 'var(--app-card)',
-        borderColor: dry.isOverdue ? undefined : 'var(--app-border)',
+        borderColor: dry.isOverdue || spool.incoming ? undefined : 'var(--app-border)',
         color: 'var(--app-text)'
       }}
     >

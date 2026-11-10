@@ -59,7 +59,7 @@ import { useDryingReminders } from './hooks/useDryingReminders';
 import { useKeepAlive } from './hooks/useKeepAlive';
 import { LowStockBanner } from './components/workshop/LowStockBanner';
 import { registerSpoolLinks } from './utils/shopLinks';
-import { CONFIRM_ARRIVAL_EVENT, confirmArrival } from './utils/incoming';
+import { CONFIRM_ARRIVAL_EVENT, REJECT_INCOMING_EVENT, confirmArrival } from './utils/incoming';
 import { SET_PRODUCT_URL_EVENT, SHOP_TOAST_EVENT } from './utils/productPage';
 import { isSearchUrl } from './utils/shopLinks';
 import type { WorkshopTab } from './components/workshop/WorkshopModal';
@@ -824,6 +824,23 @@ export default function App() {
     return () => window.removeEventListener(CONFIRM_ARRIVAL_EVENT, on);
   });
 
+  // 1.290: „Falsch erkannt“ auf einer bestellten Spule: Spule wieder entfernen
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = String((e as CustomEvent<string>).detail || '');
+      const spool = spools.find(s => s.id === id);
+      if (!spool?.incoming) return;
+      pushUndoSnapshot();
+      const updated = spools.filter(s => s.id !== id);
+      setSpools(updated);
+      persistState(updated, printHistory);
+      showToast(`${spool.brand} ${spool.name}: als falsch erkannt entfernt.`);
+      addSystemLog('spule', `${spool.brand} ${spool.name} (Bestellung ${spool.incoming.orderId}) als falsch erkannt entfernt`, spool.name, 'warn');
+    };
+    window.addEventListener(REJECT_INCOMING_EVENT, on);
+    return () => window.removeEventListener(REJECT_INCOMING_EVENT, on);
+  });
+
   // 1.278: Vom Pi gefundene Produktseite fest an der Spule speichern (nur wenn sie noch keine echte hat)
   useEffect(() => {
     const on = (e: Event) => {
@@ -1081,21 +1098,24 @@ export default function App() {
     setIsSpoolModalOpen(true);
   };
 
+  // 1.290: Bestellte Spulen („unterwegs“) zählen erst nach der Lieferung im Bestand
+  const stockSpools = useMemo(() => spools.filter(s => !s.incoming), [spools]);
+
   // KPIs
   const totalGrams = useMemo(() => {
-    return spools.reduce((acc, s) => acc + (s.remainingWeight || 0), 0);
-  }, [spools]);
+    return stockSpools.reduce((acc, s) => acc + (s.remainingWeight || 0), 0);
+  }, [stockSpools]);
 
   const totalValue = useMemo(() => {
-    return spools.reduce((acc, s) => {
+    return stockSpools.reduce((acc, s) => {
       const price = s.pricePerKg || getBrandInfo(s.brand, appSettings).defaultPrice || 19.99;
       return acc + ((s.remainingWeight || 0) / 1000) * price;
     }, 0);
-  }, [spools, appSettings]);
+  }, [stockSpools, appSettings]);
 
   const dueDryingCount = useMemo(() => {
-    return spools.filter(s => getDryingStatus(s, now).statusLevel !== 'ok').length;
-  }, [spools, now]);
+    return stockSpools.filter(s => getDryingStatus(s, now).statusLevel !== 'ok').length;
+  }, [stockSpools, now]);
 
   const totalUsedGrams = useMemo(() => {
     if (manualUsedGrams !== null) return manualUsedGrams;
@@ -1146,7 +1166,7 @@ export default function App() {
     return result;
   }, [spools, activeMaterialFilter, activeLocationFilter, searchQuery, sortBy, now]);
 
-  const locationStats = useMemo(() => getLocationStats(spools), [spools]);
+  const locationStats = useMemo(() => getLocationStats(stockSpools), [stockSpools]);
 
   const activeVersion =
     versionProfiles.find(v => v.id === activeVersionId) || versionProfiles[versionProfiles.length - 1];
@@ -1282,7 +1302,7 @@ export default function App() {
       <main className={`fh-fit flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-5 ${deviceMode === 'app' ? 'pb-28' : 'pb-10'} space-y-4 sm:space-y-5`}>
         {/* Rest-Warnung: fast leere Spulen */}
         <LowStockBanner
-          spools={spools}
+          spools={stockSpools}
           onFocus={q => setSearchQuery(q)}
           onOpenSettings={() => {
             setWorkshopTab('notices');
@@ -1293,12 +1313,12 @@ export default function App() {
           /* ============================================================== */
           /* SMARTPHONE APP-MODUS: MOBILE-FOKUSSIERT & TOUCH-OPTIMIERT     */
           /* ============================================================== */
-          <MobileAppView spools={spools} totalGrams={totalGrams} now={now} appSettings={appSettings} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} handleMarkDried={handleMarkDried} searchQuery={searchQuery} setSearchQuery={setSearchQuery} setActiveMaterialFilter={setActiveMaterialFilter} activeMaterialFilter={activeMaterialFilter} filteredSpools={filteredSpools} handleAddWeight={handleAddWeight} handleOpenSpoolNfc={handleOpenSpoolNfc} handleDeleteSpool={handleDeleteSpool} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} />
+          <MobileAppView spools={spools} stockSpools={stockSpools} totalGrams={totalGrams} now={now} appSettings={appSettings} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} handleMarkDried={handleMarkDried} searchQuery={searchQuery} setSearchQuery={setSearchQuery} setActiveMaterialFilter={setActiveMaterialFilter} activeMaterialFilter={activeMaterialFilter} filteredSpools={filteredSpools} handleAddWeight={handleAddWeight} handleOpenSpoolNfc={handleOpenSpoolNfc} handleDeleteSpool={handleDeleteSpool} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} />
         ) : (
           /* ============================================================== */
           /* DESKTOP-MODUS: VOLLE WERKSTATT-DASHBOARD VERSION               */
           /* ============================================================== */
-          <DesktopDashboard spools={spools} totalGrams={totalGrams} totalValue={totalValue} dueDryingCount={dueDryingCount} setEditUsedInputValue={setEditUsedInputValue} totalUsedGrams={totalUsedGrams} usedWeek={usedWeek} setIsEditUsedModalOpen={setIsEditUsedModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} setIsCameraModalOpen={setIsCameraModalOpen} quickLinkText={quickLinkText} setQuickLinkText={setQuickLinkText} handleQuickScan={handleQuickScan} isQuickScanning={isQuickScanning} searchQuery={searchQuery} setSearchQuery={setSearchQuery} sortBy={sortBy} setSortBy={setSortBy} activeMaterialFilter={activeMaterialFilter} setActiveMaterialFilter={setActiveMaterialFilter} filteredSpools={filteredSpools} appSettings={appSettings} now={now} handleApplyScale={handleApplyScale} handleMarkDried={handleMarkDried} handleDuplicateSpool={handleDuplicateSpool} handleDeleteSpool={handleDeleteSpool} handleOpenSpoolNfc={handleOpenSpoolNfc} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} hidePrinter={rightDock} />
+          <DesktopDashboard spools={spools} stockSpools={stockSpools} totalGrams={totalGrams} totalValue={totalValue} dueDryingCount={dueDryingCount} setEditUsedInputValue={setEditUsedInputValue} totalUsedGrams={totalUsedGrams} usedWeek={usedWeek} setIsEditUsedModalOpen={setIsEditUsedModalOpen} viewMode={viewMode} handleDeductWeight={handleDeductWeight} handleApplyDryingCredit={handleApplyDryingCredit} setSpoolToEdit={setSpoolToEdit} setSpoolPrefill={setSpoolPrefill} setIsSpoolModalOpen={setIsSpoolModalOpen} setIsCameraModalOpen={setIsCameraModalOpen} quickLinkText={quickLinkText} setQuickLinkText={setQuickLinkText} handleQuickScan={handleQuickScan} isQuickScanning={isQuickScanning} searchQuery={searchQuery} setSearchQuery={setSearchQuery} sortBy={sortBy} setSortBy={setSortBy} activeMaterialFilter={activeMaterialFilter} setActiveMaterialFilter={setActiveMaterialFilter} filteredSpools={filteredSpools} appSettings={appSettings} now={now} handleApplyScale={handleApplyScale} handleMarkDried={handleMarkDried} handleDuplicateSpool={handleDuplicateSpool} handleDeleteSpool={handleDeleteSpool} handleOpenSpoolNfc={handleOpenSpoolNfc} locations={locationStats} activeLocationFilter={activeLocationFilter} setActiveLocationFilter={setActiveLocationFilter} hidePrinter={rightDock} />
         )}
       </main>
       </div>
@@ -1338,7 +1358,7 @@ export default function App() {
           onReopen={() => setIsWorkshopOpen(true)}
           tab={workshopTab}
           onTabChange={setWorkshopTab}
-          spools={spools}
+          spools={stockSpools}
           labelSpoolId={labelSpoolId}
           focusId={inboxFocusId}
         />

@@ -3952,5 +3952,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.290',
+    label: '1.290 (Bestell-Menü & bestellte Spulen zählen nicht)',
+    releaseDate: '10.11.2026',
+    description:
+      'Bestellte Spulen stehen in der normalen Liste, grau gestrichelt und blasser, mit dem Bestellstatus dabei. Antippen des Status öffnet ein kleines Menü mit Verlauf (Bestellt, Versendet, Zugestellt mit Datum) und den Knöpfen „Schon zugestellt“ und „Falsch erkannt“. Bis zur Lieferung zählen sie nicht in Gesamtgewicht, Wert, Spulen-Zahl, Trocknen-Zähler, Warnung „fast leer“, Statistik und Werkstatt. AMS und Drucker-Bereich bleiben wie vorher. Pi-Add-on 1.3.43 (speichert die Zeitpunkte).',
+    features: ['📦 Bestellte Spulen grau gestrichelt', '🧾 Status antippen: Verlauf + „Schon zugestellt“ / „Falsch erkannt“', '🔢 Zählen erst nach Lieferung im Bestand', '🥧 Pi-Add-on 1.3.43 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

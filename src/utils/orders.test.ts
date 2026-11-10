@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confirmArrival } from './incoming';
+import { confirmArrival, incomingSteps } from './incoming';
 import { applyOrder, looksLikeFilamentOrder, mailProducts, orderPrompt, parseOrderJson, processMail, taraOf, type MailDeps, type ParsedOrder } from '../../server/hub/orders';
 
 const item = { brand: 'Bambu Lab', material: 'PLA', name: 'PLA Basic Schwarz', colorName: 'Schwarz', colorHex: '#000000', quantity: 2, initialWeight: 1000, pricePerKg: 19.99 };
@@ -182,5 +182,25 @@ describe('Alte Bestellungen als Anhang weitergeleitet', () => {
     const r2 = await processMail(fwd, r.done!, { ...deps, learn: async () => (log2.push('learn'), 1) });
     expect(log2).toHaveLength(0);
     expect(r2.learned).toBe(0);
+  });
+});
+
+describe('Bestell-Verlauf (1.290)', () => {
+  it('Zeitstempel: bestellt, versendet, zugestellt', () => {
+    const t1 = '2026-11-01T10:00:00.000Z';
+    const t2 = '2026-11-02T10:00:00.000Z';
+    const t3 = '2026-11-03T10:00:00.000Z';
+    let doc = applyOrder({ spools: [] }, order('ordered'), t1).doc;
+    expect(doc.spools[0].incoming.orderedAt).toBe(t1);
+    doc = applyOrder(doc, order('shipped', '2026-11-04'), t2).doc;
+    expect(doc.spools[0].incoming.shippedAt).toBe(t2);
+    doc = applyOrder(doc, order('delivered'), t3).doc;
+    expect(doc.spools[0].incoming.deliveredAt).toBe(t3);
+    expect(incomingSteps(doc.spools[0].incoming).every(st => st.done)).toBe(true);
+  });
+  it('Verlauf bei bestellter Spule: nur „Bestellt“ erledigt', () => {
+    const steps = incomingSteps({ key: 'k', orderId: 'o', status: 'ordered', eta: '2026-11-12' });
+    expect(steps.map(st => st.done)).toEqual([true, false, false]);
+    expect(steps[2].when).toBe('erwartet 12.11.');
   });
 });

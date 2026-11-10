@@ -7,6 +7,7 @@ import type { Spool } from '../../types/filament';
 
 interface MobileAppViewProps {
   spools: any;
+  stockSpools?: any;
   totalGrams: any;
   now: number;
   appSettings: any;
@@ -33,6 +34,7 @@ interface MobileAppViewProps {
 /** Handy-Ansicht: Drucker oben, darunter Suche und die Spulen als schlichte Kacheln. Funktionen stecken im Menü und unter „Neu“. */
 export const MobileAppView: React.FC<MobileAppViewProps> = ({
   spools,
+  stockSpools,
   totalGrams,
   now,
   appSettings,
@@ -55,6 +57,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   activeLocationFilter,
   setActiveLocationFilter
 }) => {
+  const stock = stockSpools ?? spools;
   const kg = (totalGrams / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 });
   const materials = ['ALL', ...Array.from(new Set<string>(spools.map((s: any) => String(s.material || '')).filter(Boolean))).sort()];
 
@@ -76,7 +79,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
       <div className="flex items-baseline justify-between pl-1 pr-7">
         <h2 className="text-sm font-extrabold tracking-tight">Spulen</h2>
         <span className="text-[11px] font-mono-num" style={{ color: 'var(--app-text-muted)' }}>
-          {spools.length} Stück · {kg} kg
+          {stock.length} Stück · {kg} kg
         </span>
       </div>
 

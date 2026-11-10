@@ -38,3 +38,35 @@ export function requestConfirmArrival(spoolId: string): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent<string>(CONFIRM_ARRIVAL_EVENT, { detail: spoolId }));
 }
+
+export const REJECT_INCOMING_EVENT = 'filamenthub:reject-incoming';
+/** „Falsch erkannt“: die bestellte Spule wird aus der Liste entfernt (App.tsx führt es aus) */
+export function requestRejectIncoming(spoolId: string): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent<string>(REJECT_INCOMING_EVENT, { detail: spoolId }));
+}
+
+export interface IncomingStep {
+  label: string;
+  when: string;
+  done: boolean;
+}
+
+const fmt = (iso?: string): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+};
+
+/** Verlauf für das kleine Menü: Bestellt → Versendet → Zugestellt */
+export function incomingSteps(inc: Incoming): IncomingStep[] {
+  const shipped = inc.status === 'shipped' || inc.status === 'delivered';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(inc.eta || '');
+  const eta = m ? `${m[3]}.${m[2]}.` : '';
+  return [
+    { label: 'Bestellt', when: fmt(inc.orderedAt), done: true },
+    { label: 'Versendet', when: shipped ? fmt(inc.shippedAt) : '', done: shipped },
+    { label: 'Zugestellt', when: inc.status === 'delivered' ? fmt(inc.deliveredAt) : eta ? `erwartet ${eta}` : '', done: inc.status === 'delivered' }
+  ];
+}

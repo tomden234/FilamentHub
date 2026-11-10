@@ -170,10 +170,10 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
   if (viewMode === 'params') {
     return (
       <div
-        className="fh-nest fh-lift rounded-2xl border flex flex-col justify-between gap-3"
+        className={`fh-nest fh-lift rounded-2xl border flex flex-col justify-between gap-3 ${spool.incoming ? 'border-dashed border-slate-400/60 opacity-70' : ''}`}
         style={{
           backgroundColor: 'var(--app-card)',
-          borderColor: 'var(--app-border)',
+          borderColor: spool.incoming ? undefined : 'var(--app-border)',
           color: 'var(--app-text)'
         }}
       >
@@ -310,11 +310,11 @@ export const SpoolCard: React.FC<SpoolCardProps> = ({
   return (
     <div
       className={`fh-nest fh-lift rounded-2xl border flex flex-col justify-between gap-3 ${
-        dry.isOverdue ? 'overdue-card border-rose-500/70' : ''
+        spool.incoming ? 'border-dashed border-slate-400/60 opacity-70' : dry.isOverdue ? 'overdue-card border-rose-500/70' : ''
       }`}
       style={{
         backgroundColor: 'var(--app-card)',
-        borderColor: dry.isOverdue ? undefined : 'var(--app-border)',
+        borderColor: dry.isOverdue || spool.incoming ? undefined : 'var(--app-border)',
         color: 'var(--app-text)'
       }}
     >
