@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { dataDir } from '../paths.js';
 import { readJsonWithPrev, saveJsonConfig, writeFileAtomic } from '../jsonConfig.js';
 import { ftpBusy, isTooMany, listJobFiles, platesFromThreeMf, readJobFile, renameJobFile, thumbFromThreeMf, uploadJobFile, type JobFilament } from '../bambuJobFile.js';
-import { allTrays, mapFilaments, trayKey, trayLabel, type Mapping } from './hubLogic.js';
+import { allTrays, mapFilaments, trayKey, trayLabel, wrongMaterials, type Mapping } from './hubLogic.js';
 import { getHubConfig } from './core.js';
 import { haAvailable, haSetNumber, haStates } from './ha.js';
 import { resolveAms } from '../../src/utils/amsEntities.js';
@@ -260,7 +260,7 @@ function enoughFor(it: QueueItem, m: Mapping): EnoughInfo[] {
   }
 }
 
-export type QueueView = QueueItem & { mapping: string[]; missing: string[]; slots: SlotChoice[]; enough: EnoughInfo[]; setup?: SetupInfo; time?: TimeInfo };
+export type QueueView = QueueItem & { mapping: string[]; missing: string[]; wrong: string[]; slots: SlotChoice[]; enough: EnoughInfo[]; setup?: SetupInfo; time?: TimeInfo };
 
 export function queueList(): QueueView[] {
   const items = load();
@@ -287,7 +287,7 @@ export function queueList(): QueueView[] {
         time.endAt = clock;
       }
     } else chain = false;
-    return { ...it, mapping: m.lines, missing: m.missing, slots: slotChoices(it, m), enough: enoughFor(it, m), setup, time };
+    return { ...it, mapping: m.lines, missing: m.missing, wrong: wrongMaterials(it.filaments, m.chosen), slots: slotChoices(it, m), enough: enoughFor(it, m), setup, time };
   });
 }
 

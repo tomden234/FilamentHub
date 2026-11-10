@@ -185,6 +185,17 @@ export function mapFilaments(filaments: { id: number; type: string; colorHex: st
   return { amsMapping, amsMapping2, lines, missing, chosen };
 }
 
+/** 1.286: Datei ist für ein Material gesliced, der gewählte Platz hat aber ein anderes (z. B. PETG gesliced, PLA gewählt) */
+export function wrongMaterials(filaments: { id: number; type: string }[], chosen: Mapping['chosen']): string[] {
+  const out: string[] = [];
+  for (const f of filaments) {
+    const c = chosen[f.id];
+    if (!c || !f.type || !c.type) continue;
+    if (baseMaterial(c.type) !== baseMaterial(f.type)) out.push(`${f.type} gesliced, aber ${c.type} gewählt (${c.label})`);
+  }
+  return out;
+}
+
 /** Fehlt ein Material der Datei komplett im AMS? (Material-Wächter) */
 export function missingMaterials(filaments: { type: string }[], trays: AmsTray[]): string[] {
   const have = new Set(trays.map(t => baseMaterial(t.type)));

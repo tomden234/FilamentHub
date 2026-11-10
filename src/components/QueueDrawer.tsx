@@ -491,6 +491,14 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                     ))}
                   </div>
                 )}
+                {it.wrong && it.wrong.length > 0 && (
+                  <div className="mt-1.5 rounded-xl border border-rose-500/50 bg-rose-500/10 px-2.5 py-1.5 text-[11px] text-rose-400" role="alert">
+                    <div className="font-bold">Falsches Material</div>
+                    {it.wrong.map(w => (
+                      <div key={w}>{w}</div>
+                    ))}
+                  </div>
+                )}
                 {it.missing.length > 0 && <div className="text-[10px] text-amber-400 mt-1.5">Im AMS fehlt: {it.missing.join(', ')}</div>}
                 {it.enough && it.enough.some(e => e.tempNote) && (
                   <div className="mt-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-400" role="alert">

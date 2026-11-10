@@ -98,6 +98,11 @@ export const PiQueueCard: React.FC = () => {
                   <div key={l}>{l}</div>
                 ))}
                 {it.missing.length > 0 && <div className="text-rose-400 font-bold">Fehlt im AMS: {it.missing.join(', ')}</div>}
+                {it.wrong?.map(w => (
+                  <div key={w} className="text-rose-400 font-bold">
+                    ⚠️ {w}
+                  </div>
+                ))}
               </div>
             </div>
           ))}

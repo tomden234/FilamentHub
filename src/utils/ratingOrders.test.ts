@@ -47,3 +47,13 @@ describe('Bewertungs-Ansicht', () => {
     expect(unrated(l).map(x => x.h)).toEqual(['d']);
   });
 });
+
+import { wrongMaterials } from '../../server/hub/hubLogic';
+describe('Falsches Material in der Warteschlange', () => {
+  it('meldet PETG gesliced, aber PLA gewählt', () => {
+    const chosen = { 1: { key: '0:1', label: 'AMS 1 Slot 2', type: 'PLA', colorHex: '#FFFFFF', auto: false } };
+    expect(wrongMaterials([{ id: 1, type: 'PETG' }], chosen)).toEqual(['PETG gesliced, aber PLA gewählt (AMS 1 Slot 2)']);
+    expect(wrongMaterials([{ id: 1, type: 'PLA' }], chosen)).toEqual([]);
+    expect(wrongMaterials([{ id: 2, type: 'PETG' }], chosen)).toEqual([]);
+  });
+});

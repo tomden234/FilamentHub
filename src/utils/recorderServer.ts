@@ -407,6 +407,8 @@ export interface PiQueueItem {
   filaments: { id: number; type: string; colorHex: string; grams: number }[];
   mapping: string[];
   missing: string[];
+  /** 1.286: Material der Datei passt nicht zum gewählten Platz */
+  wrong?: string[];
   addedAt: number;
   thumb?: boolean;
   /** 1.239: je Filament der Datei: Gramm, gewählter Platz und alle möglichen Plätze */

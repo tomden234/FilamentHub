@@ -3908,5 +3908,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.286',
+    label: '1.286 (Falsches Material rot in der Warteschlange)',
+    releaseDate: '10.11.2026',
+    description:
+      'Warteschlange zeigt rot „Falsches Material“, wenn die Datei für ein anderes Material gesliced ist als der gewählte Platz (z. B. PETG gesliced, PLA gewählt), mit kurzem Hinweis und Platz. Start bleibt möglich. Pi-Add-on 1.3.41.',
+    features: ['🔴 Rote Warnung bei falschem Material', '🥧 Pi-Add-on 1.3.41 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
