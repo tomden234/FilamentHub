@@ -4073,5 +4073,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.301',
+    label: '1.301 (Weniger FTP-Last, Drucker hängt seltener)',
+    releaseDate: '10.11.2026',
+    description:
+      'Der FTP-Dienst des Druckers hängt, wenn zu viele verschlüsselte Verbindungen zusammenkommen; dann half nur Aus und Ein. Jede Ordnerliste beim Suchen neuer Dateien ist so eine Verbindung. Der Pi fragt jetzt im Normalfall nur den einen Ordner ab, in dem die Dateien liegen (alle Ordner nur alle 10 Minuten), und sucht etwas seltener: 25 s, ohne Neues 45 s, bei offener App 12 s. Das sind grob 3 bis 4 Mal weniger Verbindungen. Neue Dateien erscheinen weiterhin nach wenigen Sekunden. Pi-Add-on 1.3.53.',
+    features: ['🔌 Nur noch ein Ordner pro Suche statt vier bis sechs', '⏱️ Etwas seltenere Suche (25 s / 45 s, offene App 12 s)', '🥧 Pi-Add-on 1.3.53 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -598,12 +598,12 @@ export async function autoScan(force = false): Promise<ScanResult> {
 export function scanIntervalMs(printing: boolean, quietRounds: number): number {
   if (printing) return 60_000;
   // 1.255: ohne Neues höchstens 30 s warten (vorher bis 60 s): neue Datei erscheint schneller, 2.880 Anmeldungen/Tag statt 28.800
-  return quietRounds >= 3 ? 30_000 : 20_000;
+  return quietRounds >= 3 ? 45_000 : 25_000; // 1.301: etwas seltener (weniger FTP-Anmeldungen am Drucker)
 }
 
 /** 1.239: Solange eine App die Warteschlange offen hat (fragt sie alle 2 s ab), sucht der Pi alle 8 s: „Senden“ in Bambu Studio erscheint so nach wenigen Sekunden */
 const WATCH_MS = 15_000;
-const FAST_SCAN_MS = 8_000;
+const FAST_SCAN_MS = 12_000;
 let watchUntil = 0;
 export const queueWatch = (now = Date.now()): void => {
   watchUntil = now + WATCH_MS;

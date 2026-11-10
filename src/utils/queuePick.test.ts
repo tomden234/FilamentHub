@@ -23,7 +23,7 @@ describe('1.239 Wahl pro Filament', () => {
     expect(m.chosen[1].auto).toBe(true);
   });
   it('Suche ist schneller solange die App zuschaut', () => {
-    expect(scanDelayMs(false, 5, true)).toBe(8000);
+    expect(scanDelayMs(false, 5, true)).toBe(12000);
     expect(scanDelayMs(false, 5, false)).toBeGreaterThanOrEqual(20000);
   });
 });

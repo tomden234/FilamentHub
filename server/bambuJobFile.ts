@@ -25,6 +25,9 @@ interface JobWeights {
 const DIRS = ['/', '/cache', '/sdcard', '/sdcard/cache'];
 const SKIP_DIRS = /^(timelapse|ipcam|logs?|recorder|image|firmware|model|system|\.)/i;
 let lastDirs = '';
+/** 1.301: Ordner mit .3mf-Dateien (für die schnelle Suche) und Zeitpunkt der letzten Suche in allen Ordnern */
+let hotDirs: string[] = [];
+let lastFullList = 0;
 let dirCache: { at: number; dirs: string[] } | null = null;
 
 const norm = (s: string) =>
@@ -353,7 +356,11 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
       lastDirs = dirs.join('|');
       console.log(`[Warteschlange] Suche in: ${lastDirs}`);
     }
-    for (const dir of dirs) {
+    // 1.301: Jede Ordnerliste ist eine eigene verschlüsselte Datenverbindung zum Drucker, und zu viele davon lassen seinen FTP-Dienst hängen
+    // (dann hilft nur Aus/Ein). Deshalb nur die Ordner abfragen, in denen zuletzt .3mf-Dateien lagen; alle Ordner nur alle 10 Minuten.
+    const quick = hotDirs.length > 0 && Date.now() - lastFullList < 10 * 60_000;
+    const found = new Set<string>();
+    for (const dir of quick ? hotDirs : dirs) {
       let list;
       try {
         list = await client.list(dir);
@@ -364,8 +371,13 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
         if (!f.isFile || !/\.3mf$/i.test(f.name)) continue;
         const p = (dir === '/' ? '' : dir) + '/' + f.name;
         if (out.some(x => x.path === p)) continue;
+        found.add(dir);
         out.push({ path: p, name: f.name, size: f.size, time: f.modifiedAt ? f.modifiedAt.getTime() : 0 });
       }
+    }
+    if (!quick) {
+      lastFullList = Date.now();
+      hotDirs = Array.from(found);
     }
     return out.sort((a, b) => b.time - a.time).slice(0, 100);
   });
