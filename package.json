@@ -49,7 +49,7 @@
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "main": "electron/main.cjs",
   "description": "FilamentHub: Filament-Verwaltung und Bambu-Drucker-Steuerung",
