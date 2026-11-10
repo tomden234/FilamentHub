@@ -58,18 +58,46 @@ function parseSliceInfo(xml: string, plate = 1): { plate: number; filaments: Job
 }
 
 /** 1.272: Alle Platten einer .3mf mit Filament (für „alle Platten einreihen“), nach Plattennummer sortiert */
-export function platesFromThreeMf(data: Uint8Array): { plate: number; filaments: JobFilament[]; predSec?: number }[] {
+/** 1.299: Nummern der Platten, für die wirklich ein G-Code in der .3mf liegt (Metadata/plate_N.gcode). Es wird nichts entpackt, nur die Namen gelesen. */
+export function gcodePlateNumbers(data: Uint8Array): number[] {
+  const nums: number[] = [];
+  unzipSync(data, {
+    filter: f => {
+      const m = /(?:^|\/)plate_(\d+)\.gcode$/i.exec(f.name);
+      if (m) nums.push(Number(m[1]));
+      return false;
+    }
+  });
+  return Array.from(new Set(nums)).sort((a, b) => a - b);
+}
+
+/**
+ * 1.272: Alle Platten einer .3mf mit Filament (für „alle Platten einreihen“), nach Plattennummer sortiert.
+ * 1.299: Die Plattennummer ist die des G-Codes in der Datei. Bambu Studio nummeriert beim Senden einzelner oder ausgewählter Platten
+ * den G-Code neu (z. B. nur plate_1.gcode, aber slice_info sagt 2). Vorher wurde dann die falsche Platte gestartet.
+ */
+export function platesFromThreeMf(data: Uint8Array): { plate: number; filaments: JobFilament[]; predSec?: number; sliceIndex: number }[] {
   const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') && f.originalSize <= 4_000_000 });
   const key = Object.keys(files).find(k => k.toLowerCase().endsWith('slice_info.config'));
   if (!key) return [];
   const xml = strFromU8(files[key]);
   const idxs = (xml.match(/<plate>[\s\S]*?<\/plate>/g) || []).map(b => Number((b.match(/key="index"\s+value="(\d+)"/) || [])[1]) || 0).filter(n => n > 0);
-  const out: { plate: number; filaments: JobFilament[]; predSec?: number }[] = [];
+  const found: { plate: number; filaments: JobFilament[]; predSec?: number; sliceIndex: number }[] = [];
   for (const i of Array.from(new Set(idxs)).sort((a, b) => a - b)) {
     const r = parseSliceInfo(xml, i);
-    if (r.plate === i && r.filaments.length) out.push(r);
+    if (r.plate === i && r.filaments.length) found.push({ ...r, sliceIndex: i });
   }
-  return out;
+  let gnums: number[] = [];
+  try {
+    gnums = gcodePlateNumbers(data);
+  } catch {
+    /* ohne Prüfung */
+  }
+  if (!gnums.length) return found;
+  // Gleich viele G-Codes wie Platten in slice_info: der Reihe nach zuordnen (deckt auch die Neu-Nummerierung ab)
+  if (gnums.length === found.length) return found.map((f, i) => ({ ...f, plate: gnums[i] }));
+  // Sonst nur Platten behalten, für die es einen G-Code gibt
+  return found.filter(f => gnums.includes(f.plate));
 }
 
 /** Titelbild der Platte (Metadata/plate_N.png) aus einer .3mf */

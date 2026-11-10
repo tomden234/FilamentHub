@@ -591,7 +591,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
           )}
         </div>
 
-        <div className="p-3 pb-24 border-t space-y-2" style={{ borderColor: 'var(--app-border)' }}>
+        <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t space-y-2 shrink-0" style={{ borderColor: 'var(--app-border)' }}>
           <button
             disabled={busy || items.length === 0}
             onClick={() => void act('start')}

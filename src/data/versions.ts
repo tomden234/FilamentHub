@@ -4051,5 +4051,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.299',
+    label: '1.299 (Richtige Platte merken, Knöpfe ganz unten)',
+    releaseDate: '10.11.2026',
+    description:
+      'Die Warteschlange nimmt als Plattennummer jetzt die Nummer des G-Codes, der wirklich in der Datei liegt (Metadata/plate_N.gcode), nicht mehr blind die aus der Plattenliste. Bambu Studio nummeriert beim Senden einzelner oder ausgewählter Platten neu; vorher konnte dadurch die falsche Platte gestartet werden. Platten ohne G-Code werden nicht vorgemerkt. Die Beschriftung „Platte 1/3“ zählt immer ab 1. Im Warteschlangen-Fach sitzen „Nächsten starten“ und „Datei vom Drucker vormerken“ jetzt ganz unten am Rand, ohne die große Lücke darunter. Pi-Add-on 1.3.51.',
+    features: ['🎯 Plattennummer aus dem echten G-Code der Datei', '🚫 Platten ohne G-Code werden nicht vorgemerkt', '⬇️ Knöpfe im Fach ganz unten', '🥧 Pi-Add-on 1.3.51 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

@@ -377,7 +377,17 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
     /* nur Platte 1 */
   }
   if (plates.length <= 1) {
-    const it = makeItem(r, filePath, r, r.thumb, fkey, base);
+    // 1.299: Echte Plattennummer des G-Codes nehmen (nicht blind Platte 1)
+    const p0 = plates[0] || r;
+    let t0: Uint8Array | null = r.thumb;
+    if (plates[0] && plates[0].plate !== r.plate) {
+      try {
+        t0 = thumbFromThreeMf(r.bytes, plates[0].plate) || r.thumb;
+      } catch {
+        /* altes Bild */
+      }
+    }
+    const it = makeItem(r, filePath, p0, t0, fkey, base);
     load().push(it);
     save();
     void showLeds(0);
@@ -385,14 +395,14 @@ export async function queueAddAll(filePath: string, fkey?: string, displayName?:
   }
   const pid = crypto.randomBytes(4).toString('hex');
   const out: QueueItem[] = [];
-  for (const p of plates) {
+  for (const [n, p] of plates.entries()) {
     let thumb: Uint8Array | null = null;
     try {
       thumb = thumbFromThreeMf(r.bytes, p.plate);
     } catch {
       /* ohne Bild */
     }
-    out.push(makeItem(r, filePath, p, thumb, fkey, `${base} (Platte ${p.plate}/${plates.length})`, { id: pid, total: plates.length, part: p.plate }));
+    out.push(makeItem(r, filePath, p, thumb, fkey, `${base} (Platte ${n + 1}/${plates.length})`, { id: pid, total: plates.length, part: n + 1 }));
   }
   load().push(...out);
   save();
