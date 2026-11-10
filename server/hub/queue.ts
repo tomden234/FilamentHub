@@ -522,6 +522,15 @@ export async function autoScan(force = false): Promise<ScanResult> {
         const all = await queueAddAll(f.path, fileKey(f));
         for (const id of olds) queueRemove(id);
         const it = all[0];
+        // 1.294: Datei sofort auf einen eigenen Namen umbenennen. Bambu Studio nennt Dateien gleich (z. B. „Untitled“) und überschreibt sonst
+        // die vorige Datei auf dem Drucker: dann wären die alten Karten ungültig und die Warteschlange könnte sie nicht mehr halten.
+        try {
+          const np = await renameJobFile(lan.ip, lan.code, f.path, `fh_${it.id}.gcode.3mf`);
+          for (const o of load()) if (o.path === f.path) o.path = np;
+          save();
+        } catch (e) {
+          console.warn('[Warteschlange] Umbenennen nach dem Vormerken fehlgeschlagen (Datei bleibt unter altem Namen):', (e as Error)?.message || e);
+        }
         console.log(`[Warteschlange] Datei lesen + vormerken: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
         added += all.length;
         const short = enoughLines(enoughFor(it, currentMapping(it)));

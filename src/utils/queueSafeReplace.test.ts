@@ -21,7 +21,8 @@ vi.mock('../../server/bambuJobFile', async () => {
       if (readFails) throw new Error('421 Too many connections');
       return { filaments: fil, bytes: new Uint8Array(10), thumb: null, setup: undefined };
     },
-    platesFromThreeMf: () => []
+    platesFromThreeMf: () => [],
+    renameJobFile: async (_ip: string, _code: string, _from: string, name: string) => `/${name}`
   };
 });
 

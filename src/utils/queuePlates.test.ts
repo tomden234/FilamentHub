@@ -76,8 +76,22 @@ describe('Warteschlange: Platten unterscheiden', () => {
     await q.autoScan(true);
     const items = q.queueList();
     expect(items).toHaveLength(5);
-    const b = items.find(i => i.path === '/Teil_B.gcode.3mf')!;
+    const b = items.find(i => i.name === 'Teil_B')!;
     expect(b.plate).toBe(2);
     expect(b.filaments[0].grams).toBe(7);
+  });
+  it('Gleicher Name noch einmal gesendet: alte Karten bleiben, neue kommen dazu (Datei wurde sofort umbenannt)', async () => {
+    const before = q.queueList();
+    expect(before.filter(i => i.name.startsWith('Projekt')).every(i => /^\/fh_[0-9a-f]{12}\.gcode\.3mf$/.test(i.path))).toBe(true);
+    expect(remote['/Projekt.gcode.3mf']).toBeUndefined();
+    // Bambu Studio sendet ein anderes Projekt mit demselben Namen
+    remote['/Projekt.gcode.3mf'] = threeMf([[1, 99, 'ABS', '#ABCDEF']]);
+    list = [...list.filter(f => f.path !== '/Projekt.gcode.3mf'), { path: '/Projekt.gcode.3mf', name: 'Projekt.gcode.3mf', size: 777, time: now + 60_000 }];
+    const r = await q.autoScan(true);
+    expect(r.added).toBe(1);
+    const after = q.queueList();
+    expect(after).toHaveLength(before.length + 1);
+    expect(before.every(b => after.some(a => a.id === b.id))).toBe(true);
+    expect(after.filter(i => i.filaments[0].grams === 99)).toHaveLength(1);
   });
 });

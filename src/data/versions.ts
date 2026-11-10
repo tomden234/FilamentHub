@@ -3996,5 +3996,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.294',
+    label: '1.294 (Gleiche Dateinamen bleiben getrennt)',
+    releaseDate: '10.11.2026',
+    description:
+      'Bambu Studio nennt Projekte oft gleich (z. B. „Untitled“) und überschreibt dann die vorige Datei auf dem Drucker. Dadurch waren die alten Karten ungültig oder wurden ersetzt. Jetzt benennt der Pi jede neue Datei sofort auf einen eigenen Namen um (fh_…), gleich nachdem sie in die Warteschlange kam. Ein später gesendetes Projekt mit demselben Namen kommt als neue Karten dazu, die alten bleiben. Pi-Add-on 1.3.47.',
+    features: ['🗂️ Gleicher Name: alte Karten bleiben, neue kommen dazu', '✏️ Datei wird sofort umbenannt (eigener Name)', '🥧 Pi-Add-on 1.3.47 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
