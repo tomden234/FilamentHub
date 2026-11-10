@@ -3930,5 +3930,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.288',
+    label: '1.288 (Log-Zähler, kein Scrollbalken, Warteschlange bleibt)',
+    releaseDate: '10.11.2026',
+    description:
+      'Drucker-Reiter: Die Zahl zählt jetzt nur neue wichtige Meldungen (Warnung/Fehler) hoch und springt beim Öffnen auf 0, statt immer 200 zu zeigen. Scrollbalken ausgeblendet (Maus/Touchpad/Finger gehen weiter), damit rechts kein Rand mehr bleibt. Warteschlange und Reiter verschwinden nicht mehr bei einem einzelnen Aussetzer vom Pi: die letzte Liste bleibt stehen, erst nach 10 Fehlversuchen in Folge gilt „kein Pi“.',
+    features: ['🔔 Zähler nur für neue wichtige Logs', '↔️ Kein Scrollbalken-Rand', '📋 Warteschlange bleibt bei Aussetzern'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

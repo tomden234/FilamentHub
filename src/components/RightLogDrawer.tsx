@@ -62,7 +62,9 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<LogCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
-  const [hasNewEntry, setHasNewEntry] = useState<boolean>(false);
+  // 1.288: Zähler zeigt nur neue wichtige Meldungen (Warnung/Fehler) seit dem letzten Öffnen, nicht alle 200 Logs
+  const [unread, setUnread] = useState<number>(0);
+  const hasNewEntry = unread > 0;
   const logListRef = useRef<HTMLDivElement>(null);
 
   // Automatischer Druck-Abschluss / Aktiver Druckauftrag zum Spulen-Gewichtsabzug
@@ -121,8 +123,8 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
       const custom = e as CustomEvent<SystemLogEntry>;
       if (custom.detail) {
         setLogs(prev => [custom.detail, ...prev].slice(0, 200));
-        if (!isOpen) {
-          setHasNewEntry(true);
+        if (!isOpen && (custom.detail.level === 'warn' || custom.detail.level === 'error')) {
+          setUnread(n => n + 1);
         }
       }
     };
@@ -143,7 +145,7 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
   const handleToggle = () => {
     setIsOpen(prev => {
       const next = !prev;
-      if (next) setHasNewEntry(false);
+      if (next) setUnread(0);
       return next;
     });
   };
@@ -234,16 +236,19 @@ export const RightLogDrawer: React.FC<RightLogDrawerProps> = ({
             >
               {logsOnly ? 'LOGS' : 'DRUCKER'}
             </span>
-            <span
-              className="text-[10px] font-mono font-bold px-1 py-0.5 rounded border"
-              style={{
-                backgroundColor: 'var(--app-card-sub)',
-                borderColor: 'var(--app-border)',
-                color: 'var(--app-accent-text)'
-              }}
-            >
-              {logs.length}
-            </span>
+            {unread > 0 && (
+              <span
+                className="text-[10px] font-mono font-bold px-1 py-0.5 rounded border"
+                style={{
+                  backgroundColor: 'var(--app-card-sub)',
+                  borderColor: 'var(--app-accent)',
+                  color: 'var(--app-accent-text)'
+                }}
+                aria-label={`${unread} neue wichtige Meldungen`}
+              >
+                {unread > 99 ? '99+' : unread}
+              </span>
+            )}
           </div>
 
           {/* Icon unten (am Handy statt dem senkrechten Text) */}

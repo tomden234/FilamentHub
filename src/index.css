@@ -272,19 +272,14 @@ progress {
   animation: pulse-border 2.2s infinite;
 }
 
+/* 1.288: Scrollleisten ausgeblendet (gescrollt wird mit Maus/Touchpad/Finger), kein Rand mehr rechts */
+* {
+  scrollbar-width: none;
+}
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--app-bg);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--app-border);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--app-accent);
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Helle Themes: Farbtöne, die für dunkle Flächen gedacht waren (…-300/-400), werden dunkler,
