@@ -1,3 +1,4 @@
+import { PlateIcon } from './PlateIcon';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, ExternalLink, Sparkles, Copy, GripVertical, ListOrdered, Loader2, Play, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react';
@@ -480,7 +481,7 @@ export const QueueDrawer: React.FC<{ items: PiQueueItem[] | null; setItems: (i: 
                 )}
                 {it.setup && (it.setup.bed || it.setup.nozzles.length > 0) && (
                   <div className="flex flex-wrap items-center gap-1 mt-1.5 text-[10px]" style={{ color: 'var(--app-text-muted)' }}>
-                    {it.setup.bed && <span className="px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-card)' }}>🟦 {it.setup.bed}</span>}
+                    {it.setup.bed && <span className="px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-card)' }}><PlateIcon label={it.setup.bed} /> {it.setup.bed}</span>}
                     {it.setup.nozzles.length > 0 && (
                       <span className="px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--app-card)' }}>
                         🔩 {(it.setup.nozzles.every(n => n === it.setup!.nozzles[0]) ? [it.setup.nozzles[0]] : it.setup.nozzles).map(n => String(n).replace('.', ',')).join(' / ')} mm

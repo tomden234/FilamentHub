@@ -92,7 +92,8 @@ export interface JobSetup {
 
 const BEDS: [RegExp, string][] = [
   [/textured pei/i, 'Texturierte PEI'],
-  [/smooth pei|cool plate \(supertack\)|supertack/i, 'Glatte PEI'],
+  [/super\s?tack/i, 'Cool Plate SuperTack'],
+  [/smooth pei/i, 'Glatte PEI'],
   [/engineering/i, 'Engineering'],
   [/high temp/i, 'Hochtemperatur'],
   [/cool plate/i, 'Cool Plate']

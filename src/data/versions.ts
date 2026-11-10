@@ -3941,5 +3941,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.289',
+    label: '1.289 (Platten-Symbol in der Warteschlange)',
+    releaseDate: '10.11.2026',
+    description:
+      'Statt dem blauen Quadrat zeigt die Warteschlange jetzt ein kleines Bild der Druckplatte: Texturierte PEI goldfarben mit feiner Körnung (wie die Bambu-Platte), Glatte PEI hell champagner, Cool Plate hellblau, Engineering grau, Hochtemperatur blaugrau. Namen richtiger erkannt: „Cool Plate (SuperTack)“ heißt jetzt „Cool Plate SuperTack“ und nicht mehr „Glatte PEI“. Pi-Add-on 1.3.42.',
+    features: ['🖼️ Platten-Symbol statt 🟦', '🟡 Texturierte PEI goldfarben mit Körnung', '🧊 Cool Plate SuperTack richtig erkannt', '🥧 Pi-Add-on 1.3.42 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

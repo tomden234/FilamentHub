@@ -14,6 +14,8 @@ describe('Platte & Düse aus der .3mf', () => {
   it('unbekannte Platte bleibt lesbar', () => {
     expect(bedLabel('Foo Plate')).toBe('Foo Plate');
     expect(bedLabel('Smooth PEI Plate')).toBe('Glatte PEI');
+    expect(bedLabel('Cool Plate (SuperTack)')).toBe('Cool Plate SuperTack');
+    expect(bedLabel('Supertack Plate')).toBe('Cool Plate SuperTack');
   });
   it('findet project_settings.config im Zip', () => {
     const z = zipSync({ 'Metadata/project_settings.config': strToU8('{"curr_bed_type":"Engineering Plate","nozzle_diameter":["0.4"]}') });
