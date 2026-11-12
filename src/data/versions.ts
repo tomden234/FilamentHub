@@ -4084,5 +4084,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.302',
+    label: '1.302 (Druckplatte je Platte, gleicher Name sicher neu)',
+    releaseDate: '12.11.2026',
+    description:
+      'Die Druckplatte (Cool Plate, Texturierte PEI …) liest der Pi jetzt für jede Platte einzeln aus der Datei (model_settings.config). Vorher bekamen alle Karten dieselbe, die allgemeine Einstellung, und der Hinweis „Vor dem Start wechseln“ stimmte nicht. Außerdem: Hat der Pi eine Datei auf einen eigenen Namen umbenannt und Bambu Studio sendet danach wieder denselben Namen, zählt das jetzt immer als neue Datei, auch wenn Größe und Minute gleich sind (vorher wurde sie dann als schon bekannt übersehen). Pi-Add-on 1.3.54.',
+    features: ['🧩 Druckplatte je Platte aus der Datei', '🔁 Gleicher Name noch einmal gesendet: immer neu erkannt', '🥧 Pi-Add-on 1.3.54 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

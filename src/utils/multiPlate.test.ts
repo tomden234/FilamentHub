@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { zipSync, strToU8 } from 'fflate';
-import { platesFromThreeMf } from '../../server/bambuJobFile';
+import { bedsFromThreeMf, platesFromThreeMf } from '../../server/bambuJobFile';
 
 const plate = (i: number, g: number, t = 'PLA') =>
   `<plate><metadata key="index" value="${i}"/><metadata key="prediction" value="${i * 1000}"/>${g > 0 ? `<filament id="1" type="${t}" color="#FF0000" used_g="${g}"/>` : ''}</plate>`;
@@ -29,5 +29,11 @@ describe('Mehrere Platten einer Datei', () => {
     expect(platesFromThreeMf(withG(plate(2, 9) + plate(3, 4), [2, 3])).map(p => p.plate)).toEqual([2, 3]);
     // drei Platten in slice_info, G-Code nur für 1 und 3: Platte 2 fällt weg
     expect(platesFromThreeMf(withG(plate(1, 1) + plate(2, 2) + plate(3, 3), [1, 3])).map(p => p.plate)).toEqual([1, 3]);
+  });
+  it('1.302: Druckplatte je Platte aus model_settings.config', () => {
+    const pl = (id: number, bed: string) => `<plate><metadata key="plater_id" value="${id}"/><metadata key="bed_type" value="${bed}"/></plate>`;
+    const z = zipSync({ 'Metadata/model_settings.config': strToU8(`<config>${pl(1, 'Textured PEI Plate')}${pl(2, 'Cool Plate')}${pl(3, '')}${pl(4, 'Engineering Plate')}</config>`) });
+    expect(bedsFromThreeMf(z)).toEqual({ 1: 'Texturierte PEI', 2: 'Cool Plate', 4: 'Engineering' });
+    expect(bedsFromThreeMf(zipSync({ 'a.txt': strToU8('x') }))).toEqual({});
   });
 });

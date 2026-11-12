@@ -159,6 +159,25 @@ export function setupFromThreeMf(data: Uint8Array): JobSetup | null {
   return r.bed || r.nozzles.length || r.temps.length ? r : null;
 }
 
+/**
+ * 1.302: Druckplatte (Cool Plate, Texturierte PEI …) je Platte. Bambu Studio speichert sie pro Platte in Metadata/model_settings.config
+ * (bed_type); project_settings.config kennt nur die allgemeine Einstellung. Vorher bekamen alle Platten dieselbe Druckplatte.
+ * Schlüssel = Plattennummer in der Datei (plater_id). Leer/„Standard“ = keine eigene Wahl (dann gilt die allgemeine).
+ */
+export function bedsFromThreeMf(data: Uint8Array): Record<number, string> {
+  const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('model_settings.config') && f.originalSize <= 8_000_000 });
+  const key = Object.keys(files).find(k => k.toLowerCase().endsWith('model_settings.config'));
+  const out: Record<number, string> = {};
+  if (!key) return out;
+  for (const blk of strFromU8(files[key]).match(/<plate>[\s\S]*?<\/plate>/g) || []) {
+    const id = Number((blk.match(/key="plater_id"\s+value="(\d+)"/) || [])[1]);
+    const raw = (blk.match(/key="bed_type"\s+value="([^"]*)"/) || [])[1] || '';
+    const hit = BEDS.find(([re]) => re.test(raw));
+    if (id > 0 && hit) out[id] = hit[1];
+  }
+  return out;
+}
+
 /** Aus den Bytes einer .3mf das Gewicht lesen */
 export function weightsFromThreeMf(data: Uint8Array, plate = 1): { plate: number; filaments: JobFilament[]; predSec?: number } | null {
   const files = unzipSync(data, { filter: f => f.name.toLowerCase().endsWith('slice_info.config') && f.originalSize <= 4_000_000 }); // 1.233
@@ -384,7 +403,7 @@ export async function listJobFiles(ip: string, code: string): Promise<{ path: st
 }
 
 /** Filament je Platte aus einer Datei auf dem Drucker */
-export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; predSec?: number; thumb: Uint8Array | null; setup: JobSetup | null; bytes: Uint8Array } | null> {
+export async function readJobFile(ip: string, code: string, path: string, plate = 1): Promise<{ plate: number; filaments: JobFilament[]; predSec?: number; thumb: Uint8Array | null; setup: JobSetup | null; beds: Record<number, string>; bytes: Uint8Array } | null> {
   return withFtp(ip, code, async client => {
     const chunks: Buffer[] = [];
     let got = 0;
@@ -412,7 +431,13 @@ export async function readJobFile(ip: string, code: string, path: string, plate 
     } catch {
       /* ohne Angabe */
     }
-    return { ...w, thumb, setup, bytes };
+    let beds: Record<number, string> = {};
+    try {
+      beds = bedsFromThreeMf(bytes);
+    } catch {
+      /* allgemeine Druckplatte */
+    }
+    return { ...w, thumb, setup, beds, bytes };
   });
 }
 

@@ -66,4 +66,16 @@ describe('Warteschlange: Ersetzen ohne Verlust', () => {
     expect(list.filter(x => x.id === 'aaaaaaaaaaaa')).toHaveLength(0);
     expect(list.some(x => x.name === 'B')).toBe(true);
   });
+  it('1.302: selbst umbenannter Pfad taucht mit gleicher Größe und Zeit wieder auf: zählt als neu', async () => {
+    const same = { path: '/c.gcode.3mf', name: 'c.gcode.3mf', size: 77, time: now };
+    files = [same];
+    readFails = false;
+    const first = await q.autoScan(true);
+    expect(first.added).toBe(1);
+    files = []; // umbenannt (fh_…)
+    await q.autoScan(true);
+    files = [same]; // gleiche Datei noch einmal gesendet, gleiche Größe und Minute
+    const again = await q.autoScan(true);
+    expect(again.added).toBe(1);
+  });
 });

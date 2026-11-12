@@ -320,7 +320,7 @@ export async function printerFiles() {
 
 type JobRead = NonNullable<Awaited<ReturnType<typeof readJobFile>>>;
 
-function makeItem(r: JobRead, filePath: string, plate: { plate: number; filaments: JobFilament[]; predSec?: number }, thumb: Uint8Array | null, fkey: string | undefined, name: string, project?: QueueItem['project']): QueueItem {
+function makeItem(r: JobRead, filePath: string, plate: { plate: number; filaments: JobFilament[]; predSec?: number; sliceIndex?: number }, thumb: Uint8Array | null, fkey: string | undefined, name: string, project?: QueueItem['project']): QueueItem {
   const id = crypto.randomBytes(6).toString('hex');
   return {
     id,
@@ -331,7 +331,7 @@ function makeItem(r: JobRead, filePath: string, plate: { plate: number; filament
     plate: plate.plate,
     filaments: plate.filaments,
     addedAt: Date.now(),
-    bed: r.setup?.bed || undefined,
+    bed: r.beds?.[plate.sliceIndex ?? plate.plate] || r.setup?.bed || undefined, // 1.302: Druckplatte je Platte
     nozzles: r.setup?.nozzles?.length ? r.setup.nozzles : undefined,
     temps: r.setup?.temps?.length ? r.setup.temps : undefined,
     predSec: plate.predSec,
@@ -475,6 +475,8 @@ const baseOf = (n: string) => n.replace(/\.gcode\.3mf$|\.3mf$/i, '').toLowerCase
  */
 let scanning = false;
 let lastPaths: Set<string> | null = null;
+/** 1.302: Pfade, die wir selbst umbenannt haben. Taucht so ein Pfad wieder auf, ist es sicher eine neu gesendete Datei (auch bei gleicher Größe und Minute). */
+const renamedAway = new Set<string>();
 let seenPaths: Set<string> | null = null;
 /** Start läuft (Taster/App) */
 let starting = false;
@@ -519,16 +521,17 @@ export async function autoScan(force = false): Promise<ScanResult> {
     const gone = lastPaths ? new Set([...(seenPaths || [])].filter(p => !lastPaths!.has(p))) : new Set<string>();
     lastPaths = nowPaths;
     seenPaths = new Set([...(seenPaths || []), ...nowPaths]);
-    const fresh = files.filter(f => (!known.has(fileKey(f)) || (gone.has(f.path) && Math.abs(Date.now() - f.time) < 15 * 60_000)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name) && !/^fh_[0-9a-f]{12}\.gcode\.3mf$/i.test(f.name)); // fh_… = von uns umbenannt
+    const fresh = files.filter(f => (!known.has(fileKey(f)) || (gone.has(f.path) && Math.abs(Date.now() - f.time) < 15 * 60_000) || renamedAway.has(f.path)) && /\.gcode\.3mf$|\.3mf$/i.test(f.name) && !/^fh_[0-9a-f]{12}\.gcode\.3mf$/i.test(f.name)); // fh_… = von uns umbenannt
     if (!fresh.length) return quiet(`Nichts Neues (${files.length} Dateien auf dem Drucker geprüft)`);
     const d: any = st.data || {};
     const printing = ['RUNNING', 'PREPARE', 'PAUSE', 'SLICING'].includes(String(d.gcode_state || ''));
     const nowName = `${d.subtask_name || ''} ${d.gcode_file || ''}`.toLowerCase();
     // Älteste zuerst, damit die Reihenfolge stimmt
     for (const f of fresh.sort((a, b) => a.time - b.time)) {
+      const again = renamedAway.delete(f.path); // 1.302
       known.add(fileKey(f));
       if (printing && nowName.includes(baseOf(f.name))) continue; // wird schon gedruckt
-      if (load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
+      if (!again && load().some(x => x.fkey === fileKey(f))) continue; // genau diese Datei schon vorgemerkt
       // 1.256: dieselbe Datei wurde überschrieben: alten Eintrag ersetzen (Filament kann anders sein).
       // 1.293: Die alten Einträge fallen erst weg, wenn die neue Datei wirklich gelesen wurde. Vorher gingen sie schon beim
       // ersten Fehler (z. B. Drucker belegt, 421) verloren und kamen nie zurück.
@@ -546,6 +549,7 @@ export async function autoScan(force = false): Promise<ScanResult> {
           try {
             const np = await renameJobFile(lan.ip, lan.code, f.path, `fh_${it.id}.gcode.3mf`);
             for (const o of load()) if (mine.has(o.id)) o.path = np;
+            renamedAway.add(f.path);
             save();
             break;
           } catch (e) {
