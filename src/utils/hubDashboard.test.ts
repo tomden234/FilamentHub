@@ -72,14 +72,14 @@ describe('Dashboard „Drucker“', () => {
     expect(svg).not.toContain('id="t1"');
     expect(svg).toContain('id="t2"');
     expect(svg).not.toContain('id="t3"'); // ungültige Farbe = leer
-    expect(svg.split('href="#em"').length - 1).toBe(2); // zwei leere Plätze zeigen das leere AMS
+    expect(svg.split('filter="url(#hl)"').length - 1).toBe(2); // nur gefüllte Plätze bekommen eine Spule, leere zeigen das Grundbild (leeres AMS)
     expect(svg).toContain('data:image/webp;base64,');
     expect(amsSvg(['#FF0000', null, null, null])).toBe(amsSvg(['#FF0000', null, null, null]));
     // Testbild: jede Spule einmal, Foto nur einmal eingebettet, Namen sicher (kein kaputtes XML)
     const sheet = amsTestSheet([{ label: 'Sunlu PLA <Rot> & Co', color: '#ff0000' }, { label: 'ohne Farbe', color: '' }, { label: 'Grün', color: '#00aa00' }]);
     expect(sheet).toContain('2 Spulen');
     expect(sheet).toContain('&lt;Rot&gt; &amp; Co');
-    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(3); // Foto, Schattierung, leeres AMS je einmal
+    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(2); // Foto und Schattierung je einmal
   });
 
   it('Lagerbox nur, wenn der AMS-ESP Feuchte meldet', () => {

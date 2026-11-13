@@ -4183,5 +4183,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.311',
+    label: '1.311 (Leeres AMS sauber)',
+    releaseDate: '13.11.2026',
+    description:
+      'Druckerbild im Dashboard: Grundbild ist jetzt der X2D mit einem leeren AMS (aus deinem Foto, an Deckel, Einzug und Schriftzug ausgerichtet, Display und X2D-Logo bleiben frei). Gefüllte Plätze bekommen ihre Spule in der echten Farbe eingezeichnet, leere Plätze bleiben sauber leer, ohne Reste der alten Spulen. Pi-Add-on 1.3.63.',
+    features: ['📦 Leere Plätze sauber wie im Foto', '🧵 Spulen nur in gefüllten Plätzen', '🥧 Pi-Add-on 1.3.63 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

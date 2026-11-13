@@ -43,6 +43,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.63 (leeres AMS sauber)
+
+- Grundbild ist jetzt der Drucker mit leerem AMS; gefüllte Plätze bekommen ihre Spule eingezeichnet, leere bleiben sauber leer (Deckel und Einzug wie im Foto).
+
 ## Neu in 1.3.62 (Temperaturen im Druckerbild, leere Plätze echt leer)
 
 - Düse 1, Düse 2 und Bett stehen direkt im Druckerbild: Name und Ist-Wert, darunter Soll; −/+ ändern das Soll in 5-°C-Schritten, der Server schickt es an den Drucker. Die Soll-Kacheln in der Mitte sind weg.
