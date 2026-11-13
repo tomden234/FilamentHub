@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DASH_URL, S, TRAY_PREFIX, buildDashboard, findCamera, trayColors, traySensorId } from '../../server/hub/dashboardConfig';
 import { ID } from '../../server/hub/dashboardEditLogic';
 import { BACKGROUND_SVG } from '../../server/hub/dashboardArt';
-import { FRONT_WEBP_BASE64, SHADE_WEBP_BASE64 } from '../../server/hub/dashboardPhoto';
+import { EMPTY_COLS, FRONT_WEBP_BASE64, LOW_WEBP_BASE64, SHADE_WEBP_BASE64 } from '../../server/hub/dashboardPhoto';
 import { amsSvg, amsTestSheet, spoolColor } from '../../server/hub/dashboardAms';
 
 const st = (entity_id: string, state = '1', attributes: Record<string, unknown> = {}) => ({ entity_id, state, attributes });
@@ -72,14 +72,16 @@ describe('Dashboard „Drucker“', () => {
     expect(svg).not.toContain('id="t1"');
     expect(svg).toContain('id="t2"');
     expect(svg).not.toContain('id="t3"'); // ungültige Farbe = leer
-    expect(svg.split('filter="url(#hl)"').length - 1).toBe(2); // nur gefüllte Plätze bekommen eine Spule, leere zeigen das Grundbild (leeres AMS)
+    expect(svg.split('filter="url(#hl)"').length - 1).toBe(2); // nur gefüllte Plätze bekommen eine Spule
+    expect(svg).toContain('<use href="#e1"/>'); // leerer Platz 2: Spalte aus dem Foto des leeren AMS
+    expect(svg).toContain('filter="url(#u0)"'); // Schimmer unten in Spulenfarbe
     expect(svg).toContain('data:image/webp;base64,');
     expect(amsSvg(['#FF0000', null, null, null])).toBe(amsSvg(['#FF0000', null, null, null]));
     // Testbild: jede Spule einmal, Foto nur einmal eingebettet, Namen sicher (kein kaputtes XML)
     const sheet = amsTestSheet([{ label: 'Sunlu PLA <Rot> & Co', color: '#ff0000' }, { label: 'ohne Farbe', color: '' }, { label: 'Grün', color: '#00aa00' }]);
     expect(sheet).toContain('2 Spulen');
     expect(sheet).toContain('&lt;Rot&gt; &amp; Co');
-    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(2); // Foto und Schattierung je einmal
+    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(7); // Foto, Schattierung, Schimmer, 4 leere Spalten je einmal
   });
 
   it('Lagerbox nur, wenn der AMS-ESP Feuchte meldet', () => {
@@ -102,7 +104,7 @@ describe('Dashboard „Drucker“', () => {
 
   it('Grafiken: Hintergrund ist SVG, Foto und Schattierung sind WebP', () => {
     expect(BACKGROUND_SVG.startsWith('<svg') && BACKGROUND_SVG.trim().endsWith('</svg>')).toBe(true);
-    for (const b64 of [FRONT_WEBP_BASE64, SHADE_WEBP_BASE64]) {
+    for (const b64 of [FRONT_WEBP_BASE64, SHADE_WEBP_BASE64, LOW_WEBP_BASE64, ...EMPTY_COLS.map(e => e.b64)]) {
       const head = Buffer.from(b64, 'base64').subarray(0, 12).toString('latin1');
       expect(head.startsWith('RIFF') && head.endsWith('WEBP')).toBe(true);
     }

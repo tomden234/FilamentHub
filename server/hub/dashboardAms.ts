@@ -1,6 +1,7 @@
-// Druckerbild fürs Dashboard: Foto von vorn, die vier AMS-Spulen in den echten Farben (SVG-Filter auf der Schattierung, ohne Bildbibliothek).
+// Druckerbild fürs Dashboard: Foto von vorn, die vier AMS-Spulen und ihr Schimmer im Gehäuse in den echten Farben (SVG-Filter, ohne Bildbibliothek);
+// leere Plätze zeigen eine Spalte aus einem Foto des leeren AMS.
 // Das Foto steckt im SVG selbst, weil Home Assistant das Bild als <img> lädt (dort lädt ein SVG keine anderen Dateien nach).
-import { FRONT_WEBP_BASE64, SHADE_WEBP_BASE64 } from './dashboardPhoto.js';
+import { EMPTY_COLS, FRONT_WEBP_BASE64, LOW_WEBP_BASE64, SHADE_WEBP_BASE64 } from './dashboardPhoto.js';
 
 /** Spalten der vier Spulen im Foto (x von/bis, Bildpunkte) */
 const COLS: [number, number][] = [
@@ -23,24 +24,27 @@ export function spoolColor(v: unknown): string | null {
   return HEX.test(h) ? h.toUpperCase() : null;
 }
 
-/** Darstellung der Spulen (matt, vom Nutzer gewählt): gain = Helligkeit der Farbe, base = Grundanteil, gloss = Glanz */
-const look = { gain: 1.0, base: 0.3, gloss: 0.7 };
+/** Darstellung der Spulen (matt, vom Nutzer gewählt): gain = Helligkeit der Farbe, base = Grundanteil, gloss = Glanz, low = Stärke des Schimmers unten */
+const look = { gain: 1.0, base: 0.3, gloss: 0.7, low: 0.55 };
 
 /** Filter und Spulen-Schichten für ein Bild; p = Kennung, damit mehrere Bilder in einem SVG stehen können */
 function layers(colors: (string | null)[], p: string): { defs: string; body: string } {
   const defs: string[] = [];
   const body: string[] = [];
   COLS.forEach(([x0, x1], i) => {
-    defs.push(`<clipPath id="${p}c${i}"><rect x="${x0}" y="12" width="${x1 - x0}" height="84"/></clipPath>`);
     const c = colors[i] ? spoolColor(colors[i]) : null;
-    if (c) {
-      const [r, g, b] = rgb(c);
-      const lift = r + g + b < 0.4 ? 0.08 : 0; // schwarze Spulen nicht ganz absaufen lassen
-      const k = look.gain;
-      const o = (v: number) => f3(v * look.base + lift);
-      defs.push(`<filter id="${p}t${i}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${f3(r * k)} 0 0 0 ${o(r)} 0 ${f3(g * k)} 0 0 ${o(g)} 0 0 ${f3(b * k)} 0 ${o(b)} 0 0 0 1 0"/></filter>`);
+    if (!c) {
+      body.push(`<use href="#e${i}"/>`);
+      return;
     }
-    body.push(`<g clip-path="url(#${p}c${i})">${c ? `<use href="#sh" filter="url(#${p}t${i})"/><use href="#sh" filter="url(#hl)"/>` : ''}</g>`);
+    const [r, g, b] = rgb(c);
+    const lift = r + g + b < 0.4 ? 0.08 : 0; // schwarze Spulen nicht ganz absaufen lassen
+    const m = (a: number) => `${f3(r * look.gain)} 0 0 0 ${f3(r * look.base + lift)} 0 ${f3(g * look.gain)} 0 0 ${f3(g * look.base + lift)} 0 0 ${f3(b * look.gain)} 0 ${f3(b * look.base + lift)} 0 0 0 ${a} 0`;
+    defs.push(`<clipPath id="${p}c${i}"><rect x="${x0}" y="14" width="${x1 - x0}" height="90"/></clipPath>`);
+    defs.push(`<filter id="${p}t${i}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${m(1)}"/></filter>`);
+    defs.push(`<filter id="${p}u${i}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${m(look.low)}"/></filter>`);
+    const mid = Math.round((EMPTY_COLS[i]!.x0 + EMPTY_COLS[i]!.x1) / 2);
+    body.push(`<g clip-path="url(#${p}c${i})"><use href="#sh" filter="url(#${p}t${i})"/><use href="#sh" filter="url(#hl)"/></g><use href="#lo" x="${mid - 42}" filter="url(#${p}u${i})"/>`);
   });
   return { defs: defs.join(''), body: body.join('') };
 }
@@ -48,10 +52,12 @@ function layers(colors: (string | null)[], p: string): { defs: string; body: str
 const BASE_DEFS =
   // Glanz: helle Stellen der Schattierung als weißer Schimmer
   `<filter id="hl" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 ${f3(look.gloss)} 0 0 1 ${f3(-1.35 - look.gloss * 0.57)}"/></filter>` +
-  `<image id="sh" x="40" y="12" width="320" height="84" preserveAspectRatio="none" href="data:image/webp;base64,${SHADE_WEBP_BASE64}"/>` +
+  `<image id="sh" x="40" y="14" width="320" height="90" href="data:image/webp;base64,${SHADE_WEBP_BASE64}"/>` +
+  `<image id="lo" y="104" width="84" height="82" href="data:image/webp;base64,${LOW_WEBP_BASE64}"/>` +
+  EMPTY_COLS.map((e, i) => `<image id="e${i}" x="${e.x0}" width="${e.x1 - e.x0}" height="216" href="data:image/webp;base64,${e.b64}"/>`).join('') +
   `<image id="ph" width="397" height="700" href="data:image/webp;base64,${FRONT_WEBP_BASE64}"/>`;
 
-/** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (Grundbild zeigt das leere AMS) */
+/** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (Spalte aus dem Foto des leeren AMS) */
 export function amsSvg(colors: (string | null)[]): string {
   const l = layers(colors, '');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="397" height="700" viewBox="0 0 397 700"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}</svg>`;

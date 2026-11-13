@@ -4194,5 +4194,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.312',
+    label: '1.312 (Spulen wie vorher, Schimmer passend)',
+    releaseDate: '13.11.2026',
+    description:
+      'Druckerbild im Dashboard: Die Spulen sehen wieder aus wie vorher (Originalfoto), und der Schimmer im AMS-Gehäuse unter jeder Spule hat jetzt ihre echte Farbe statt der Farben aus dem alten Foto (schwach, Bild 7). Leere Plätze zeigen eine Spalte aus dem Foto des leeren AMS, Zeile für Zeile an Deckelkante, Gehäuse und Einzug ausgerichtet, der Deckel im gleichen Licht wie die Stege, Einzug original ohne Farbschimmer, weicher Rand (Bild 6). Pi-Add-on 1.3.64.',
+    features: ['🧵 Spulen wie vorher', '🌈 Schimmer unten in Spulenfarbe', '📦 Leere Plätze sauber und passend', '🥧 Pi-Add-on 1.3.64 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

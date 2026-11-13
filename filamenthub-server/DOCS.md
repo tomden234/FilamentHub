@@ -43,6 +43,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.64 (Spulen wie vorher, Schimmer in Spulenfarbe)
+
+- Druckerbild wieder auf Basis des Originalfotos: Spulen sehen aus wie vorher, der Schimmer im Gehäuse unter jeder Spule hat ihre echte Farbe (leicht).
+- Leere Plätze: Spalte aus dem Foto des leeren AMS, Zeile für Zeile auf das Druckerfoto ausgerichtet, Deckel im Licht der Stege, Einzug original ohne Farbschimmer, weicher Rand.
+
 ## Neu in 1.3.63 (leeres AMS sauber)
 
 - Grundbild ist jetzt der Drucker mit leerem AMS; gefüllte Plätze bekommen ihre Spule eingezeichnet, leere bleiben sauber leer (Deckel und Einzug wie im Foto).
