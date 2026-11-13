@@ -10,7 +10,10 @@ import { haAvailable, haDeleteState, haSetState, haStates, haWsCommand } from '.
 import { publishAsset } from './esphome.js';
 import { allTrays, trayLabel } from './hubLogic.js';
 import { energyWeeks } from './watch.js';
-import { port } from './core.js';
+import { durText, port } from './core.js';
+import { queueList } from './queue.js';
+import { ensureHelpers } from './dashboardEdit.js';
+import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
 import { X2D_WEBP_BASE64 } from './dashboardPhoto.js';
 import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, traySensorId } from './dashboardConfig.js';
@@ -20,6 +23,7 @@ const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause',
 // ---------- Sensoren ----------
 
 const sent = new Map<string, { sig: string; at: number }>();
+let lastQueueAt = 0;
 const REFRESH_MS = 5 * 60_000; // nach einem HA-Neustart sind die Sensoren weg: alle 5 min neu setzen
 
 async function setSensor(entity: string, value: string | number, attrs: Record<string, unknown> = {}): Promise<void> {
@@ -77,6 +81,21 @@ export async function publishSensors(): Promise<void> {
     }
   }
 
+  // Warteschlange (höchstens 1x pro Minute berechnet)
+  if (Date.now() - lastQueueAt > 60_000) {
+    lastQueueAt = Date.now();
+    try {
+      const q = queueList().slice(0, 6);
+      await setSensor(S.queue, q.length, {
+        friendly_name: 'Warteschlange',
+        icon: 'mdi:format-list-numbered',
+        items: q.map(i => ({ name: String(i.name || '').replace(/\.3mf$/i, '').slice(0, 60), plate: i.plate, time: i.predSec ? durText(Math.round(i.predSec / 60)) : '' }))
+      });
+    } catch {
+      /* Warteschlange nicht lesbar: Sensor bleibt, wie er war */
+    }
+  }
+
   // Strom der laufenden Woche
   const w = energyWeeks().slice(-1)[0];
   await setSensor(S.kwh, w ? Math.round(w.totalWh / 10) / 100 : 0, { friendly_name: 'Strom diese Woche', unit_of_measurement: 'kWh', device_class: 'energy', state_class: 'total', icon: 'mdi:flash' });
@@ -109,6 +128,8 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
   if (running) return { ok: true, text: 'läuft schon', changed: false };
   running = true;
   try {
+    await ensureHelpers(); // Eingabefelder (Soll-Temperatur, Spulen), damit das Dashboard sie findet
+    const theme = await ensureTheme();
     const states = await haStates();
     if (!states) return { ok: false, text: 'Zustände von Home Assistant nicht lesbar', changed: false };
     // Grafiken ablegen (nur bei neuem Inhalt geschrieben)
@@ -118,7 +139,7 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     const config = buildDashboard(states);
     const key = createHash('sha1').update(JSON.stringify(config)).digest('hex').slice(0, 16);
     if (!lastKey) lastKey = readKey();
-    if (!force && key === lastKey) return { ok: true, text: 'Dashboard aktuell', changed: false };
+    if (!force && key === lastKey) return { ok: true, text: `Dashboard aktuell${theme.hint ? ` – ${theme.hint}` : ''}`, changed: false };
 
     const list = await haWsCommand({ type: 'lovelace/dashboards/list' });
     if (!list.ok) return { ok: false, text: `Dashboards nicht lesbar: ${list.error}`, changed: false };
@@ -132,7 +153,7 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     lastKey = key;
     writeFileAtomic(keyFile(), JSON.stringify({ key, at: Date.now(), url: `/${DASH_URL}`, art: ART_DIR }), { mode: 0o644 });
     console.log(`[Hub] Dashboard „${DASH_TITLE}“ ${exists ? 'aktualisiert' : 'angelegt'} (/${DASH_URL})`);
-    return { ok: true, text: exists ? 'Dashboard aktualisiert' : 'Dashboard angelegt', changed: true };
+    return { ok: true, text: `${exists ? 'Dashboard aktualisiert' : 'Dashboard angelegt'}${theme.hint ? ` – ${theme.hint}` : ''}`, changed: true };
   } catch (e) {
     return { ok: false, text: (e as Error)?.message || String(e), changed: false };
   } finally {

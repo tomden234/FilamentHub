@@ -43,6 +43,13 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.57 (Dashboard in 3 Spalten, Eingabefelder)
+
+Dashboard „Drucker“: links Drucker (ohne Kasten), Mitte Drucker-Werte, rechts AMS und Trockner. Der Server legt Eingabefelder an (`input_number.filamenthub_duese_soll`, `_bett_soll`, `input_select.filamenthub_slot_N_material` / `_farbe`, `input_number.filamenthub_slot_N_gramm`, N = 1-4 AMS, 5 extern):
+- **Soll-Temperatur** geht als G-Code an den Drucker (Düse 0-300 °C, Bett 0-120 °C).
+- **Material, Farbe, Gramm** ändern die Spule, die dem Platz in der App zugeordnet ist (ohne Zuordnung wird die Eingabe verworfen).
+Glas-Theme: `themes/filamenthub.yaml`. In `configuration.yaml` muss stehen: `frontend:` / `themes: !include_dir_merge_named themes`, danach Home Assistant neu starten. Ohne das sind die Karten dunkel statt durchsichtig, sonst funktioniert alles.
+
 ## Neu in 1.3.56 (X2D-Foto im Dashboard)
 
 Das Dashboard zeigt ein X2D-Foto (liegt als `www/filamenthub-dashboard/x2d.webp`) mit den Werten daneben. Aufbau: Foto links, Anzeigen rechts (Abschnitte-Ansicht). Foto tauschen: neues Bild in `server/hub/dashboardPhoto.ts` einsetzen, `ART_VERSION` hochzählen.

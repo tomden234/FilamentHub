@@ -48,7 +48,7 @@ interface PlanInput {
 const round1 = (g: number) => Math.round(g * 10) / 10;
 
 /** Spule des Hauptslots: zugewiesen, sonst über Material und Farbe */
-function mainSpoolId(i: Pick<PlanInput, 'mainSlot' | 'amsSlots' | 'spools' | 'trays'>): string {
+export function mainSpoolId(i: Pick<PlanInput, 'mainSlot' | 'amsSlots' | 'spools' | 'trays'>): string {
   if (!i.mainSlot) return '';
   const assigned = i.amsSlots[String(i.mainSlot)];
   if (assigned && i.spools.some(s => s.id === assigned)) return assigned;

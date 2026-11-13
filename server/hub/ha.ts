@@ -52,7 +52,8 @@ export async function haStates(): Promise<any[] | null> {
   }
 }
 
-async function haService(domain: string, service: string, data: Record<string, unknown>): Promise<boolean> {
+/** Dienst in Home Assistant aufrufen (z. B. input_number.set_value) */
+export async function haService(domain: string, service: string, data: Record<string, unknown>): Promise<boolean> {
   try {
     const r = await call(`/services/${domain}/${service}`, { method: 'POST', body: data });
     return r.ok;

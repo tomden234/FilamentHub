@@ -4117,5 +4117,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.305',
+    label: '1.305 (Dashboard in 3 Spalten mit Eingabefeldern)',
+    releaseDate: '13.11.2026',
+    description:
+      'Neues Layout für das Dashboard „Drucker“ (dunkles Glas): links der Drucker klein und ohne Kasten, darunter Status und Warteschlange; in der Mitte alle Drucker-Werte (Anzeigen, Soll-Temperatur, Live-Werte, Verlauf, Strom); rechts AMS und Trockner. Neu zum Eingeben: Düse Soll (bis 300 °C) und Bett Soll (bis 120 °C) gehen direkt an den Drucker; je AMS-Platz und extern Material, Farbe und Gramm, das speichert der Pi in der Spule, die dem Platz zugeordnet ist. Die Felder legt der Pi selbst als Home-Assistant-Eingabefelder an und hält sie mit Drucker und Spulen gleich. Ein Glas-Theme macht die Karten durchsichtig. Dafür braucht Home Assistant in configuration.yaml „frontend: themes: !include_dir_merge_named themes“; fehlt es, sagt es der Knopf „Dashboard anlegen“. Warteschlange als Sensor. Pi-Add-on 1.3.57.',
+    features: ['🧱 3 Spalten: Drucker links, Werte Mitte, AMS/Trockner rechts', '✏️ Soll-Temperatur eingeben (Düse bis 300, Bett bis 120)', '🧵 Material, Farbe, Gramm je Platz einstellen', '🪟 Glas-Theme, Drucker ohne Kasten', '📋 Warteschlange im Dashboard', '🥧 Pi-Add-on 1.3.57 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

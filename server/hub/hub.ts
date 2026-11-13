@@ -21,6 +21,7 @@ import { dailyBackup, listBackups } from './backup.js';
 import { onOrderAction, startOrderMail, startOrderPush } from './orders.js';
 import { startProductLinks } from './productLink.js';
 import { ensureDashboard, publishSensors } from './dashboard.js';
+import { onEditEvent, syncEditFields } from './dashboardEdit.js';
 
 // Öffentliche Schnittstelle des Hubs (Routen, bambuMqtt, Tests): alles weiter über hub.js erreichbar
 export { hubEnabled, getHubConfig, updateHubConfig, printMeta, resolvePrint, push } from './core.js';
@@ -43,6 +44,7 @@ export function attachPrinter(p: PrinterPort): void {
       onQueueAction(ev);
       onRatingAction(ev);
       onOrderAction(ev);
+      onEditEvent(ev);
     });
     setTimeout(() => refreshLeds(), 20_000);
     // Neue Dateien aus Bambu Studio suchen: 1.231 alle 20-60 s statt alle 3 s (schont den Drucker), bei Änderung am Drucker sofort
@@ -81,6 +83,7 @@ export async function tick(now = Date.now()): Promise<void> {
     await weeklyTick(now);
     await espTick(now);
     await publishSensors();
+    await syncEditFields();
   } catch (e) {
     console.warn('[Hub] Takt-Fehler:', (e as Error)?.message || e);
   } finally {

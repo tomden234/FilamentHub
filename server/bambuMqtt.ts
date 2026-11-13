@@ -145,6 +145,7 @@ attachPrinter({
   },
   command: cmd => bambuService.sendCommand(cmd),
   resumeAfterError: code => bambuService.resumeAfterError(code),
+  setTemperature: (target, temp) => bambuService.setTemperature(target, temp),
   delayedResume: () => bambuService.getDelayedResume(),
   startProject: p => bambuService.startProjectFile(p),
   cleanError: code => bambuService.cleanPrintError(code)

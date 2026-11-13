@@ -211,6 +211,8 @@ export interface PrinterPort extends QueuePort {
   stopDrying: () => Promise<boolean>;
   command: (cmd: 'pause' | 'resume' | 'stop') => Promise<unknown>;
   resumeAfterError: (code: number) => Promise<unknown>;
+  /** Soll-Temperatur senden (Dashboard-Eingabefelder; Grenzen prüft der Aufrufer) */
+  setTemperature: (target: 'nozzle' | 'bed', temp: number) => Promise<unknown>;
   /** Verzögerter Druck geplant (dann ist eine Pause gewollt) */
   delayedResume: () => number;
 }

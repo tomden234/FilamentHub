@@ -1,6 +1,6 @@
 // Grafiken für das Dashboard „Drucker“: ruhiger Hintergrund (SVG). Das Druckerfoto steht in dashboardPhoto.ts.
 /** Bei jeder Änderung an den Grafiken hochzählen (Zwischenspeicher des Browsers umgehen) */
-export const ART_VERSION = 2;
+export const ART_VERSION = 3;
 
 export const BACKGROUND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
 <defs>
