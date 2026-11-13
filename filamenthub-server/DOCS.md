@@ -43,6 +43,11 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.62 (Temperaturen im Druckerbild, leere Plätze echt leer)
+
+- Düse 1, Düse 2 und Bett stehen direkt im Druckerbild: Name und Ist-Wert, darunter Soll; −/+ ändern das Soll in 5-°C-Schritten, der Server schickt es an den Drucker. Die Soll-Kacheln in der Mitte sind weg.
+- Leere AMS-Plätze zeigen ein Foto vom leeren AMS statt einer grauen Fläche.
+
 ## Neu in 1.3.61 (echte Spulenfarben aus dem Shop)
 
 - Der Server lädt je Spule das Produktbild aus dem Shop-Link (alle 4 Minuten eine Spule), liest es mit ffmpeg und misst die echte Filamentfarbe (Hintergrund und Pappspule fallen weg). Gemerkt in `spool-colors.json`; neue oder geänderte Spulen werden neu gemessen, Fehlschläge nach 3 Tagen.

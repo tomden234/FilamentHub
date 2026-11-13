@@ -4172,5 +4172,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.310',
+    label: '1.310 (Temperaturen im Druckerbild)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“: Düse 1, Düse 2 und Bett stehen jetzt direkt im Druckerbild an der passenden Stelle, als dunkle Glas-Etiketten mit farbigem Rand (Düsen orange, Bett rot): oben Name und Ist-Temperatur, darunter das Soll; runde −/+ Knöpfe ändern das Soll in 5-°C-Schritten, der Pi schickt es an den Drucker. Die Soll-Kacheln in der Mitte sind dafür weg. Leere AMS-Plätze zeigen ein echtes Foto vom leeren AMS. Pi-Add-on 1.3.62.',
+    features: ['🌡️ Temperaturen direkt im Druckerbild', '➖➕ Soll mit −/+ ändern', '📦 Leere Plätze wie ein leeres AMS', '🥧 Pi-Add-on 1.3.62 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

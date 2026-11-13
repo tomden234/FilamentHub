@@ -46,21 +46,23 @@ describe('Dashboard „Drucker“', () => {
       st(ID.nozzle2Soll, '0')
     ]);
     const pic = d.views[0].sections[0].cards[0];
-    expect(pic.elements).toHaveLength(2); // Extern sitzt nicht im AMS
-    expect(pic.elements[0].style.left).toBe('18.2%');
-    expect(pic.elements[1].style.left).toBe('60.5%');
+    const trays = pic.elements.filter((e: any) => String(e.entity).startsWith(TRAY_PREFIX));
+    expect(trays).toHaveLength(2); // Extern sitzt nicht im AMS
+    expect(trays[0].style.left).toBe('18.2%');
+    expect(trays[1].style.left).toBe('60.5%');
+    // Temperaturen im Bild: Düse 1/2 mit Soll und −/+, Bett ohne Soll-Feld nur mit Ist-Wert
+    const plus = pic.elements.filter((e: any) => e.tap_action?.perform_action === 'input_number.increment');
+    expect(plus.map((e: any) => e.tap_action.target.entity_id)).toEqual([ID.nozzleSoll, ID.nozzle2Soll]);
+    expect(pic.elements.some((e: any) => e.entity === S.bed && e.prefix?.startsWith('Bett'))).toBe(true);
+    expect(JSON.stringify(pic)).not.toContain(ID.bedSoll);
     expect(pic.grid_options.columns).toBe(6); // Drucker halb breit neben der Warteschlange
     const spulen = d.views[0].sections[0].cards[2];
     expect(spulen.title).toBe('Spulen');
     expect(spulen.entities.map((e: any) => e.name)).toEqual(['Slot 1:', 'Extern:']);
-    const mid = JSON.stringify(d.views[0].sections[1].cards);
-    expect(mid).toContain(ID.nozzle2Soll);
-    expect(mid).not.toContain(ID.bedSoll); // Feld fehlt in HA → keine Kachel
-    const soll = d.views[0].sections[1].cards.find((c: any) => c.entity === ID.nozzleSoll);
-    expect(soll).toMatchObject({ type: 'tile', features: [{ type: 'numeric-input' }], grid_options: { columns: 4, rows: 2 } });
+    expect(JSON.stringify(d.views[0].sections[1].cards)).not.toContain(ID.nozzleSoll); // Soll steht jetzt im Bild
   });
 
-  it('Druckerbild: Farben aus den Spulen, leer = dunkel, Foto steckt im SVG', () => {
+  it('Druckerbild: Farben aus den Spulen, leer = leeres AMS, Foto steckt im SVG', () => {
     expect(trayColors([st(`${TRAY_PREFIX}ams_1_slot_2`, 'PLA', { color: '#12ab34' })])).toEqual([null, '#12AB34', null, null]);
     expect(spoolColor('FF0000FF')).toBe('#FF0000');
     expect(spoolColor('kaputt')).toBeNull();
@@ -70,13 +72,14 @@ describe('Dashboard „Drucker“', () => {
     expect(svg).not.toContain('id="t1"');
     expect(svg).toContain('id="t2"');
     expect(svg).not.toContain('id="t3"'); // ungültige Farbe = leer
+    expect(svg.split('href="#em"').length - 1).toBe(2); // zwei leere Plätze zeigen das leere AMS
     expect(svg).toContain('data:image/webp;base64,');
     expect(amsSvg(['#FF0000', null, null, null])).toBe(amsSvg(['#FF0000', null, null, null]));
     // Testbild: jede Spule einmal, Foto nur einmal eingebettet, Namen sicher (kein kaputtes XML)
     const sheet = amsTestSheet([{ label: 'Sunlu PLA <Rot> & Co', color: '#ff0000' }, { label: 'ohne Farbe', color: '' }, { label: 'Grün', color: '#00aa00' }]);
     expect(sheet).toContain('2 Spulen');
     expect(sheet).toContain('&lt;Rot&gt; &amp; Co');
-    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(2); // Foto + Schattierung je einmal
+    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(3); // Foto, Schattierung, leeres AMS je einmal
   });
 
   it('Lagerbox nur, wenn der AMS-ESP Feuchte meldet', () => {

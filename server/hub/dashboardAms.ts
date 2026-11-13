@@ -1,6 +1,6 @@
 // Druckerbild fürs Dashboard: Foto von vorn, die vier AMS-Spulen in den echten Farben (SVG-Filter auf der Schattierung, ohne Bildbibliothek).
 // Das Foto steckt im SVG selbst, weil Home Assistant das Bild als <img> lädt (dort lädt ein SVG keine anderen Dateien nach).
-import { FRONT_WEBP_BASE64, SHADE_WEBP_BASE64 } from './dashboardPhoto.js';
+import { EMPTY_WEBP_BASE64, FRONT_WEBP_BASE64, SHADE_WEBP_BASE64 } from './dashboardPhoto.js';
 
 /** Spalten der vier Spulen im Foto (x von/bis, Bildpunkte) */
 const COLS: [number, number][] = [
@@ -40,19 +40,19 @@ function layers(colors: (string | null)[], p: string): { defs: string; body: str
       const o = (v: number) => f3(v * look.base + lift);
       defs.push(`<filter id="${p}t${i}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${f3(r * k)} 0 0 0 ${o(r)} 0 ${f3(g * k)} 0 0 ${o(g)} 0 0 ${f3(b * k)} 0 ${o(b)} 0 0 0 1 0"/></filter>`);
     }
-    body.push(`<g clip-path="url(#${p}c${i})"><use href="#sh" filter="url(#${c ? `${p}t${i}` : 'e'})"/>${c ? '<use href="#sh" filter="url(#hl)"/>' : ''}</g>`);
+    body.push(`<g clip-path="url(#${p}c${i})">${c ? `<use href="#sh" filter="url(#${p}t${i})"/><use href="#sh" filter="url(#hl)"/>` : '<use href="#em"/>'}</g>`);
   });
   return { defs: defs.join(''), body: body.join('') };
 }
 
 const BASE_DEFS =
-  // Glanz: helle Stellen der Schattierung als weißer Schimmer; e = leerer Platz (hellgrau, kein Filament)
+  // Glanz: helle Stellen der Schattierung als weißer Schimmer; em = leerer Platz (Foto eines leeren AMS)
   `<filter id="hl" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 ${f3(look.gloss)} 0 0 1 ${f3(-1.35 - look.gloss * 0.57)}"/></filter>` +
-  '<filter id="e" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .62 0 0 0 0 .66 0 0 0 0 .68 0 0 0 .78 0"/></filter>' +
   `<image id="sh" x="40" y="14" width="320" height="90" href="data:image/webp;base64,${SHADE_WEBP_BASE64}"/>` +
+ `<image id="em" x="40" y="14" width="320" height="90" href="data:image/webp;base64,${EMPTY_WEBP_BASE64}"/>` +
   `<image id="ph" width="397" height="700" href="data:image/webp;base64,${FRONT_WEBP_BASE64}"/>`;
 
-/** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (hellgrau, kein Filament) */
+/** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (wie ein leeres AMS) */
 export function amsSvg(colors: (string | null)[]): string {
   const l = layers(colors, '');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="397" height="700" viewBox="0 0 397 700"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}</svg>`;

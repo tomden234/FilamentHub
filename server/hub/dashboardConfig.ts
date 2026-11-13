@@ -70,10 +70,40 @@ const tile = (entity: string, name: string, icon: string) => ({ type: 'tile', en
 
 const PILL = { color: '#fff', 'font-size': '11px', 'font-weight': '700', 'text-shadow': '0 1px 3px #000', background: 'rgba(8,12,18,.62)', padding: '1px 8px', 'border-radius': '999px', 'white-space': 'nowrap' };
 
-/** Druckerbild (AMS in den echten Farben, vom Pi gebaut) mit dem Material je Platz */
+/** Temperatur-Etikett im Bild: Name + Ist oben, Soll darunter, −/+ ändern das Soll in 5-°C-Schritten (Eingabe geht über den Pi an den Drucker) */
+function tempTag(ist: string, soll: string, name: string, x: number, y: number, accent: string, withSoll: boolean): any[] {
+  const glass = { background: 'rgba(12,18,22,.72)', 'backdrop-filter': 'blur(6px)', border: '1px solid rgba(255,255,255,.22)', 'box-shadow': '0 4px 14px rgba(0,0,0,.35)' };
+  const pos = (dx: number, dy: number) => ({ left: `${x + dx}%`, top: `${y + dy}%` });
+  const el: any[] = [
+    {
+      type: 'state-label',
+      entity: ist,
+      prefix: `${name}  `,
+      style: { ...pos(0, 0), ...glass, 'border-left': `3px solid ${accent}`, 'border-radius': '14px', padding: withSoll ? '5px 30px 19px' : '5px 12px', 'min-width': '64px', 'text-align': 'center', color: '#fff', 'font-size': '12px', 'font-weight': '700', 'white-space': 'nowrap' }
+    }
+  ];
+  if (!withSoll) return el;
+  const btn = (icon: string, dx: number, action: string) => ({
+    type: 'icon',
+    icon,
+    title: `${name} Soll ${action === 'increment' ? '+5' : '−5'} °C`,
+    tap_action: { action: 'perform-action', perform_action: `input_number.${action}`, target: { entity_id: soll } },
+    style: { ...pos(dx, 0.9), color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', 'border-radius': '50%', padding: '2px', '--mdc-icon-size': '16px' }
+  });
+  el.push({ type: 'state-label', entity: soll, prefix: 'Soll ', style: { ...pos(0, 2.2), color: accent, 'font-size': '11px', 'font-weight': '700', 'white-space': 'nowrap' } });
+  el.push(btn('mdi:minus', -12.5, 'decrement'), btn('mdi:plus', 12.5, 'increment'));
+  return el;
+}
+
+/** Druckerbild (AMS in den echten Farben, vom Pi gebaut) mit dem Material je Platz und den Temperaturen an Düsen und Bett */
 function printerPicture(states: any[], photoV: string) {
   const have = new Set(ids(states));
   const elements = SPOOL_X.flatMap((x, i) => (have.has(amsTray(i + 1)) ? [{ type: 'state-label', entity: amsTray(i + 1), style: { left: `${x}%`, top: '20.5%', ...PILL } }] : []));
+  elements.push(
+    ...tempTag(S.nozzle, ID.nozzleSoll, 'Düse 1', 27, 51, '#ffb347', have.has(ID.nozzleSoll)),
+    ...tempTag(S.nozzle2, ID.nozzle2Soll, 'Düse 2', 73, 51, '#ffb347', have.has(ID.nozzle2Soll)),
+    ...tempTag(S.bed, ID.bedSoll, 'Bett', 50, 79, '#ff7b7b', have.has(ID.bedSoll))
+  );
   return { type: 'picture-elements', image: `${ART_DIR}/drucker.svg?v=${photoV}`, grid_options: { columns: 6 }, elements };
 }
 
@@ -93,17 +123,10 @@ export function buildDashboard(states: any[], photoV = String(ART_VERSION)): { t
   const spoolRows = rows(SLOTS.map(s => ({ entity: ID.spool(s), name: s === 5 ? 'Extern:' : `Slot ${s}:`, icon: 'mdi:printer-3d-nozzle' })));
   if (spoolRows.length) left.push(size({ type: 'entities', title: 'Spulen', show_header_toggle: false, entities: spoolRows }, 12));
 
-  // Mitte: kleine Anzeigen, Soll-Werte als Kacheln mit −/+, Live-Werte als Kacheln, Verlauf
+  // Mitte: kleine Anzeigen, Live-Werte als Kacheln, Verlauf (Soll-Temperaturen stehen im Druckerbild)
   const mid: any[] = [
     size(small([gauge(S.progress, '⏳ Fortschritt', 0, 100, PROGRESS), gauge(S.nozzle, '🔥 Düse 1', 0, 320, NOZZLE), gauge(S.nozzle2, '🔥 Düse 2', 0, 320, NOZZLE), gauge(S.bed, '♨️ Bett', 0, 120, BED)]), 12)
   ];
-  for (const [entity, name, icon] of [
-    [ID.nozzleSoll, 'Düse 1 Soll', 'mdi:printer-3d-nozzle-heat'],
-    [ID.nozzle2Soll, 'Düse 2 Soll', 'mdi:printer-3d-nozzle-heat'],
-    [ID.bedSoll, 'Bett Soll', 'mdi:radiator']
-  ] as const) {
-    if (has(entity)) mid.push(size({ ...tile(entity, name, icon), features: [{ type: 'numeric-input', style: 'buttons' }], features_position: 'bottom' }, 4, 2));
-  }
   for (const [entity, name, icon] of [
     [S.status, 'Status', 'mdi:printer-3d'],
     [S.job, 'Auftrag', 'mdi:file-cad'],
