@@ -4216,5 +4216,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.314',
+    label: '1.314 (Dashboard besser lesbar)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“ besser lesbar: dunkle Glaskarten mit weißer Schrift auf dem Pastell-Hintergrund (vorher weiße Schrift auf hellen, durchsichtigen Karten). Eingabefelder leicht hell mit türkiser Linie, aufgeklappte Listen deckend dunkel, Icons hell-türkis, die Schrift Outfit gilt jetzt im ganzen Dashboard. Pi-Add-on 1.3.66.',
+    features: ['🔲 Dunkle Glaskarten, weiße Schrift', '🔤 Outfit im ganzen Dashboard', '🥧 Pi-Add-on 1.3.66 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

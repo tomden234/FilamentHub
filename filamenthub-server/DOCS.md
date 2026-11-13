@@ -43,6 +43,10 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.66 (besser lesbar)
+
+- Theme: dunkle Glaskarten mit weißer Schrift auf dem Pastell-Hintergrund, Eingabefelder leicht hell mit türkiser Linie, Menüs deckend, Schrift Outfit im ganzen Dashboard.
+
 ## Neu in 1.3.65 (neue Beschriftung, Temperatur-Karten, Schrift Outfit)
 
 - Spulen-Schilder: dunkle Pille mit Rand in Spulenfarbe, Material groß, Restgewicht darunter.

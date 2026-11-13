@@ -70,7 +70,8 @@ describe('Dashboard-Eingabefelder', () => {
 
   it('Theme: Name passt, Karten getönt, Eingabefelder und Verläufe eingefärbt', () => {
     expect(THEME_YAML).toContain(`${THEME}:`);
-    expect(THEME_YAML).toContain('ha-card-background: "rgba(255,255,255,0.13)"');
+    expect(THEME_YAML).toContain('ha-card-background: "rgba(18,28,32,0.62)"'); // dunkle Glaskarten
+    expect(THEME_YAML).toContain("ha-font-family-body: \"'Outfit'");
     expect(THEME_YAML).toContain('mdc-select-fill-color');
     expect(THEME_YAML).toContain('graph-color-1');
     expect(THEME_YAML).toMatch(/card-background-color: "#[0-9a-f]{6}"/); // Menüs deckend
