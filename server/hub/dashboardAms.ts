@@ -2,6 +2,7 @@
 // leere Plätze zeigen eine Spalte aus einem Foto des leeren AMS.
 // Das Foto steckt im SVG selbst, weil Home Assistant das Bild als <img> lädt (dort lädt ein SVG keine anderen Dateien nach).
 import { EMPTY_COLS, FRONT_WEBP_BASE64, LOW_WEBP_BASE64, SHADE_WEBP_BASE64 } from './dashboardPhoto.js';
+import { FONT_FILES } from './dashboardFonts.js';
 
 /** Spalten der vier Spulen im Foto (x von/bis, Bildpunkte) */
 const COLS: [number, number][] = [
@@ -13,33 +14,43 @@ const COLS: [number, number][] = [
 /** Mitte der Spulen in % der Bildbreite (für die Beschriftung im Dashboard) */
 export const SPOOL_X = [18.2, 39.1, 60.5, 82.1];
 
-/** Spulen-Schild am AMS (Mitte y, Größe in Bildpunkten); wird im Bild gezeichnet, damit es mit dem Bild mitwächst */
-export const SPOOL_TAG = { y: 150, w: 54, h: 30 };
+/** Spulen-Schild am AMS (Mitte y, Größe in Bildpunkten): Pille mit Rand in Spulenfarbe, Material groß, Restgewicht darunter (alles im Bild) */
+export const SPOOL_TAG = { y: 150, w: 58, h: 34 };
+export interface SpoolLabel {
+  mat: string;
+  rest: string;
+}
 const dark = (c: string) => {
   const [r, g, b] = rgb(c);
   return 0.3 * r + 0.59 * g + 0.11 * b < 0.2;
 };
-const tagsSvg = (colors: (string | null)[]) =>
+const tagsSvg = (colors: (string | null)[], labels: (SpoolLabel | null)[]) =>
   colors
     .map((c, i) => {
       const col = c ? spoolColor(c) : null;
       if (!col) return '';
       const x = (SPOOL_X[i]! / 100) * 397;
-      return `<rect x="${f3(x - SPOOL_TAG.w / 2)}" y="${SPOOL_TAG.y - SPOOL_TAG.h / 2}" width="${SPOOL_TAG.w}" height="${SPOOL_TAG.h}" rx="13" fill="#0a0e12" fill-opacity=".85" stroke="${dark(col) ? '#9aa0a6' : col}" stroke-width="2"/>`;
+      const l = labels[i];
+      const y = SPOOL_TAG.y;
+      return (
+        `<rect x="${f3(x - SPOOL_TAG.w / 2)}" y="${y - SPOOL_TAG.h / 2}" width="${SPOOL_TAG.w}" height="${SPOOL_TAG.h}" rx="14" fill="#0a0e12" fill-opacity=".86" stroke="${dark(col) ? '#9aa0a6' : col}" stroke-width="2"/>` +
+        (l ? `<text x="${f3(x)}" y="${y - 1}" class="m">${xml(l.mat.slice(0, 8))}</text><text x="${f3(x)}" y="${y + 11}" class="r">${xml(l.rest.slice(0, 9))}</text>` : '')
+      );
     })
     .join('');
 
-/** Bildgröße: Drucker (397×700) und darunter die Temperatur-Karten */
-export const CANVAS = { w: 397, h: 904, printerH: 700 };
-/** Temperatur-Karten unter dem Drucker (Bildpunkte): Düse 1, Düse 2 nebeneinander, Bett darunter */
+/** Bild der Temperatur-Karten (fest, ändert sich nie): Düse 1, Düse 2 nebeneinander, Bett darunter */
+export const TEMPS = { w: 397, h: 204 };
 export const TEMP_TILES = [
-  { x: 8, y: 710, w: 186, h: 104 },
-  { x: 203, y: 710, w: 186, h: 104 },
-  { x: 8, y: 822, w: 381, h: 78 }
+  { x: 8, y: 6, w: 186, h: 104 },
+  { x: 203, y: 6, w: 186, h: 104 },
+  { x: 8, y: 118, w: 381, h: 78 }
 ];
-const tilesSvg = () =>
+export const tempsSvg = (): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${TEMPS.w}" height="${TEMPS.h}" viewBox="0 0 ${TEMPS.w} ${TEMPS.h}">` +
   '<filter id="tsd" x="-10%" y="-10%" width="120%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".4"/></filter>' +
-  TEMP_TILES.map(t => `<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="16" fill="#181a1e" fill-opacity=".93" stroke="#5ff0cf" stroke-opacity=".35" filter="url(#tsd)"/>`).join('');
+  TEMP_TILES.map(t => `<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="16" fill="#181a1e" fill-opacity=".93" stroke="#5ff0cf" stroke-opacity=".35" filter="url(#tsd)"/>`).join('') +
+  '</svg>';
 
 const HEX = /^#?[0-9a-fA-F]{6}$/;
 const rgb = (h: string) => [0, 2, 4].map(i => parseInt(h.replace('#', '').slice(i, i + 2), 16) / 255) as [number, number, number];
@@ -85,10 +96,13 @@ const BASE_DEFS =
   EMPTY_COLS.map((e, i) => `<image id="e${i}" x="${e.x0}" width="${e.x1 - e.x0}" height="216" href="data:image/webp;base64,${e.b64}"/>`).join('') +
   `<image id="ph" width="397" height="700" href="data:image/webp;base64,${FRONT_WEBP_BASE64}"/>`;
 
-/** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (Spalte aus dem Foto des leeren AMS) */
-export function amsSvg(colors: (string | null)[]): string {
+/** Schrift Outfit (fett) im Bild selbst: ein als Bild geladenes SVG darf keine anderen Dateien nachladen */
+const FONT_STYLE = `<style>@font-face{font-family:O;font-weight:700;src:url(data:font/woff2;base64,${FONT_FILES[1]!.b64}) format('woff2')}text{font-family:O,'Segoe UI',Roboto,sans-serif;text-anchor:middle;font-weight:700}.m{font-size:13px;fill:#fff}.r{font-size:9.5px;fill:#cfd8dc}</style>`;
+
+/** SVG mit Foto, umgefärbten Spulen und Spulen-Schildern. colors: 4 Einträge, null = leerer Platz (Spalte aus dem Foto des leeren AMS) */
+export function amsSvg(colors: (string | null)[], labels: (SpoolLabel | null)[] = []): string {
   const l = layers(colors, '');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS.w}" height="${CANVAS.h}" viewBox="0 0 ${CANVAS.w} ${CANVAS.h}"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}${tagsSvg(colors)}${tilesSvg()}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="397" height="700" viewBox="0 0 397 700"><defs>${BASE_DEFS}${l.defs}${labels.some(Boolean) ? FONT_STYLE : ''}</defs><use href="#ph"/>${l.body}${tagsSvg(colors, labels)}</svg>`;
 }
 
 const xml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

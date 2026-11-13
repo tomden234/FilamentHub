@@ -43,6 +43,12 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.68 (Drucker wieder da)
+
+- 1.3.67 zeigte das Druckerbild nicht (Home Assistant nimmt das selbst gesetzte `image.`-Element nicht als Bild). Jetzt: Text-Karte mit `<img>`, Adresse aus `sensor.filamenthub_drucker_bild` (Attribut `url`, Datei `drucker-<kennung>.svg`) – wechselt ohne Neuladen.
+- Spulen-Schilder (Material, Restgewicht, Schrift Outfit) stecken im Bild. Temperatur-Karten als eigene Bild-Karte darunter (`temperaturen.svg`, ändert sich nie), Werte und −/+ darüber.
+- Reste aus 1.3.67 (`image.filamenthub_drucker`, `sensor.filamenthub_bild_slot_*`) werden entfernt.
+
 ## Neu in 1.3.67 (kein Überlappen, Spulenwahl gilt, Bild ohne Neuladen)
 
 - Druckerbild: Schrift und Knöpfe kleiner, passen auch bei schmalem Bild (ca. 250 px). Spulen-Schilder werden ins Bild gezeichnet und wachsen mit.

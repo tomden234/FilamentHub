@@ -2,7 +2,7 @@
 // Aufbau: links Drucker (AMS in echten Farben) neben der Warteschlange und die Spulen, Mitte Drucker-Werte, rechts Lagerbox und Trockner.
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { ART_VERSION } from './dashboardArt.js';
-import { CANVAS, SPOOL_TAG, SPOOL_X, TEMP_TILES, spoolColor } from './dashboardAms.js';
+import { TEMPS, TEMP_TILES, spoolColor } from './dashboardAms.js';
 import { FONT_FAMILY } from './dashboardFonts.js';
 import { ID, SLOTS } from './dashboardEditLogic.js';
 
@@ -27,11 +27,8 @@ export const S = {
 } as const;
 
 export const ART_DIR = '/local/filamenthub-dashboard';
-/** Beschriftung je AMS-Platz (immer vorhanden, leer = leerer Platz) */
-export const labelSensor = (n: number) => `sensor.filamenthub_bild_slot_${n}_material`;
-export const restSensor = (n: number) => `sensor.filamenthub_bild_slot_${n}_rest`;
-/** Bild-Element mit dem Druckerbild (vom Pi gesetzt, entity_picture zeigt auf die aktuelle Datei) */
-export const PHOTO_ENTITY = 'image.filamenthub_drucker';
+/** Sensor mit der Adresse des aktuellen Druckerbilds (Attribut url, neue Datei bei jeder Änderung) */
+export const PHOTO_SENSOR = 'sensor.filamenthub_drucker_bild';
 export const TRAY_PREFIX = 'sensor.filamenthub_spule_';
 
 /** Sensor-Id einer Spule am Drucker: „AMS 1 Slot 2“ → sensor.filamenthub_spule_ams_1_slot_2 */
@@ -78,20 +75,10 @@ const tile = (entity: string, name: string, icon: string) => ({ type: 'tile', en
 const pct = (v: number, of: number) => `${Math.round((v / of) * 10000) / 100}%`;
 const TEAL = '#5ff0cf';
 
-/** Spulen-Schild am AMS: Pille mit farbigem Rand ist im Bild, hier nur die Schrift (Material groß, Restgewicht darunter) */
-function spoolTag(n: number, x: number): any[] {
-  const font = { 'font-family': FONT_FAMILY, 'white-space': 'nowrap', 'text-align': 'center' };
-  const y = (SPOOL_TAG.y * 100) / CANVAS.h;
-  return [
-    { type: 'state-label', entity: labelSensor(n), style: { left: `${x}%`, top: `${y - 0.75}%`, color: '#fff', 'font-size': '10px', 'font-weight': '700', ...font } },
-    { type: 'state-label', entity: restSensor(n), style: { left: `${x}%`, top: `${y + 0.85}%`, color: '#cfd8dc', 'font-size': '8px', 'font-weight': '500', ...font } }
-  ];
-}
-
 /** Temperatur-Karte unter dem Drucker (Karte selbst ist im Bild): oben Name + Soll, groß der Ist-Wert, runde −/+ links und rechts */
 function tempCard(tile: { x: number; y: number; w: number; h: number }, ist: string, soll: string, name: string, accent: string, withSoll: boolean): any[] {
-  const W = CANVAS.w;
-  const H = CANVAS.h;
+  const W = TEMPS.w;
+  const H = TEMPS.h;
   const cx = pct(tile.x + tile.w / 2, W);
   const vy = pct(tile.y + tile.h * 0.62, H);
   const font = { 'font-family': FONT_FAMILY, 'white-space': 'nowrap' };
@@ -113,18 +100,22 @@ function tempCard(tile: { x: number; y: number; w: number; h: number }, ist: str
   return el;
 }
 
-/** Druckerbild (AMS in den echten Farben, vom Pi gebaut) mit Spulen-Schildern und darunter den Temperatur-Karten */
-function printerPicture(states: any[]) {
+/** Druckerbild: Text-Karte mit Bild, Adresse aus dem Sensor des Pi (Vorlage aktualisiert sich selbst, kein Neuladen) */
+const PRINTER_MD = `<img src="{{ state_attr('${PHOTO_SENSOR}', 'url') or '${ART_DIR}/drucker.svg' }}" width="100%">`;
+
+/** Temperatur-Karten unter dem Drucker: festes Bild der Karten, Werte und −/+ darüber */
+function tempPicture(states: any[]) {
   const have = new Set(ids(states));
-  const elements: any[] = SPOOL_X.flatMap((x, i) => spoolTag(i + 1, x));
-  elements.push(
+  const elements = [
     ...tempCard(TEMP_TILES[0]!, S.nozzle, ID.nozzleSoll, 'Düse 1', TEAL, have.has(ID.nozzleSoll)),
     ...tempCard(TEMP_TILES[1]!, S.nozzle2, ID.nozzle2Soll, 'Düse 2', TEAL, have.has(ID.nozzle2Soll)),
     ...tempCard(TEMP_TILES[2]!, S.bed, ID.bedSoll, 'Bett', '#ff9aa2', have.has(ID.bedSoll))
-  );
-  // Bild über das Bild-Element des Pi: neue Spulenfarben erscheinen ohne Neuladen (image = Ersatz, falls es fehlt)
-  return { type: 'picture-elements', image_entity: PHOTO_ENTITY, image: `${ART_DIR}/drucker.svg`, grid_options: { columns: 6 }, elements };
+  ];
+  return { type: 'picture-elements', image: `${ART_DIR}/temperaturen.svg?v=${ART_VERSION}`, elements };
 }
+
+/** Drucker und darunter die Temperaturen als ein Block (halbe Breite, neben der Warteschlange) */
+const printerBlock = (states: any[]) => size({ type: 'vertical-stack', cards: [{ type: 'markdown', text_only: true, content: PRINTER_MD }, tempPicture(states)] }, 6);
 
 /** Warteschlange wie in der App: Bild, Nummer, Name, Spulen je Filament, Zeit, Warnungen in Rot */
 const QUEUE_MD = `{% set q = state_attr('${S.queue}', 'items') or [] %}{% if q | count == 0 %}Leer{% endif %}{% for i in q %}<table width="100%"><tr>{% if i.thumb %}<td width="64"><img src="{{ i.thumb }}" width="60"></td>{% endif %}<td><b>{{ loop.index }}. {{ i.name }}</b>{% for l in i.lines %}<br><font color="#cfe3e6">{{ l }}</font>{% endfor %}{% if i.time %}<br><font color="#bfe9ff">{{ i.time }}</font>{% endif %}{% for w in i.warn %}<br><font color="#ff8fa8"><b>{{ w }}</b></font>{% endfor %}</td></tr></table>
@@ -138,7 +129,7 @@ export function buildDashboard(states: any[]): { title: string; views: any[] } {
   const rows = (list: { entity: string; name: string; icon?: string }[]) => list.filter(r => has(r.entity));
 
   // Links: Drucker (halbe Breite) neben der Warteschlange, darunter die Spulen
-  const left: any[] = [printerPicture(all), size({ type: 'markdown', title: 'Warteschlange', content: QUEUE_MD }, 6)];
+  const left: any[] = [printerBlock(all), size({ type: 'markdown', title: 'Warteschlange', content: QUEUE_MD }, 6)];
   const spoolRows = rows(SLOTS.map(s => ({ entity: ID.spool(s), name: s === 5 ? 'Extern:' : `Slot ${s}:`, icon: 'mdi:printer-3d-nozzle' })));
   if (spoolRows.length) left.push(size({ type: 'entities', title: 'Spulen', show_header_toggle: false, entities: spoolRows }, 12));
 

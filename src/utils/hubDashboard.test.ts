@@ -3,7 +3,7 @@ import { DASH_URL, S, TRAY_PREFIX, buildDashboard, findCamera, trayColors, trayS
 import { ID } from '../../server/hub/dashboardEditLogic';
 import { BACKGROUND_SVG } from '../../server/hub/dashboardArt';
 import { EMPTY_COLS, FRONT_WEBP_BASE64, LOW_WEBP_BASE64, SHADE_WEBP_BASE64 } from '../../server/hub/dashboardPhoto';
-import { amsSvg, amsTestSheet, spoolColor } from '../../server/hub/dashboardAms';
+import { amsSvg, amsTestSheet, spoolColor, tempsSvg } from '../../server/hub/dashboardAms';
 
 const st = (entity_id: string, state = '1', attributes: Record<string, unknown> = {}) => ({ entity_id, state, attributes });
 
@@ -24,8 +24,12 @@ describe('Dashboard „Drucker“', () => {
     expect(v.type).toBe('sections');
     expect(v.theme).toBe('FilamentHub Glas');
     expect(v.sections).toHaveLength(3);
-    expect(v.sections[0].cards[0].type).toBe('picture-elements');
-    expect(v.sections[0].cards[0].image_entity).toBe('image.filamenthub_drucker'); // Bild wechselt ohne Neuladen
+    const block = v.sections[0].cards[0];
+    expect(block).toMatchObject({ type: 'vertical-stack', grid_options: { columns: 6 } }); // Drucker halb breit neben der Warteschlange
+    expect(block.cards[0].type).toBe('markdown'); // Bild über Vorlage: wechselt ohne Neuladen
+    expect(block.cards[0].content).toContain("state_attr('sensor.filamenthub_drucker_bild', 'url')");
+    expect(block.cards[1]).toMatchObject({ type: 'picture-elements' });
+    expect(block.cards[1].image).toContain('temperaturen.svg');
     expect(JSON.stringify(buildDashboard([]))).toBe(JSON.stringify(buildDashboard([st(`${TRAY_PREFIX}ams_1_slot_1`, 'PLA', { color: '#00FF00' })]))); // Spulenfarben ändern den Aufbau nicht
     expect(v.sections[0].cards[1].content).toContain(S.queue);
     const mid = JSON.stringify(v.sections[1].cards);
@@ -46,19 +50,14 @@ describe('Dashboard „Drucker“', () => {
       st(ID.nozzleSoll, '0'),
       st(ID.nozzle2Soll, '0')
     ]);
-    const pic = d.views[0].sections[0].cards[0];
-    const trays = pic.elements.filter((e: any) => /filamenthub_bild_slot_\d_material/.test(String(e.entity)));
-    expect(trays).toHaveLength(4); // immer alle 4 Plätze (leer = leerer Text), Aufbau bleibt gleich
-    expect(trays[0].style.left).toBe('18.2%');
-    expect(trays[2].style.left).toBe('60.5%');
+    const pic = d.views[0].sections[0].cards[0].cards[1];
     // Temperaturen im Bild: Düse 1/2 mit Soll und −/+, Bett ohne Soll-Feld nur mit Ist-Wert
     const plus = pic.elements.filter((e: any) => e.tap_action?.perform_action === 'input_number.increment');
     expect(plus.map((e: any) => e.tap_action.target.entity_id)).toEqual([ID.nozzleSoll, ID.nozzle2Soll]);
     expect(pic.elements.some((e: any) => e.entity === S.bed && e.attribute === 'friendly_name')).toBe(true); // Bett ohne Soll-Feld: nur Name + Ist
     expect(pic.elements.some((e: any) => e.entity === ID.nozzleSoll && e.prefix === 'Düse 1 · Soll ')).toBe(true);
-    expect(String(trays[0].style['font-family'])).toContain('Outfit');
+    expect(String(pic.elements[0].style['font-family'])).toContain('Outfit');
     expect(JSON.stringify(pic)).not.toContain(ID.bedSoll);
-    expect(pic.grid_options.columns).toBe(6); // Drucker halb breit neben der Warteschlange
     const spulen = d.views[0].sections[0].cards[2];
     expect(spulen.title).toBe('Spulen');
     expect(spulen.entities.map((e: any) => e.name)).toEqual(['Slot 1:', 'Extern:']);
@@ -69,17 +68,20 @@ describe('Dashboard „Drucker“', () => {
     expect(trayColors([st(`${TRAY_PREFIX}ams_1_slot_2`, 'PLA', { color: '#12ab34' })])).toEqual([null, '#12AB34', null, null]);
     expect(spoolColor('FF0000FF')).toBe('#FF0000');
     expect(spoolColor('kaputt')).toBeNull();
-    const svg = amsSvg(['#FF0000', null, '#000000', 'kaputt']);
+    const svg = amsSvg(['#FF0000', null, '#000000', 'kaputt'], [{ mat: 'PLA', rest: '134 g' }, null, { mat: 'PETG<', rest: '' }, null]);
+    expect(svg).toContain('>PLA</text>'); // Schild mit Material und Rest im Bild
+    expect(svg).toContain('>134 g</text>');
+    expect(svg).toContain('PETG&lt;');
+    expect(svg).toContain('font/woff2'); // Schrift steckt im Bild
     expect(svg.startsWith('<svg') && svg.endsWith('</svg>')).toBe(true);
     expect(svg).toContain('id="t0"');
     expect(svg).not.toContain('id="t1"');
     expect(svg).toContain('id="t2"');
     expect(svg).not.toContain('id="t3"'); // ungültige Farbe = leer
     expect(svg.split('filter="url(#hl)"').length - 1).toBe(2); // nur gefüllte Plätze bekommen eine Spule
-    expect(svg).toContain('height="904"'); // Platz für die Temperatur-Karten unter dem Drucker
+    expect(tempsSvg().split('filter="url(#tsd)"').length - 1).toBe(3); // Temperatur-Karten als festes Bild
     expect(svg).toContain('stroke="#FF0000" stroke-width="2"'); // Schild mit Rand in Spulenfarbe im Bild
     expect(svg).toContain('stroke="#9aa0a6" stroke-width="2"'); // schwarze Spule: grauer Rand
-    expect(svg.split('filter="url(#tsd)"').length - 1).toBe(3);
     expect(svg).toContain('<use href="#e1"/>'); // leerer Platz 2: Spalte aus dem Foto des leeren AMS
     expect(svg).toContain('filter="url(#u0)"'); // Schimmer unten in Spulenfarbe
     expect(svg).toContain('data:image/webp;base64,');

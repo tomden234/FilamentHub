@@ -4238,5 +4238,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.316',
+    label: '1.316 (Drucker wieder da)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“: In 1.315 war das Druckerbild weg, weil Home Assistant das vom Pi gesetzte Bild-Element nicht als Bild annimmt. Jetzt zeigt eine Text-Karte das Bild, die Adresse kommt aus einem Sensor des Pi; neue Spulenfarben und Reste erscheinen damit weiter ohne Neuladen. Die Spulen-Schilder (Material, Restgewicht, Schrift Outfit) sind direkt im Bild, die Temperatur-Karten stehen als eigene Bild-Karte darunter. Pi-Add-on 1.3.68.',
+    features: ['🖨️ Druckerbild wieder sichtbar', '🔄 Farben weiter ohne Neuladen', '🏷️ Spulen-Schilder im Bild', '🥧 Pi-Add-on 1.3.68 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

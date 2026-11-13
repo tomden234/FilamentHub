@@ -17,9 +17,9 @@ import { slotOfTray } from './dashboardEditLogic.js';
 import { realColor } from './spoolColors.js';
 import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
-import { amsSvg, amsTestSheet } from './dashboardAms.js';
+import { amsSvg, amsTestSheet, tempsSvg, type SpoolLabel } from './dashboardAms.js';
 import { FONT_CSS, FONT_FILES, FONT_VERSION } from './dashboardFonts.js';
-import { ART_DIR, DASH_TITLE, DASH_URL, PHOTO_ENTITY, S, TRAY_PREFIX, buildDashboard, labelSensor, restSensor, trayColors, traySensorId } from './dashboardConfig.js';
+import { ART_DIR, DASH_TITLE, DASH_URL, PHOTO_SENSOR, S, TRAY_PREFIX, buildDashboard, trayColors, traySensorId } from './dashboardConfig.js';
 
 const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause', FINISH: 'Fertig', FAILED: 'Fehler', IDLE: 'Bereit', PREPARE: 'Vorbereitung', SLICING: 'Vorbereitung' };
 
@@ -29,18 +29,19 @@ const sent = new Map<string, { sig: string; at: number }>();
 let lastQueueAt = 0;
 let lastPhoto = '';
 
-/** Druckerbild mit den Spulenfarben als eigene Datei (Name mit Kennung) ablegen und das Bild-Element darauf zeigen lassen */
-async function publishPrinterImage(colors: (string | null)[], force = false): Promise<void> {
-  const svg = amsSvg(colors);
+/** Druckerbild (Farben + Schilder) als eigene Datei mit Kennung im Namen ablegen; der Sensor nennt die Adresse, die Text-Karte zeigt sie ohne Neuladen */
+async function publishPrinterImage(colors: (string | null)[], labels: (SpoolLabel | null)[] = [], force = false): Promise<void> {
+  const svg = amsSvg(colors, labels);
   const v = createHash('sha1').update(svg).digest('hex').slice(0, 10);
   if (v === lastPhoto && !force) return;
   const name = `drucker-${v}.svg`;
   if (!publishAsset(name, svg)) return;
-  publishAsset('drucker.svg', svg); // Ersatz, falls das Bild-Element fehlt
+  publishAsset('drucker.svg', svg); // Ersatz, falls der Sensor fehlt
   pruneAssets(/^drucker-[0-9a-f]+\.svg$/, new Set([name]));
-  await setSensor(PHOTO_ENTITY, v, { friendly_name: 'Drucker Bild', entity_picture: `${ART_DIR}/${name}` });
+  await setSensor(PHOTO_SENSOR, v, { friendly_name: 'Drucker Bild', url: `${ART_DIR}/${name}`, icon: 'mdi:printer-3d' });
   lastPhoto = v;
 }
+let lastLabels: (SpoolLabel | null)[] = [];
 const clock = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || 'Europe/Berlin' });
 
 /** Titelbild eines Eintrags in den Dashboard-Ordner legen (Name q-<id>.png). Gibt den Dateinamen zurück oder ''. */
@@ -116,15 +117,15 @@ export async function publishSensors(): Promise<void> {
     });
   }
   if (live) {
-    // Beschriftung im Bild: für alle 4 AMS-Plätze immer ein Sensor (leer = leerer Text), damit der Dashboard-Aufbau gleich bleibt
-    for (let n = 1; n <= 4; n++) {
-      const sp = amsColors[n - 1] ? bySlot?.get(n) : undefined;
+    // Schilder im Bild: Material und Restgewicht je AMS-Platz (aus der App, sonst Material laut Drucker)
+    lastLabels = [1, 2, 3, 4].map(n => {
+      if (!amsColors[n - 1]) return null;
+      const sp = bySlot?.get(n);
       const tray = trays.find(t => t.amsId === 0 && t.slotId === n - 1);
-      await setSensor(labelSensor(n), amsColors[n - 1] ? sp?.material || tray?.type || '' : '', { friendly_name: `Spule ${n} Material`, icon: 'mdi:tag' });
-      await setSensor(restSensor(n), sp ? `${Math.round(Number(sp.remainingWeight) || 0)} g` : '', { friendly_name: `Spule ${n} Rest`, icon: 'mdi:weight-gram' });
-    }
-    // Andere Spulen-Farben im AMS: Druckerbild neu bauen und über das Bild-Element tauschen (Dashboard bleibt gleich, kein Neuladen nötig)
-    await publishPrinterImage(amsColors);
+      return { mat: String(sp?.material || tray?.type || ''), rest: sp ? `${Math.round(Number(sp.remainingWeight) || 0)} g` : '' };
+    });
+    // Andere Spulen-Farben oder Reste: Druckerbild neu bauen (Text-Karte zeigt die neue Datei ohne Neuladen)
+    await publishPrinterImage(amsColors, lastLabels);
   }
   await setSensor(S.tray, live ? activeText : na, { friendly_name: 'Drucker Aktives Fach', icon: 'mdi:printer-3d-nozzle' });
   // Leere/entfernte Fächer verschwinden aus Home Assistant (nur wenn der Drucker erreichbar ist)
@@ -217,7 +218,11 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     if (!states) return { ok: false, text: 'Zustände von Home Assistant nicht lesbar', changed: false };
     // Grafiken ablegen (nur bei neuem Inhalt geschrieben)
     // Druckerbild mit den echten Spulenfarben (Bild-Element; Dashboard-Aufbau hängt nicht von den Farben ab)
-    await publishPrinterImage(trayColors(states), true);
+    await publishPrinterImage(trayColors(states), lastLabels, true);
+    publishAsset('temperaturen.svg', tempsSvg());
+    // Reste aus 1.315 (Bild-Element, Beschriftungs-Sensoren) entfernen
+    for (const id of ['image.filamenthub_drucker', ...[1, 2, 3, 4].flatMap(n => [`sensor.filamenthub_bild_slot_${n}_material`, `sensor.filamenthub_bild_slot_${n}_rest`])])
+      if (states.some((x: any) => x?.entity_id === id)) void haDeleteState(id);
     const b = publishAsset('hintergrund.svg', BACKGROUND_SVG);
     if (!b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
     pruneAssets(/^x2d\.webp$/, new Set()); // Foto aus 1.304/1.305
