@@ -1131,8 +1131,9 @@ export default function App() {
     }, 0);
   }, [stockSpools, appSettings]);
 
+  // 1.315: gleiche Regel wie das Schild „Trocknen fällig“ an der Spule (überfällig oder markiert), „bald fällig“ zählt nicht mit
   const dueDryingCount = useMemo(() => {
-    return stockSpools.filter(s => getDryingStatus(s, now).statusLevel !== 'ok').length;
+    return stockSpools.filter(s => s.needsDrying || getDryingStatus(s, now).isOverdue).length;
   }, [stockSpools, now]);
 
   const totalUsedGrams = useMemo(() => {

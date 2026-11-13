@@ -118,6 +118,17 @@ export async function syncEditFields(): Promise<void> {
   for (const [i, slot] of SLOTS.entries()) await setSpoolField(ID.spool(slot), opts, opts.labelOf.get(ids[i]!) || EMPTY);
 }
 
+/** Spulen laut Drucker: AMS 1-4 und extern (5) */
+const trays = (d: any) => {
+  const ext = readExternal(d?.vt_tray);
+  return [...readTrays(d?.ams), ...(ext ? [ext] : [])];
+};
+/** Kennung der Spule, die der Drucker für einen Platz meldet (ändert sich beim Einlegen einer anderen Spule) */
+const trayKey = (hw: { slot: number; empty: boolean; type: string; colorHex: string | null }[], slot: number): string => {
+  const t = hw.find(x => x.slot === slot);
+  return t && !t.empty ? `${t.type}|${t.colorHex || ''}`.toLowerCase() : '';
+};
+
 /**
  * Was steckt gerade im Drucker? Je Platz die Spule aus der App: eigene Zuordnung, solange sie zu Material und Farbe passt,
  * sonst die passendste Spule mit Rest. null = Lager nicht lesbar. Wird auch für Druckerbild und Spulen-Sensoren genutzt.
@@ -130,13 +141,16 @@ export async function slotSpools(d: any): Promise<(Map<number, any> & { list: an
     return null;
   }
   warnedEmpty = false;
-  const ext = readExternal(d?.vt_tray);
-  const hw = [...readTrays(d?.ams), ...(ext ? [ext] : [])];
-  const assigned = getHubConfig().amsSlots || {};
+  const hw = trays(d);
+  const cfg = getHubConfig();
+  const assigned = cfg.amsSlots || {};
   const slots = syncSlots(list, hw, Object.fromEntries(Object.entries(assigned).map(([k, v]) => [Number(k), v]))).slots;
   const out = new Map<number, any>() as Map<number, any> & { list: any[] };
   for (const slot of SLOTS) {
-    const sp = list.find(x => x.id === slots[slot]);
+    // Wahl im Dashboard gewinnt, solange am Drucker dieselbe Spule steckt (auch wenn Farbe/Material nicht passen)
+    const pick = cfg.slotPicks?.[String(slot)];
+    const id = pick && pick.key === trayKey(hw, slot) && (pick.id === '' || list.some(x => x.id === pick.id)) ? pick.id : slots[slot];
+    const sp = list.find(x => x.id === id);
     if (sp) out.set(slot, sp);
   }
   out.list = list;
@@ -169,7 +183,7 @@ async function handleEdit(entity: string, value: string): Promise<void> {
     written.delete(entity);
     return;
   }
-  setSlotSpool(slot, id);
+  setSlotSpool(slot, id, trayKey(trays(port?.getStatus().data), slot));
   const name = slot === 5 ? 'Extern' : `Slot ${slot}`;
   console.log(`[Hub] Dashboard: ${name} → ${id ? value : 'leer'}`);
   // Gewählte Spule auch am Drucker einstellen (Farbe, Material, Düsenbereich wie in der App)

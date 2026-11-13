@@ -19,7 +19,7 @@ import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
 import { amsSvg, amsTestSheet } from './dashboardAms.js';
 import { FONT_CSS, FONT_FILES, FONT_VERSION } from './dashboardFonts.js';
-import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, trayColors, traySensorId } from './dashboardConfig.js';
+import { ART_DIR, DASH_TITLE, DASH_URL, PHOTO_ENTITY, S, TRAY_PREFIX, buildDashboard, labelSensor, restSensor, trayColors, traySensorId } from './dashboardConfig.js';
 
 const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause', FINISH: 'Fertig', FAILED: 'Fehler', IDLE: 'Bereit', PREPARE: 'Vorbereitung', SLICING: 'Vorbereitung' };
 
@@ -27,7 +27,20 @@ const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause',
 
 const sent = new Map<string, { sig: string; at: number }>();
 let lastQueueAt = 0;
-let lastTraySig = '';
+let lastPhoto = '';
+
+/** Druckerbild mit den Spulenfarben als eigene Datei (Name mit Kennung) ablegen und das Bild-Element darauf zeigen lassen */
+async function publishPrinterImage(colors: (string | null)[], force = false): Promise<void> {
+  const svg = amsSvg(colors);
+  const v = createHash('sha1').update(svg).digest('hex').slice(0, 10);
+  if (v === lastPhoto && !force) return;
+  const name = `drucker-${v}.svg`;
+  if (!publishAsset(name, svg)) return;
+  publishAsset('drucker.svg', svg); // Ersatz, falls das Bild-Element fehlt
+  pruneAssets(/^drucker-[0-9a-f]+\.svg$/, new Set([name]));
+  await setSensor(PHOTO_ENTITY, v, { friendly_name: 'Drucker Bild', entity_picture: `${ART_DIR}/${name}` });
+  lastPhoto = v;
+}
 const clock = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || 'Europe/Berlin' });
 
 /** Titelbild eines Eintrags in den Dashboard-Ordner legen (Name q-<id>.png). Gibt den Dateinamen zurück oder ''. */
@@ -80,7 +93,7 @@ export async function publishSensors(): Promise<void> {
   const active = live ? activeSlotFromPrinter(d.ams) : null;
   // Daten der Spule aus der App (Name, Material, echte Farbe); ohne passende Spule die Werte vom Drucker
   const bySlot = live ? await slotSpools(d).catch(() => null) : null;
-  const colors: string[] = [];
+  const amsColors: (string | null)[] = [null, null, null, null];
   const now = new Set<string>();
   let activeText = '–';
   for (const t of trays) {
@@ -93,7 +106,7 @@ export async function publishSensors(): Promise<void> {
     const sp = slot ? bySlot?.get(slot) : undefined;
     const real = sp ? realColor(sp) : '';
     const color = /^#[0-9a-fA-F]{6}$/.test(real) ? real : t.colorHex;
-    colors.push(`${id}=${color}`);
+    if (slot && slot <= 4) amsColors[slot - 1] = color;
     await setSensor(id, sp?.material || t.type, {
       friendly_name: sp ? `${label}: ${[sp.brand, sp.colorName].filter(Boolean).join(' ')}`.slice(0, 80) : label,
       color,
@@ -102,11 +115,16 @@ export async function publishSensors(): Promise<void> {
       ...(sp ? { rest_g: Math.round(Number(sp.remainingWeight) || 0) } : {})
     });
   }
-  // Andere Spulen-Farben im AMS: Druckerbild gleich neu bauen (sonst erst beim nächsten 10-min-Takt)
   if (live) {
-    const sig = colors.join('|');
-    if (lastTraySig && sig !== lastTraySig) setTimeout(() => void ensureDashboard(), 5_000);
-    lastTraySig = sig;
+    // Beschriftung im Bild: für alle 4 AMS-Plätze immer ein Sensor (leer = leerer Text), damit der Dashboard-Aufbau gleich bleibt
+    for (let n = 1; n <= 4; n++) {
+      const sp = amsColors[n - 1] ? bySlot?.get(n) : undefined;
+      const tray = trays.find(t => t.amsId === 0 && t.slotId === n - 1);
+      await setSensor(labelSensor(n), amsColors[n - 1] ? sp?.material || tray?.type || '' : '', { friendly_name: `Spule ${n} Material`, icon: 'mdi:tag' });
+      await setSensor(restSensor(n), sp ? `${Math.round(Number(sp.remainingWeight) || 0)} g` : '', { friendly_name: `Spule ${n} Rest`, icon: 'mdi:weight-gram' });
+    }
+    // Andere Spulen-Farben im AMS: Druckerbild neu bauen und über das Bild-Element tauschen (Dashboard bleibt gleich, kein Neuladen nötig)
+    await publishPrinterImage(amsColors);
   }
   await setSensor(S.tray, live ? activeText : na, { friendly_name: 'Drucker Aktives Fach', icon: 'mdi:printer-3d-nozzle' });
   // Leere/entfernte Fächer verschwinden aus Home Assistant (nur wenn der Drucker erreichbar ist)
@@ -198,18 +216,16 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     const states = await haStates();
     if (!states) return { ok: false, text: 'Zustände von Home Assistant nicht lesbar', changed: false };
     // Grafiken ablegen (nur bei neuem Inhalt geschrieben)
-    // Druckerbild mit den echten Spulenfarben; die Kennung im Namen der Adresse umgeht den Zwischenspeicher des Browsers
-    const svg = amsSvg(trayColors(states));
-    const photoV = createHash('sha1').update(svg).digest('hex').slice(0, 10);
-    const a = publishAsset('drucker.svg', svg);
+    // Druckerbild mit den echten Spulenfarben (Bild-Element; Dashboard-Aufbau hängt nicht von den Farben ab)
+    await publishPrinterImage(trayColors(states), true);
     const b = publishAsset('hintergrund.svg', BACKGROUND_SVG);
-    if (!a || !b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
+    if (!b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
     pruneAssets(/^x2d\.webp$/, new Set()); // Foto aus 1.304/1.305
     await ensureFont();
     // Testbild aller Spulen (zum Prüfen der Farben): /local/filamenthub-dashboard/spulen-test.svg
     const all = await spools();
     if (all.length) publishAsset('spulen-test.svg', amsTestSheet(all.map(x => ({ label: [x.brand, x.material, x.colorName].filter(Boolean).join(' '), color: realColor(x) }))));
-    const config = buildDashboard(states, photoV);
+    const config = buildDashboard(states);
     const key = createHash('sha1').update(JSON.stringify(config)).digest('hex').slice(0, 16);
     if (!lastKey) lastKey = readKey();
     if (!force && key === lastKey) return { ok: true, text: `Dashboard aktuell${theme.hint ? ` – ${theme.hint}` : ''}`, changed: false };

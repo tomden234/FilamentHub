@@ -13,6 +13,22 @@ const COLS: [number, number][] = [
 /** Mitte der Spulen in % der Bildbreite (für die Beschriftung im Dashboard) */
 export const SPOOL_X = [18.2, 39.1, 60.5, 82.1];
 
+/** Spulen-Schild am AMS (Mitte y, Größe in Bildpunkten); wird im Bild gezeichnet, damit es mit dem Bild mitwächst */
+export const SPOOL_TAG = { y: 150, w: 54, h: 30 };
+const dark = (c: string) => {
+  const [r, g, b] = rgb(c);
+  return 0.3 * r + 0.59 * g + 0.11 * b < 0.2;
+};
+const tagsSvg = (colors: (string | null)[]) =>
+  colors
+    .map((c, i) => {
+      const col = c ? spoolColor(c) : null;
+      if (!col) return '';
+      const x = (SPOOL_X[i]! / 100) * 397;
+      return `<rect x="${f3(x - SPOOL_TAG.w / 2)}" y="${SPOOL_TAG.y - SPOOL_TAG.h / 2}" width="${SPOOL_TAG.w}" height="${SPOOL_TAG.h}" rx="13" fill="#0a0e12" fill-opacity=".85" stroke="${dark(col) ? '#9aa0a6' : col}" stroke-width="2"/>`;
+    })
+    .join('');
+
 /** Bildgröße: Drucker (397×700) und darunter die Temperatur-Karten */
 export const CANVAS = { w: 397, h: 904, printerH: 700 };
 /** Temperatur-Karten unter dem Drucker (Bildpunkte): Düse 1, Düse 2 nebeneinander, Bett darunter */
@@ -72,7 +88,7 @@ const BASE_DEFS =
 /** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (Spalte aus dem Foto des leeren AMS) */
 export function amsSvg(colors: (string | null)[]): string {
   const l = layers(colors, '');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS.w}" height="${CANVAS.h}" viewBox="0 0 ${CANVAS.w} ${CANVAS.h}"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}${tilesSvg()}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS.w}" height="${CANVAS.h}" viewBox="0 0 ${CANVAS.w} ${CANVAS.h}"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}${tagsSvg(colors)}${tilesSvg()}</svg>`;
 }
 
 const xml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

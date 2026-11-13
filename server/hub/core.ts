@@ -38,6 +38,8 @@ export interface HubConfig {
   doubleAction: 'pause' | 'rotate' | 'none';
   /** 1.306: Zeitpunkt der letzten Platz-Belegung im Dashboard (die Apps übernehmen sie, statt sie zu überschreiben) */
   slotsEditAt: number;
+  /** 1.315: Wahl im Dashboard je Platz; gilt, solange am Drucker dieselbe Spule steckt (key = Material|Farbe laut Drucker) */
+  slotPicks: Record<string, { id: string; key: string }>;
   updatedAt: number;
 }
 
@@ -60,6 +62,7 @@ const DEFAULT_CFG: HubConfig = {
   materialGuard: true,
   doubleAction: 'pause',
   slotsEditAt: 0,
+  slotPicks: {},
   updatedAt: 0
 };
 
@@ -109,7 +112,13 @@ export function updateHubConfig(body: any): HubConfig {
   if (cu === '' || (cu !== undefined && validCloudUrl(cu))) set('cloudUrl', cu);
   set('gistToken', str(body?.gistToken, 200));
   // 1.306: Belegung aus dem Dashboard ist neuer als der Stand der App → die App übernimmt sie (Antwort), statt sie zu überschreiben
-  if ((Number(body?.slotsSeenAt) || 0) >= (c.slotsEditAt || 0)) set('amsSlots', cleanMap(body?.amsSlots, (x): x is string => typeof x === 'string' && x.length < 100, 10));
+  if ((Number(body?.slotsSeenAt) || 0) >= (c.slotsEditAt || 0)) {
+    set('amsSlots', cleanMap(body?.amsSlots, (x): x is string => typeof x === 'string' && x.length < 100, 10));
+    // Neue Belegung aus der App: abweichende Dashboard-Wahl verwerfen
+    const picks = { ...(c.slotPicks || {}) };
+    for (const [k, p] of Object.entries(picks)) if ((c.amsSlots || {})[k] !== p.id && p.id) delete picks[k];
+    c.slotPicks = picks;
+  }
   set('jobGrams', cleanMap(body?.jobGrams, (x): x is number => typeof x === 'number' && x > 0 && x < 10000));
   // 1.233: nur ein einzelnes Gerät im bekannten Format (sonst ließe sich über „all“ oder eine Liste jedes Gerät schalten)
   const sw = str(body?.switchEntity, 120);
@@ -133,14 +142,15 @@ export function updateHubConfig(body: any): HubConfig {
   return c;
 }
 
-/** 1.306: Platz im Dashboard belegt (spoolId leer = Platz frei) */
-export function setSlotSpool(slot: number, spoolId: string): void {
+/** 1.306: Platz im Dashboard belegt (spoolId leer = Platz frei). key = Material|Farbe, die der Drucker gerade für den Platz meldet */
+export function setSlotSpool(slot: number, spoolId: string, key = ''): void {
   const c = getHubConfig();
   const amsSlots = { ...(c.amsSlots || {}) };
   if (spoolId) amsSlots[String(slot)] = spoolId;
   else delete amsSlots[String(slot)];
+  const slotPicks = { ...(c.slotPicks || {}), [String(slot)]: { id: spoolId, key } };
   const now = Date.now();
-  storeHubConfig({ ...c, amsSlots, slotsEditAt: now, updatedAt: now });
+  storeHubConfig({ ...c, amsSlots, slotPicks, slotsEditAt: now, updatedAt: now });
 }
 
 // ---------- Zustand je Druck ----------

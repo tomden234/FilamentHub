@@ -4227,5 +4227,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.315',
+    label: '1.315 (Druckerbild-Fix, Spulenwahl, Trocknen-Zahl)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“: Schrift und Knöpfe am Druckerbild überlappen nicht mehr (kleiner, für ca. 250 px Breite ausgelegt; Spulen-Schilder sind jetzt im Bild und wachsen mit). Eine im Dashboard gewählte Spule gilt, solange am Drucker dieselbe Spule steckt, auch wenn Material oder Farbe laut Drucker nicht passen (vorher hat die automatische Erkennung sie überschrieben). Neue Spulenfarben erscheinen ohne Neuladen der Seite (Bild über ein eigenes Bild-Element, der Dashboard-Aufbau bleibt gleich). App: Die Kachel „Trocknen fällig“ zählt jetzt nur überfällige Spulen, wie das Schild an den Spulen (vorher auch „bald fällig“). Pi-Add-on 1.3.67.',
+    features: ['🧩 Druckerbild ohne Überlappen', '🧵 Spulenwahl im Dashboard bleibt', '🔄 AMS-Farben ohne Neuladen', '☀️ Trocknen-Zahl stimmt mit Liste', '🥧 Pi-Add-on 1.3.67 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

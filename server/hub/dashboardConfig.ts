@@ -2,7 +2,7 @@
 // Aufbau: links Drucker (AMS in echten Farben) neben der Warteschlange und die Spulen, Mitte Drucker-Werte, rechts Lagerbox und Trockner.
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { ART_VERSION } from './dashboardArt.js';
-import { CANVAS, SPOOL_X, TEMP_TILES, spoolColor } from './dashboardAms.js';
+import { CANVAS, SPOOL_TAG, SPOOL_X, TEMP_TILES, spoolColor } from './dashboardAms.js';
 import { FONT_FAMILY } from './dashboardFonts.js';
 import { ID, SLOTS } from './dashboardEditLogic.js';
 
@@ -27,6 +27,11 @@ export const S = {
 } as const;
 
 export const ART_DIR = '/local/filamenthub-dashboard';
+/** Beschriftung je AMS-Platz (immer vorhanden, leer = leerer Platz) */
+export const labelSensor = (n: number) => `sensor.filamenthub_bild_slot_${n}_material`;
+export const restSensor = (n: number) => `sensor.filamenthub_bild_slot_${n}_rest`;
+/** Bild-Element mit dem Druckerbild (vom Pi gesetzt, entity_picture zeigt auf die aktuelle Datei) */
+export const PHOTO_ENTITY = 'image.filamenthub_drucker';
 export const TRAY_PREFIX = 'sensor.filamenthub_spule_';
 
 /** Sensor-Id einer Spule am Drucker: „AMS 1 Slot 2“ → sensor.filamenthub_spule_ams_1_slot_2 */
@@ -73,26 +78,15 @@ const tile = (entity: string, name: string, icon: string) => ({ type: 'tile', en
 const pct = (v: number, of: number) => `${Math.round((v / of) * 10000) / 100}%`;
 const TEAL = '#5ff0cf';
 
-/** Spulen-Schild am AMS: dunkle Pille mit Rand in Spulenfarbe, Material groß, Restgewicht darunter */
-function spoolTag(tray: any, x: number): any[] {
-  const top = (0.215 * CANVAS.printerH * 100) / CANVAS.h;
-  const color = spoolColor(tray?.attributes?.color) || '#9aa0a6';
-  const ring = colorDark(color) ? '#9aa0a6' : color; // schwarze Spule: grauer Rand, sonst unsichtbar
-  const el: any[] = [
-    {
-      type: 'state-label',
-      entity: tray.entity_id,
-      style: { left: `${x}%`, top: `${top}%`, background: 'rgba(10,14,18,.85)', border: `2px solid ${ring}`, 'border-radius': '14px', padding: '3px 12px 14px', 'min-width': '40px', 'text-align': 'center', color: '#fff', 'font-family': FONT_FAMILY, 'font-size': '12px', 'font-weight': '700', 'white-space': 'nowrap' }
-    }
+/** Spulen-Schild am AMS: Pille mit farbigem Rand ist im Bild, hier nur die Schrift (Material groß, Restgewicht darunter) */
+function spoolTag(n: number, x: number): any[] {
+  const font = { 'font-family': FONT_FAMILY, 'white-space': 'nowrap', 'text-align': 'center' };
+  const y = (SPOOL_TAG.y * 100) / CANVAS.h;
+  return [
+    { type: 'state-label', entity: labelSensor(n), style: { left: `${x}%`, top: `${y - 0.75}%`, color: '#fff', 'font-size': '10px', 'font-weight': '700', ...font } },
+    { type: 'state-label', entity: restSensor(n), style: { left: `${x}%`, top: `${y + 0.85}%`, color: '#cfd8dc', 'font-size': '8px', 'font-weight': '500', ...font } }
   ];
-  if (tray?.attributes?.rest_g !== undefined)
-    el.push({ type: 'state-label', entity: tray.entity_id, attribute: 'rest_g', suffix: ' g', style: { left: `${x}%`, top: `${top + 1.25}%`, color: '#cfd8dc', 'font-family': FONT_FAMILY, 'font-size': '9px', 'font-weight': '500', 'white-space': 'nowrap' } });
-  return el;
 }
-const colorDark = (hex: string) => {
-  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
-  return 0.3 * r! + 0.59 * g! + 0.11 * b! < 50;
-};
 
 /** Temperatur-Karte unter dem Drucker (Karte selbst ist im Bild): oben Name + Soll, groß der Ist-Wert, runde −/+ links und rechts */
 function tempCard(tile: { x: number; y: number; w: number; h: number }, ist: string, soll: string, name: string, accent: string, withSoll: boolean): any[] {
@@ -101,49 +95,50 @@ function tempCard(tile: { x: number; y: number; w: number; h: number }, ist: str
   const cx = pct(tile.x + tile.w / 2, W);
   const vy = pct(tile.y + tile.h * 0.62, H);
   const font = { 'font-family': FONT_FAMILY, 'white-space': 'nowrap' };
-  const el: any[] = [{ type: 'state-label', entity: ist, style: { left: cx, top: vy, color: '#fff', 'font-size': '28px', 'font-weight': '700', ...font } }];
+  const el: any[] = [{ type: 'state-label', entity: ist, style: { left: cx, top: vy, color: '#fff', 'font-size': '18px', 'font-weight': '700', ...font } }];
   if (!withSoll) {
-    el.push({ type: 'state-label', entity: ist, attribute: 'friendly_name', style: { left: cx, top: pct(tile.y + 18, H), color: '#9fb4c4', 'font-size': '11px', 'font-weight': '500', ...font } });
+    el.push({ type: 'state-label', entity: ist, attribute: 'friendly_name', style: { left: cx, top: pct(tile.y + 16, H), color: '#9fb4c4', 'font-size': '9px', 'font-weight': '500', ...font } });
     return el;
   }
-  el.push({ type: 'state-label', entity: soll, prefix: `${name} · Soll `, style: { left: cx, top: pct(tile.y + 18, H), color: '#9fb4c4', 'font-size': '11px', 'font-weight': '500', ...font } });
+  el.push({ type: 'state-label', entity: soll, prefix: `${name} · Soll `, style: { left: cx, top: pct(tile.y + 16, H), color: '#9fb4c4', 'font-size': '9px', 'font-weight': '500', ...font } });
   const btn = (icon: string, x: number, action: 'increment' | 'decrement') => ({
     type: 'icon',
     icon,
     title: `${name} Soll ${action === 'increment' ? '+5' : '−5'} °C`,
     tap_action: { action: 'perform-action', perform_action: `input_number.${action}`, target: { entity_id: soll } },
-    style: { left: pct(x, W), top: vy, color: accent, background: 'rgba(95,240,207,.12)', border: '1px solid rgba(95,240,207,.45)', 'border-radius': '50%', padding: '4px', '--mdc-icon-size': '18px' }
+    style: { left: pct(x, W), top: vy, color: accent, background: 'rgba(95,240,207,.12)', border: '1px solid rgba(95,240,207,.45)', 'border-radius': '50%', padding: '1px', '--mdc-icon-size': '13px', width: '15px', height: '15px', display: 'flex', 'align-items': 'center', 'justify-content': 'center' }
   });
-  el.push(btn('mdi:minus', tile.x + 26, 'decrement'), btn('mdi:plus', tile.x + tile.w - 26, 'increment'));
+  const inset = Math.min(22, tile.w * 0.12);
+  el.push(btn('mdi:minus', tile.x + inset, 'decrement'), btn('mdi:plus', tile.x + tile.w - inset, 'increment'));
   return el;
 }
 
 /** Druckerbild (AMS in den echten Farben, vom Pi gebaut) mit Spulen-Schildern und darunter den Temperatur-Karten */
-function printerPicture(states: any[], photoV: string) {
+function printerPicture(states: any[]) {
   const have = new Set(ids(states));
-  const by = new Map((Array.isArray(states) ? states : []).map(s => [String(s?.entity_id || ''), s]));
-  const elements: any[] = SPOOL_X.flatMap((x, i) => (by.has(amsTray(i + 1)) ? spoolTag(by.get(amsTray(i + 1)), x) : []));
+  const elements: any[] = SPOOL_X.flatMap((x, i) => spoolTag(i + 1, x));
   elements.push(
     ...tempCard(TEMP_TILES[0]!, S.nozzle, ID.nozzleSoll, 'Düse 1', TEAL, have.has(ID.nozzleSoll)),
     ...tempCard(TEMP_TILES[1]!, S.nozzle2, ID.nozzle2Soll, 'Düse 2', TEAL, have.has(ID.nozzle2Soll)),
     ...tempCard(TEMP_TILES[2]!, S.bed, ID.bedSoll, 'Bett', '#ff9aa2', have.has(ID.bedSoll))
   );
-  return { type: 'picture-elements', image: `${ART_DIR}/drucker.svg?v=${photoV}`, grid_options: { columns: 6 }, elements };
+  // Bild über das Bild-Element des Pi: neue Spulenfarben erscheinen ohne Neuladen (image = Ersatz, falls es fehlt)
+  return { type: 'picture-elements', image_entity: PHOTO_ENTITY, image: `${ART_DIR}/drucker.svg`, grid_options: { columns: 6 }, elements };
 }
 
 /** Warteschlange wie in der App: Bild, Nummer, Name, Spulen je Filament, Zeit, Warnungen in Rot */
 const QUEUE_MD = `{% set q = state_attr('${S.queue}', 'items') or [] %}{% if q | count == 0 %}Leer{% endif %}{% for i in q %}<table width="100%"><tr>{% if i.thumb %}<td width="64"><img src="{{ i.thumb }}" width="60"></td>{% endif %}<td><b>{{ loop.index }}. {{ i.name }}</b>{% for l in i.lines %}<br><font color="#cfe3e6">{{ l }}</font>{% endfor %}{% if i.time %}<br><font color="#bfe9ff">{{ i.time }}</font>{% endif %}{% for w in i.warn %}<br><font color="#ff8fa8"><b>{{ w }}</b></font>{% endfor %}</td></tr></table>
 {% endfor %}`;
 
-/** Dashboard-Aufbau aus der aktuellen Zustandsliste von Home Assistant. photoV = Kennung des Druckerbilds */
-export function buildDashboard(states: any[], photoV = String(ART_VERSION)): { title: string; views: any[] } {
+/** Dashboard-Aufbau aus der aktuellen Zustandsliste von Home Assistant */
+export function buildDashboard(states: any[]): { title: string; views: any[] } {
   const all = Array.isArray(states) ? states : [];
   const have = new Set(ids(all));
   const has = (id: string) => have.has(id);
   const rows = (list: { entity: string; name: string; icon?: string }[]) => list.filter(r => has(r.entity));
 
   // Links: Drucker (halbe Breite) neben der Warteschlange, darunter die Spulen
-  const left: any[] = [printerPicture(all, photoV), size({ type: 'markdown', title: 'Warteschlange', content: QUEUE_MD }, 6)];
+  const left: any[] = [printerPicture(all), size({ type: 'markdown', title: 'Warteschlange', content: QUEUE_MD }, 6)];
   const spoolRows = rows(SLOTS.map(s => ({ entity: ID.spool(s), name: s === 5 ? 'Extern:' : `Slot ${s}:`, icon: 'mdi:printer-3d-nozzle' })));
   if (spoolRows.length) left.push(size({ type: 'entities', title: 'Spulen', show_header_toggle: false, entities: spoolRows }, 12));
 

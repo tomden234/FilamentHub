@@ -43,6 +43,12 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.67 (kein Überlappen, Spulenwahl gilt, Bild ohne Neuladen)
+
+- Druckerbild: Schrift und Knöpfe kleiner, passen auch bei schmalem Bild (ca. 250 px). Spulen-Schilder werden ins Bild gezeichnet und wachsen mit.
+- Bild läuft über `image.filamenthub_drucker` (entity_picture zeigt auf `drucker-<kennung>.svg`): neue Spulenfarben erscheinen ohne Neuladen; der Dashboard-Aufbau bleibt gleich (kein „Dashboard geändert“-Hinweis mehr). Beschriftung über `sensor.filamenthub_bild_slot_N_material/_rest`.
+- Spulenwahl im Dashboard gilt, solange am Drucker dieselbe Spule steckt (auch wenn Material/Farbe laut Drucker nicht passen).
+
 ## Neu in 1.3.66 (besser lesbar)
 
 - Theme: dunkle Glaskarten mit weißer Schrift auf dem Pastell-Hintergrund, Eingabefelder leicht hell mit türkiser Linie, Menüs deckend, Schrift Outfit im ganzen Dashboard.
