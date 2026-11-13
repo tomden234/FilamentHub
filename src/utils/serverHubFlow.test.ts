@@ -61,6 +61,19 @@ describe('Pi-Server: Abzug im Ablauf', () => {
     expect(hub.printMeta(rec3.id)?.deduct).toBe('done');
     expect(doc.spools[0].remainingWeight).toBe(425);
     expect(doc.printLog.some((r: any) => r.name === 'Air_Up_Fake_Pod')).toBe(true);
+
+    // 1.306: Platz im Dashboard belegt → eine App mit altem Stand überschreibt das nicht, eine App mit neuem Stand schon
+    const core = await import('../../server/hub/core');
+    core.setSlotSpool(2, 'a');
+    const at = core.getHubConfig().slotsEditAt;
+    expect(core.getHubConfig().amsSlots).toEqual({ '1': 'a', '2': 'a' });
+    hub.updateHubConfig({ amsSlots: { '1': 'a' }, slotsSeenAt: at - 1 });
+    expect(core.getHubConfig().amsSlots['2']).toBe('a');
+    hub.updateHubConfig({ amsSlots: { '1': 'a' }, slotsSeenAt: at });
+    expect(core.getHubConfig().amsSlots['2']).toBeUndefined();
+    core.setSlotSpool(1, '');
+    expect(core.getHubConfig().amsSlots['1']).toBeUndefined();
+    expect(hub.hubStatus().slotsEditAt).toBe(core.getHubConfig().slotsEditAt);
     vi.unstubAllGlobals();
   });
 });

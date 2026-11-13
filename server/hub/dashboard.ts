@@ -7,16 +7,16 @@ import { dataDir } from '../paths.js';
 import { writeFileAtomic } from '../jsonConfig.js';
 import { activeSlotFromPrinter } from '../../src/utils/amsMatch.js';
 import { haAvailable, haDeleteState, haSetState, haStates, haWsCommand } from './ha.js';
-import { publishAsset } from './esphome.js';
+import { publishAsset, pruneAssets } from './esphome.js';
 import { allTrays, trayLabel } from './hubLogic.js';
 import { energyWeeks } from './watch.js';
 import { durText, port } from './core.js';
-import { queueList } from './queue.js';
+import { queueList, thumbPath } from './queue.js';
 import { ensureHelpers } from './dashboardEdit.js';
 import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
-import { X2D_WEBP_BASE64 } from './dashboardPhoto.js';
-import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, traySensorId } from './dashboardConfig.js';
+import { amsSvg } from './dashboardAms.js';
+import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, trayColors, traySensorId } from './dashboardConfig.js';
 
 const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause', FINISH: 'Fertig', FAILED: 'Fehler', IDLE: 'Bereit', PREPARE: 'Vorbereitung', SLICING: 'Vorbereitung' };
 
@@ -24,6 +24,20 @@ const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause',
 
 const sent = new Map<string, { sig: string; at: number }>();
 let lastQueueAt = 0;
+let lastTraySig = '';
+const clock = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || 'Europe/Berlin' });
+
+/** Titelbild eines Eintrags in den Dashboard-Ordner legen (Name q-<id>.png). Gibt den Dateinamen zurück oder ''. */
+function queueThumb(id: string): string {
+  const name = `q-${String(id).replace(/[^a-z0-9_-]/gi, '').slice(0, 40)}.png`;
+  try {
+    const p = thumbPath(id);
+    if (!p || !fs.existsSync(p)) return '';
+    return publishAsset(name, fs.readFileSync(p)) ? name : '';
+  } catch {
+    return '';
+  }
+}
 const REFRESH_MS = 5 * 60_000; // nach einem HA-Neustart sind die Sensoren weg: alle 5 min neu setzen
 
 async function setSensor(entity: string, value: string | number, attrs: Record<string, unknown> = {}): Promise<void> {
@@ -55,6 +69,7 @@ export async function publishSensors(): Promise<void> {
   await setSensor(S.remain, live && running ? val(d.mc_remaining_time) : live ? 0 : na, { friendly_name: 'Drucker Restzeit', unit_of_measurement: 'min', device_class: 'duration', icon: 'mdi:timer-sand' });
   await setSensor(S.layer, live ? (running ? `${num(d.layer_num) ?? 0}${num(d.total_layer_num) ? ` / ${num(d.total_layer_num)}` : ''}` : '–') : na, { friendly_name: 'Drucker Schicht', icon: 'mdi:layers' });
   await setSensor(S.nozzle, live ? val(d.nozzle_temper !== undefined ? Math.round(Number(d.nozzle_temper)) : undefined) : na, { friendly_name: 'Drucker Düse', unit_of_measurement: '°C', device_class: 'temperature', state_class: 'measurement' });
+  await setSensor(S.nozzle2, live ? val(d.nozzle2_temper !== undefined ? Math.round(Number(d.nozzle2_temper)) : undefined) : na, { friendly_name: 'Drucker Düse 2', unit_of_measurement: '°C', device_class: 'temperature', state_class: 'measurement' });
   await setSensor(S.bed, live ? val(d.bed_temper !== undefined ? Math.round(Number(d.bed_temper)) : undefined) : na, { friendly_name: 'Drucker Bett', unit_of_measurement: '°C', device_class: 'temperature', state_class: 'measurement' });
 
   // Spulen im AMS und extern
@@ -69,6 +84,12 @@ export async function publishSensors(): Promise<void> {
     const isActive = t.amsId === 255 ? active === 5 : t.amsId === 0 && active === t.slotId + 1;
     if (isActive) activeText = `${label} (${t.type})`;
     await setSensor(id, t.type, { friendly_name: label, color: t.colorHex, icon: 'mdi:circle', active: isActive });
+  }
+  // Andere Spulen-Farben im AMS: Druckerbild gleich neu bauen (sonst erst beim nächsten 10-min-Takt)
+  if (live) {
+    const sig = trays.map(t => `${t.amsId}:${t.slotId}:${t.colorHex}`).join('|');
+    if (lastTraySig && sig !== lastTraySig) setTimeout(() => void ensureDashboard(), 5_000);
+    lastTraySig = sig;
   }
   await setSensor(S.tray, live ? activeText : na, { friendly_name: 'Drucker Aktives Fach', icon: 'mdi:printer-3d-nozzle' });
   // Leere/entfernte Fächer verschwinden aus Home Assistant (nur wenn der Drucker erreichbar ist)
@@ -86,11 +107,21 @@ export async function publishSensors(): Promise<void> {
     lastQueueAt = Date.now();
     try {
       const q = queueList().slice(0, 6);
-      await setSensor(S.queue, q.length, {
-        friendly_name: 'Warteschlange',
-        icon: 'mdi:format-list-numbered',
-        items: q.map(i => ({ name: String(i.name || '').replace(/\.3mf$/i, '').slice(0, 60), plate: i.plate, time: i.predSec ? durText(Math.round(i.predSec / 60)) : '' }))
+      const keep = new Set<string>();
+      const items = q.map(i => {
+        const thumb = i.thumb ? queueThumb(i.id) : '';
+        if (thumb) keep.add(thumb);
+        const short = i.enough.filter(e => !e.ok && e.have !== null).map(e => `${e.spoolLabel || 'Spule'} reicht nicht: ${Math.max(0, Math.round(e.need - (e.have || 0)))} g fehlen`);
+        return {
+          name: String(i.name || '').replace(/\.3mf$/i, '').slice(0, 60),
+          thumb: thumb ? `${ART_DIR}/${thumb}` : '',
+          lines: i.mapping.slice(0, 4).map(l => String(l).slice(0, 80)),
+          warn: [...(i.missing.length ? [`Fehlt im AMS: ${i.missing.join(', ')}`] : []), ...short].slice(0, 3),
+          time: i.time ? `${durText(Math.round(i.time.calcSec / 60))}${i.time.endAt ? ` · fertig ca. ${clock(i.time.endAt)}` : ''}` : i.predSec ? durText(Math.round(i.predSec / 60)) : ''
+        };
       });
+      pruneAssets(/^q-.*\.png$/, keep);
+      await setSensor(S.queue, q.length, { friendly_name: 'Warteschlange', icon: 'mdi:format-list-numbered', items });
     } catch {
       /* Warteschlange nicht lesbar: Sensor bleibt, wie er war */
     }
@@ -133,10 +164,14 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     const states = await haStates();
     if (!states) return { ok: false, text: 'Zustände von Home Assistant nicht lesbar', changed: false };
     // Grafiken ablegen (nur bei neuem Inhalt geschrieben)
-    const a = publishAsset('x2d.webp', Buffer.from(X2D_WEBP_BASE64, 'base64'));
+    // Druckerbild mit den echten Spulenfarben; die Kennung im Namen der Adresse umgeht den Zwischenspeicher des Browsers
+    const svg = amsSvg(trayColors(states));
+    const photoV = createHash('sha1').update(svg).digest('hex').slice(0, 10);
+    const a = publishAsset('drucker.svg', svg);
     const b = publishAsset('hintergrund.svg', BACKGROUND_SVG);
     if (!a || !b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
-    const config = buildDashboard(states);
+    pruneAssets(/^x2d\.webp$/, new Set()); // Foto aus 1.304/1.305
+    const config = buildDashboard(states, photoV);
     const key = createHash('sha1').update(JSON.stringify(config)).digest('hex').slice(0, 16);
     if (!lastKey) lastKey = readKey();
     if (!force && key === lastKey) return { ok: true, text: `Dashboard aktuell${theme.hint ? ` – ${theme.hint}` : ''}`, changed: false };

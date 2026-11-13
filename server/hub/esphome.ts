@@ -108,6 +108,18 @@ export function publishAsset(name: string, content: string | Buffer): string | n
   }
 }
 
+/** Alte Dateien im Dashboard-Ordner löschen: alle mit passendem Namen, die nicht in keep stehen */
+export function pruneAssets(match: RegExp, keep: Set<string>): void {
+  for (const base of WWW) {
+    const dir = path.join(base, 'filamenthub-dashboard');
+    try {
+      for (const f of fs.readdirSync(dir)) if (match.test(f) && !keep.has(f)) fs.rmSync(path.join(dir, f), { force: true });
+    } catch {
+      /* Ordner fehlt: nichts zu tun */
+    }
+  }
+}
+
 function tryMk(d: string): boolean {
   try {
     fs.mkdirSync(d, { recursive: true });

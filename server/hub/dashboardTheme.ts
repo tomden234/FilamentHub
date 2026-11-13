@@ -1,4 +1,4 @@
-// Glas-Theme für das Dashboard „Drucker“: Karten fast durchsichtig, damit der Drucker ohne Kasten auf dem Hintergrund steht.
+// Glas-Theme für das Dashboard „Drucker“: helle, leicht getönte Karten auf blassem Teal, Eingabefelder und Verläufe gut lesbar.
 // Der Pi legt die Datei in /homeassistant/themes ab und lädt die Themes neu. Home Assistant braucht dafür in configuration.yaml:
 //   frontend:
 //     themes: !include_dir_merge_named themes
@@ -12,21 +12,45 @@ const CONFIG_DIRS = ['/homeassistant', '/config'];
 
 export const THEME_YAML = `# FilamentHub: vom Server geschrieben, wird bei Änderungen überschrieben
 ${THEME}:
-  primary-color: "#38d6b4"
-  accent-color: "#38d6b4"
-  primary-text-color: "#f4f8fb"
-  secondary-text-color: "#9fb4c4"
-  disabled-text-color: "#6b7f8f"
-  divider-color: "rgba(255,255,255,0.12)"
-  card-background-color: "rgba(255,255,255,0.07)"
-  ha-card-background: "rgba(255,255,255,0.07)"
-  ha-card-border-radius: "22px"
+  primary-color: "#5ff0cf"
+  accent-color: "#5ff0cf"
+  primary-text-color: "#f4fbfb"
+  secondary-text-color: "rgba(240,250,250,0.72)"
+  disabled-text-color: "rgba(240,250,250,0.45)"
+  divider-color: "rgba(255,255,255,0.16)"
+  card-background-color: "rgba(255,255,255,0.13)"
+  ha-card-background: "rgba(255,255,255,0.13)"
+  ha-card-border-radius: "16px"
   ha-card-border-width: "1px"
-  ha-card-border-color: "rgba(255,255,255,0.14)"
+  ha-card-border-color: "rgba(255,255,255,0.22)"
   ha-card-box-shadow: "none"
   ha-card-backdrop-filter: "blur(10px)"
-  paper-card-background-color: "rgba(255,255,255,0.07)"
-  state-icon-color: "#9fb4c4"
+  paper-card-background-color: "rgba(255,255,255,0.13)"
+  state-icon-color: "#d6f3f0"
+  # Eingabefelder: dunkles Teal mit grüner Linie statt grauer Kästen
+  input-fill-color: "rgba(8,28,36,0.42)"
+  input-disabled-fill-color: "rgba(8,28,36,0.25)"
+  input-ink-color: "#f4fbfb"
+  input-label-ink-color: "rgba(240,250,250,0.72)"
+  input-idle-line-color: "#5ff0cf"
+  input-hover-line-color: "#9ff7e4"
+  input-dropdown-icon-color: "#d6f3f0"
+  mdc-text-field-fill-color: "rgba(8,28,36,0.42)"
+  mdc-text-field-ink-color: "#f4fbfb"
+  mdc-text-field-label-ink-color: "rgba(240,250,250,0.72)"
+  mdc-text-field-idle-line-color: "#5ff0cf"
+  mdc-text-field-hover-line-color: "#9ff7e4"
+  mdc-select-fill-color: "rgba(8,28,36,0.42)"
+  mdc-select-ink-color: "#f4fbfb"
+  mdc-select-label-ink-color: "rgba(240,250,250,0.72)"
+  mdc-select-idle-line-color: "#5ff0cf"
+  mdc-select-dropdown-icon-color: "#d6f3f0"
+  # Verläufe: kräftige Farben, heben sich vom hellen Hintergrund ab
+  graph-color-1: "#6fe3ff"
+  graph-color-2: "#ffd166"
+  graph-color-3: "#ff6fd8"
+  graph-color-4: "#ff9f6e"
+  graph-color-5: "#c79bff"
 `;
 
 export interface ThemeResult {

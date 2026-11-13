@@ -4128,5 +4128,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.306',
+    label: '1.306 (Dashboard: Spulen wählen, AMS in Farbe, Düse 2)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“ überarbeitet (Nebel-Teal, alles auf einer Seite): Je AMS-Platz und extern wählst du jetzt einfach eine Spule aus deinem Lager, mit Restgewicht und Prozent im Namen; die Wahl landet als Platz-Belegung auf dem Pi und die App übernimmt sie beim nächsten Abgleich (vorher Material/Farbe/Gramm einzeln). Das Druckerbild ist jetzt die Frontansicht, die vier AMS-Spulen erscheinen in den Farben, die der Drucker meldet, leere Plätze dunkel. Neu: Düse 2 mit Anzeige, Soll-Temperatur und Verlauf. Temperatur-Anzeigen klein (¼), Feuchte groß, Temperatur-Verlauf klein daneben. Warteschlange wie in der App mit Vorschaubild, Spulen je Filament, Fertig-Zeit und roten Warnungen. Heller Hintergrund, Eingabefelder dunkles Teal mit grüner Linie, Verläufe in kräftigen Farben. Pi-Add-on 1.3.58.',
+    features: ['🧵 Spule je Platz aus dem Lager wählen (mit Rest)', '🎨 AMS im Bild in deinen Spulenfarben', '🔥 Düse 2 mit Soll-Temperatur', '📋 Warteschlange mit Vorschaubild wie in der App', '🌫️ Heller Hintergrund, kleine Temperatur-Anzeigen', '🥧 Pi-Add-on 1.3.58 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

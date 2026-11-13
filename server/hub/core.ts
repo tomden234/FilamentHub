@@ -36,6 +36,8 @@ export interface HubConfig {
   materialGuard: boolean;
   /** Taster doppelt gedrückt: pause = Druck pausieren/fortsetzen, rotate = ersten Eintrag der Warteschlange nach hinten, none = nichts */
   doubleAction: 'pause' | 'rotate' | 'none';
+  /** 1.306: Zeitpunkt der letzten Platz-Belegung im Dashboard (die Apps übernehmen sie, statt sie zu überschreiben) */
+  slotsEditAt: number;
   updatedAt: number;
 }
 
@@ -57,6 +59,7 @@ const DEFAULT_CFG: HubConfig = {
   quietTo: 7,
   materialGuard: true,
   doubleAction: 'pause',
+  slotsEditAt: 0,
   updatedAt: 0
 };
 
@@ -105,7 +108,8 @@ export function updateHubConfig(body: any): HubConfig {
   const cu = str(body?.cloudUrl, 200);
   if (cu === '' || (cu !== undefined && validCloudUrl(cu))) set('cloudUrl', cu);
   set('gistToken', str(body?.gistToken, 200));
-  set('amsSlots', cleanMap(body?.amsSlots, (x): x is string => typeof x === 'string' && x.length < 100, 10));
+  // 1.306: Belegung aus dem Dashboard ist neuer als der Stand der App → die App übernimmt sie (Antwort), statt sie zu überschreiben
+  if ((Number(body?.slotsSeenAt) || 0) >= (c.slotsEditAt || 0)) set('amsSlots', cleanMap(body?.amsSlots, (x): x is string => typeof x === 'string' && x.length < 100, 10));
   set('jobGrams', cleanMap(body?.jobGrams, (x): x is number => typeof x === 'number' && x > 0 && x < 10000));
   // 1.233: nur ein einzelnes Gerät im bekannten Format (sonst ließe sich über „all“ oder eine Liste jedes Gerät schalten)
   const sw = str(body?.switchEntity, 120);
@@ -127,6 +131,16 @@ export function updateHubConfig(body: any): HubConfig {
   c.updatedAt = Date.now();
   storeHubConfig(c);
   return c;
+}
+
+/** 1.306: Platz im Dashboard belegt (spoolId leer = Platz frei) */
+export function setSlotSpool(slot: number, spoolId: string): void {
+  const c = getHubConfig();
+  const amsSlots = { ...(c.amsSlots || {}) };
+  if (spoolId) amsSlots[String(slot)] = spoolId;
+  else delete amsSlots[String(slot)];
+  const now = Date.now();
+  storeHubConfig({ ...c, amsSlots, slotsEditAt: now, updatedAt: now });
 }
 
 // ---------- Zustand je Druck ----------
@@ -212,7 +226,7 @@ export interface PrinterPort extends QueuePort {
   command: (cmd: 'pause' | 'resume' | 'stop') => Promise<unknown>;
   resumeAfterError: (code: number) => Promise<unknown>;
   /** Soll-Temperatur senden (Dashboard-Eingabefelder; Grenzen prüft der Aufrufer) */
-  setTemperature: (target: 'nozzle' | 'bed', temp: number) => Promise<unknown>;
+  setTemperature: (target: 'nozzle1' | 'nozzle2' | 'bed', temp: number) => Promise<unknown>;
   /** Verzögerter Druck geplant (dann ist eine Pause gewollt) */
   delayedResume: () => number;
 }

@@ -66,7 +66,10 @@ export async function fetchServerPrints(now = Date.now()): Promise<ServerPrints>
   try {
     const j = await get(`/api/recorder/prints?since=${now - 7 * 24 * 3600_000}`);
     if (!j?.success || !Array.isArray(j.prints)) throw new Error('unerwartete Antwort');
-    if (j.hub) saveHubInfo(j.hub);
+    if (j.hub) {
+      saveHubInfo(j.hub);
+      adoptHubSlots(j.hub);
+    }
     const prints: ServerPrint[] = j.prints
       .filter((p: any) => p && typeof p.name === 'string' && Number.isFinite(Number(p.endMs)))
       .map((p: any) => ({
@@ -138,6 +141,20 @@ export async function checkServer(): Promise<ServerCheck> {
 
 const HUB_SENT_KEY = 'filamenthub_hub_sent';
 
+const SLOTS_SEEN_KEY = 'filamenthub_hub_slots_seen';
+
+/** 1.306: Platz-Belegung, die im Dashboard „Drucker“ geändert wurde, in die App übernehmen (neuer als der Stand der App) */
+export function adoptHubSlots(h: any): boolean {
+  const at = Number(h?.slotsEditAt) || 0;
+  if (!at || at <= (Number(safeStorage.getItem(SLOTS_SEEN_KEY)) || 0) || !h?.amsSlots || typeof h.amsSlots !== 'object') return false;
+  const slots: Record<string, string> = {};
+  for (const [k, v] of Object.entries(h.amsSlots)) if (/^[1-9]$/.test(k) && typeof v === 'string' && v.length < 100) slots[k] = v;
+  safeStorage.setItem('filamenthub_ams_slots_x2d', JSON.stringify(slots));
+  safeStorage.setItem(SLOTS_SEEN_KEY, String(at));
+  window.dispatchEvent(new CustomEvent('filamenthub:device-synced', { detail: { printerChanged: true, settingsChanged: false } }));
+  return true;
+}
+
 function readSlots(): Record<string, string> {
   try {
     const v = JSON.parse(safeStorage.getItem('filamenthub_ams_slots_x2d') || '{}');
@@ -157,6 +174,7 @@ function hubConfigPayload() {
     // Token nur schicken, wenn wirklich ein Gist genutzt wird (bei „pi:“ wird ein alter Token am Pi gelöscht)
     gistToken: isGistUrl(cloudUrl) ? getGistToken() : '',
     amsSlots: readSlots(),
+    slotsSeenAt: Number(safeStorage.getItem(SLOTS_SEEN_KEY)) || 0,
     jobGrams: readJobGrams(),
     switchEntity: ha.switchEntity || '',
     cameraEntity: ha.cameraEntity || '',
@@ -202,7 +220,9 @@ export async function pushHubConfig(force = false): Promise<boolean> {
   const j = await get('/api/hub/config', { method: 'POST', body: payload });
   if (!j?.success) return false;
   saveHubInfo(j);
-  safeStorage.setItem(HUB_SENT_KEY, sig);
+  // Pi hatte eine neuere Belegung aus dem Dashboard: übernehmen und beim nächsten Mal mit dem neuen Stand senden
+  if (adoptHubSlots(j)) safeStorage.removeItem(HUB_SENT_KEY);
+  else safeStorage.setItem(HUB_SENT_KEY, sig);
   return true;
 }
 

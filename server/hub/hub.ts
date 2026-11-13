@@ -118,6 +118,8 @@ export function hubStatus() {
     quietTo: c.quietTo,
     materialGuard: c.materialGuard,
     doubleAction: c.doubleAction,
+    amsSlots: c.amsSlots,
+    slotsEditAt: c.slotsEditAt || 0,
     energyWeek: energyWeeks().slice(-1)[0] || null,
     esp: espInfoSafe()
   };
