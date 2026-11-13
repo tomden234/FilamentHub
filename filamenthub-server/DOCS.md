@@ -43,6 +43,13 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.59 (Dashboard kompakt, Spulen automatisch erkannt)
+
+- Spulen-Auswahl zeigt immer, was gerade im Drucker steckt: eigene Zuordnung, solange Material und Farbe passen, sonst die passendste Spule aus dem Lager.
+- Layout: links Drucker (halb breit) neben der Warteschlange, darunter die Spulen; Mitte kleine Anzeigen mit Icons, Soll-Werte als Kacheln mit −/+, Live-Werte als Kacheln; rechts Lagerbox und Trockner.
+- Hintergrund „Pastell-Abend“.
+- Dashboard-Takt läuft unabhängig von anderen Takt-Fehlern.
+
 ## Neu in 1.3.58 (Dashboard: Spulen aus dem Lager, AMS in echten Farben, Düse 2)
 
 - Je Platz (`input_select.filamenthub_slot_N_spule`, N = 1-4 AMS, 5 extern) eine Auswahl aller Spulen mit Rest, z. B. „Sunlu PLA+ Gelb · 640 g (64 %)“. Die Wahl ändert die Platz-Belegung; die Apps übernehmen sie beim nächsten Abgleich. Die alten Felder Material/Farbe/Gramm werden gelöscht.

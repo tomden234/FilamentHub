@@ -3,8 +3,7 @@
 import { haService, haStates, haWsCommand } from './ha.js';
 import { access, getHubConfig, port, setSlotSpool } from './core.js';
 import { cloudReady, loadDoc } from './cloud.js';
-import { mainSpoolId } from './deductPlan.js';
-import { readTrays } from '../../src/utils/amsMatch.js';
+import { readExternal, readTrays, syncSlots } from '../../src/utils/amsMatch.js';
 import { EMPTY, ID, OLD_HELPERS, SLOTS, clampSoll, helperDefs, parseSpoolEntity, sollTarget, spoolOptions, type SpoolOptions } from './dashboardEditLogic.js';
 
 /** Zuletzt von uns gesetzte Werte: erkennt eigene Änderungen (kein Echo) und echte Eingaben */
@@ -22,6 +21,7 @@ let docCache: { at: number; spools: any[] } | null = null;
 const DOC_TTL = 2 * 60_000;
 /** Letzte Auswahl-Liste (Text → Spulen-Id) für Eingaben */
 let lastOpts: SpoolOptions | null = null;
+let warnedEmpty = false;
 
 async function spools(): Promise<any[]> {
   if (docCache && Date.now() - docCache.at < DOC_TTL) return docCache.spools;
@@ -84,7 +84,10 @@ async function setSpoolField(entity: string, opts: SpoolOptions, choice: string)
   if (optsSent.get(entity) !== sig) {
     quietUntil.set(entity, Date.now() + QUIET_MS);
     written.delete(entity);
-    if (!(await haService('input_select', 'set_options', { entity_id: entity, options: opts.options }))) return;
+    if (!(await haService('input_select', 'set_options', { entity_id: entity, options: opts.options }))) {
+      console.warn(`[Hub] Dashboard: Spulen-Liste für ${entity} nicht gesetzt`);
+      return;
+    }
     optsSent.set(entity, sig);
   }
   await setIfChanged(entity, choice);
@@ -106,16 +109,18 @@ export async function syncEditFields(): Promise<void> {
   }
 
   const list = await spools();
-  if (!list.length) return; // Lager nicht lesbar: Felder nicht leeren
-  const hw = [...readTrays(d.ams)];
-  const amsSlots = getHubConfig().amsSlots || {};
-  // Belegt: eigene Zuordnung, sonst die Spule, die zur Farbe im Drucker passt (wie beim Abzug)
-  const current = (slot: number): string => {
-    if (amsSlots[String(slot)]) return amsSlots[String(slot)]!;
-    const t = hw.find(x => x.slot === slot);
-    return t && !t.empty ? mainSpoolId({ mainSlot: slot, amsSlots, spools: list, trays: hw as any }) || '' : '';
-  };
-  const ids = SLOTS.map(current);
+  if (!list.length) {
+    if (!warnedEmpty) console.warn('[Hub] Dashboard: Lager nicht lesbar oder leer, Spulen-Auswahl bleibt unverändert');
+    warnedEmpty = true;
+    return; // Felder nicht leeren
+  }
+  warnedEmpty = false;
+  // Was steckt gerade im Drucker? Eigene Zuordnung, solange sie zu Material und Farbe passt, sonst die passendste Spule aus dem Lager
+  const ext = readExternal(d.vt_tray);
+  const hw = [...readTrays(d.ams), ...(ext ? [ext] : [])];
+  const assigned = getHubConfig().amsSlots || {};
+  const found = syncSlots(list, hw, Object.fromEntries(Object.entries(assigned).map(([k, v]) => [Number(k), v]))).slots;
+  const ids = SLOTS.map(s => found[s] || '');
   const opts = spoolOptions(list, ids);
   lastOpts = opts;
   for (const [i, slot] of SLOTS.entries()) await setSpoolField(ID.spool(slot), opts, opts.labelOf.get(ids[i]!) || EMPTY);

@@ -4139,5 +4139,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.307',
+    label: '1.307 (Dashboard kompakt, Spulen automatisch)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“ etwa halb so groß: links der Drucker in halber Breite neben der Warteschlange, darunter die Spulen; in der Mitte kleine Anzeigen mit Icons, Soll-Temperaturen als Kacheln mit −/+ und die Live-Werte als Kacheln mit Icon; rechts Lagerbox und Trockner, Temperatur flach mit Verlauf daneben. Die Spulen-Auswahl zeigt jetzt immer, was gerade im Drucker steckt (eigene Zuordnung, solange Material und Farbe passen, sonst die passendste Spule aus dem Lager). Neuer Hintergrund „Pastell-Abend“. Das Dashboard läuft weiter, auch wenn ein anderer Teil des Pi-Takts einen Fehler hat. Pi-Add-on 1.3.59.',
+    features: ['🔍 Spulen im Drucker automatisch erkannt', '📐 Alles etwa halb so groß', '🎛️ Soll-Werte mit −/+, Live-Werte als Kacheln', '🌅 Hintergrund Pastell-Abend', '🥧 Pi-Add-on 1.3.59 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

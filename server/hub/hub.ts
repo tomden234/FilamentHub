@@ -82,10 +82,15 @@ export async function tick(now = Date.now()): Promise<void> {
     await dailyBackup(now);
     await weeklyTick(now);
     await espTick(now);
+  } catch (e) {
+    console.warn('[Hub] Takt-Fehler:', (e as Error)?.message || e);
+  }
+  // Dashboard eigenständig: ein Fehler weiter oben (Sicherung, ESP …) darf es nicht anhalten
+  try {
     await publishSensors();
     await syncEditFields();
   } catch (e) {
-    console.warn('[Hub] Takt-Fehler:', (e as Error)?.message || e);
+    console.warn('[Hub] Dashboard-Takt:', (e as Error)?.message || e);
   } finally {
     rt.busy = false;
   }

@@ -31,6 +31,7 @@ describe('Dashboard „Drucker“', () => {
     expect(mid).toContain(S.kwh);
     expect(mid).toContain(S.nozzle2);
     expect(v.sections[1].cards[0]).toMatchObject({ type: 'grid', columns: 4 }); // Temperatur-Anzeigen klein (¼)
+    expect(v.sections[1].cards.filter((c: any) => c.type === 'tile')).toHaveLength(7); // Live-Werte als Kacheln mit Icon
     expect(v.sections[2].cards).toHaveLength(0);
   });
 
@@ -48,12 +49,15 @@ describe('Dashboard „Drucker“', () => {
     expect(pic.elements).toHaveLength(2); // Extern sitzt nicht im AMS
     expect(pic.elements[0].style.left).toBe('18.2%');
     expect(pic.elements[1].style.left).toBe('60.5%');
-    const spulen = d.views[0].sections[2].cards[0];
+    expect(pic.grid_options.columns).toBe(6); // Drucker halb breit neben der Warteschlange
+    const spulen = d.views[0].sections[0].cards[2];
     expect(spulen.title).toBe('Spulen');
     expect(spulen.entities.map((e: any) => e.name)).toEqual(['Slot 1:', 'Extern:']);
     const mid = JSON.stringify(d.views[0].sections[1].cards);
     expect(mid).toContain(ID.nozzle2Soll);
-    expect(mid).not.toContain(ID.bedSoll); // Feld fehlt in HA → keine Zeile
+    expect(mid).not.toContain(ID.bedSoll); // Feld fehlt in HA → keine Kachel
+    const soll = d.views[0].sections[1].cards.find((c: any) => c.entity === ID.nozzleSoll);
+    expect(soll).toMatchObject({ type: 'tile', features: [{ type: 'numeric-input' }], grid_options: { columns: 4, rows: 2 } });
   });
 
   it('Druckerbild: Farben aus den Spulen, leer = dunkel, Foto steckt im SVG', () => {
@@ -73,6 +77,7 @@ describe('Dashboard „Drucker“', () => {
   it('Lagerbox nur, wenn der AMS-ESP Feuchte meldet', () => {
     const base = [st('sensor.filament_ams_slot_1_tag', ''), st('sensor.filament_ams_box_feuchte', '20', { unit_of_measurement: '%', device_class: 'humidity', friendly_name: 'Filament AMS Box Feuchte' })];
     const json = JSON.stringify(buildDashboard(base).views[0].sections[2]);
+    expect(json).toContain('💧 Box Feuchte');
     expect(json).toContain('sensor.filament_ams_box_feuchte');
     expect(JSON.stringify(buildDashboard([]))).not.toContain('Lagerbox');
   });
