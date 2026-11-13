@@ -25,7 +25,7 @@ describe('Pi-Server: Abzug im Ablauf', () => {
       throw new Error('kein Netz');
     });
     const hub = await import('../../server/hub/hub');
-    hub.attachPrinter({ getStatus: () => ({ connected: false }), getLanAccess: () => null, stopDrying: async () => false, command: async () => undefined, resumeAfterError: async () => undefined, setTemperature: async () => undefined, delayedResume: () => 0, startProject: async () => undefined });
+    hub.attachPrinter({ getStatus: () => ({ connected: false }), getLanAccess: () => null, stopDrying: async () => false, command: async () => undefined, resumeAfterError: async () => undefined, setTemperature: async () => undefined, setAmsFilament: async () => undefined, delayedResume: () => 0, startProject: async () => undefined });
     hub.updateHubConfig({ cloudUrl: 'pi:', amsSlots: { '1': 'a' }, jobGrams: { benchy: 20 } });
     const T = Date.now();
     const rec = { id: 'benchy|s1', name: 'Benchy.gcode.3mf', startMs: T - 3600_000, endMs: T, state: 'FINISH' as const, percent: 100, slots: { '1': 3000 } };

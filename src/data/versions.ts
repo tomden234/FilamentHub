@@ -4150,5 +4150,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.308',
+    label: '1.308 (Spule wählen setzt Drucker, Farben aus App)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“: Wählst du eine Spule für einen Platz, stellt der Pi sie auch am Drucker ein (Material, Farbe, Düsenbereich, wie beim Zuordnen in der App). Druckerbild und Beschriftung nehmen Name, Material und echte Farbe der Spule aus der App statt der Werte vom Drucker; leere Plätze hellgrau, damit man sie von schwarzen Spulen unterscheidet. Auswahlfelder im hellen Glas-Look, aufgeklappte Liste mit deckendem Hintergrund. Lagerbox und Trockner als vier einzelne Anzeigen: Feuchte in Blau mit 💧, Temperatur von Gelb bis Rot mit 🔥, Temperatur-Verlauf darunter. paramsFromSpool liegt jetzt in spoolProfile (App und Pi nutzen dasselbe). Neu: Testbild aller Spulen aus der App im AMS unter /local/filamenthub-dashboard/spulen-test.svg. Pi-Add-on 1.3.60.',
+    features: ['🖨️ Spule wählen = am Drucker gesetzt', '🧪 Testbild aller Spulen', '🎨 Farben und Namen aus der App', '⬜ Leere Plätze hellgrau', '📋 Auswahlliste deckend, Felder hell', '💧🔥 4 einzelne Anzeigen', '🥧 Pi-Add-on 1.3.60 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

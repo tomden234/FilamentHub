@@ -3,7 +3,8 @@ import { safeStorage } from '../../utils/safeStorage';
 import { printerApi } from '../../api';
 import { addSystemLog } from '../../utils/logService';
 import type { BambuPrinterWidgetProps as ParentProps } from '../BambuPrinterWidget';
-import { paramsFromSpool, sendToSlot } from '../../utils/slotAssign';
+import { sendToSlot } from '../../utils/slotAssign';
+import { paramsFromSpool } from '../../utils/spoolProfile';
 import { mismatch, readExternal, readTrays, EXTERNAL_SLOT } from '../../utils/amsMatch';
 
 interface useAmsControlParams {

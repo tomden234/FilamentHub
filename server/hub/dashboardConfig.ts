@@ -57,8 +57,9 @@ const C = { blue: '#5aa9ff', green: '#3dd9b4', yellow: '#ffd166', orange: '#ffb3
 const NOZZLE: Seg[] = [{ from: 0, color: C.blue }, { from: 50, color: C.green }, { from: 180, color: C.orange }, { from: 260, color: C.red }];
 const BED: Seg[] = [{ from: 0, color: C.blue }, { from: 35, color: C.green }, { from: 70, color: C.orange }, { from: 100, color: C.red }];
 const PROGRESS: Seg[] = [{ from: 0, color: C.green }];
-const HUM: Seg[] = [{ from: 0, color: C.green }, { from: 25, color: C.yellow }, { from: 30, color: C.red }];
-const AIR: Seg[] = [{ from: 0, color: C.blue }, { from: 15, color: C.green }, { from: 40, color: C.orange }, { from: 60, color: C.red }];
+// Lagerbox/Trockner: Feuchte in Blau (hell = trocken, dunkel = feucht), Temperatur warm von Gelb nach Rot
+const HUM: Seg[] = [{ from: 0, color: '#9fd8f5' }, { from: 25, color: '#5fb2e6' }, { from: 30, color: '#2f78c2' }];
+const AIR: Seg[] = [{ from: 0, color: '#ffe08a' }, { from: 15, color: '#ffc069' }, { from: 40, color: '#ff8f5a' }, { from: 60, color: '#e5534b' }];
 
 /** Kleine Anzeigen nebeneinander (je ¼ Breite bei 4 Spalten) */
 const small = (cards: any[], columns = 4) => ({ type: 'grid', columns, square: false, cards });
@@ -121,13 +122,13 @@ export function buildDashboard(states: any[], photoV = String(ART_VERSION)): { t
   const right: any[] = [];
   const r = resolveAms(all)?.roles;
   if (r && (r.boxHum || r.dryerHum || r.boxTemp || r.dryerTemp)) {
+    // Vier einzelne, gleich große Anzeigen: oben Feuchte (💧), unten Temperatur (🔥)
     if (r.boxHum) right.push(size(gauge(r.boxHum, '💧 Box Feuchte', 0, 100, HUM), 6));
     if (r.dryerHum) right.push(size(gauge(r.dryerHum, '💧 Trockner Feuchte', 0, 100, HUM), 6));
-    const temps = [r.boxTemp && gauge(r.boxTemp, '🌡️ Box', 0, 80, AIR), r.dryerTemp && gauge(r.dryerTemp, '🌡️ Trockner', 0, 80, AIR)].filter(Boolean) as any[];
-    if (temps.length) {
-      right.push(size(small(temps, 2), 6, 2));
-      right.push(size({ type: 'history-graph', title: 'Temperatur (24 h)', hours_to_show: 24, entities: [r.boxTemp, r.dryerTemp].filter(Boolean).map(e => ({ entity: e as string })) }, 6, 2));
-    }
+    if (r.boxTemp) right.push(size(gauge(r.boxTemp, '🔥 Box Temp.', 0, 80, AIR), 6));
+    if (r.dryerTemp) right.push(size(gauge(r.dryerTemp, '🔥 Trockner Temp.', 0, 80, AIR), 6));
+    const temps = [r.boxTemp, r.dryerTemp].filter(Boolean);
+    if (temps.length) right.push(size({ type: 'history-graph', title: 'Temperatur (24 h)', hours_to_show: 24, entities: temps.map(e => ({ entity: e as string })) }, 12, 3));
     const hist = [r.boxHum, r.dryerHum].filter(Boolean);
     if (hist.length) right.push(size({ type: 'history-graph', title: 'Feuchte (24 h)', hours_to_show: 24, entities: hist.map(e => ({ entity: e as string })) }, 12));
   }

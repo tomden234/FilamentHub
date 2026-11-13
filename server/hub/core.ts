@@ -227,6 +227,8 @@ export interface PrinterPort extends QueuePort {
   resumeAfterError: (code: number) => Promise<unknown>;
   /** Soll-Temperatur senden (Dashboard-Eingabefelder; Grenzen prüft der Aufrufer) */
   setTemperature: (target: 'nozzle1' | 'nozzle2' | 'bed', temp: number) => Promise<unknown>;
+  /** Spule am AMS-Platz einstellen (slotIdx 0-3, extern: 254 + external) */
+  setAmsFilament: (slotIdx: number, p: { colorHex: string; material: string; minTemp?: number; maxTemp?: number; external?: boolean }) => Promise<unknown>;
   /** Verzögerter Druck geplant (dann ist eine Pause gewollt) */
   delayedResume: () => number;
 }

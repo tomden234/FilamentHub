@@ -56,3 +56,24 @@ export function getSpoolProfile(spool: Spool): SpoolProfile {
     custom
   };
 }
+
+export interface SlotParams {
+  colorHex: string;
+  material: string;
+  minTemp: number;
+  maxTemp: number;
+}
+
+/** AMS kennt nur Grundmaterialien: „PLA+“ → PLA, „PA / Nylon“ → PA */
+export function amsMaterial(material: string): string {
+  const u = String(material || '').toUpperCase();
+  if (/CF/.test(u) && /PA|PET/.test(u)) return 'PA-CF';
+  const known = ['PETG', 'PLA', 'ABS', 'ASA', 'TPU', 'PCTG', 'PC', 'PA', 'PET', 'PVA', 'HIPS', 'PP'];
+  return known.find(k => u.startsWith(k)) || u.match(/[A-Z]+/)?.[0] || 'PLA';
+}
+
+/** Werte, die beim Einlegen einer Spule an den AMS-Platz gehen (Farbe, Material, Düsenbereich). Auch vom Pi genutzt. */
+export function paramsFromSpool(spool: Spool): SlotParams {
+  const prof = getSpoolProfile(spool);
+  return { colorHex: prof.colorHex, material: amsMaterial(spool.material), minTemp: prof.minTemp, maxTemp: prof.maxTemp };
+}

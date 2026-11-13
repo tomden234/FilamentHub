@@ -12,10 +12,11 @@ import { allTrays, trayLabel } from './hubLogic.js';
 import { energyWeeks } from './watch.js';
 import { durText, port } from './core.js';
 import { queueList, thumbPath } from './queue.js';
-import { ensureHelpers } from './dashboardEdit.js';
+import { ensureHelpers, slotSpools, spools } from './dashboardEdit.js';
+import { slotOfTray } from './dashboardEditLogic.js';
 import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
-import { amsSvg } from './dashboardAms.js';
+import { amsSvg, amsTestSheet } from './dashboardAms.js';
 import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, trayColors, traySensorId } from './dashboardConfig.js';
 
 const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause', FINISH: 'Fertig', FAILED: 'Fehler', IDLE: 'Bereit', PREPARE: 'Vorbereitung', SLICING: 'Vorbereitung' };
@@ -75,6 +76,9 @@ export async function publishSensors(): Promise<void> {
   // Spulen im AMS und extern
   const trays = live ? allTrays(d.ams, d.vt_tray) : [];
   const active = live ? activeSlotFromPrinter(d.ams) : null;
+  // Daten der Spule aus der App (Name, Material, echte Farbe); ohne passende Spule die Werte vom Drucker
+  const bySlot = live ? await slotSpools(d).catch(() => null) : null;
+  const colors: string[] = [];
   const now = new Set<string>();
   let activeText = '–';
   for (const t of trays) {
@@ -83,11 +87,21 @@ export async function publishSensors(): Promise<void> {
     now.add(id);
     const isActive = t.amsId === 255 ? active === 5 : t.amsId === 0 && active === t.slotId + 1;
     if (isActive) activeText = `${label} (${t.type})`;
-    await setSensor(id, t.type, { friendly_name: label, color: t.colorHex, icon: 'mdi:circle', active: isActive });
+    const slot = slotOfTray(t);
+    const sp = slot ? bySlot?.get(slot) : undefined;
+    const color = /^#[0-9a-fA-F]{6}$/.test(String(sp?.colorHex || '')) ? String(sp.colorHex) : t.colorHex;
+    colors.push(`${id}=${color}`);
+    await setSensor(id, sp?.material || t.type, {
+      friendly_name: sp ? `${label}: ${[sp.brand, sp.colorName].filter(Boolean).join(' ')}`.slice(0, 80) : label,
+      color,
+      icon: 'mdi:circle',
+      active: isActive,
+      ...(sp ? { rest_g: Math.round(Number(sp.remainingWeight) || 0) } : {})
+    });
   }
   // Andere Spulen-Farben im AMS: Druckerbild gleich neu bauen (sonst erst beim nächsten 10-min-Takt)
   if (live) {
-    const sig = trays.map(t => `${t.amsId}:${t.slotId}:${t.colorHex}`).join('|');
+    const sig = colors.join('|');
     if (lastTraySig && sig !== lastTraySig) setTimeout(() => void ensureDashboard(), 5_000);
     lastTraySig = sig;
   }
@@ -171,6 +185,9 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     const b = publishAsset('hintergrund.svg', BACKGROUND_SVG);
     if (!a || !b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
     pruneAssets(/^x2d\.webp$/, new Set()); // Foto aus 1.304/1.305
+    // Testbild aller Spulen (zum Prüfen der Farben): /local/filamenthub-dashboard/spulen-test.svg
+    const all = await spools();
+    if (all.length) publishAsset('spulen-test.svg', amsTestSheet(all.map(x => ({ label: [x.brand, x.material, x.colorName].filter(Boolean).join(' '), color: String(x.colorHex || '') }))));
     const config = buildDashboard(states, photoV);
     const key = createHash('sha1').update(JSON.stringify(config)).digest('hex').slice(0, 16);
     if (!lastKey) lastKey = readKey();

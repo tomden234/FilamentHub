@@ -4,6 +4,7 @@ import { haService, haStates, haWsCommand } from './ha.js';
 import { access, getHubConfig, port, setSlotSpool } from './core.js';
 import { cloudReady, loadDoc } from './cloud.js';
 import { readExternal, readTrays, syncSlots } from '../../src/utils/amsMatch.js';
+import { paramsFromSpool } from '../../src/utils/spoolProfile.js';
 import { EMPTY, ID, OLD_HELPERS, SLOTS, clampSoll, helperDefs, parseSpoolEntity, sollTarget, spoolOptions, type SpoolOptions } from './dashboardEditLogic.js';
 
 /** Zuletzt von uns gesetzte Werte: erkennt eigene Änderungen (kein Echo) und echte Eingaben */
@@ -23,7 +24,8 @@ const DOC_TTL = 2 * 60_000;
 let lastOpts: SpoolOptions | null = null;
 let warnedEmpty = false;
 
-async function spools(): Promise<any[]> {
+/** Alle Spulen aus der App (Cloud-Dokument, 2 min zwischengespeichert) */
+export async function spools(): Promise<any[]> {
   if (docCache && Date.now() - docCache.at < DOC_TTL) return docCache.spools;
   if (!cloudReady(access())) return [];
   try {
@@ -108,22 +110,37 @@ export async function syncEditFields(): Promise<void> {
     if (v !== undefined && v !== null && Number.isFinite(n)) await setIfChanged(entity, clampSoll(kind, n) ?? 0);
   }
 
+  const found = await slotSpools(d);
+  if (!found) return; // Lager nicht lesbar: Felder nicht leeren
+  const ids = SLOTS.map(s => found.get(s)?.id || '');
+  const opts = spoolOptions(found.list, ids);
+  lastOpts = opts;
+  for (const [i, slot] of SLOTS.entries()) await setSpoolField(ID.spool(slot), opts, opts.labelOf.get(ids[i]!) || EMPTY);
+}
+
+/**
+ * Was steckt gerade im Drucker? Je Platz die Spule aus der App: eigene Zuordnung, solange sie zu Material und Farbe passt,
+ * sonst die passendste Spule mit Rest. null = Lager nicht lesbar. Wird auch für Druckerbild und Spulen-Sensoren genutzt.
+ */
+export async function slotSpools(d: any): Promise<(Map<number, any> & { list: any[] }) | null> {
   const list = await spools();
   if (!list.length) {
     if (!warnedEmpty) console.warn('[Hub] Dashboard: Lager nicht lesbar oder leer, Spulen-Auswahl bleibt unverändert');
     warnedEmpty = true;
-    return; // Felder nicht leeren
+    return null;
   }
   warnedEmpty = false;
-  // Was steckt gerade im Drucker? Eigene Zuordnung, solange sie zu Material und Farbe passt, sonst die passendste Spule aus dem Lager
-  const ext = readExternal(d.vt_tray);
-  const hw = [...readTrays(d.ams), ...(ext ? [ext] : [])];
+  const ext = readExternal(d?.vt_tray);
+  const hw = [...readTrays(d?.ams), ...(ext ? [ext] : [])];
   const assigned = getHubConfig().amsSlots || {};
-  const found = syncSlots(list, hw, Object.fromEntries(Object.entries(assigned).map(([k, v]) => [Number(k), v]))).slots;
-  const ids = SLOTS.map(s => found[s] || '');
-  const opts = spoolOptions(list, ids);
-  lastOpts = opts;
-  for (const [i, slot] of SLOTS.entries()) await setSpoolField(ID.spool(slot), opts, opts.labelOf.get(ids[i]!) || EMPTY);
+  const slots = syncSlots(list, hw, Object.fromEntries(Object.entries(assigned).map(([k, v]) => [Number(k), v]))).slots;
+  const out = new Map<number, any>() as Map<number, any> & { list: any[] };
+  for (const slot of SLOTS) {
+    const sp = list.find(x => x.id === slots[slot]);
+    if (sp) out.set(slot, sp);
+  }
+  out.list = list;
+  return out;
 }
 
 // ---------- Eingaben umsetzen ----------
@@ -153,7 +170,18 @@ async function handleEdit(entity: string, value: string): Promise<void> {
     return;
   }
   setSlotSpool(slot, id);
-  console.log(`[Hub] Dashboard: ${slot === 5 ? 'Extern' : `Slot ${slot}`} → ${id ? value : 'leer'}`);
+  const name = slot === 5 ? 'Extern' : `Slot ${slot}`;
+  console.log(`[Hub] Dashboard: ${name} → ${id ? value : 'leer'}`);
+  // Gewählte Spule auch am Drucker einstellen (Farbe, Material, Düsenbereich wie in der App)
+  const sp = id ? docCache?.spools.find(x => x.id === id) : undefined;
+  if (!sp || !port) return;
+  try {
+    const p = paramsFromSpool(sp);
+    await port.setAmsFilament(slot === 5 ? 254 : slot - 1, { colorHex: p.colorHex.replace('#', ''), material: p.material, minTemp: p.minTemp, maxTemp: p.maxTemp, external: slot === 5 });
+    console.log(`[Hub] Dashboard: ${name} am Drucker gesetzt (${p.material} ${p.colorHex})`);
+  } catch (e) {
+    console.warn(`[Hub] Dashboard: ${name} nicht am Drucker gesetzt:`, (e as Error)?.message || e);
+  }
 }
 
 /** Ereignis von Home Assistant: Änderung an einem unserer Eingabefelder durch den Nutzer */

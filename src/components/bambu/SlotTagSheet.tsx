@@ -4,7 +4,8 @@ import { useEscapeClose } from '../../hooks/useEscapeClose';
 import type { Spool } from '../../types/filament';
 import type { HwTray } from '../../utils/amsMatch';
 import { useNfcTags } from '../../utils/nfcRead';
-import { paramsFromSpool, sendToSlot, type SlotSendResult } from '../../utils/slotAssign';
+import { sendToSlot, type SlotSendResult } from '../../utils/slotAssign';
+import { paramsFromSpool } from '../../utils/spoolProfile';
 import { SpoolPicker } from '../SpoolPicker';
 
 // Kleines Fenster pro AMS-Slot: Tag ans Handy halten (oder Spule suchen) → Slot ist belegt. Mehr nicht.

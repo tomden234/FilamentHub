@@ -3,7 +3,7 @@ import { DASH_URL, S, TRAY_PREFIX, buildDashboard, findCamera, trayColors, trayS
 import { ID } from '../../server/hub/dashboardEditLogic';
 import { BACKGROUND_SVG } from '../../server/hub/dashboardArt';
 import { FRONT_WEBP_BASE64, SHADE_WEBP_BASE64 } from '../../server/hub/dashboardPhoto';
-import { amsSvg, spoolColor } from '../../server/hub/dashboardAms';
+import { amsSvg, amsTestSheet, spoolColor } from '../../server/hub/dashboardAms';
 
 const st = (entity_id: string, state = '1', attributes: Record<string, unknown> = {}) => ({ entity_id, state, attributes });
 
@@ -72,6 +72,11 @@ describe('Dashboard „Drucker“', () => {
     expect(svg).not.toContain('id="t3"'); // ungültige Farbe = leer
     expect(svg).toContain('data:image/webp;base64,');
     expect(amsSvg(['#FF0000', null, null, null])).toBe(amsSvg(['#FF0000', null, null, null]));
+    // Testbild: jede Spule einmal, Foto nur einmal eingebettet, Namen sicher (kein kaputtes XML)
+    const sheet = amsTestSheet([{ label: 'Sunlu PLA <Rot> & Co', color: '#ff0000' }, { label: 'ohne Farbe', color: '' }, { label: 'Grün', color: '#00aa00' }]);
+    expect(sheet).toContain('2 Spulen');
+    expect(sheet).toContain('&lt;Rot&gt; &amp; Co');
+    expect(sheet.split('data:image/webp;base64,').length - 1).toBe(2); // Foto + Schattierung je einmal
   });
 
   it('Lagerbox nur, wenn der AMS-ESP Feuchte meldet', () => {
@@ -79,6 +84,9 @@ describe('Dashboard „Drucker“', () => {
     const json = JSON.stringify(buildDashboard(base).views[0].sections[2]);
     expect(json).toContain('💧 Box Feuchte');
     expect(json).toContain('sensor.filament_ams_box_feuchte');
+    const g = buildDashboard(base).views[0].sections[2].cards[0];
+    expect(g).toMatchObject({ type: 'gauge', needle: true, grid_options: { columns: 6 } }); // einzelne Anzeige, halbe Breite
+    expect(g.segments[0].color).toBe('#9fd8f5'); // Feuchte in Blau
     expect(JSON.stringify(buildDashboard([]))).not.toContain('Lagerbox');
   });
 

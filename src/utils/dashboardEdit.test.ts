@@ -73,5 +73,6 @@ describe('Dashboard-Eingabefelder', () => {
     expect(THEME_YAML).toContain('ha-card-background: "rgba(255,255,255,0.13)"');
     expect(THEME_YAML).toContain('mdc-select-fill-color');
     expect(THEME_YAML).toContain('graph-color-1');
+    expect(THEME_YAML).toMatch(/card-background-color: "#[0-9a-f]{6}"/); // Menüs deckend
   });
 });

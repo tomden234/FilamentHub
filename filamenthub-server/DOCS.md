@@ -43,6 +43,13 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.60 (Spule wählen = am Drucker gesetzt, Farben aus der App)
+
+- Spule im Dashboard gewählt → Material, Farbe und Düsenbereich gehen auch an den AMS-Platz am Drucker (wie in der App).
+- Druckerbild und Spulen-Sensoren nehmen Name, Material und Farbe der Spule aus der App, nicht mehr die Werte vom Drucker. Leere Plätze hellgrau.
+- Testbild aller Spulen aus der App: `http://<Home-Assistant>/local/filamenthub-dashboard/spulen-test.svg`.
+- Auswahlfelder hell, aufgeklappte Liste deckend. Lagerbox/Trockner: 4 einzelne Anzeigen, Feuchte blau (💧), Temperatur gelb bis rot (🔥).
+
 ## Neu in 1.3.59 (Dashboard kompakt, Spulen automatisch erkannt)
 
 - Spulen-Auswahl zeigt immer, was gerade im Drucker steckt: eigene Zuordnung, solange Material und Farbe passen, sonst die passendste Spule aus dem Lager.
