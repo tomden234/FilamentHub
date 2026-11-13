@@ -11,7 +11,8 @@ import { publishAsset } from './esphome.js';
 import { allTrays, trayLabel } from './hubLogic.js';
 import { energyWeeks } from './watch.js';
 import { port } from './core.js';
-import { BACKGROUND_SVG, PRINTER_SVG } from './dashboardArt.js';
+import { BACKGROUND_SVG } from './dashboardArt.js';
+import { X2D_WEBP_BASE64 } from './dashboardPhoto.js';
 import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, traySensorId } from './dashboardConfig.js';
 
 const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause', FINISH: 'Fertig', FAILED: 'Fehler', IDLE: 'Bereit', PREPARE: 'Vorbereitung', SLICING: 'Vorbereitung' };
@@ -111,7 +112,7 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     const states = await haStates();
     if (!states) return { ok: false, text: 'Zustände von Home Assistant nicht lesbar', changed: false };
     // Grafiken ablegen (nur bei neuem Inhalt geschrieben)
-    const a = publishAsset('drucker.svg', PRINTER_SVG);
+    const a = publishAsset('x2d.webp', Buffer.from(X2D_WEBP_BASE64, 'base64'));
     const b = publishAsset('hintergrund.svg', BACKGROUND_SVG);
     if (!a || !b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
     const config = buildDashboard(states);

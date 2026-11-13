@@ -20,6 +20,8 @@ export const S = {
 } as const;
 
 export const ART_DIR = '/local/filamenthub-dashboard';
+/** Mitte der vier AMS-Köpfe im Foto (in % der Bildbreite) */
+const PHOTO_SLOTS = [25, 40.1, 54.7, 68.5];
 export const TRAY_PREFIX = 'sensor.filamenthub_spule_';
 
 /** Sensor-Id einer Spule am Drucker: „AMS 1 Slot 2“ → sensor.filamenthub_spule_ams_1_slot_2 */
@@ -57,32 +59,32 @@ const label = (entity: string, left: number, top: number, extra: Record<string, 
   style: { left: `${left}%`, top: `${top}%`, ...PILL, ...extra }
 });
 
-/** Das Druckerbild mit den Werten an der richtigen Stelle (Düse am Kopf, Bett an der Platte, Spulen oben im AMS) */
+/** Das X2D-Foto mit den Werten: Düse, Fortschritt und Bett rechts (die Hilfslinien sind im Foto), Spulenfarben auf den AMS-Köpfen */
 function printerPicture(trays: any[]) {
+  const R = 80.2; // gemeinsame Spalte der Werte rechts im Foto (in %)
   const el: any[] = [
-    label(S.nozzle, 67, 33, {}, 'Düse '),
-    label(S.bed, 76, 63, {}, 'Bett '),
-    label(S.progress, 27, 40, { 'font-size': '26px', padding: '5px 16px' }),
-    label(S.remain, 27, 50, {}, 'Rest '),
-    label(S.layer, 27, 58, {}, 'Schicht '),
-    label(S.status, 28.75, 78.7, { background: 'transparent', 'font-size': '12px', color: '#8ff0d0', padding: '0' }),
-    label(S.job, 50, 91, { 'font-size': '15px' })
+    label(S.status, R, 29.5, { 'font-size': '13px', color: '#8ff0d0' }),
+    label(S.nozzle, R, 38.4, {}, 'Düse '),
+    label(S.progress, R, 55.3, { 'font-size': '24px', padding: '5px 16px' }),
+    label(S.remain, R, 60.8, {}, 'Rest '),
+    label(S.layer, R, 66, {}, 'Schicht '),
+    label(S.bed, R, 73.6, {}, 'Bett '),
+    label(S.job, 50, 96.5, { 'font-size': '15px' })
   ];
   const byId = new Map<string, any>(trays.map(t => [String(t.entity_id), t]));
   const colorOf = (t: any) => (/^#[0-9a-fA-F]{6}$/.test(String(t?.attributes?.color || '')) ? String(t.attributes.color) : '#888888');
-  const xs = [29.4, 43.1, 56.9, 70.6];
-  xs.forEach((x, i) => {
+  PHOTO_SLOTS.forEach((x, i) => {
     const t = byId.get(`${TRAY_PREFIX}ams_1_slot_${i + 1}`);
     if (!t) return;
-    el.push({ type: 'state-icon', entity: t.entity_id, icon: 'mdi:circle', title: String(t.attributes?.friendly_name || ''), style: { left: `${x}%`, top: '8%', color: colorOf(t), '--mdi-icon-size': '44px' } });
-    el.push(label(t.entity_id, x, 14.8, { 'font-size': '11px', padding: '1px 8px' }));
+    el.push({ type: 'state-icon', entity: t.entity_id, icon: 'mdi:circle', title: String(t.attributes?.friendly_name || ''), style: { left: `${x}%`, top: '21.7%', color: colorOf(t), '--mdi-icon-size': '30px' } });
+    el.push(label(t.entity_id, x, 26.2, { 'font-size': '11px', padding: '1px 8px' }));
   });
   const ext = byId.get(`${TRAY_PREFIX}extern`);
   if (ext) {
-    el.push({ type: 'state-icon', entity: ext.entity_id, icon: 'mdi:circle', title: 'Externe Spule', style: { left: '90%', top: '40%', color: colorOf(ext), '--mdi-icon-size': '40px' } });
-    el.push(label(ext.entity_id, 90, 48, { 'font-size': '11px', padding: '1px 8px' }, 'Extern '));
+    el.push({ type: 'state-icon', entity: ext.entity_id, icon: 'mdi:circle', title: 'Externe Spule', style: { left: '91%', top: '21.7%', color: colorOf(ext), '--mdi-icon-size': '30px' } });
+    el.push(label(ext.entity_id, 91, 26.2, { 'font-size': '11px', padding: '1px 8px' }, 'Extern '));
   }
-  return { type: 'picture-elements', image: `${ART_DIR}/drucker.svg?v=${ART_VERSION}`, elements: el };
+  return { type: 'picture-elements', image: `${ART_DIR}/x2d.webp?v=${ART_VERSION}`, grid_options: { columns: 'full' }, elements: el };
 }
 
 /** Dashboard-Aufbau aus der aktuellen Zustandsliste von Home Assistant */
@@ -93,7 +95,7 @@ export function buildDashboard(states: any[]): { title: string; views: any[] } {
   // 1. Drucker live: Bild mit Werten, darunter Anzeigen
   const trays = all.filter(x => String(x?.entity_id || '').startsWith(TRAY_PREFIX)).sort((x, y) => String(x.entity_id).localeCompare(String(y.entity_id)));
   const cam = findCamera(all);
-  cards.push(printerPicture(trays));
+  const photo = printerPicture(trays);
   if (cam) cards.push({ type: 'picture-entity', entity: cam, camera_view: 'auto', show_name: false, show_state: false });
   cards.push({ type: 'horizontal-stack', cards: [gauge(S.progress, 'Fortschritt', 100, GREEN), gauge(S.nozzle, 'Düse', 350, HEAT(60, 230)), gauge(S.bed, 'Bett', 120, HEAT(40, 80))] });
   cards.push({
@@ -159,5 +161,5 @@ export function buildDashboard(states: any[]): { title: string; views: any[] } {
     ]
   });
 
-  return { title: DASH_TITLE, views: [{ title: DASH_TITLE, path: 'drucker', icon: 'mdi:printer-3d', type: 'masonry', background: `center / cover no-repeat fixed url('${ART_DIR}/hintergrund.svg?v=${ART_VERSION}')`, cards }] };
+  return { title: DASH_TITLE, views: [{ title: DASH_TITLE, path: 'drucker', icon: 'mdi:printer-3d', type: 'sections', max_columns: 2, background: `center / cover no-repeat fixed url('${ART_DIR}/hintergrund.svg?v=${ART_VERSION}')`, sections: [{ type: 'grid', cards: [photo] }, { type: 'grid', cards }] }] };
 }

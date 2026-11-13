@@ -4106,5 +4106,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.304',
+    label: '1.304 (X2D-Foto im Dashboard)',
+    releaseDate: '13.11.2026',
+    description:
+      'Das Dashboard „Drucker“ zeigt jetzt dein echtes X2D-Foto statt der Zeichnung. Links das Foto mit Düse, Fortschritt, Restzeit, Schicht und Bett rechts daneben (dünne Linien führen zu Druckkopf und Platte) und den Spulenfarben auf den vier AMS-Köpfen. Rechts die Anzeigen, die Werteliste, die Spulen-Kacheln, Lagerbox, Strom und Temperaturverläufe. Auf dem Handy rutscht die rechte Seite unter das Foto. Die alte Zeichnung ist entfernt. Pi-Add-on 1.3.56. Danach in der App „Dashboard anlegen“ tippen (oder 10 Minuten warten).',
+    features: ['📸 X2D-Foto mit Werten und Hilfslinien', '🧵 Spulenfarben auf den AMS-Köpfen', '📐 Foto links, Werte rechts (Handy: untereinander)', '🧹 Alte Zeichnung entfernt', '🥧 Pi-Add-on 1.3.56 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];
