@@ -23,6 +23,9 @@ export function spoolColor(v: unknown): string | null {
   return HEX.test(h) ? h.toUpperCase() : null;
 }
 
+/** Darstellung der Spulen (matt, vom Nutzer gewählt): gain = Helligkeit der Farbe, base = Grundanteil, gloss = Glanz */
+const look = { gain: 1.0, base: 0.3, gloss: 0.7 };
+
 /** Filter und Spulen-Schichten für ein Bild; p = Kennung, damit mehrere Bilder in einem SVG stehen können */
 function layers(colors: (string | null)[], p: string): { defs: string; body: string } {
   const defs: string[] = [];
@@ -32,8 +35,10 @@ function layers(colors: (string | null)[], p: string): { defs: string; body: str
     const c = colors[i] ? spoolColor(colors[i]) : null;
     if (c) {
       const [r, g, b] = rgb(c);
-      const lift = r + g + b < 0.4 ? 0.1 : 0; // schwarze Spulen nicht ganz absaufen lassen
-      defs.push(`<filter id="${p}t${i}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${f3(r * 1.1)} 0 0 0 ${lift} 0 ${f3(g * 1.1)} 0 0 ${lift} 0 0 ${f3(b * 1.1)} 0 ${lift} 0 0 0 1 0"/></filter>`);
+      const lift = r + g + b < 0.4 ? 0.08 : 0; // schwarze Spulen nicht ganz absaufen lassen
+      const k = look.gain;
+      const o = (v: number) => f3(v * look.base + lift);
+      defs.push(`<filter id="${p}t${i}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${f3(r * k)} 0 0 0 ${o(r)} 0 ${f3(g * k)} 0 0 ${o(g)} 0 0 ${f3(b * k)} 0 ${o(b)} 0 0 0 1 0"/></filter>`);
     }
     body.push(`<g clip-path="url(#${p}c${i})"><use href="#sh" filter="url(#${c ? `${p}t${i}` : 'e'})"/>${c ? '<use href="#sh" filter="url(#hl)"/>' : ''}</g>`);
   });
@@ -42,7 +47,7 @@ function layers(colors: (string | null)[], p: string): { defs: string; body: str
 
 const BASE_DEFS =
   // Glanz: helle Stellen der Schattierung als weißer Schimmer; e = leerer Platz (hellgrau, kein Filament)
-  '<filter id="hl" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 1 -2.15"/></filter>' +
+  `<filter id="hl" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 ${f3(look.gloss)} 0 0 1 ${f3(-1.35 - look.gloss * 0.57)}"/></filter>` +
   '<filter id="e" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .62 0 0 0 0 .66 0 0 0 0 .68 0 0 0 .78 0"/></filter>' +
   `<image id="sh" x="40" y="14" width="320" height="90" href="data:image/webp;base64,${SHADE_WEBP_BASE64}"/>` +
   `<image id="ph" width="397" height="700" href="data:image/webp;base64,${FRONT_WEBP_BASE64}"/>`;

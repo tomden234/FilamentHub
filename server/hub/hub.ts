@@ -20,6 +20,7 @@ import { energyTick, energyWeeks, errorWatch, espTick, goneWatch, onAction, watc
 import { dailyBackup, listBackups } from './backup.js';
 import { onOrderAction, startOrderMail, startOrderPush } from './orders.js';
 import { startProductLinks } from './productLink.js';
+import { startSpoolColors } from './spoolColors.js';
 import { ensureDashboard, publishSensors } from './dashboard.js';
 import { onEditEvent, syncEditFields } from './dashboardEdit.js';
 
@@ -52,6 +53,7 @@ export function attachPrinter(p: PrinterPort): void {
     startOrderMail();
     startOrderPush();
     startProductLinks();
+    startSpoolColors();
     // Dashboard „Drucker“: nach dem Start anlegen (Sensoren sind dann gesetzt), danach alle 10 min auf Änderungen prüfen (Spulenfarben, Sensoren)
     setTimeout(() => void ensureDashboard(), 60_000).unref();
     setInterval(() => void ensureDashboard(), 10 * 60_000).unref();

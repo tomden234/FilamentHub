@@ -4161,5 +4161,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.309',
+    label: '1.309 (Echte Spulenfarben aus dem Shop)',
+    releaseDate: '13.11.2026',
+    description:
+      'Dashboard „Drucker“: Der Pi holt sich je Spule das Produktbild aus dem Shop-Link (Amazon, Bambu, Prusa …) und misst daraus die echte Filamentfarbe; weißer Hintergrund und Pappspule werden ignoriert, genommen werden die beleuchteten Stellen. Eine Spule alle 4 Minuten, Ergebnis wird gemerkt. AMS-Bild, Spulen-Sensoren und Testbild zeigen die echten Farben, die App-Daten bleiben unverändert; passt ein Bild nicht, bleibt die App-Farbe. Die Spulen sind jetzt matt dargestellt (Variante 3). Pi-Add-on 1.3.61.',
+    features: ['🛒 Echte Farben aus dem Shop-Bild', '🎨 AMS-Bild und Testbild realistisch', '🧵 Spulen matt dargestellt', '🥧 Pi-Add-on 1.3.61 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

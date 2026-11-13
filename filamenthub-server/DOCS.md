@@ -43,6 +43,12 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.61 (echte Spulenfarben aus dem Shop)
+
+- Der Server lädt je Spule das Produktbild aus dem Shop-Link (alle 4 Minuten eine Spule), liest es mit ffmpeg und misst die echte Filamentfarbe (Hintergrund und Pappspule fallen weg). Gemerkt in `spool-colors.json`; neue oder geänderte Spulen werden neu gemessen, Fehlschläge nach 3 Tagen.
+- Druckerbild, Spulen-Sensoren und Testbild nutzen die gemessene Farbe; die Daten in der App bleiben unverändert. Passt das Bild nicht (ganz andere Farbe), bleibt die App-Farbe.
+- Spulen im Bild matt dargestellt. Protokoll: `[Hub] Spulenfarbe …`.
+
 ## Neu in 1.3.60 (Spule wählen = am Drucker gesetzt, Farben aus der App)
 
 - Spule im Dashboard gewählt → Material, Farbe und Düsenbereich gehen auch an den AMS-Platz am Drucker (wie in der App).

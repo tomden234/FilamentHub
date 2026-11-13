@@ -14,6 +14,7 @@ import { durText, port } from './core.js';
 import { queueList, thumbPath } from './queue.js';
 import { ensureHelpers, slotSpools, spools } from './dashboardEdit.js';
 import { slotOfTray } from './dashboardEditLogic.js';
+import { realColor } from './spoolColors.js';
 import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
 import { amsSvg, amsTestSheet } from './dashboardAms.js';
@@ -89,7 +90,8 @@ export async function publishSensors(): Promise<void> {
     if (isActive) activeText = `${label} (${t.type})`;
     const slot = slotOfTray(t);
     const sp = slot ? bySlot?.get(slot) : undefined;
-    const color = /^#[0-9a-fA-F]{6}$/.test(String(sp?.colorHex || '')) ? String(sp.colorHex) : t.colorHex;
+    const real = sp ? realColor(sp) : '';
+    const color = /^#[0-9a-fA-F]{6}$/.test(real) ? real : t.colorHex;
     colors.push(`${id}=${color}`);
     await setSensor(id, sp?.material || t.type, {
       friendly_name: sp ? `${label}: ${[sp.brand, sp.colorName].filter(Boolean).join(' ')}`.slice(0, 80) : label,
@@ -187,7 +189,7 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     pruneAssets(/^x2d\.webp$/, new Set()); // Foto aus 1.304/1.305
     // Testbild aller Spulen (zum Prüfen der Farben): /local/filamenthub-dashboard/spulen-test.svg
     const all = await spools();
-    if (all.length) publishAsset('spulen-test.svg', amsTestSheet(all.map(x => ({ label: [x.brand, x.material, x.colorName].filter(Boolean).join(' '), color: String(x.colorHex || '') }))));
+    if (all.length) publishAsset('spulen-test.svg', amsTestSheet(all.map(x => ({ label: [x.brand, x.material, x.colorName].filter(Boolean).join(' '), color: realColor(x) }))));
     const config = buildDashboard(states, photoV);
     const key = createHash('sha1').update(JSON.stringify(config)).digest('hex').slice(0, 16);
     if (!lastKey) lastKey = readKey();
