@@ -20,6 +20,7 @@ import { energyTick, energyWeeks, errorWatch, espTick, goneWatch, onAction, watc
 import { dailyBackup, listBackups } from './backup.js';
 import { onOrderAction, startOrderMail, startOrderPush } from './orders.js';
 import { startProductLinks } from './productLink.js';
+import { ensureDashboard, publishSensors } from './dashboard.js';
 
 // Öffentliche Schnittstelle des Hubs (Routen, bambuMqtt, Tests): alles weiter über hub.js erreichbar
 export { hubEnabled, getHubConfig, updateHubConfig, printMeta, resolvePrint, push } from './core.js';
@@ -28,6 +29,9 @@ export { readPhoto } from './photo.js';
 export { onPrintEnd, deductSuggest, manualDeduct, pushOldDone } from './deduct.js';
 export { espSyncNow, energyWeeks, weeklyReportNow, weeklyWeeks } from './watch.js';
 export { backupNow, listBackups, readBackup } from './backup.js';
+
+/** Dashboard „Drucker“ in Home Assistant jetzt neu speichern (Knopf in der App) */
+export const dashboardNow = () => ensureDashboard(true);
 
 export function attachPrinter(p: PrinterPort): void {
   setPort(p);
@@ -46,6 +50,9 @@ export function attachPrinter(p: PrinterPort): void {
     startOrderMail();
     startOrderPush();
     startProductLinks();
+    // Dashboard „Drucker“: nach dem Start anlegen (Sensoren sind dann gesetzt), danach alle 10 min auf Änderungen prüfen (Spulenfarben, Sensoren)
+    setTimeout(() => void ensureDashboard(), 60_000).unref();
+    setInterval(() => void ensureDashboard(), 10 * 60_000).unref();
   }
 }
 
@@ -73,6 +80,7 @@ export async function tick(now = Date.now()): Promise<void> {
     await dailyBackup(now);
     await weeklyTick(now);
     await espTick(now);
+    await publishSensors();
   } catch (e) {
     console.warn('[Hub] Takt-Fehler:', (e as Error)?.message || e);
   } finally {

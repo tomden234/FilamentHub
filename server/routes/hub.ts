@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks, pushOldDone } from '../hub/hub.js';
+import { backupNow, deductSuggest, energyWeeks, manualDeduct, espSyncNow, getHubConfig, hubStatus, listBackups, push, readBackup, readPhoto, resolvePrint, setPower, updateHubConfig, weeklyReportNow, weeklyWeeks, pushOldDone, dashboardNow } from '../hub/hub.js';
 import { localRev, readLocalDoc, writeLocalDoc } from '../hub/localDoc.js';
 import { getReport, listReports, rememberBase, reportPage, reportUrl } from '../hub/reports.js';
 import { rateFromApp, readRatings } from '../hub/rating.js';
@@ -184,6 +184,11 @@ router.post('/api/hub/report-now', async (req, res) => {
 router.post('/api/hub/esp-sync', async (_req, res) => {
   const r = await espSyncNow();
   res.json({ success: r.info.ok, ...r });
+});
+
+router.post('/api/hub/dashboard', async (_req, res) => {
+  const r = await dashboardNow();
+  res.json({ success: r.ok, ...r });
 });
 
 // --- Warteschlange ---

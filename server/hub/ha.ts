@@ -61,6 +61,69 @@ async function haService(domain: string, service: string, data: Record<string, u
   }
 }
 
+/** Eigenen Sensor in Home Assistant setzen (Zustand, verschwindet beim HA-Neustart bis zum nächsten Setzen). Nur sensor.filamenthub_* */
+export async function haSetState(entity: string, value: string | number, attributes: Record<string, unknown> = {}): Promise<boolean> {
+  if (!/^sensor\.filamenthub_[a-z0-9_]+$/.test(entity)) return false;
+  try {
+    const r = await call(`/states/${entity}`, { method: 'POST', body: { state: String(value).slice(0, 255), attributes } });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Eigenen Sensor wieder entfernen (z. B. leeres Fach) */
+export async function haDeleteState(entity: string): Promise<boolean> {
+  if (!/^sensor\.filamenthub_[a-z0-9_]+$/.test(entity)) return false;
+  try {
+    return (await call(`/states/${entity}`, { method: 'DELETE' })).ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Ein Websocket-Befehl an Home Assistant (nur im Add-on): Anmelden, senden, Antwort abwarten */
+export function haWsCommand(payload: Record<string, unknown>, timeoutMs = 15000): Promise<{ ok: boolean; result?: any; error?: string }> {
+  return new Promise(resolve => {
+    const token = process.env.SUPERVISOR_TOKEN;
+    const WS = (globalThis as any).WebSocket;
+    if (!token || !WS) return resolve({ ok: false, error: 'kein Websocket-Zugang' });
+    let done = false;
+    let sock: any;
+    const finish = (r: { ok: boolean; result?: any; error?: string }) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try {
+        sock?.close();
+      } catch {
+        /* egal */
+      }
+      resolve(r);
+    };
+    const timer = setTimeout(() => finish({ ok: false, error: 'Zeitüberschreitung' }), timeoutMs);
+    try {
+      sock = new WS('ws://supervisor/core/websocket');
+    } catch (e) {
+      return finish({ ok: false, error: (e as Error)?.message || 'Verbindung nicht möglich' });
+    }
+    sock.onmessage = (m: any) => {
+      let j: any;
+      try {
+        j = JSON.parse(String(m.data));
+      } catch {
+        return;
+      }
+      if (j.type === 'auth_required') sock.send(JSON.stringify({ type: 'auth', access_token: token }));
+      else if (j.type === 'auth_ok') sock.send(JSON.stringify({ id: 1, ...payload }));
+      else if (j.type === 'auth_invalid') finish({ ok: false, error: 'Anmeldung abgelehnt' });
+      else if (j.type === 'result' && j.id === 1) finish(j.success ? { ok: true, result: j.result } : { ok: false, error: String(j.error?.message || j.error?.code || 'Fehler') });
+    };
+    sock.onerror = () => finish({ ok: false, error: 'Verbindungsfehler' });
+    sock.onclose = () => finish({ ok: false, error: 'Verbindung geschlossen' });
+  });
+}
+
 /** Steckdose schalten (switch., light. oder input_boolean.) */
 export async function haSwitch(entity: string, on: boolean): Promise<boolean> {
   if (!/^(switch|light|input_boolean)\.[a-z0-9_]+$/.test(entity)) return false; // 1.233: kein „all“, keine Liste

@@ -11,6 +11,7 @@ import {
   serverBackupNow,
   testServerPush,
   espSyncNow,
+  dashboardNow,
   getHubSettings,
   saveHubSettings,
   weeklyReportNow,
@@ -37,7 +38,7 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
   const info = getHaSyncInfo();
   const [hub, setHub] = useState(getHubInfo());
   const [hubMsg, setHubMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [hubBusy, setHubBusy] = useState<'' | 'push' | 'backup' | 'report' | 'esp'>('');
+  const [hubBusy, setHubBusy] = useState<'' | 'push' | 'backup' | 'report' | 'esp' | 'dash'>('');
   const [hs, setHs] = useState(getHubSettings());
   const setSetting = (patch: Partial<typeof hs>) => setHs(saveHubSettings(patch));
   const [backups, setBackups] = useState<ServerBackup[]>([]);
@@ -114,6 +115,12 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
     setHubBusy('');
   };
 
+  const doDash = async () => {
+    setHubBusy('dash');
+    setHubMsg(await dashboardNow());
+    setHubBusy('');
+  };
+
   const yes = (v: boolean | undefined) => (v ? '✅' : '—');
   const ew = hub?.energyWeek;
   const esp = hub?.esp;
@@ -185,6 +192,10 @@ export const ServerCard: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
             <button type="button" onClick={doEsp} disabled={!!hubBusy} className={smallBtn} style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
               {hubBusy === 'esp' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
               ESP-Update prüfen
+            </button>
+            <button type="button" onClick={doDash} disabled={!!hubBusy} className={smallBtn} style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}>
+              {hubBusy === 'dash' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Dashboard anlegen
             </button>
           </div>
           {weeks.length > 0 && (

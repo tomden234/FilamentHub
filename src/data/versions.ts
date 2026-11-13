@@ -4095,5 +4095,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.303',
+    label: '1.303 (Dashboard Drucker in Home Assistant)',
+    releaseDate: '13.11.2026',
+    description:
+      'Der Pi legt in Home Assistant selbst ein neues Dashboard „Drucker“ an (Seitenleiste). Oben ein Druckerbild mit den Werten direkt am Bild: Düse am Druckkopf, Bett an der Platte, Fortschritt, Restzeit, Schicht und die Spulenfarben im AMS. Darunter Anzeigen für Fortschritt, Düse und Bett, die Spulen als farbige Kacheln, die Lagerbox (Feuchte und Temperatur vom AMS-ESP), Strom und Kosten der Woche und Temperaturverläufe. Dahinter ein ruhiger Hintergrund. Die Werte setzt der Pi als eigene Sensoren (sensor.filamenthub_*), unabhängig von der Bambu-Integration, die deshalb aus bleiben kann (kein FTP-Platz mehr belegt). Das Dashboard speichert sich nur neu, wenn sich etwas ändert (zum Beispiel neue Spulenfarben). In der App: Verbindungen → FilamentHub Server → „Dashboard anlegen“. Pi-Add-on 1.3.55.',
+    features: ['📊 Neues HA-Dashboard „Drucker“, vom Pi selbst angelegt', '🖨️ Druckerbild mit Düse, Bett, Fortschritt und Spulenfarben', '🌌 Hintergrund, Nadel-Anzeigen mit Farbverlauf, Temperaturverläufe', '🧪 Eigene Sensoren statt Bambu-Integration', '🥧 Pi-Add-on 1.3.55 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

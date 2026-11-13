@@ -92,6 +92,21 @@ export function publishImage(jpeg: Buffer, name: string): string | null {
   }
 }
 
+/** Feste Datei (Bild, Hintergrund) für das Dashboard in www/filamenthub-dashboard/ ablegen, nur wenn sich der Inhalt ändert. Gibt /local/… zurück. */
+export function publishAsset(name: string, content: string): string | null {
+  const base = WWW.find(d => fs.existsSync(path.dirname(d)) && (fs.existsSync(d) || tryMk(d)));
+  if (!base || !/^[a-z0-9_.-]+$/.test(name)) return null;
+  const dir = path.join(base, 'filamenthub-dashboard');
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, name);
+    if (!fs.existsSync(file) || fs.readFileSync(file, 'utf-8') !== content) writeFileAtomic(file, content, { mode: 0o644 });
+    return `/local/filamenthub-dashboard/${name}`;
+  } catch {
+    return null;
+  }
+}
+
 function tryMk(d: string): boolean {
   try {
     fs.mkdirSync(d, { recursive: true });

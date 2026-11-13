@@ -397,6 +397,16 @@ export async function espSyncNow(): Promise<ServerCheck> {
   }
 }
 
+/** Dashboard „Drucker“ in Home Assistant neu anlegen/speichern */
+export async function dashboardNow(): Promise<ServerCheck> {
+  try {
+    const j = await get('/api/hub/dashboard', { method: 'POST', body: {}, timeoutMs: 40000 });
+    return { ok: Boolean(j?.success), text: String(j?.text || 'unbekannt') + (j?.success ? ' → Home Assistant, Seitenleiste „Drucker“.' : '') };
+  } catch (e: any) {
+    return { ok: false, text: String(e?.message || e) };
+  }
+}
+
 // ---------- Warteschlange auf dem Pi ----------
 
 export interface PiQueueItem {
