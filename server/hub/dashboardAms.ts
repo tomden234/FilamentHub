@@ -13,6 +13,18 @@ const COLS: [number, number][] = [
 /** Mitte der Spulen in % der Bildbreite (für die Beschriftung im Dashboard) */
 export const SPOOL_X = [18.2, 39.1, 60.5, 82.1];
 
+/** Bildgröße: Drucker (397×700) und darunter die Temperatur-Karten */
+export const CANVAS = { w: 397, h: 904, printerH: 700 };
+/** Temperatur-Karten unter dem Drucker (Bildpunkte): Düse 1, Düse 2 nebeneinander, Bett darunter */
+export const TEMP_TILES = [
+  { x: 8, y: 710, w: 186, h: 104 },
+  { x: 203, y: 710, w: 186, h: 104 },
+  { x: 8, y: 822, w: 381, h: 78 }
+];
+const tilesSvg = () =>
+  '<filter id="tsd" x="-10%" y="-10%" width="120%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".4"/></filter>' +
+  TEMP_TILES.map(t => `<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="16" fill="#181a1e" fill-opacity=".93" stroke="#5ff0cf" stroke-opacity=".35" filter="url(#tsd)"/>`).join('');
+
 const HEX = /^#?[0-9a-fA-F]{6}$/;
 const rgb = (h: string) => [0, 2, 4].map(i => parseInt(h.replace('#', '').slice(i, i + 2), 16) / 255) as [number, number, number];
 const f3 = (n: number) => String(Math.round(n * 1000) / 1000);
@@ -60,7 +72,7 @@ const BASE_DEFS =
 /** SVG mit Foto und umgefärbten Spulen. colors: 4 Einträge, null = leerer Platz (Spalte aus dem Foto des leeren AMS) */
 export function amsSvg(colors: (string | null)[]): string {
   const l = layers(colors, '');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="397" height="700" viewBox="0 0 397 700"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS.w}" height="${CANVAS.h}" viewBox="0 0 ${CANVAS.w} ${CANVAS.h}"><defs>${BASE_DEFS}${l.defs}</defs><use href="#ph"/>${l.body}${tilesSvg()}</svg>`;
 }
 
 const xml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

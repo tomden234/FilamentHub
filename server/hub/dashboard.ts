@@ -18,6 +18,7 @@ import { realColor } from './spoolColors.js';
 import { ensureTheme } from './dashboardTheme.js';
 import { BACKGROUND_SVG } from './dashboardArt.js';
 import { amsSvg, amsTestSheet } from './dashboardAms.js';
+import { FONT_CSS, FONT_FILES, FONT_VERSION } from './dashboardFonts.js';
 import { ART_DIR, DASH_TITLE, DASH_URL, S, TRAY_PREFIX, buildDashboard, trayColors, traySensorId } from './dashboardConfig.js';
 
 const STATUS_TEXT: Record<string, string> = { RUNNING: 'Druckt', PAUSE: 'Pause', FINISH: 'Fertig', FAILED: 'Fehler', IDLE: 'Bereit', PREPARE: 'Vorbereitung', SLICING: 'Vorbereitung' };
@@ -163,6 +164,23 @@ function readKey(): string {
   }
 }
 
+const FONT_URL = '/local/filamenthub-dashboard/fonts.css';
+
+/** Schrift „Outfit“ ablegen und einmal als Dashboard-Ressource (CSS) anmelden. Ohne Ressourcen-Verwaltung (YAML-Modus) bleibt die Ersatzschrift. */
+async function ensureFont(): Promise<void> {
+  for (const f of FONT_FILES) publishAsset(f.name, Buffer.from(f.b64, 'base64'));
+  if (!publishAsset('fonts.css', FONT_CSS)) return;
+  const url = `${FONT_URL}?v=${FONT_VERSION}`;
+  const list = await haWsCommand({ type: 'lovelace/resources' });
+  if (!list.ok || !Array.isArray(list.result)) return;
+  const mine = list.result.find((r: any) => String(r?.url || '').startsWith(FONT_URL));
+  if (mine?.url === url) return;
+  const r = mine
+    ? await haWsCommand({ type: 'lovelace/resources/update', resource_id: mine.id, res_type: 'css', url })
+    : await haWsCommand({ type: 'lovelace/resources/create', res_type: 'css', url });
+  if (!r.ok) console.warn(`[Hub] Dashboard-Schrift nicht angemeldet: ${r.error}`);
+}
+
 export interface DashboardResult {
   ok: boolean;
   text: string;
@@ -187,6 +205,7 @@ export async function ensureDashboard(force = false): Promise<DashboardResult> {
     const b = publishAsset('hintergrund.svg', BACKGROUND_SVG);
     if (!a || !b) return { ok: false, text: 'www-Ordner von Home Assistant nicht beschreibbar (Add-on braucht homeassistant_config:rw)', changed: false };
     pruneAssets(/^x2d\.webp$/, new Set()); // Foto aus 1.304/1.305
+    await ensureFont();
     // Testbild aller Spulen (zum Prüfen der Farben): /local/filamenthub-dashboard/spulen-test.svg
     const all = await spools();
     if (all.length) publishAsset('spulen-test.svg', amsTestSheet(all.map(x => ({ label: [x.brand, x.material, x.colorName].filter(Boolean).join(' '), color: realColor(x) }))));

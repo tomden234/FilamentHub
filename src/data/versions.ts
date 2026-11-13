@@ -4205,5 +4205,16 @@ export const INITIAL_VERSION_PROFILES: VersionProfile[] = [
     spoolsSnapshot: MY_SPOOLS,
     historySnapshot: [],
     viewMode: 'simple'
+  },
+  {
+    id: 'v1.313',
+    label: '1.313 (Neue Beschriftung, Schrift Outfit)',
+    releaseDate: '13.11.2026',
+    description:
+      'Druckerbild im Dashboard: Spulen-Schilder als dunkle Pillen mit Rand in der Spulenfarbe, Material groß und Restgewicht darunter. Die Temperaturen stehen als Karten unter dem Drucker (Düse 1 und Düse 2 nebeneinander, Bett darunter, Graphit mit Türkis): oben Name und Soll, groß der Ist-Wert, runde −/+ links und rechts. Neue Schrift „Outfit“, die der Pi selbst mitliefert und im Dashboard anmeldet, damit sie auf jedem Gerät gleich aussieht. Pi-Add-on 1.3.65.',
+    features: ['🏷️ Spulen-Schilder mit Restgewicht', '🌡️ Temperatur-Karten unter dem Drucker', '🔤 Schrift Outfit', '🥧 Pi-Add-on 1.3.65 (muss aktualisiert werden)'],
+    spoolsSnapshot: MY_SPOOLS,
+    historySnapshot: [],
+    viewMode: 'simple'
   }
 ];

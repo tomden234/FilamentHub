@@ -53,7 +53,10 @@ describe('Dashboard „Drucker“', () => {
     // Temperaturen im Bild: Düse 1/2 mit Soll und −/+, Bett ohne Soll-Feld nur mit Ist-Wert
     const plus = pic.elements.filter((e: any) => e.tap_action?.perform_action === 'input_number.increment');
     expect(plus.map((e: any) => e.tap_action.target.entity_id)).toEqual([ID.nozzleSoll, ID.nozzle2Soll]);
-    expect(pic.elements.some((e: any) => e.entity === S.bed && e.prefix?.startsWith('Bett'))).toBe(true);
+    expect(pic.elements.some((e: any) => e.entity === S.bed && e.attribute === 'friendly_name')).toBe(true); // Bett ohne Soll-Feld: nur Name + Ist
+    expect(pic.elements.some((e: any) => e.entity === ID.nozzleSoll && e.prefix === 'Düse 1 · Soll ')).toBe(true);
+    expect(trays[0].style.border).toBe('2px solid #FF0000'); // Rand in Spulenfarbe
+    expect(String(trays[0].style['font-family'])).toContain('Outfit');
     expect(JSON.stringify(pic)).not.toContain(ID.bedSoll);
     expect(pic.grid_options.columns).toBe(6); // Drucker halb breit neben der Warteschlange
     const spulen = d.views[0].sections[0].cards[2];
@@ -73,6 +76,8 @@ describe('Dashboard „Drucker“', () => {
     expect(svg).toContain('id="t2"');
     expect(svg).not.toContain('id="t3"'); // ungültige Farbe = leer
     expect(svg.split('filter="url(#hl)"').length - 1).toBe(2); // nur gefüllte Plätze bekommen eine Spule
+    expect(svg).toContain('height="904"'); // Platz für die Temperatur-Karten unter dem Drucker
+    expect(svg.split('filter="url(#tsd)"').length - 1).toBe(3);
     expect(svg).toContain('<use href="#e1"/>'); // leerer Platz 2: Spalte aus dem Foto des leeren AMS
     expect(svg).toContain('filter="url(#u0)"'); // Schimmer unten in Spulenfarbe
     expect(svg).toContain('data:image/webp;base64,');
@@ -108,5 +113,15 @@ describe('Dashboard „Drucker“', () => {
       const head = Buffer.from(b64, 'base64').subarray(0, 12).toString('latin1');
       expect(head.startsWith('RIFF') && head.endsWith('WEBP')).toBe(true);
     }
+  });
+});
+
+describe('Dashboard-Schrift', () => {
+  it('Outfit: zwei WOFF2-Dateien, CSS zeigt auf beide', async () => {
+    const { FONT_CSS, FONT_FILES } = await import('../../server/hub/dashboardFonts');
+    expect(FONT_FILES.map(f => f.name)).toEqual(['outfit-500.woff2', 'outfit-700.woff2']);
+    for (const f of FONT_FILES) expect(Buffer.from(f.b64, 'base64').subarray(0, 4).toString('latin1')).toBe('wOF2');
+    expect(FONT_CSS).toContain("font-family:'Outfit'");
+    expect(FONT_CSS).toContain('outfit-700.woff2');
   });
 });

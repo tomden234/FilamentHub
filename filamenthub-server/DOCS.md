@@ -43,6 +43,12 @@ Menü → Verbindungen → **FilamentHub Server**: Adresse des Pi eintragen (zum
 - Der Abzug läuft im Hintergrund und hält Warnungen und „Aus nach Druck“ nicht mehr auf. Die Verbindung zu Home Assistant baut sich nach Abbrüchen selbst neu auf.
 - Kamera und Live-Stream nutzen einen 12-Stunden-Token statt des Schlüssels in der Adresse.
 
+## Neu in 1.3.65 (neue Beschriftung, Temperatur-Karten, Schrift Outfit)
+
+- Spulen-Schilder: dunkle Pille mit Rand in Spulenfarbe, Material groß, Restgewicht darunter.
+- Temperaturen als Karten unter dem Drucker (Düse 1 und 2 nebeneinander, Bett darunter): oben Name und Soll, groß der Ist-Wert, runde −/+ (5 °C).
+- Schrift „Outfit“ (SIL OFL 1.1): der Server legt sie in `www/filamenthub-dashboard` ab und meldet `fonts.css` als Dashboard-Ressource an. Ohne Ressourcen-Verwaltung (Dashboards im YAML-Modus) erscheint die Ersatzschrift.
+
 ## Neu in 1.3.64 (Spulen wie vorher, Schimmer in Spulenfarbe)
 
 - Druckerbild wieder auf Basis des Originalfotos: Spulen sehen aus wie vorher, der Schimmer im Gehäuse unter jeder Spule hat ihre echte Farbe (leicht).

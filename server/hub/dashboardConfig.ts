@@ -2,7 +2,8 @@
 // Aufbau: links Drucker (AMS in echten Farben) neben der Warteschlange und die Spulen, Mitte Drucker-Werte, rechts Lagerbox und Trockner.
 import { resolveAms } from '../../src/utils/amsEntities.js';
 import { ART_VERSION } from './dashboardArt.js';
-import { SPOOL_X, spoolColor } from './dashboardAms.js';
+import { CANVAS, SPOOL_X, TEMP_TILES, spoolColor } from './dashboardAms.js';
+import { FONT_FAMILY } from './dashboardFonts.js';
 import { ID, SLOTS } from './dashboardEditLogic.js';
 
 export const DASH_URL = 'filamenthub-drucker'; // Home Assistant verlangt einen Bindestrich
@@ -68,41 +69,64 @@ const size = (card: any, columns: number, rows?: number) => ({ ...card, grid_opt
 /** Kachel mit Icon (Wert als zweite Zeile) */
 const tile = (entity: string, name: string, icon: string) => ({ type: 'tile', entity, name, icon, vertical: false });
 
-const PILL = { color: '#fff', 'font-size': '11px', 'font-weight': '700', 'text-shadow': '0 1px 3px #000', background: 'rgba(8,12,18,.62)', padding: '1px 8px', 'border-radius': '999px', 'white-space': 'nowrap' };
 
-/** Temperatur-Etikett im Bild: Name + Ist oben, Soll darunter, −/+ ändern das Soll in 5-°C-Schritten (Eingabe geht über den Pi an den Drucker) */
-function tempTag(ist: string, soll: string, name: string, x: number, y: number, accent: string, withSoll: boolean): any[] {
-  const glass = { background: 'rgba(12,18,22,.72)', 'backdrop-filter': 'blur(6px)', border: '1px solid rgba(255,255,255,.22)', 'box-shadow': '0 4px 14px rgba(0,0,0,.35)' };
-  const pos = (dx: number, dy: number) => ({ left: `${x + dx}%`, top: `${y + dy}%` });
+const pct = (v: number, of: number) => `${Math.round((v / of) * 10000) / 100}%`;
+const TEAL = '#5ff0cf';
+
+/** Spulen-Schild am AMS: dunkle Pille mit Rand in Spulenfarbe, Material groß, Restgewicht darunter */
+function spoolTag(tray: any, x: number): any[] {
+  const top = (0.215 * CANVAS.printerH * 100) / CANVAS.h;
+  const color = spoolColor(tray?.attributes?.color) || '#9aa0a6';
+  const ring = colorDark(color) ? '#9aa0a6' : color; // schwarze Spule: grauer Rand, sonst unsichtbar
   const el: any[] = [
     {
       type: 'state-label',
-      entity: ist,
-      prefix: `${name}  `,
-      style: { ...pos(0, 0), ...glass, 'border-left': `3px solid ${accent}`, 'border-radius': '14px', padding: withSoll ? '5px 30px 19px' : '5px 12px', 'min-width': '64px', 'text-align': 'center', color: '#fff', 'font-size': '12px', 'font-weight': '700', 'white-space': 'nowrap' }
+      entity: tray.entity_id,
+      style: { left: `${x}%`, top: `${top}%`, background: 'rgba(10,14,18,.85)', border: `2px solid ${ring}`, 'border-radius': '14px', padding: '3px 12px 14px', 'min-width': '40px', 'text-align': 'center', color: '#fff', 'font-family': FONT_FAMILY, 'font-size': '12px', 'font-weight': '700', 'white-space': 'nowrap' }
     }
   ];
-  if (!withSoll) return el;
-  const btn = (icon: string, dx: number, action: string) => ({
+  if (tray?.attributes?.rest_g !== undefined)
+    el.push({ type: 'state-label', entity: tray.entity_id, attribute: 'rest_g', suffix: ' g', style: { left: `${x}%`, top: `${top + 1.25}%`, color: '#cfd8dc', 'font-family': FONT_FAMILY, 'font-size': '9px', 'font-weight': '500', 'white-space': 'nowrap' } });
+  return el;
+}
+const colorDark = (hex: string) => {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  return 0.3 * r! + 0.59 * g! + 0.11 * b! < 50;
+};
+
+/** Temperatur-Karte unter dem Drucker (Karte selbst ist im Bild): oben Name + Soll, groß der Ist-Wert, runde −/+ links und rechts */
+function tempCard(tile: { x: number; y: number; w: number; h: number }, ist: string, soll: string, name: string, accent: string, withSoll: boolean): any[] {
+  const W = CANVAS.w;
+  const H = CANVAS.h;
+  const cx = pct(tile.x + tile.w / 2, W);
+  const vy = pct(tile.y + tile.h * 0.62, H);
+  const font = { 'font-family': FONT_FAMILY, 'white-space': 'nowrap' };
+  const el: any[] = [{ type: 'state-label', entity: ist, style: { left: cx, top: vy, color: '#fff', 'font-size': '28px', 'font-weight': '700', ...font } }];
+  if (!withSoll) {
+    el.push({ type: 'state-label', entity: ist, attribute: 'friendly_name', style: { left: cx, top: pct(tile.y + 18, H), color: '#9fb4c4', 'font-size': '11px', 'font-weight': '500', ...font } });
+    return el;
+  }
+  el.push({ type: 'state-label', entity: soll, prefix: `${name} · Soll `, style: { left: cx, top: pct(tile.y + 18, H), color: '#9fb4c4', 'font-size': '11px', 'font-weight': '500', ...font } });
+  const btn = (icon: string, x: number, action: 'increment' | 'decrement') => ({
     type: 'icon',
     icon,
     title: `${name} Soll ${action === 'increment' ? '+5' : '−5'} °C`,
     tap_action: { action: 'perform-action', perform_action: `input_number.${action}`, target: { entity_id: soll } },
-    style: { ...pos(dx, 0.9), color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', 'border-radius': '50%', padding: '2px', '--mdc-icon-size': '16px' }
+    style: { left: pct(x, W), top: vy, color: accent, background: 'rgba(95,240,207,.12)', border: '1px solid rgba(95,240,207,.45)', 'border-radius': '50%', padding: '4px', '--mdc-icon-size': '18px' }
   });
-  el.push({ type: 'state-label', entity: soll, prefix: 'Soll ', style: { ...pos(0, 2.2), color: accent, 'font-size': '11px', 'font-weight': '700', 'white-space': 'nowrap' } });
-  el.push(btn('mdi:minus', -12.5, 'decrement'), btn('mdi:plus', 12.5, 'increment'));
+  el.push(btn('mdi:minus', tile.x + 26, 'decrement'), btn('mdi:plus', tile.x + tile.w - 26, 'increment'));
   return el;
 }
 
-/** Druckerbild (AMS in den echten Farben, vom Pi gebaut) mit dem Material je Platz und den Temperaturen an Düsen und Bett */
+/** Druckerbild (AMS in den echten Farben, vom Pi gebaut) mit Spulen-Schildern und darunter den Temperatur-Karten */
 function printerPicture(states: any[], photoV: string) {
   const have = new Set(ids(states));
-  const elements = SPOOL_X.flatMap((x, i) => (have.has(amsTray(i + 1)) ? [{ type: 'state-label', entity: amsTray(i + 1), style: { left: `${x}%`, top: '20.5%', ...PILL } }] : []));
+  const by = new Map((Array.isArray(states) ? states : []).map(s => [String(s?.entity_id || ''), s]));
+  const elements: any[] = SPOOL_X.flatMap((x, i) => (by.has(amsTray(i + 1)) ? spoolTag(by.get(amsTray(i + 1)), x) : []));
   elements.push(
-    ...tempTag(S.nozzle, ID.nozzleSoll, 'Düse 1', 27, 51, '#ffb347', have.has(ID.nozzleSoll)),
-    ...tempTag(S.nozzle2, ID.nozzle2Soll, 'Düse 2', 73, 51, '#ffb347', have.has(ID.nozzle2Soll)),
-    ...tempTag(S.bed, ID.bedSoll, 'Bett', 50, 79, '#ff7b7b', have.has(ID.bedSoll))
+    ...tempCard(TEMP_TILES[0]!, S.nozzle, ID.nozzleSoll, 'Düse 1', TEAL, have.has(ID.nozzleSoll)),
+    ...tempCard(TEMP_TILES[1]!, S.nozzle2, ID.nozzle2Soll, 'Düse 2', TEAL, have.has(ID.nozzle2Soll)),
+    ...tempCard(TEMP_TILES[2]!, S.bed, ID.bedSoll, 'Bett', '#ff9aa2', have.has(ID.bedSoll))
   );
   return { type: 'picture-elements', image: `${ART_DIR}/drucker.svg?v=${photoV}`, grid_options: { columns: 6 }, elements };
 }
